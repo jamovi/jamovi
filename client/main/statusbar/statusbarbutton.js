@@ -4,14 +4,16 @@
 const $ = require('jquery');
 const ActionHub = require('../actionhub');
 
-const StatusbarButton = function(name) {
+const StatusbarButton = function(name, properties) {
 
-    this.$el =  $('<div class="jmv-statusbar-button" tabindex="0"></div>');
+    this.$el =  $('<button class="jmv-statusbar-button" tabindex="0"></button>');
 
     this.name = name;
 
     this.$el.attr('data-name', this.name.toLowerCase());
-    this.$el.attr('disabled');
+    this.$el.attr('aria-disabled', true);
+    if (properties && properties.label) 
+        this.$el.attr('aria-label', properties.label);
 
     this.$el.on('click', event => this._clicked(event));
     this.$el.keydown((event) => {
@@ -22,9 +24,9 @@ const StatusbarButton = function(name) {
 
     this.setEnabled = function(enabled) {
         if (enabled)
-            this.$el.removeAttr('disabled');
+            this.$el.removeAttr('aria-disabled');
         else
-            this.$el.attr('disabled', '');
+            this.$el.attr('aria-disabled', true);
     };
 
     this._clicked = function(event) {

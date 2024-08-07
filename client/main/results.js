@@ -20,11 +20,13 @@ const ResultsView = Backbone.View.extend({
         
 
         this.$el.addClass('jmv-results');
+        this.$el.attr('tabindex', '-1');
         focusLoop.applyShortcutOptions(this.$el[0], {
                 key: 'R',
                 maintainAccessibility: true,
                 action: (event) => {
                     focusLoop.enterFocusLoop(this.selectedView.$el[0], { withMouse: false });
+                    this.model.set('selectedAnalysis', null);
                 },
                 position: { x: '15px', y: '15px' }
             }
@@ -37,6 +39,9 @@ const ResultsView = Backbone.View.extend({
             iframeUrl: args.iframeUrl,
             model: this.model,
             mode: 'rich' });
+        this.richView.on('hideOptions', () => {
+            this.trigger('hideOptions');
+        });
 
         this.selectedView = this.richView;
 

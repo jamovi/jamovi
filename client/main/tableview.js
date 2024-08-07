@@ -79,7 +79,8 @@ const TableView = SilkyView.extend({
                     </div>
                     <div class="jmv-table-row-highlight-wrapper"><div class="jmv-table-row-highlight"></div></div>
                 </div>
-            </div>`);
+            </div>
+            <div id="aria-speakable" style="position: absolute; left: 0px; top: -1px; z-index: -2; opacity: 0;" role="region" aria-live="polite" aria-atomic="false" aria-hidden="false"></div>`);
 
         this.$sizers = this.$el.find('.selection-sizer');
         this.$sizers.on('pointerdown', (event) => {
@@ -94,14 +95,14 @@ const TableView = SilkyView.extend({
 
         this.statusbar = new Statusbar();
         this.$el.append(this.statusbar.$el);
-        this.statusbar.addInfoLabel('editedCells', { label: _('Cells edited '), value: 0 });
+        this.statusbar.addInfoLabel('editedCells', { label: _('Cells edited'), value: 0 });
         this.statusbar.addInfoLabel('addedRows', { label: _('Added'), value: 0 });
         this.statusbar.addInfoLabel('deletedRows', { label: _('Deleted'), value: 0 });
         this.statusbar.addInfoLabel('filteredRows', { label: _('Filtered'), value: 0 });
         this.statusbar.addInfoLabel('rowCount', { label: _('Row count'), value: 0 });
         this.statusbar.addInfoLabel('editStatus', { dock: 'left', value: _('Ready') });
-        this.statusbar.addActionButton('editFilters', { dock: 'left' });
-        this.statusbar.addActionButton('toggleFilterVisible', { dock: 'left' });
+        this.statusbar.addActionButton('editFilters', { dock: 'left', label: _('Edit filters') });
+        this.statusbar.addActionButton('toggleFilterVisible', { dock: 'left', label: _('Toggle filters visibility') });
         this.statusbar.addInfoLabel('activeFilters', { dock: 'left', label: _('Filters'), value: 0 });
 
         this.$container = this.$el.find('.jmv-table-container');
@@ -590,7 +591,7 @@ const TableView = SilkyView.extend({
 
             let $label = $header.find('.jmv-column-header-label');
             $label.text(column.name);
-            $label.attr('aria-label', `${column.name === '' ? 'Column ' + column.dIndex : column.name}`);
+            $label.attr('aria-label', `${column.name === '' ? _('New column {0}', [column.dIndex - this.model.visibleRealColumnCount() + 1]) : column.name}`);
         }
 
         this.controller.enableDisableActions();
@@ -647,7 +648,7 @@ const TableView = SilkyView.extend({
             if (changes.nameChanged) {
                 let $label = $header.find('.jmv-column-header-label');
                 $label.text(column.name);
-                $label.attr('aria-label', `${column.name === '' ? 'Column ' + column.dIndex : column.name}`);
+                $label.attr('aria-label', `${column.name === '' ? _('New column {0}', [column.dIndex - this.model.visibleRealColumnCount() + 1]) : column.name}`);
             }
         }
 
@@ -2459,7 +2460,7 @@ const TableView = SilkyView.extend({
                 "
             >
                 <div class="jmv-column-header-icon"></div>
-                <div class="jmv-column-header-label" id="column-${column.id}" role="columnheader" aria-colindex="${column.dIndex}" aria-label="${s6e(column.name) === '' ? 'Column ' + column.dIndex : s6e(column.name)}">${ s6e(column.name) }</div>
+                <div class="jmv-column-header-label" id="column-${column.id}" role="columnheader" aria-colindex="${column.dIndex}" aria-label="${s6e(column.name) === '' ? _('New column {0}', [column.dIndex - this.model.visibleRealColumnCount() + 1]) : s6e(column.name)}">${ s6e(column.name) }</div>
                 <div class="jmv-column-header-resizer" data-index="${ column.dIndex }"></div>
                 <div class="jmv-column-header-colour"></div>
                 <div class="sub-selection-bar"></div>

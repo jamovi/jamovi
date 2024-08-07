@@ -30,7 +30,9 @@ const GridActionButton = function(params) {
         this.$el.text(label);
 
         this.$el.click((event) => {
-            this.setValue(true);
+            let enabled = this.getPropertyValue('enable');
+            if (enabled)
+                this.setValue(true);
         });
     };
 
@@ -38,9 +40,9 @@ const GridActionButton = function(params) {
         let value = this.getValue();
         let enabled = this.getPropertyValue('enable');
         if (value || enabled === false)
-            this.$el[0].setAttribute('disabled', '');
+            this.$el[0].setAttribute('aria-disabled', true);
         else
-            this.$el[0].removeAttribute('disabled');
+            this.$el[0].removeAttribute('aria-disabled');
     };
 
     this._override('onPropertyChanged', (baseFunction, name) => {
@@ -50,9 +52,9 @@ const GridActionButton = function(params) {
             let enabled = this.getPropertyValue(name);
             let value = this.getValue();
             if (value || enabled === false)
-                this.$el[0].setAttribute('disabled', '');
+                this.$el[0].setAttribute('aria-disabled', true);
             else
-                this.$el[0].removeAttribute('disabled');
+                this.$el[0].removeAttribute('aria-disabled');
         }
     });
 };

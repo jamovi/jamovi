@@ -143,6 +143,9 @@ const LayoutSupplierView = function(params) {
         this.supplierGrid = new SelectableLayoutGrid(this.params, false);
         if (label !== null)
             this.supplierGrid.$el.attr('aria-labelledby', labelId);
+        else
+            this.supplierGrid.$el.attr('aria-label', _('Available items'));
+
         this.supplierGrid.$el.addClass('silky-layout-grid multi-item silky-variable-supplier');
         this.supplierGrid.stretchEndCells = false;
         this.supplierGrid._animateCells = true;
@@ -166,7 +169,7 @@ const LayoutSupplierView = function(params) {
 
 
         //////////////////////////////////
-        this.$searchButton = $(`<button class="search" aria-label="${_('Search')}"><div class="image"></div></button>`);
+        this.$searchButton = $(`<button class="search" aria-label="${_('Search list items')}"><div class="image"></div></button>`);
         this.supplierGrid.$el.append(this.$searchButton);
         this.$searchButton.hide();
 
@@ -488,6 +491,7 @@ const LayoutSupplierView = function(params) {
         c1.setStretchFactor(1);
 
         c1.$el.attr('role', 'listitem');
+        c1.$el.attr('aria-label', item.value.toAriaLabel());
 
         item.$el = c1.$el;
     };
@@ -589,6 +593,7 @@ const LayoutSupplierView = function(params) {
         c1.setStretchFactor(1);
 
         c1.$el.attr('role', 'listitem');
+        c1.$el.attr('aria-label', item.value.toAriaLabel());
  
         item.$el = c1.$el;
     };

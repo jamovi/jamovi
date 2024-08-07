@@ -37,7 +37,7 @@ const ToolbarGroup = function(params) {
         this.title = title;
         this.dock = right ? 'right' : 'left';
 
-        this.$el.attr('disabled');
+        this.$el.attr('aria-disabled', true);
         if (right)
             this.$el.addClass('right');
 
@@ -87,7 +87,7 @@ const ToolbarGroup = function(params) {
     };
 
     this.setEnabled = function(enabled) {
-        this.$el.prop('disabled', ! enabled);
+        this.$el.attr('aria-disabled', ! enabled);
     };
 
     this.getMenus = function() {

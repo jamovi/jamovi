@@ -44,6 +44,19 @@ const FormatDef = {
             return this.format.toString(this.raw);
         };
 
+        this.toAriaLabel = function() {
+            if (this.format === null && this.raw.toString)
+                return this.raw.toString();
+
+            if (this.format === null)
+                return '';
+
+            if (this.format.toAriaLabel)
+                return this.format.toAriaLabel(this.raw);
+
+            return this.toString();
+        };
+
         this.equalTo = function(value) {
             if (this.format === null)
                 return this.raw === value;
@@ -89,6 +102,21 @@ FormatDef.variables = new Format({
         return r;
     },
 
+    toAriaLabel: function(raw) {
+        if (raw.length === 1)
+            return s_(`Variable {0}`, raw);
+
+        let list = raw[0];
+        if (raw.length > 2) {
+            for (let i = 1; i < raw.length - 1; i++) {
+                list = s_('{list}, {nextItem}', { list: list, nextItem: raw[i] });
+            }
+        }
+        let last = raw[raw.length - 1];
+        list = s_('{list} and {lastItem}', {list: list, lastItem: last});
+        return s_('Variables {list}', {list});
+    },
+
     parse: function(value) {
         return value;
     },
@@ -130,6 +158,10 @@ FormatDef.variable = new Format ({
 
     toString: function(raw) {
         return raw;
+    },
+
+    toAriaLabel: function(raw) {
+        return s_('{name} variable', { name: raw });
     },
 
     parse: function(value) {
@@ -223,6 +255,22 @@ FormatDef.term = new Format ({
 
     toString: function(raw) {
         return FormatDef.term._itemToString(raw, 0);
+    },
+
+    toAriaLabel: function(raw) {
+        if (raw.length === 1)
+            return raw[0];
+
+        let list = raw[0];
+        if (raw.length > 2) {
+            for (let i = 1; i < raw.length - 1; i++) {
+                list = s_('{list}, {nextItem}', { list: list, nextItem: raw[i] });
+            }
+        }
+        let last = raw[raw.length - 1];
+        list = s_('{list} and {lastItem}', {list: list, lastItem: last});
+        return s_('The interaction of {list}', {list});
+
     },
 
     parse: function(value) {

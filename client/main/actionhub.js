@@ -8,6 +8,8 @@ Backbone.$ = $;
 const Action = Backbone.Model.extend({
     defaults: {
         enabled: true,
+        name: '',
+        description: '',
     },
     do(source) {
         if (this._direct) {
@@ -27,7 +29,8 @@ const Action = Backbone.Model.extend({
         if (this._direct === undefined)
             this._direct = [];
         this._direct.push(call.bind(context));
-    }
+    },
+    
 });
 
 class ActionHub {
@@ -43,6 +46,12 @@ class ActionHub {
             this._actions[actionName] = action;
         }
         return action;
+    }
+
+    setDetails(actionName, name, description) {
+        let action = get(actionName);
+        action.attributes.name = name;
+        action.attributes.description = description;
     }
 }
 
