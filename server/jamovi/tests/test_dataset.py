@@ -14,7 +14,7 @@ from jamovi.server.dataset import DataType
 from jamovi.server.dataset import MeasureType
 
 from .utils import equals
-from .utils import levels_must_equal
+from .utils import assert_levels_must_equal
 from .utils import add_column_to_dataset
 from .utils import alter_levels
 
@@ -32,8 +32,8 @@ def test_row_modification(simple_dataset: DataSet):
 
 
 @pytest.mark.parametrize(
-    ("column_name",),
-    (("len",), ("dose",), ("supp",)),
+    "column_name",
+    ["len", "dose", "supp"],
 )
 def test_clear(toothgrowth_dataset: DuckDataSet, column_name: str):
     """test column clear"""
@@ -49,7 +49,7 @@ def test_clear(toothgrowth_dataset: DuckDataSet, column_name: str):
         else:
             assert value == NAN_INT
 
-    levels_must_equal(column.dlevels, [])
+    assert_levels_must_equal(column.dlevels, [])
 
 
 @pytest.mark.parametrize(
@@ -133,7 +133,7 @@ def test_level_count_updating(
     for index, value in enumerate(values):
         assert equals(column.get_value(index), value)
 
-    levels_must_equal(column.dlevels, expected_levels)
+    assert_levels_must_equal(column.dlevels, expected_levels)
 
 
 @pytest.mark.parametrize(
@@ -205,7 +205,7 @@ def test_levels_are_trimmed_when_counts_reach_zero(
         if value is not None:
             column.set_value(index, value)
 
-    levels_must_equal(column.dlevels, expected_levels)
+    assert_levels_must_equal(column.dlevels, expected_levels)
 
 
 @pytest.mark.skip(reason="TODO")
@@ -330,7 +330,7 @@ def test_set_levels_int(toothgrowth_dataset: DuckDataSet):
     column = dataset["dose"]
     column.set_levels(levels)
 
-    levels_must_equal(column.dlevels, dlevels)
+    assert_levels_must_equal(column.dlevels, dlevels)
 
 
 def test_set_levels_text(empty_dataset: DuckDataSet):
@@ -368,7 +368,7 @@ def test_set_levels_text(empty_dataset: DuckDataSet):
         ]
     )
 
-    levels_must_equal(
+    assert_levels_must_equal(
         column.dlevels,
         [
             {"value": 0, "label": "bob", "count": 1},
@@ -406,7 +406,7 @@ def test_set_levels_int_unpin(toothgrowth_dataset: DuckDataSet):
         # clear out the 500s and 1000s
         dose.set_value(index, NAN_INT)
 
-    levels_must_equal(
+    assert_levels_must_equal(
         dose.dlevels,
         [
             {
@@ -426,7 +426,7 @@ def test_set_levels_int_unpin(toothgrowth_dataset: DuckDataSet):
     levels = alter_levels(dose.levels, {1000: {"pinned": False}})
     dose.set_levels(levels)
 
-    levels_must_equal(
+    assert_levels_must_equal(
         dose.dlevels,
         [
             {
