@@ -188,7 +188,7 @@ class DuckColumn(Column):
         if measure_type is MeasureType.NONE:
             measure_type = None
         self._dataset.column_change(
-            self, data_type=data_type, measure_type=measure_type
+            self, data_type=data_type, measure_type=measure_type, levels=levels
         )
 
     def set_value(self, index, value, initing=False):
@@ -236,7 +236,7 @@ class DuckColumn(Column):
         for level in self._levels:
             if level.label == label or level.import_value == label:
                 return level.value
-        raise KeyError
+        raise KeyError(f"Level for label '{ label }' not found")
 
     def clear_levels(self):
         self._dataset.column_clear_levels(self)
@@ -317,7 +317,7 @@ class DuckColumn(Column):
         return self._dataset.get_raw_value(index, self)
 
     def set_levels(self, levels: Iterable[Level]):
-        self._dataset.column_set_levels(self, levels)
+        self._dataset.column_set_levels(self, levels, trim=False)
 
     def set_missing_values(self, missing_values):
         # TODO
