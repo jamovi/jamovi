@@ -79,8 +79,8 @@ def toothgrowth_dataset(empty_dataset: DataSet) -> DataSet:
     column = ds.append_column("supp")
     column.set_data_type(DataType.TEXT)
     column.set_measure_type(MeasureType.NOMINAL)
-    column.append_level(0, "VC")
-    column.append_level(1, "OJ")
+    column.append_level(0, "OJ")
+    column.append_level(1, "VC")
 
     column = ds.append_column("dose")
     column.set_data_type(DataType.INTEGER)

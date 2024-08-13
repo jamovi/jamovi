@@ -3,32 +3,57 @@ from uuid import uuid4
 
 import pytest
 
+from jamovi.server.dataset.duckcolumn import DuckColumn
 from jamovi.server.dataset import Column
 from jamovi.server.dataset import DataSet
 from jamovi.server.dataset import ColumnType
 from jamovi.server.dataset import MeasureType
 from jamovi.server.dataset import DataType
 
+from .utils import assert_levels_must_equal
+
 
 ColumnProperty: TypeAlias = bool | str | int | ColumnType | MeasureType
 
 
-def test_column_data_types(empty_dataset):
-    """test if column data types change accordingly"""
-    dataset = empty_dataset
+@pytest.mark.parametrize(
+    ("before", "change", "expected"),
+    [
+        (
+            (DataType.TEXT, MeasureType.NOMINAL),
+            (DataType.DECIMAL, MeasureType.NOMINAL),
+            (DataType.DECIMAL, MeasureType.CONTINUOUS),
+        ),
+        (
+            (DataType.DECIMAL, MeasureType.CONTINUOUS),
+            (DataType.DECIMAL, MeasureType.ORDINAL),
+            (DataType.TEXT, MeasureType.ORDINAL),
+        ),
+        (
+            (DataType.TEXT, MeasureType.ID),
+            (DataType.TEXT, MeasureType.NOMINAL),
+            (DataType.TEXT, MeasureType.NOMINAL),
+        ),
+    ],
+)
+def test_column_data_types_changes(
+    empty_column: DuckColumn,
+    before: tuple[DataType, MeasureType],
+    change: tuple[DataType, MeasureType],
+    expected: tuple[DataType, MeasureType],
+):
+    """test if column data and measure types change accordingly"""
+    column = empty_column
+    column.set_data_type(before[0])
+    column.set_measure_type(before[1])
 
-    fred = dataset.append_column("fred")
-    fred.change(data_type=DataType.INTEGER, measure_type=MeasureType.CONTINUOUS)
+    assert column.data_type == before[0]
+    assert column.measure_type == before[1]
 
-    jim = dataset.append_column("jim")
-    jim.change(data_type=DataType.TEXT, measure_type=MeasureType.NOMINAL)
+    column.change(data_type=change[0], measure_type=change[1])
 
-    will = dataset.append_column("will")
-    will.change(data_type=DataType.INTEGER, measure_type=MeasureType.NOMINAL)
-
-    assert fred.data_type is DataType.INTEGER
-    assert jim.data_type is DataType.TEXT
-    assert will.data_type is DataType.INTEGER
+    assert column.data_type == expected[0]
+    assert column.measure_type == expected[1]
 
 
 @pytest.mark.parametrize(
@@ -113,3 +138,17 @@ def test_column_deletion(
     column_names_after = list(map(lambda x: x.name, simple_dataset))
     del column_names[index]
     assert column_names == column_names_after
+
+
+def test_insert_levels(empty_column: DuckColumn):
+    "test level insertion"
+    column = empty_column
+    column.set_data_type(DataType.TEXT)
+    column.set_measure_type(MeasureType.NOMINAL)
+    column.insert_level(55, "VC")
+    column.insert_level(77, "OJ")
+
+    assert_levels_must_equal(
+        column.dlevels,
+        [{"value": 0, "import_value": "OJ"}, {"value": 1, "import_value": "VC"}],
+    )

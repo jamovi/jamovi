@@ -55,19 +55,18 @@ def load(dataset: DataSet, reader: Iterable[Iterable[str]]) -> None:
             column.set_value(row_no, value, True)
 
 
-def level_equals(level: DuckLevel, values: dict):
+def assert_level_equals(level: DuckLevel, values: dict):
     """tests whether a level has certain values"""
     for name, value in values.items():
-        if getattr(level, name) != value:
-            return False
-    return True
+        attr_value = getattr(level, name)
+        assert attr_value == value
 
 
 def assert_levels_must_equal(levels: Sequence[DuckLevel], values: Sequence[dict]):
     """tests whether levels have certain values"""
     assert len(levels) == len(values)
     for i, level in enumerate(levels):
-        assert level_equals(level, values[i])
+        assert_level_equals(level, values[i])
 
 
 def add_column_to_dataset(
@@ -90,7 +89,8 @@ def add_column_to_dataset(
                     raw_value = column.get_value_for_label(value)
             except KeyError:
                 raw_value = column.level_count
-                column.append_level(raw_value, value, value, False)
+                column.insert_level(raw_value, value)
+                raw_value = column.get_value_for_label(value)
             column.set_value(index, raw_value, initing=True)
     elif isinstance(values[0], int) and measure_type in (
         MeasureType.NOMINAL,
@@ -112,6 +112,7 @@ def add_column_to_dataset(
         column.change(data_type=data_type, measure_type=measure_type)
         for index, value in enumerate(values):
             column.set_value(index, value)
+        column.determine_dps()
     return column
 
 def alter_levels(levels: Iterable[Level], changes: dict[int, dict]) -> Iterable[Level]:
