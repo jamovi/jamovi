@@ -10,6 +10,7 @@ import pytest
 
 from jamovi.server.dataset import DataSet
 from jamovi.server.dataset.duckdataset import DuckDataSet
+from jamovi.server.dataset.duckcolumn import DuckColumn
 from jamovi.server.dataset import DataType
 from jamovi.server.dataset import MeasureType
 
@@ -61,8 +62,8 @@ def test_clear(toothgrowth_dataset: DuckDataSet, column_name: str):
             [
                 {
                     "value": 0,
-                    "label": "fred",
-                    "import_value": "fred",
+                    "label": "33.1",
+                    "import_value": "33.1",
                     "pinned": False,
                     "count": 2,
                     "count_ex_filtered": 2,
@@ -77,20 +78,21 @@ def test_clear(toothgrowth_dataset: DuckDataSet, column_name: str):
                 },
                 {
                     "value": 2,
+                    "label": "fred",
+                    "import_value": "fred",
+                    "pinned": False,
+                    "count": 2,
+                    "count_ex_filtered": 2,
+                },
+                {
+                    "value": 3,
                     "label": "jim",
                     "import_value": "jim",
                     "pinned": False,
                     "count": 1,
                     "count_ex_filtered": 1,
                 },
-                {
-                    "value": 3,
-                    "label": "33.1",
-                    "import_value": "33.1",
-                    "pinned": False,
-                    "count": 2,
-                    "count_ex_filtered": 2,
-                },
+
             ],
         ),
         (
@@ -142,23 +144,23 @@ def test_level_count_updating(
         (
             MeasureType.NOMINAL,
             ["fred", "44", "jim", "33.1", "", "33.1", "fred"],
-            [NAN_INT, NAN_INT, 2, None, None, None, None],
+            [NAN_INT, NAN_INT, 0, None, None, None, None],
             [
                 {
                     "value": 0,
-                    "label": "fred",
-                    "import_value": "fred",
-                    "pinned": False,
-                    "count": 1,
-                    "count_ex_filtered": 1,
-                },
-                {
-                    "value": 1,
                     "label": "33.1",
                     "import_value": "33.1",
                     "pinned": False,
                     "count": 3,
                     "count_ex_filtered": 3,
+                },
+                {
+                    "value": 1,
+                    "label": "fred",
+                    "import_value": "fred",
+                    "pinned": False,
+                    "count": 1,
+                    "count_ex_filtered": 1,
                 },
             ],
         ),
@@ -207,14 +209,83 @@ def test_levels_are_trimmed_when_counts_reach_zero(
 
     assert_levels_must_equal(column.dlevels, expected_levels)
 
+@pytest.mark.parametrize(
+    ("measure_type_before", "values_before", "values_after", "levels_after"),
+    [
+        (
+            MeasureType.ORDINAL,
+            [321, 123, 444],
+            ["321", "123", "444", "", ""],
+            [
+                {"value": 0, "label": "123"},
+                {"value": 1, "label": "321"},
+                {"value": 2, "label": "444"},
+            ],
+        ),
+        (
+            MeasureType.CONTINUOUS,
+            [127.3, 543.2, 445.3],
+            ["127.3", "543.2", "445.3", "", ""],
+            [
+                {"value": 0, "label": "127.3"},
+                {"value": 1, "label": "445.3"},
+                {"value": 2, "label": "543.2"},
+            ],
+        ),
+        (
+            MeasureType.CONTINUOUS,
+            [123, 543, 444],
+            ["123", "543", "444", "", ""],
+            [
+                {"value": 0, "label": "123"},
+                {"value": 1, "label": "444"},
+                {"value": 2, "label": "543"},
+            ],
+        ),
+        (
+            MeasureType.ID,
+            ["apple", "pear", "banana"],
+            ["apple", "pear", "banana", "", ""],
+            [
+                {"value": 0, "label": "apple"},
+                {"value": 1, "label": "banana"},
+                {"value": 2, "label": "pear"},
+            ],
+        ),
+    ],
+)
+def test_column_to_text_nominal(
+    empty_dataset: DuckDataSet,
+    measure_type_before: MeasureType,
+    values_before: list[int],
+    values_after: list[str],
+    levels_after: list[dict[str, str]],
+):
+    """test different column type transitions"""
 
-@pytest.mark.skip(reason="TODO")
+    dataset = empty_dataset
+    dataset.set_row_count(5)
+
+    column = add_column_to_dataset(dataset, measure_type_before, values_before)
+    column.change(data_type=DataType.TEXT, measure_type=MeasureType.NOMINAL)
+
+    for index, value in enumerate(values_after):
+        assert_cell_equals(column, index, value)
+        #assert column.get_value(index) == value
+
+    assert_levels_must_equal(column.dlevels, levels_after)
+
+
+def assert_cell_equals(column: DuckColumn, index: int, expected):
+    assert column.get_value(index) == expected
+
+
 @pytest.mark.parametrize(
     ("values_before", "values_after", "dps"),
     [
-        (["123.12", "fred"], [123.12, NAN], 2),
-        (["123", "456"], [123, 456], 0),
-        (["123.2", "456,1"], [123.2, NAN], 1),  # euro float
+        (["123.12", "fred", ""], [123.12, NAN, NAN], 2),
+        (["123", "456", ""], [123, 456, NAN], 0),
+        (["123.2", "456,1", ""], [123.2, NAN, NAN], 1),  # euro float
         # (["123", "456,1"], [123, 456.1], 1),  # TODO
     ],
 )
@@ -232,7 +303,7 @@ def test_column_text_to_decimal(
     column = ds.append_column("fred")
     column.set_data_type(DataType.TEXT)
     for i, v in enumerate(values_before):
-        column.insert_level(i, v)
+        column.append_level(i, v)
         column.set_value(i, i)
 
     # WHEN i change its data type to decimal
@@ -328,7 +399,7 @@ def test_set_levels_int(toothgrowth_dataset: DuckDataSet):
     ]
 
     column = dataset["dose"]
-    column.set_levels(levels)
+    column.change(levels=levels)
 
     assert_levels_must_equal(column.dlevels, dlevels)
 
@@ -360,8 +431,7 @@ def test_set_levels_text(empty_dataset: DuckDataSet):
     ]:
         column.set_value(row_no, value)
 
-    column.set_levels(
-        [
+    column.change(levels=[
             (0, "bob", "bob", False),
             (1, "fred", "fred", False),
             (2, "jim", "jim", False),
@@ -400,7 +470,7 @@ def test_set_levels_int_unpin(toothgrowth_dataset: DuckDataSet):
 
     # pin the 1000 level
     levels = alter_levels(dose.levels, {1000: {"pinned": True}})
-    dose.set_levels(levels)
+    dose.change(levels=levels)
 
     for index in itertools.chain(range(0, 20), range(30, 50)):
         # clear out the 500s and 1000s
@@ -424,13 +494,61 @@ def test_set_levels_int_unpin(toothgrowth_dataset: DuckDataSet):
 
     # unpin the 1000 level
     levels = alter_levels(dose.levels, {1000: {"pinned": False}})
-    dose.set_levels(levels)
+    dose.change(levels=levels)
 
     assert_levels_must_equal(
         dose.dlevels,
         [
             {
                 "value": 2000,
+            },
+        ],
+    )
+
+def test_delete_rows(toothgrowth_dataset: DuckDataSet):
+    """test row deletion"""
+    dataset = toothgrowth_dataset
+
+    assert_levels_must_equal(
+        dataset["supp"].dlevels,
+        [
+            {
+                "import_value": "OJ",
+            },
+            {
+                "import_value": "VC",
+            },
+        ],
+    )
+
+    dataset.delete_rows(10, 54)
+
+    assert dataset.row_count == 15
+
+    assert_levels_must_equal(
+        dataset["dose"].dlevels,
+        [
+            {
+                "value": 500,
+                "count": 10,
+            },
+            {
+                "value": 2000,
+                "count": 5,
+            },
+        ],
+    )
+
+    assert_levels_must_equal(
+        dataset["supp"].dlevels,
+        [
+            {
+                "import_value": "OJ",
+                "count": 5,
+            },
+            {
+                "import_value": "VC",
+                "count": 10,
             },
         ],
     )
