@@ -30,7 +30,6 @@
 #endif
 
 using namespace std;
-using namespace boost;
 using namespace jamovi::coms;
 
 RInside *EngineR::_rInside = NULL;
@@ -269,17 +268,17 @@ void EngineR::setLibPaths(const std::string &moduleName)
     vector<string> sysR;
     vector<string> moduleR;
 
-    cPath = nowide::getenv("R_LIBS");
+    cPath = boost::nowide::getenv("R_LIBS");
     if (cPath != NULL)
         path = cPath;
 
-    algorithm::split(sysR, path, algorithm::is_any_of(PATH_DELIM), token_compress_on);
+    boost::algorithm::split(sysR, path, boost::algorithm::is_any_of(PATH_DELIM), boost::algorithm::token_compress_on);
 
-    cPath = nowide::getenv("JAMOVI_MODULES_PATH");
+    cPath = boost::nowide::getenv("JAMOVI_MODULES_PATH");
     if (cPath != NULL)
         path = cPath;
 
-    algorithm::split(moduleR, path, algorithm::is_any_of(PATH_DELIM), token_compress_on);
+    boost::algorithm::split(moduleR, path, boost::algorithm::is_any_of(PATH_DELIM), boost::algorithm::token_compress_on);
 
     ss << "base::.libPaths(c(";
 
@@ -376,7 +375,7 @@ Rcpp::List EngineR::resourcesPath(
 
     EngineR::createDirectories(fullPath);
 
-    fullPath += filesystem::unique_path("/%%%%%%%%%%%%%%%%").generic_string();
+    fullPath += boost::filesystem::unique_path("/%%%%%%%%%%%%%%%%").generic_string();
 
     if (suffix != "")
         fullPath += "." + suffix;
@@ -391,33 +390,33 @@ Rcpp::List EngineR::resourcesPath(
 void EngineR::createDirectories(const string &path)
 {
 #ifdef _WIN32
-    wstring wpath = nowide::widen(path);
-    filesystem::path fpath = filesystem::path(wpath);
+    wstring wpath = boost::nowide::widen(path);
+    boost::filesystem::path fpath = boost::filesystem::path(wpath);
 #else
-    filesystem::path fpath = filesystem::path(path);
+    boost::filesystem::path fpath = boost::filesystem::path(path);
 #endif
 
-    filesystem::create_directories(fpath);
+    boost::filesystem::create_directories(fpath);
 }
 
 void EngineR::initR()
 {
-    nowide::setenv("R_ENVIRON", "something-which-doesnt-exist", 1);
-    nowide::setenv("R_PROFILE", "something-which-doesnt-exist", 1);
-    nowide::setenv("R_PROFILE_USER", "something-which-doesnt-exist", 1);
-    nowide::setenv("R_ENVIRON_USER", "something-which-doesnt-exist", 1);
-    nowide::setenv("R_LIBS_SITE", "something-which-doesnt-exist", 1);
-    nowide::setenv("R_LIBS_USER", "something-which-doesnt-exist", 1);
+    boost::nowide::setenv("R_ENVIRON", "something-which-doesnt-exist", 1);
+    boost::nowide::setenv("R_PROFILE", "something-which-doesnt-exist", 1);
+    boost::nowide::setenv("R_PROFILE_USER", "something-which-doesnt-exist", 1);
+    boost::nowide::setenv("R_ENVIRON_USER", "something-which-doesnt-exist", 1);
+    boost::nowide::setenv("R_LIBS_SITE", "something-which-doesnt-exist", 1);
+    boost::nowide::setenv("R_LIBS_USER", "something-which-doesnt-exist", 1);
 
 #ifdef _WIN32
     // ensure C:\Windows\System32 is on the path
     // necessary for stan, because it invokes the compiler via cmd.exe
     string path;
-    char *cPath = nowide::getenv("PATH");
+    char *cPath = boost::nowide::getenv("PATH");
     if (cPath != NULL)
         path = cPath;
     path += ";C:\\Windows\\System32";
-    nowide::setenv("PATH", path.c_str(), 1);
+    boost::nowide::setenv("PATH", path.c_str(), 1);
 #endif
 
     _rInside = new RInside();
@@ -432,7 +431,7 @@ void EngineR::initR()
     _rInside->parseEvalQNT("base::options(max.print=1000)\n");
     _rInside->parseEvalQNT("base::options(digits=4)\n");
 
-    char *pandoc = nowide::getenv("PANDOCHOME");
+    char *pandoc = boost::nowide::getenv("PANDOCHOME");
 
     if (pandoc != NULL)
     {
@@ -512,18 +511,18 @@ void EngineR::initR()
 string EngineR::makeAbsolute(const string &paths)
 {
     vector<string> out;
-    algorithm::split(out, paths, algorithm::is_any_of(PATH_DELIM), token_compress_on);
+    boost::algorithm::split(out, paths, boost::algorithm::is_any_of(PATH_DELIM), boost::algorithm::token_compress_on);
 
     stringstream result;
     string sep = "";
 
-    filesystem::path here = Dirs::exeDir();
+    boost::filesystem::path here = Dirs::exeDir();
 
     for (string &p : out)
     {
-        system::error_code ec;
-        filesystem::path path = p;
-        path = canonical(path, here, ec);
+        boost::system::error_code ec;
+        boost::filesystem::path path = p;
+        path = boost::filesystem::canonical(path, here, ec);
 
         result << sep << path.generic_string();
 
