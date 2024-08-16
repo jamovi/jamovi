@@ -30,23 +30,26 @@ include_dirs = [
     path.join(tld, 'include') ]
 
 if os.name == 'nt':  # windows
-    libraries = [ "libboost_filesystem-vc143-mt-x64-1_81", "libboost_system-vc143-mt-x64-1_81", "shell32" ]
-    library_dirs = [ 'C:/local/boost_1_81_0/lib64-msvc-14.3' ]
+    libraries = [ "libboost_filesystem-vc143-mt-x64-1_84", "libboost_system-vc143-mt-x64-1_84", "shell32" ]
+    library_dirs = [ 'C:/local/boost_1_84_0/lib64-msvc-14.3' ]
     extra_compile_args = ["/D", "UNICODE"]
     extra_link_args = [ ]
-    include_dirs += [ 'C:/local/boost_1_81_0' ]
+    include_dirs += [ 'C:/local/boost_1_84_0' ]
+    protoc_path = 'C:\\rtools44\\x86_64-w64-mingw32.static.posix\\bin\\protoc.exe'
 
 elif os.uname()[0] == "Linux":
     libraries = [ "boost_filesystem", "boost_system" ]
     library_dirs = [ ]
     extra_compile_args = [ ]
     extra_link_args = [ "-Wl,-rpath,'$$ORIGIN/../lib'" ]
+    protoc_path = 'protoc'
 
 elif os.uname()[0] == "Darwin":
     libraries = [ "boost_filesystem", "boost_system" ]
     library_dirs = [ tld + '/../Frameworks' ]
     extra_compile_args = [ '-mmacosx-version-min=10.13' ]
     extra_link_args = [ "-framework", "Foundation", '-mmacosx-version-min=10.13' ]
+    protoc_path = 'protoc'
 else:
     raise RuntimeError("Shouldn't get here!")
 
@@ -77,7 +80,7 @@ if include_server:
     # build server/jamovi_pb.py
 
     rc = subprocess.call([
-        'protoc',
+        protoc_path,
         '--proto_path=' + path.join(here, 'jamovi/server'),
         '--python_out=' + path.join(here, 'jamovi/server'),
         path.join(here, 'jamovi/server/jamovi.proto')])
