@@ -36,7 +36,7 @@ endif
 
 SRCDIR ?= $(dir $(firstword $(MAKEFILE_LIST)))
 TARGET = jamovi-engine
-CXXFLAGS += -std=c++11
+CXXFLAGS += -std=c++17
 INCLUDES += -I.
 
 ifeq ($(os),OSX)
@@ -70,12 +70,14 @@ else
 	BASE_MODULE_PATH ?= $(SRCDIR)/../../modules/base/R
 	LDFLAGS +=	-L$(R_HOME)/bin/x64 \
 				-L$(BASE_MODULE_PATH)/RInside/lib/x64 \
-				-LC:/rtools43/x86_64-w64-mingw32.static.posix/lib \
+				-LC:/rtools44/x86_64-w64-mingw32.static.posix/lib \
 				-LC:/nanomsg/lib \
 				-lboost_filesystem-mt-x64 \
 				-lboost_system-mt-x64 \
 				-lboost_nowide-mt-x64 \
-				-lbcrypt
+				-lbcrypt \
+				-lprotobuf -labsl_log_internal_check_op -labsl_leak_check -labsl_die_if_null -labsl_log_internal_conditions -labsl_log_internal_message -labsl_examine_stack -labsl_log_internal_format -labsl_log_internal_proto -labsl_log_internal_nullguard -labsl_log_internal_log_sink_set -labsl_log_sink -labsl_log_entry -labsl_flags_internal -labsl_flags_marshalling -labsl_flags_reflection -labsl_flags_private_handle_accessor -labsl_flags_commandlineflag -labsl_flags_commandlineflag_internal -labsl_flags_config -labsl_flags_program_name -labsl_log_initialize -labsl_log_globals -labsl_vlog_config_internal -labsl_log_internal_fnmatch -labsl_log_internal_globals -labsl_raw_hash_set -labsl_hash -labsl_city -labsl_low_level_hash -labsl_hashtablez_sampler -labsl_statusor -labsl_status -labsl_cord -labsl_cordz_info -labsl_cord_internal -labsl_cordz_functions -labsl_exponential_biased -labsl_cordz_handle -labsl_crc_cord_state -labsl_crc32c -labsl_crc_internal -labsl_crc_cpu_detect -labsl_bad_optional_access -labsl_strerror -labsl_str_format_internal -labsl_synchronization -labsl_graphcycles_internal -labsl_kernel_timeout_internal -labsl_stacktrace -labsl_symbolize -ldbghelp -labsl_debugging_internal -labsl_demangle_internal -labsl_malloc_internal -labsl_time -labsl_civil_time -labsl_time_zone -labsl_bad_variant_access -lutf8_validity -lutf8_range -labsl_strings -labsl_strings_internal -labsl_string_view -labsl_base -ladvapi32 -labsl_spinlock_wait -labsl_int128 -labsl_throw_delegate -labsl_raw_logging_internal -labsl_log_severity
+
 
 	# _WIN32_WINNT is for SHGetKnownFolderPath
 
