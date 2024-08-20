@@ -1099,8 +1099,10 @@ class Instance:
                 if self._mm is not None:
                     self._mm.close()
 
-                self._mm = MemoryMap.create(self._buffer_path, 4 * 1024 * 1024)
-                model.dataset = DataSet.create(self._mm)
+                assert self._buffer_path is not None
+
+                self._mm = StoreFactory.create(self._buffer_path, 'shmem')
+                model.dataset = self._mm.create_dataset()
 
                 ioloop = asyncio.get_event_loop()
 
