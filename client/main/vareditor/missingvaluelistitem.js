@@ -105,7 +105,12 @@ const MissingValueListItem = function(value) {
 
                 let count = this._startsWithValidOps($formula);
 
-                sel.setBaseAndExtent($formula[0].firstChild, 0, $formula[0].firstChild, count);
+                let textNode = $formula[0].firstChild;
+                if (textNode === null) {
+                    textNode = document.createTextNode('');
+                    $formula[0].appendChild(textNode);
+                }
+                sel.setBaseAndExtent(textNode, 0, textNode, count);
                 $formula[0].focus();
 
                 $opEdit.addClass('is-active');
@@ -161,13 +166,18 @@ const MissingValueListItem = function(value) {
         }
 
         let sel = window.getSelection();
-        let range = sel.getRangeAt(0);
-        let start = range.startOffset;
-        let end = range.endOffset;
+
+        let start = 0;
+        let end = 0;
         let offsets = {
             start: 0,
             end: 0
         };
+        if (sel.baseNode !== null) {
+            let range = sel.getRangeAt(0);
+            start = range.startOffset;
+            end = range.endOffset;
+        }
 
         let found = false;
         for (let i = 0; i < validOps.length; i++) {
@@ -208,13 +218,18 @@ const MissingValueListItem = function(value) {
             return true;
 
         let sel = window.getSelection();
-        let range = sel.getRangeAt(0);
-        let start = range.startOffset;
-        let end = range.endOffset;
+
+        let start = 0;
+        let end = 0;
         let offsets = {
             start: 0,
             end: 0
         };
+        if (sel.baseNode !== null) {
+            let range = sel.getRangeAt(0);
+            start = range.startOffset;
+            end = range.endOffset;
+        }
 
         if (text.length === 1 || (isRealTime && start <= 1)) {
             for (let i = 0; i < validOps.length; i++) {
