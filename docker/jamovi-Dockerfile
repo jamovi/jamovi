@@ -1,6 +1,6 @@
 
 FROM ubuntu:jammy as base
-FROM jamovi/jamovi-deps:2.5.0 as r-base
+FROM jamovi/jamovi-deps:2.6 as r-base
 
 
 ##### NODE #####
@@ -174,8 +174,6 @@ WORKDIR /tmp/source/scatr
 RUN jmc --install . --to /usr/lib/jamovi/modules --rhome $R_HOME --rlibs /usr/lib/jamovi/modules/base/R
 
 WORKDIR /tmp/source
-RUN git clone https://github.com/raviselker/surveymv.git
-RUN jmc --install surveymv --to /usr/lib/jamovi/modules --rhome $R_HOME --rlibs /usr/lib/jamovi/modules/base/R
 RUN git clone https://github.com/davidfoxcroft/lsj-data.git /usr/lib/jamovi/modules/lsj-data
 RUN git clone https://github.com/jamovi/r-datasets.git /usr/lib/jamovi/modules/r-datasets
 
