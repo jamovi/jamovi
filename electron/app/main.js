@@ -667,14 +667,12 @@ const createWindow = function(open) {
         url += open.id + '/';
 
     if (open.open) {
+
         let filePath = open.open;
-        if (filePath.startsWith('http://') || filePath.startsWith('https://')) {
-            url = `${ url }?open=${ filePath }`;
-        }
-        else {
+        if ( ! (filePath.startsWith('http://') || filePath.startsWith('https://')))
             filePath = path.resolve(filePath);
-            url = `${ url }?open=${ encodeURIComponent(filePath) }`;
-        }
+
+        url = `${ url }?open=${ encodeURIComponent(filePath) }`;
 
         if (open.temp) {
             url = `${ url }&temp=1`;

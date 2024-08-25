@@ -423,7 +423,7 @@ $(document).ready(async() => {
     $mainTable.attr('role', 'region');
     $mainTable.attr('aria-label', 'Spreadsheet');
     //$mainTable.attr('aria-live', 'polite');
-    
+
 
     let $results = $('#results');
     $results.attr('role', 'region');
@@ -784,7 +784,11 @@ $(document).ready(async() => {
             instanceId = match[1];
 
         const params = new URLSearchParams(window.location.search);
+
         let filePath = params.get('open');
+        if (filePath) {
+            filePath = decodeURIComponent(filePath);
+        }
 
         const options = {
             authToken: null,
@@ -795,13 +799,6 @@ $(document).ready(async() => {
             options.temp = true;
             if (params.get('title'))
                 options.title = decodeURI(params.get('title'));
-        }
-
-        if (filePath) {
-            if (filePath.startsWith('http://') || filePath.startsWith('https://'))
-                {} // do nothing
-            else
-                filePath = decodeURI(filePath);
         }
 
         const notify = (progress) => {
