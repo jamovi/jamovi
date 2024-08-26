@@ -157,10 +157,10 @@ const VariablesListBox = function (params) {
         this._rendered = true;
     });
 
-    this._override('testValue', (baseFunction, item, rowIndex, columnName) => {
+    this._override('testValue', (baseFunction, item, silent, rowIndex, columnName) => {
         let allowItem = true;
         if (baseFunction !== null) {
-            allowItem = baseFunction.call(this, item, rowIndex, columnName);
+            allowItem = baseFunction.call(this, item, silent, rowIndex, columnName);
             if (!allowItem)
                 return allowItem;
         }
@@ -169,7 +169,7 @@ const VariablesListBox = function (params) {
         if (itemValue.format.name === 'variable' && item.properties !== undefined)
             allowItem = this._checkIfVariableTypeAllowed(item.properties);
 
-        if (!allowItem)
+        if ( ! allowItem &&  ! silent)
             this._flashIcons();
 
         return allowItem;

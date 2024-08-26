@@ -4,6 +4,7 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 const Tracker = require('./itemtracker');
+const focusLoop = require('../common/focusloop');
 
 const b64 = require('../common/utils/b64');
 const { contextMenuListener } = require('../common/utils');
@@ -28,6 +29,8 @@ const ElementView = Backbone.View.extend({
         this.fmt = data.fmt;
 
         this.$el.addClass('jmv-results-item');
+        this.errorMsgId = focusLoop.getNextAriaElementId('errormsg');
+        this.$el.attr('aria-errormessage', this.errorMsgId);
         this.$el.attr('data-name', b64.enc(this.model.attributes.name));
 
         contextMenuListener(this.$el[0], event => {
@@ -39,7 +42,7 @@ const ElementView = Backbone.View.extend({
             return false;
         });
 
-        this.$errorPlacement = $('<div class="jmv-results-error-placement"></div>');
+        this.$errorPlacement = $(`<div id="${this.errorMsgId}" class="jmv-results-error-placement"></div>`);
         this.$errorPlacement.appendTo(this.$el);
         this.addIndex = 1;
 
@@ -57,12 +60,14 @@ const ElementView = Backbone.View.extend({
                 this.$errorPlacement.find('.jmv-results-error-message').text(error.message);
             else {
                 this.$el.addClass('jmv-results-error');
-                $(`<div class="jmv-results-error-message">${ error.message }</div>`).appendTo(this.$errorPlacement);
+                $(`<div class="error-box"><div class="icon"></div><div class="jmv-results-error-message">${ error.message }</div></div>`).appendTo(this.$errorPlacement);
             }
+            this.$el.attr('aria-invalid', true);
         }
         else {
             this.$el.removeClass('jmv-results-error');
             this.$errorPlacement.empty();
+            this.$el.removeAttr('aria-invalid');
         }
     },
 
