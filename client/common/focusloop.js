@@ -54,7 +54,15 @@ class FocusLoop extends EventEmitter {
                 case 'setFocusDefault':
                     this._fromBroadcast = true;
                     break;
+                case 'processKeyObj':
+                    this._fromBroadcast = true;
+                    break;
             }
+            if (this._isMainWindow && data.id === 'updateBaseKeyPaths')
+                this._fromBroadcast = true;
+            else if ( ! this._isMainWindow && data.id === 'setBaseKeyPaths')
+                this._fromBroadcast = true;
+
             if (this._fromBroadcast) {
                 this[data.id].apply(this, data.args);
                 this._fromBroadcast = false;
@@ -63,6 +71,15 @@ class FocusLoop extends EventEmitter {
 
         if (desktopMode) {
             window.addEventListener('keydown', (event) => {
+                let keyObj = this.eventToKeyObj(event);
+                if (this.processKeyObj(keyObj) === false) {
+                    this.broadcast('processKeyObj', [keyObj], false);
+                    if (this._isMainWindow === false && this.keyObjToKeyPath(keyObj) in this._baseKeyPaths)
+                        event.preventDefault();
+                }
+                else
+                    event.preventDefault();
+
                 if (event.altKey && event.key === 'F4')
                     return;
 
@@ -127,6 +144,19 @@ class FocusLoop extends EventEmitter {
         }
         else {
             window.addEventListener('keydown', (event) => {
+                let keyObj = this.eventToKeyObj(event);
+                if (this.processKeyObj(keyObj) === false) {
+                    if (this._isMainWindow === false) {
+                        let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
+                        if (transfer) {
+                            event.preventDefault();
+                            this.broadcast('processKeyObj', [keyObj], true);  
+                        }
+                    }
+                }
+                else
+                    event.preventDefault();
+
                 if (event.altKey && event.key !== 'Alt') // as modifier
                     this._starting = false
                 else if (event.key === 'Alt')
@@ -194,6 +224,8 @@ class FocusLoop extends EventEmitter {
 
             this.isBluring = false;
             this.isBlured = true;
+
+            this.emit('blur', event);
         });
 
         if (this._isMainWindow) {
@@ -251,6 +283,9 @@ class FocusLoop extends EventEmitter {
 
             this._mouseClicked = false;
         });
+
+        if ( ! this._isMainWindow)
+            this.updateBaseKeyPaths();
     }
 
     setDefaultFocusControl(defaultFocusControl) {
@@ -999,10 +1034,127 @@ class FocusLoop extends EventEmitter {
         });
     }
 
+    addKeyboardListener(keyPath, handle, description) {
+
+        let keyObj = this.keyPathToKeyObj(keyPath);
+
+        keyPath = this.keyObjToKeyPath(keyObj); // to normalise any inconsistancies;
+        if ( ! this._keyPaths)
+            this._keyPaths = { };
+        this._keyPaths[keyPath] = description;
+
+        let ctrlKey = keyObj.ctrlKey;
+        let altKey = keyObj.altKey;
+        let shiftKey = keyObj.shiftKey;
+
+        if ( ! this.list)
+            this.list = { };
+
+        let handles = this.list[ctrlKey ? 'Ctrl' : '-'];
+        if ( ! handles) {
+            handles = { };
+            this.list[ctrlKey ? 'Ctrl' : '-'] = handles;
+        }
+
+        if ( ! handles[altKey ? 'Alt' : '-'])
+            handles[altKey ? 'Alt' : '-'] = { };
+        handles = handles[altKey ? 'Alt' : '-'];
+
+        if ( ! handles[shiftKey ? 'Shift' : '-'])
+            handles[shiftKey ? 'Shift' : '-'] = { };
+        handles = handles[shiftKey ? 'Shift' : '-'];
+
+        let key = keyObj.key;
+
+        handles[key] = { handle, description };
+
+        if (this._isMainWindow)
+            this.broadcast('setBaseKeyPaths', [this._keyPaths], false);
+    }
+
+    updateBaseKeyPaths() {
+        if (this._isMainWindow)
+            this.broadcast('setBaseKeyPaths', [this._keyPaths], false);
+        else
+            this.broadcast('updateBaseKeyPaths', [], false);
+    }
+
+    setBaseKeyPaths(keyPaths) {
+        if (this._isMainWindow)
+            return;
+
+        this._baseKeyPaths = keyPaths;
+    }
+
+    eventToKeyObj(event) {
+        let ctrlKey = event.ctrlKey || event.metaKey;
+        let altKey = event.altKey;
+        let shiftKey = event.shiftKey;
+        let key = event.code.toLowerCase();
+
+        return {ctrlKey, altKey, shiftKey, key};
+    }
+
+    keyPathToKeyObj(keyPath) {
+        let keys = keyPath.split('+');
+
+        let ctrlKey = keys.includes('Ctrl');
+        let altKey = keys.includes('Alt');
+        let shiftKey = keys.includes('Shift');
+        let key = keys[keys.length - 1].toLowerCase();
+
+        return {ctrlKey, altKey, shiftKey, key};
+    }
+
+    keyObjToKeyPath(keyObj) {
+        let list = [];
+        if (keyObj.ctrlKey)
+            list.push('Ctrl');
+        if (keyObj.altKey)
+            list.push('Alt');
+        if (keyObj.shiftKey)
+            list.push('Shift');
+
+        list.push(keyObj.key);
+
+        return list.join('+');
+    }
+
+    processKeyObj(keyObj) {
+        if (this._fromBroadcast && this._isMainWindow === false)
+            return false;
+
+        let ctrlKey = keyObj.ctrlKey;
+        let altKey = keyObj.altKey;
+        let shiftKey = keyObj.shiftKey;
+
+        if ( ! this.list)
+            return false;
+
+        let handles = this.list[ctrlKey ? 'Ctrl' : '-'];
+        if ( ! handles) 
+            return false;
+
+        handles = handles[altKey ? 'Alt' : '-'];
+        if ( ! handles) 
+            return false;
+
+        handles = handles[shiftKey ? 'Shift' : '-'];
+        if ( ! handles) 
+            return false;
+
+        let key = keyObj.key;
+
+        let handleInfo = handles[key];
+
+        if ( ! handleInfo)
+            return false;
+
+        return handleInfo.handle.call();  
+    }
+
     async _handleKeyPress(event) {
         this._mouseClicked = false;
-
-        
 
         if (this.focusMode === 'default')
             return;
