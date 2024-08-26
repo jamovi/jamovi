@@ -43,13 +43,13 @@ const TargetListValueFilter = function() {
         this._data.splice(rowIndex, 1);
     };
 
-    this.testValue = function(filterType, value, rowIndex, columnName) {
+    this.testValue = function(filterType, value, rowIndex, columnName, silent=false) {
         let filter = this['testValue_' + filterType];
         if (filter === undefined) {
             console.log('Unknown List Value Filter "' + filterType + '"');
             return true;
         }
-        return filter.call(this, value, rowIndex, columnName);
+        return filter.call(this, value, rowIndex, columnName, silent);
     };
 
     this.testValue_none = function(value, rowIndex, columnName) {

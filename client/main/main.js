@@ -28,7 +28,7 @@ const I18n = require('../common/i18n');
 const Instance = require('./instance');
 const Notify = require('./notification');
 import { UserFacingError } from './errors';
-const focusLoop = require('../common/focusloop');
+const Keyboard = require('../common/focusloop');
 
 require('./utils/headeralert');
 
@@ -218,53 +218,44 @@ $(document).ready(async() => {
     if (host.isElectron)
         window.$body.addClass('electron');
 
-    $(window).on('keydown', function(event) {
-        if (event.key === 'F10' || event.keyCode === 121) {
-            host.toggleDevTools();
-        }
-        else if (event.key === 'F9' || event.keyCode === 120) {
-            instance.restartEngines();
-        }
-        else if (event.ctrlKey || event.metaKey) {
-            if (event.key === 's') {
-                ActionHub.get('save').do();
-                event.preventDefault();
-            }
-            else if (event.key === 'o')
-                ActionHub.get('open').do();
-            else if (event.key === 'F4' && host.isElectron)
-                host.closeWindow();
-        }
-        else if (event.key === 'Escape') {
-            if (focusLoop.focusMode === 'default')
-                optionspanel.hideOptions();
-        }
-    });
 
-    focusLoop.on('focus', (event) => {
-        if (focusLoop.inAccessibilityMode())
+    Keyboard.addKeyboardListener('F10', () => host.toggleDevTools(), 'Toggle Developer Tools');
+    Keyboard.addKeyboardListener('F9',  () => instance.restartEngines(), 'Restart jamovi engines');
+    Keyboard.addKeyboardListener('Ctrl+KeyS', () => ActionHub.get('save').do(), 'Save current workspace');
+    Keyboard.addKeyboardListener('Ctrl+KeyO', () => ActionHub.get('open').do(), 'Open data file');
+    Keyboard.addKeyboardListener('Escape', () => {
+        if (Keyboard.focusMode === 'default')
+            optionspanel.hideOptions();
+    }, 'Hide analysis options');
+    if (host.isElectron)
+        Keyboard.addKeyboardListener('Ctrl+F4', () => host.closeWindow(), 'Close jamovi application');
+
+    Keyboard.on('focus', (event) => {
+        if (Keyboard.inAccessibilityMode())
             ribbonModel.getSelectedTab().$el[0].focus();
+        else
+        Keyboard.setFocusMode('default');
     });
 
-    focusLoop.on('focusModeChanged', (options) => {
-        if (focusLoop.inAccessibilityMode()) {
+    Keyboard.on('focusModeChanged', (options) => {
+        if (Keyboard.inAccessibilityMode()) {
             keyboardJS.pause('accessibility');
-            if (focusLoop.focusMode === 'shortcuts') {
+            if (Keyboard.focusMode === 'shortcuts') {
                 if (backstageModel.get('activated')) {
-                    focusLoop.updateShortcuts({ shortcutPath: 'F' });
+                    Keyboard.updateShortcuts({ shortcutPath: 'F' });
                     setTimeout(() => {
-                        focusLoop.enterFocusLoop(backstage.el, { withMouse: true });
+                        Keyboard.enterFocusLoop(backstage.el, { withMouse: true });
                     }, 100);
                 }
                 else
                     ribbonModel.getSelectedTab().$el[0].focus();
             }
         }
-        else if (focusLoop.focusMode === 'default') {
+        else if (Keyboard.focusMode === 'default') {
 
             if (backstageModel.get('activated')) {
                 setTimeout(() => {
-                    focusLoop.enterFocusLoop(backstage.el, { withMouse: false });
+                    Keyboard.enterFocusLoop(backstage.el, { withMouse: false });
                 }, 100);
 
             }
@@ -275,7 +266,7 @@ $(document).ready(async() => {
                     element[0].focus();
             }
         }
-        else if (focusLoop.focusMode === 'keyboard' || focusLoop.focusMode === 'hover')
+        else if (Keyboard.focusMode === 'keyboard' || Keyboard.focusMode === 'hover')
             keyboardJS.pause('accessibility');
 
     });
@@ -404,7 +395,7 @@ $(document).ready(async() => {
     splitPanel.addPanel('results', { adjustable: true, fixed: true, anchor: 'right' });
 
     let $mainOptions = $('#main-options');
-    focusLoop.applyShortcutOptions($mainOptions[0], {
+    Keyboard.applyShortcutOptions($mainOptions[0], {
         key: 'O',
         maintainAccessibility: true,
         action: (event) => {
@@ -546,7 +537,7 @@ $(document).ready(async() => {
         if ('activated' in event.changed) {
             mainTable.setActive( ! event.changed.activated);
             if (! event.changed.activated) {
-                if (focusLoop.inAccessibilityMode())
+                if (Keyboard.inAccessibilityMode())
                     ribbonModel.getSelectedTab().$el[0].focus();
             }
         }

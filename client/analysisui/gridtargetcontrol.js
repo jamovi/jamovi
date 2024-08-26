@@ -233,7 +233,7 @@ const TargetListSupport = function(supplier) {
         return $dropArea;
     };
 
-    this.preprocessItems = function(items, from, action) {
+    this.preprocessItems = function(items, from, action, silent=false) {
 
         let intoSelf = from === this;
         if (from === this._supplier) {
@@ -249,7 +249,7 @@ const TargetListSupport = function(supplier) {
         let testedItems = [];
         for (let i = 0; i < data.items.length; i++) {
             let permitted = data.items[i].properties === undefined || data.items[i].properties.permitted === undefined || data.items[i].properties.permitted === true;
-            if (intoSelf || (this.testValue(data.items[i]) && permitted)) {
+            if (intoSelf || (this.testValue(data.items[i], silent) && permitted)) {
                 testedItems.push(data.items[i]);
             }
         }
@@ -603,7 +603,7 @@ const GridTargetContainer = function(params) {
         let label = this.getTranslatedProperty('label');
         if (this.gainOnClick) {
             let action = this.getDefaultTransferAction();
-            let selectedItems = this.getSupplierItems(action);
+            let selectedItems = this.getSupplierItems(action, true);
             if (selectedItems.length === 0)
                 this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Add selected items to {0} list', [label])); 
             else if (selectedItems.length === 1) 
@@ -777,12 +777,12 @@ const GridTargetContainer = function(params) {
     };
 
 
-    this.getSupplierItems = function(action) {
+    this.getSupplierItems = function(action, silent) {
         let items = this._supplier.getSelectedItems();
 
         if (items.length > 0 && this.targetGrid.isSingleItem && this.targetGrids.length === 1)
             items = [items[0]];
-        return this.targetGrid.preprocessItems(items, this._supplier, action);
+        return this.targetGrid.preprocessItems(items, this._supplier, action, silent);
     };
 
     this.addRawToOption = function(item, key, insert) {

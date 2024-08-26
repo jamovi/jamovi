@@ -962,8 +962,8 @@ const OptionListControl = function (params) {
         }
     };
 
-    this.testValue = function(item, rowIndex, columnName) {
-        return this._listFilter.testValue(this.getPropertyValue("valueFilter"), item.value, rowIndex, columnName);
+    this.testValue = function(item, silent, rowIndex, columnName) {
+        return this._listFilter.testValue(this.getPropertyValue("valueFilter"), item.value, rowIndex, columnName, silent);
     };
 
 

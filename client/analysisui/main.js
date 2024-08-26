@@ -25,7 +25,7 @@ const LayoutActionManager = require('./layoutactionmanager');
 const RequestDataSupport = require('./requestdatasupport');
 const GridOptionListControl = require('./gridoptionlistcontrol');
 const ApplyMagicEvents = require('./applymagicevents').applyMagicEvents;
-const focusLoop = require('../common/focusloop');
+const Keyboard = require('../common/focusloop');
 
 const I18n = require("../common/i18n");
 
@@ -237,16 +237,21 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
         closeOptions();
     });
 
-    let focusToken = focusLoop.addFocusLoop(document.body);
-    focusToken.on('focusleave', closeOptions);
-    focusLoop.on('focus', (event) => {
-        if (focusLoop.inAccessibilityMode()) {
-            focusLoop.enterFocusLoop(document.body, { withMouse: false });
-        }
+    let optionsBlock = document.getElementById('options-block');
+    let focusToken = Keyboard.addFocusLoop(optionsBlock);
+    //focusToken.on('focusleave', closeOptions);
+    Keyboard.on('focus', (event) => {
+        Keyboard.enterFocusLoop(optionsBlock, { withMouse: false });
     });
-    focusLoop.setFocusMode(focusMode);
-    if (focusLoop.inAccessibilityMode())
-        focusLoop.enterFocusLoop(document.body, { withMouse: false });
+    Keyboard.on('blur', (event) => {
+        Keyboard.leaveFocusLoop(optionsBlock, false);
+    });
+    optionsBlock.addEventListener('focus', (event) => {
+        Keyboard.enterFocusLoop(optionsBlock, { withMouse: false });
+    });
+    Keyboard.setFocusMode(focusMode);
+    
+    Keyboard.enterFocusLoop(optionsBlock, { withMouse: false });
 
     let $optionsBlock = $('.jmv-options-block');
     let $title = $('.silky-options-title');
@@ -435,6 +440,6 @@ function mouseDown(event) {
 }
 
 function closeOptions() {
-    focusLoop.setFocusMode('default');
+    Keyboard.setFocusMode('default');
     parentFrame.send("hideOptions", null);
 }
