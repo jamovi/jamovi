@@ -72,7 +72,7 @@ def batched(iterable, n):
 class DuckDataSet(DataSet):
     """A data set backed by a duckdb database"""
 
-    _id: str
+    _id: int
     _store: "DuckStore"
     _columns_by_index: list[DuckColumn]
     _columns_by_iid: dict[int, DuckColumn]
@@ -85,10 +85,9 @@ class DuckDataSet(DataSet):
     _cache_filter_state: OrderedDict[int, bool]
 
     @staticmethod
-    def create(store: "DuckStore") -> DuckDataSet:
+    def create(store: "DuckStore", dataset_id: int) -> DuckDataSet:
         """Create a data set in the duckdb store"""
 
-        dataset_id = str(uuid4())
         store.attach()
         store.execute("CREATE SEQUENCE IF NOT EXISTS column_iids START WITH 1")
         store.execute(f"""
@@ -136,7 +135,7 @@ class DuckDataSet(DataSet):
         store.detach()
         return DuckDataSet(dataset_id, store)
 
-    def __init__(self, dataset_id: str, store: "DuckStore"):
+    def __init__(self, dataset_id: int, store: "DuckStore"):
         self._id = dataset_id
         self._store = store
         self._columns_by_iid = {}

@@ -14,7 +14,7 @@ from time import monotonic
 
 from .instance import Instance
 from .analyses import AnalysisIterator
-from .enginemanager import EngineManager
+from .engine import EngineFactory
 from .scheduler import Scheduler
 from . import i18n
 
@@ -91,12 +91,11 @@ class Session(dict):
 
         self._scheduler = Scheduler(1, 3, self._analyses, self._modules)
 
-        task_queue_url = conf.get('task_queue_url')
+        task_queue_url: str | None = conf.get('task_queue_url')
         if task_queue_url is not None:
-            from .remotepool import RemotePool
-            self._runner = RemotePool(task_queue_url, self._scheduler.queue)
+            self._runner = EngineFactory.create('remote', task_queue_url, self._scheduler.queue, conf)
         else:
-            self._runner = EngineManager(self._path, self._scheduler.queue, conf)
+            self._runner = EngineFactory.create('shmem', self._path, self._scheduler.queue, conf)
 
         self._runner.add_engine_listener(self._on_engine_event)
 
@@ -166,8 +165,7 @@ class Session(dict):
         return instance
 
     async def restart_engines(self):
-        if isinstance(self._runner, EngineManager):
-            await self._runner.restart_engines()
+        await self._runner.restart_engines()
 
     def rerun_analyses(self):
         for analysis in self._analyses:
