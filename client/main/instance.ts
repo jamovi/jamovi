@@ -283,7 +283,7 @@ const Instance = Backbone.Model.extend({
                     else {
 
                         const data = new FormData();
-                        data.append('options', JSON.stringify(Object.assign({ path: file }, options)));
+                        data.append('options', JSON.stringify(Object.assign({ path: encodeURIComponent(file) }, options)));
 
                         response = await fetch('open?p=', {
                             method: 'POST',
@@ -893,7 +893,7 @@ const Instance = Backbone.Model.extend({
                 if (response.name !== 'empty')
                     this.set('selectedAnalysis', analysis);
             }
-            else {       
+            else {
                 analysis.results.index = response.index;
                 analysis.index = response.index - 1;
 
@@ -907,7 +907,7 @@ const Instance = Backbone.Model.extend({
                     analysis.setup(options);
                 }
 
-                if (response.results) 
+                if (response.results)
                     analysis.setResults({
                         results: response.results,
                         options: !optionsApplied ? options : undefined,
