@@ -66,7 +66,9 @@ class InfoBox extends HTMLElement {
                 && info.status === this._displayInfo.status
                 && info['message-src'] === this._displayInfo['message-src']) {
 
-            if (info['message-src'] && info.data) {
+            if (this._loaded === false)
+                this._displayInfo = info;
+            else if (info['message-src'] && info.data) {
                 // this allows the iframe to receive updates
                 this._iframe.contentWindow.postMessage(info.data);
             }
@@ -82,7 +84,6 @@ class InfoBox extends HTMLElement {
 
         this._visible = true;
         this._processEnterKey = false;
-
         this._displayInfo = info;
         let show = true;
 
@@ -91,6 +92,7 @@ class InfoBox extends HTMLElement {
             if (params.cancelable === undefined)
                 params.cancelable = false;
 
+            this._loaded = false;
             this._local.classList.remove('external');
             this._body.classList.add('initial-size');
             this._host.setAttribute('message-src', info['message-src'] || '');
@@ -260,6 +262,11 @@ class InfoBox extends HTMLElement {
                 if (this._iframe)
                     this._remote.removeChild(this._iframe);
                 this._iframe = document.createElement('iframe');
+                this._iframe.onload = () => {
+                    this._loaded = true;
+                    if (this._displayInfo['message-src'] && this._displayInfo.data)
+                        this._iframe.contentWindow.postMessage(this._displayInfo.data);
+                };
                 this._iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms';
                 this._iframe.setAttribute('src', src);
                 this._remote.appendChild(this._iframe);
