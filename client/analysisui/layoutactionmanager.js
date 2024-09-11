@@ -66,7 +66,39 @@ const LayoutActionManager = function(view) {
         };
     };
 
-    //enable: (!((fred:(tom)||fred:pop||!tony:touch)&&steve:cat))
+    this._resolveBindCode = function(syntax, startIndex) {
+        let start = startIndex+1;
+        let open = 1;
+        let end = -1;
+        let code = 'return false;';
+        for (let i = start; i < syntax.length - 1; i++) {
+            if (syntax[i] === '{')
+                open += 1;
+            else if (syntax[i] === '}')
+                open -= 1;
+
+            if (open === 0) {
+                end = i;
+                break;
+            }
+        }
+
+        let sourceNames = [];
+        if (end !== -1) {
+            code = syntax.substring(start, end);
+            sourceNames = Array.from(new Set([...code.matchAll(/ui\['(.*?)'\]/g)].map(m => m[1])));  // finds all options used by snippet
+        }
+        else
+            console.log("WARNING: Code binding close } is missing.");
+
+        return {
+            bindFunction: new Function('ui', code),
+            startIndex: startIndex,
+            inverted: false,
+            endIndex: end === -1 ? syntax.length - 1 : end,
+            sourceNames: sourceNames
+        };
+    };
 
     this._resolveBindPart = function(syntax, startIndex) {
 
@@ -193,20 +225,22 @@ const LayoutActionManager = function(view) {
 
             i = this._nextNonWhiteChar(syntax, i);
 
-            if (syntax[i] === ')' || i >= syntax.length - 1 || i === -1) {
-                endIndex = i;
+            if (syntax[i] === ')' || syntax[i] === '}' || i >= syntax.length - 1 || i === -1) {
+                endIndex = i === -1 ? syntax.length - 1 : i;
                 break;
             }
 
             if (syntax[i] === '(' || (syntax[i] === '!' && syntax[this._nextNonWhiteChar(syntax, i + 1)] === '('))
                 partData = this._resolveBinding(syntax, i);
+            else if (syntax[i] === '{')
+                partData = this._resolveBindCode(syntax, i);
             else
                 partData = this._resolveBindPart(syntax, i);
 
             parts.push(partData);
             i = this._nextNonWhiteChar(syntax, partData.endIndex + 1);
 
-            if (syntax[i] === ')' || i >= syntax.length - 1) {
+            if (syntax[i] === ')' || i >= syntax.length - 1 || i === -1) {
                 endIndex = i;
                 break;
             }
