@@ -52,8 +52,10 @@ var PropertySupplier = function(properties) {
     };
 
     this.isValueDataBound = function(value) {
-        if (typeof value === 'string')
-            return value.startsWith('(') && value.endsWith(')');
+        if (typeof value === 'string') {
+            let temp = value.trim();
+            return temp.startsWith('(') && temp.endsWith(')');
+        }
 
         return false;
     };
