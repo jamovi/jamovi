@@ -283,7 +283,7 @@ const Instance = Backbone.Model.extend({
                     else {
 
                         const data = new FormData();
-                        data.append('options', JSON.stringify(Object.assign({ path: encodeURIComponent(file) }, options)));
+                        data.append('options', JSON.stringify(Object.assign({ path: file }, options)));
 
                         response = await fetch('open?p=', {
                             method: 'POST',
