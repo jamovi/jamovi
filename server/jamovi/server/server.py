@@ -28,7 +28,6 @@ import uuid
 import mimetypes
 import re
 import json
-from urllib import parse
 
 from urllib.parse import urlparse
 from tempfile import NamedTemporaryFile
@@ -353,8 +352,8 @@ class OpenHandler(RequestHandler):
             is_temp = True
         elif 'path' in options:
             # jamovi desktop open from path
-            file_path = parse.unquote(options['path'])
-            is_temp = options.get('temp', False) is not False
+            file_path = options['path']
+            is_temp = (options.get('temp', False) != False)
             file_title = options.get('title')
         elif 'file.path' in self.request.body_arguments:
             # jamovi sitting behind a reverse proxy that handles the uploads (nginx)
