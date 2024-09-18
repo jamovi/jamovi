@@ -1712,7 +1712,7 @@ const TableView = SilkyView.extend({
             }
         }
 
-        if (event.altKey && event.key === 'Alt')
+        if (event.altKey || event.key === 'Alt')
             return;
 
         if ((event.metaKey || event.ctrlKey) && ! (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'ArrowUp' || event.key === 'ArrowDown'))

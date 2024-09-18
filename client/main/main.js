@@ -227,6 +227,23 @@ $(document).ready(async() => {
         if (Keyboard.focusMode === 'default')
             optionspanel.hideOptions();
     }, 'Hide analysis options');
+    Keyboard.addKeyboardListener('Alt+ArrowLeft', () => { 
+        if ( ! lastSelectedAnalysis) {
+            let analysisObjs = Array.from(instance.analyses()).filter(analysis => analysis.hasUserOptions());
+            if (analysisObjs.length > 0)
+                lastSelectedAnalysis = analysisObjs[0];
+        }
+        if (lastSelectedAnalysis) {
+            instance.set('selectedAnalysis', lastSelectedAnalysis);
+            optionspanel.setFocus();
+        }
+    }, 'Moves back to the previously selected analysis and opens the option panel. Focus is placed in the options panel.');
+
+    Keyboard.addKeyboardListener('Alt+ArrowRight', () => { 
+        resultsView.selectedView.setFocus(lastSelectedAnalysis);
+    }, 'Moves back to the previously selected analysis and places focus on the results output.');
+    
+
     if (host.isElectron)
         Keyboard.addKeyboardListener('Ctrl+F4', () => host.closeWindow(), 'Close jamovi application');
 
@@ -421,6 +438,8 @@ $(document).ready(async() => {
     $results.attr('aria-label', 'Analyses Results');
     $results.attr('aria-live', 'polite');
 
+    let lastSelectedAnalysis;
+
     instance.on('change:selectedAnalysis', function(event) {
         if ('selectedAnalysis' in event.changed) {
             let analysis = event.changed.selectedAnalysis;
@@ -430,8 +449,12 @@ $(document).ready(async() => {
                     _annotationReturnTab = 'analyses';
                     splitPanel.setVisibility('main-options', true);
                     optionspanel.setAnalysis(analysis);
+                    if (analysis != null)
+                        lastSelectedAnalysis = analysis;
                     if (ribbonModel.get('selectedTab') === 'data' || ribbonModel.get('selectedTab') === 'variables')
                         ribbonModel.set('selectedTab', 'analyses');
+
+                    optionspanel.setFocus();
                 }
                 else
                     optionspanel.hideOptions(false);

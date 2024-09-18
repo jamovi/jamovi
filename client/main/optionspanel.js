@@ -27,13 +27,13 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
 
     this.key = analysis.ns + '-' + analysis.name;
 
-    let element = '<iframe id="' + this.key + '" \
-            name="' + this.key + '" \
-            sandbox="allow-scripts allow-same-origin" \
-            src="' + iframeUrl + instanceId + '/" \
-            class="silky-options-control silky-hidden-options-control" \
-            style="overflow: hidden; box-sizing: border-box;" \
-            ></iframe>';
+    let element = `<iframe id="${this.key}"
+            name="${this.key}"
+            sandbox="allow-scripts allow-same-origin"
+            src="${iframeUrl}${instanceId}/"
+            class="silky-options-control silky-hidden-options-control"
+            style="overflow: hidden; box-sizing: border-box;"
+            title="${analysis.name} Options"></iframe>`;
 
     this.$frame = $(element);
     $target.append(this.$frame);
@@ -217,6 +217,15 @@ let OptionsPanel = SilkyView.extend({
         args.model.analyses().on('analysisOptionsChanged', this._optionsChanged, this);
 
         this.render();
+    },
+
+    setFocus: function() {
+        if (this._currentResources) {
+            this._currentResources.$frame[0].focus();
+           setTimeout(() => { // needed for firefox cross iframe focus
+                this._currentResources.$frame[0].contentWindow.focus();
+            }, 100);
+        }
     },
 
     _optionsChanged: function (analysis, incoming) {
