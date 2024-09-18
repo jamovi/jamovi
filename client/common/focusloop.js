@@ -72,13 +72,20 @@ class FocusLoop extends EventEmitter {
         if (desktopMode) {
             window.addEventListener('keydown', (event) => {
                 let keyObj = this.eventToKeyObj(event);
-                if (this.processKeyObj(keyObj) === false) {
-                    this.broadcast('processKeyObj', [keyObj], false);
-                    if (this._isMainWindow === false && this.keyObjToKeyPath(keyObj) in this._baseKeyPaths)
+                let hasModifier = keyObj.ctrlKey || keyObj.altKey || keyObj.shiftKey;
+                if (hasModifier) {
+                    if (this.processKeyObj(keyObj) === false) {
+                        if (this._isMainWindow === false) {
+                            let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
+                            if (transfer) {
+                                event.preventDefault();
+                                this.broadcast('processKeyObj', [keyObj], true);  
+                            }
+                        }
+                    }
+                    else
                         event.preventDefault();
                 }
-                else
-                    event.preventDefault();
 
                 if (event.altKey && event.key === 'F4')
                     return;
@@ -145,17 +152,21 @@ class FocusLoop extends EventEmitter {
         else {
             window.addEventListener('keydown', (event) => {
                 let keyObj = this.eventToKeyObj(event);
-                if (this.processKeyObj(keyObj) === false) {
-                    if (this._isMainWindow === false) {
-                        let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
-                        if (transfer) {
-                            event.preventDefault();
-                            this.broadcast('processKeyObj', [keyObj], true);  
+
+                let hasModifier = keyObj.ctrlKey || keyObj.altKey || keyObj.shiftKey;
+                if (hasModifier) {
+                    if (this.processKeyObj(keyObj) === false) {
+                        if (this._isMainWindow === false) {
+                            let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
+                            if (transfer) {
+                                event.preventDefault();
+                                this.broadcast('processKeyObj', [keyObj], true);  
+                            }
                         }
                     }
+                    else
+                        event.preventDefault();
                 }
-                else
-                    event.preventDefault();
 
                 if (event.altKey && event.key !== 'Alt') // as modifier
                     this._starting = false

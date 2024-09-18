@@ -168,6 +168,13 @@ const ResultsPanel = Backbone.View.extend({
             if (event.keyCode === 13) { //enter
                 this.model.set('selectedAnalysis', analysis);
             }
+            if (event.altKey && event.code === 'ArrowLeft') { //enter
+                if (this.model.get('selectedAnalysis') !== analysis) {
+                    this.model.set('selectedAnalysis', analysis);
+                    event.stopPropagation();
+                    event.preventDefault();
+                }
+            }
         });
 
         let $after = $(this._refsTable);
@@ -187,8 +194,10 @@ const ResultsPanel = Backbone.View.extend({
         let iframe = $iframe[0];
 
         let selected = this.model.get('selectedAnalysis');
-        if (selected !== null && analysis.id === selected.id)
+        if (selected !== null && analysis.id === selected.id) {
             $container.attr('data-selected', '');
+            $container.attr('aria-current', true);
+        }
 
         let resources = {
             id: analysis.id,
@@ -879,6 +888,19 @@ const ResultsPanel = Backbone.View.extend({
                 this.$el.stop().animate({ scrollTop: itemBottom - viewHeight }, { duration: 'slow', easing: 'swing' });
         }
     },
+    setFocus(analysis) {
+        if ( ! analysis) {
+            let analysisObjs = Array.from(this.model.analyses()).filter(analysis => analysis.hasUserOptions());
+            if (analysisObjs.length > 0)
+                analysis = analysisObjs[0];
+        }
+        focusLoop.enterFocusLoop(this.el, { withMouse: false });
+        if (analysis)  {
+            let newSelectedResults = this.resources[analysis.id];
+            if (newSelectedResults)
+                this.resultsLooper.selectElement(newSelectedResults.$container[0], false);
+        }
+    },
     _selectedChanged(event) {
         let oldSelected = this.model.previous('selectedAnalysis');
         let newSelected = this.model.get('selectedAnalysis');
@@ -890,8 +912,10 @@ const ResultsPanel = Backbone.View.extend({
             }
             else {
                 let oldSelectedResults = this.resources[oldSelected.id];
-                if (oldSelectedResults)
+                if (oldSelectedResults) {
                     oldSelectedResults.$container.removeAttr('data-selected');
+                    oldSelectedResults.$container.attr('aria-current', false);
+                }
             }
         }
 
@@ -903,8 +927,10 @@ const ResultsPanel = Backbone.View.extend({
             }
             else {
                 let newSelectedResults = this.resources[newSelected.id];
-                if (newSelectedResults)
+                if (newSelectedResults) {
                     newSelectedResults.$container.attr('data-selected', '');
+                    newSelectedResults.$container.attr('aria-current', true);
+                }
                 this._refsTable.deselect();
                 delete this._refsTable.dataset.selected;
             }
