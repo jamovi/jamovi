@@ -33,7 +33,7 @@ class Main {  // this is constructed at the bottom
         };
         window.mod_ = this.translateUsingModule.bind(this);*/
 
-        this.mainWindow = null;
+        this.mainWindow = window.top;
         this.results = null;
         this.$results = null;
         this.resultsDefn = null;
@@ -154,7 +154,6 @@ class Main {  // this is constructed at the bottom
         if (event.source === window)
             return;
 
-        this.mainWindow = event.source;
         let hostEvent = event.data;
         let eventData = hostEvent.data;
 
