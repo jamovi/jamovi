@@ -72,7 +72,7 @@ class FocusLoop extends EventEmitter {
         if (desktopMode) {
             window.addEventListener('keydown', (event) => {
                 let keyObj = this.eventToKeyObj(event);
-                let hasModifier = keyObj.ctrlKey || keyObj.altKey || keyObj.shiftKey || (event.keyCode >= 112 && event.keyCode <= 143); //F keys
+                let hasModifier = true; //keyObj.ctrlKey || keyObj.altKey || keyObj.shiftKey || (event.keyCode >= 112 && event.keyCode <= 143) || event.key === 'Escape'; //F keys
                 if (hasModifier) {
                     if (this.processKeyObj(keyObj) === false) {
                         if (this._isMainWindow === false) {
@@ -153,7 +153,7 @@ class FocusLoop extends EventEmitter {
             window.addEventListener('keydown', (event) => {
                 let keyObj = this.eventToKeyObj(event);
 
-                let hasModifier = keyObj.ctrlKey || keyObj.altKey || keyObj.shiftKey || (event.keyCode >= 112 && event.keyCode <= 143); //F keys
+                let hasModifier = true; //keyObj.ctrlKey || keyObj.altKey || keyObj.shiftKey || (event.keyCode >= 112 && event.keyCode <= 143) || event.key === 'Escape'; //F keys
                 if (hasModifier) {
                     if (this.processKeyObj(keyObj) === false) {
                         if (this._isMainWindow === false) {
