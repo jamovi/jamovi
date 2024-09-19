@@ -305,8 +305,9 @@ const spawn = new Promise((resolve, reject) => {
     server = child_process.spawn(
         config.serverExe,
         config.serverArgs,
-        { env: env, detached: true });
+        { env: env, detached: true, cwd: bin });
     // detached, because weird stuff happens on windows if not detached
+    // set the working directory to bin so it doesn't pick up random dlls
 
     let dataListener = (chunk) => {
 
