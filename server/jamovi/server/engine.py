@@ -148,7 +148,7 @@ class Engine:
                     stdout=None,  # stdouts seem to break things on windows
                     stderr=None,
                     env=env,
-                    cwd=bin_dir)  # set the cwd to prevent picking up stray .dlls
+                    cwd=exe_dir)  # set the cwd to prevent picking up stray .dlls
             else:
                 # stdin=PIPE, because the engines use the closing of
                 # stdin to terminate themselves.
