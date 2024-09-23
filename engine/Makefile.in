@@ -19,6 +19,10 @@ ifneq (%R_HOME%,)
 R_HOME=%R_HOME%
 endif
 
+ifneq (%LIBDIR%,)
+LIBDIR=%LIBDIR%
+endif
+
 ifeq ($(OS),Windows_NT)
 	os = Windows
 else
@@ -64,7 +68,8 @@ ifeq ($(os),Linux)
 				-lboost_filesystem \
 				-lboost_system \
 				-lpthread \
-				$(foreach rp,$(R_PATH),-Wl,-rpath,'$(rp)')
+				$(foreach rp,$(R_PATH),-Wl,-rpath,'$(rp)') \
+				$(foreach p,$(LIBDIR),-L$(p))
 else
 	BINDIR ?= bin
 	R_HOME ?= $(SRCDIR)/../../../Frameworks/R
