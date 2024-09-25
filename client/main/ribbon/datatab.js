@@ -60,7 +60,7 @@ class DataTab extends RibbonTab {
                             new RibbonButton({ title: _('Append'), name: 'appendOutput' })
                         ]})*/
                     ]}),
-                    new RibbonButton({ title: _('Delete'), ariaLabel: _('Delete selected variable(s)'), name: 'delVar', shortcutKey: 'd', shortcutPosition: { x: '25%', y: '75%' } }),
+                    new RibbonButton({ title: _('Delete'), ariaLabel: _('Delete selected variables'), name: 'delVar', shortcutKey: 'd', shortcutPosition: { x: '25%', y: '75%' } }),
                 ]}),
             ]}),
             new RibbonSeparator(),

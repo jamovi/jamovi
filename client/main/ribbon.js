@@ -125,7 +125,7 @@ const RibbonView = Backbone.View.extend({
             <div class="jmv-ribbon-header" role="group" aria-orientation="horizontal">
                 <button class="jmv-ribbon-tab file-tab" data-tabname="file" role="toolbaritem"  aria-label="${_('File')}" aria-haspopup="true" aria-expanded="false"><span style="font-size: 150%; pointer-events: none;" class="mif-menu"></span></button>
                 <div class="ribbon-tabs" role="tablist"></div>
-                <div id="jmv-user-widget"></div>
+                <div id="jmv-user-button"></div>
                 <button class="jmv-ribbon-fullscreen" aria-label="${_('Enable/disable full screen mode')}"></button>
                 <button class="jmv-ribbon-appmenu" aria-label="${_('Preferences')}"></button>
             </div>
@@ -166,12 +166,13 @@ const RibbonView = Backbone.View.extend({
         });
 
         focusLoop.applyShortcutOptions(this.$fileButton[0], {
-            key: 'F',
-            position: { x: '50%', y: '75%' },
-            action: (event) => {
-                    this.trigger('tabSelected', 'file', false);
-                }
-            }
+                key: 'F',
+                position: { x: '50%', y: '75%' },
+                action: (event) => {
+                        this.trigger('tabSelected', 'file', false);
+                },
+                label: _('File menu')
+            } 
         );
 
         this.tabSelection.on('selected-index-changed', (data) => {
@@ -190,11 +191,12 @@ const RibbonView = Backbone.View.extend({
             this.trigger('toggle-screen-state');
         });
         focusLoop.applyShortcutOptions(this.$fullScreen[0], {
-            key: 'S',
-            position: { x: '50%', y: '75%' },
-            action: (event) => {
-                    this.trigger('toggle-screen-state');
-                }
+                key: 'S',
+                position: { x: '50%', y: '75%' },
+                action: (event) => {
+                        this.trigger('toggle-screen-state');
+                },
+                label: _('Toggle screen state')
             }
         );
 
@@ -225,7 +227,8 @@ const RibbonView = Backbone.View.extend({
                 focusLoop.applyShortcutOptions($tab[0], {
                     key: tab.shortcutPath.toUpperCase(),
                     position: { x: '50%', y: '75%' },
-                    action: tabShortcutAction
+                    action: tabShortcutAction,
+                    label: tab.title
                     }
                 );
             }
@@ -248,6 +251,9 @@ const RibbonView = Backbone.View.extend({
         this.appMenu = new AppMenu({ el: this.$appMenu, model: this.model });
 
         this._refresh();
+    },
+    openFileMenu(usingMouse) {
+        this.trigger('tabSelected', 'file', usingMouse);
     },
     notify(options) {
         return this.notifs.notify(options);

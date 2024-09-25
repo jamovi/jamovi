@@ -76,7 +76,7 @@ const Annotation = function(address, suffix) {
         this.lastSelection = null;
 
         this.$el = $(`<div class="jmv-annotation body">
-            <div class="editor-box" tabindex="0">
+            <div class="editor-box" tabindex="0" aria-label="${_('Annotation')}">
                 <div class="editor jmv-note-theme"></div>
             </div>
         </div>`);

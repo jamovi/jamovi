@@ -121,7 +121,7 @@ const ComputedVarWidget = Backbone.View.extend({
 
         $('<div class="equal">=</div>').appendTo($formulaBox);
 
-        this.$showEditor = $(`<button class="show-editor" title="${_('Show formula editor')}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
+        this.$showEditor = $(`<button class="show-editor" aria-label="${_('Show formula editor')}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
 
         this.$showEditor.on('click', (event) => {
             if (this._$wasEditingFormula !== this.$formula) {

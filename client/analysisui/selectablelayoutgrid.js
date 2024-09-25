@@ -25,7 +25,7 @@ var SelectableLayoutGrid = function (params, cellStatus) {
     if (params && (params.selectable || params.selectable === undefined)) {
         this.$el.attr('aria-multiselectable', 'true');
         this.$el.attr('tabindex', '0');
-        this.$el.attr('role', 'list');
+        this.$el.attr('role', 'listbox');
         this.$el.on('focus', (event) => {
             if (this._selectedCells.length === 0 && this._cells.length > 0) {
                 let index = 0;

@@ -652,7 +652,7 @@ const TransformEditor = function(dataset) {
         else
             $parent.append($formulaBox);
 
-        let $showEditor = $(`<button class="show-editor" title="${_('Show formula editor')}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
+        let $showEditor = $(`<button class="show-editor" aria-label="${_('Show formula editor')}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
 
         let $formulaGrid = $('<div class="formula-grid"></div>').appendTo($formulaBox);
 

@@ -28,7 +28,8 @@ const VariableEditor = Backbone.View.extend({
                     focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
                 }, 0);
             },
-            position: { x: '25%', y: '25%' }
+            position: { x: '25%', y: '25%' },
+            label: _('Variable setup panel')
         });
 
         let focusToken = focusLoop.addFocusLoop(this.$el[0]);
@@ -61,9 +62,9 @@ const VariableEditor = Backbone.View.extend({
         this.editorPanel.on('notification', note => this.trigger('notification', note));
         this.transformEditor = new TransformEditor(this.model);
 
-        this.$ok = $(`<button aria-label="${_('Ok')}" tabindex="0" class="jmv-variable-editor-ok jmv-tooltip" title="${_('Hide')}"><span class="mif-checkmark"></span><span class="mif-arrow-up"></span></button>`).appendTo(this.$main);
-        this.$right = $(`<button aria-label="${_('Next variable')}" tabindex="0" class="jmv-variable-editor-button-right  jmv-tooltip" title="${_('Next variable')}"><span class="mif-chevron-right"></span></button>`).appendTo(this.$main);
-        this.$left = $(`<button aria-label="${_('Previous variable')}" tabindex="0" class="jmv-variable-editor-button-left  jmv-tooltip" title="${_('Previous variable')}"><span class="mif-chevron-left"></span></button>`).appendTo(this.$main);
+        this.$ok = $(`<button aria-label="${_('Ok')}" tabindex="0" class="jmv-variable-editor-ok jmv-tooltip" aria-label="${_('Hide variable setup')}"><span class="mif-checkmark"></span><span class="mif-arrow-up"></span></button>`).appendTo(this.$main);
+        this.$right = $(`<button aria-label="${_('Next variable')}" tabindex="0" class="jmv-variable-editor-button-right  jmv-tooltip" aria-label="${_('Next variable')}"><span class="mif-chevron-right"></span></button>`).appendTo(this.$main);
+        this.$left = $(`<button aria-label="${_('Previous variable')}" tabindex="0" class="jmv-variable-editor-button-left  jmv-tooltip" aria-label="${_('Previous variable')}"><span class="mif-chevron-left"></span></button>`).appendTo(this.$main);
 
         this.$hoverHeader = $('<div class="hover-header"></div>').appendTo(this.$el);
         this.$hoverHeader.on('mouseout', event => {

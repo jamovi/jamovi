@@ -45,6 +45,8 @@ const ContextMenuButton = Backbone.View.extend({
         this.$el.addClass('jmv-ribbon-button-size-' + size);
         this.$el.attr('tabindex', '0');
         this.$el.attr('role', 'menuitem');
+        this.id = focusLoop.getNextAriaElementId('menu-btn');
+        this.$el.attr('id', this.id);
 
         this.tabName = null;
         this._definedTabName = false;
@@ -161,6 +163,7 @@ const ContextMenuButton = Backbone.View.extend({
             let $menugroup = $('<div></div>');
             this._menuGroup = new RibbonGroup({ orientation: 'vertical', $el: $menugroup });
             this.menu.$el.append(this._menuGroup.$el);
+            this.menu.$el.attr('aria-labelledby', this.id);
         }
 
         this._menuGroup.addItem(item);

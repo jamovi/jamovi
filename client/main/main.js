@@ -35,6 +35,7 @@ require('./utils/headeralert');
 
 window._ = I18n._;
 window.n_ = I18n._n;
+window.A11y = Keyboard;
 
 
 (async function() {
@@ -219,39 +220,72 @@ $(document).ready(async() => {
         window.$body.addClass('electron');
 
 
-    Keyboard.addKeyboardListener('F10', () => host.toggleDevTools(), 'Toggle Developer Tools');
-    Keyboard.addKeyboardListener('F9',  () => instance.restartEngines(), 'Restart jamovi engines');
-    Keyboard.addKeyboardListener('Ctrl+KeyS', () => ActionHub.get('save').do(), 'Save current workspace');
-    Keyboard.addKeyboardListener('Ctrl+KeyO', () => ActionHub.get('open').do(), 'Open data file');
+    Keyboard.addKeyboardListener('F10', () => host.toggleDevTools(), 'Toggle Developer Tools', false);
+    Keyboard.addKeyboardListener('F9',  () => instance.restartEngines(), 'Restart jamovi engines', false);
+    Keyboard.addKeyboardListener('Ctrl+KeyS', () => ActionHub.get('save').do(), _('Save project'));
+    Keyboard.addKeyboardListener('Ctrl+KeyO', () => ActionHub.get('open').do(), _('Open data file'));
     Keyboard.addKeyboardListener('Escape', () => {
         if (Keyboard.focusMode === 'default')
             optionspanel.hideOptions();
-    }, 'Hide analysis options');
-    Keyboard.addKeyboardListener('Alt+ArrowLeft', () => { 
-        if ( ! lastSelectedAnalysis) {
-            let analysisObjs = Array.from(instance.analyses()).filter(analysis => analysis.hasUserOptions());
-            if (analysisObjs.length > 0)
-                lastSelectedAnalysis = analysisObjs[0];
-        }
-        if (lastSelectedAnalysis) {
-            instance.set('selectedAnalysis', lastSelectedAnalysis);
+    }, _('Hide analysis options'));
+    Keyboard.addKeyboardListener('Alt+KeyS', () => { // navigate to spreadsheet
+        optionspanel.hideOptions();
+        ribbonModel.set('selectedTab', 'data');
+        Keyboard.setFocusMode('default');
+    }, _('Focus on spreadsheet'));
+    Keyboard.addKeyboardListener('Alt+KeyD', () => { // navigate to variables view
+        optionspanel.hideOptions();
+        ribbonModel.set('selectedTab', 'variables');
+        Keyboard.setFocusMode('default');
+    }, _('Focus on variable list'));
+    Keyboard.addKeyboardListener('Alt+KeyF', () => { // navigate to file menu
+        optionspanel.hideOptions();
+        ribbon.openFileMenu(false);
+    }, _('Open the main menu'));
+    Keyboard.addKeyboardListener('Alt+KeyE', () => { // navigate to variable setup
+        optionspanel.hideOptions();
+        viewController.showVariableEditor();
+    }, _('Focus on the variable setup'));
+    Keyboard.addKeyboardListener('Alt+KeyM', () => { // navigate to Application menu
+        ribbon.appMenu.toggleMenu(false);
+    }, _('Open application menu'));
+    Keyboard.addKeyboardListener('Alt+KeyL', () => { // navigate to Modules library
+        ribbonModel.getTab('analyses').store.show(1);
+    }, _('Open the jamovi module library'));
+    Keyboard.addKeyboardListener('Alt+ArrowLeft', () => { // navigate to Options panel
+        let iframe = document.querySelector(`.results-loop-highlighted-item > iframe`);
+        let id = parseInt(iframe.getAttribute('data-id'));
+        let analysis = instance.analyses().get(id);
+        if (analysis) {
+            instance.set('selectedAnalysis', analysis);
             optionspanel.setFocus();
         }
-    }, 'Moves back to the previously selected analysis and opens the option panel. Focus is placed in the options panel.');
-
-    Keyboard.addKeyboardListener('Alt+ArrowRight', () => { 
-        resultsView.selectedView.setFocus(lastSelectedAnalysis);
-    }, 'Moves back to the previously selected analysis and places focus on the results output.');
+    }, _('Returns to the previously selected analysis and opens the options panel, with focus set in the options panel.'));
+    Keyboard.addKeyboardListener('Alt+ArrowRight', () => { // navigate to results panel
+        resultsView.selectedView.setFocus();
+    }, _('Returns to the previously selected analysis and shifts focus to the results output.'));
+    Keyboard.addKeyboardListener('Alt+ArrowDown', () => { // navigate to analysis content
+        let iframe = document.querySelector(`.results-loop-highlighted-item > iframe`);
+        if (iframe) {
+            iframe.focus();
+            setTimeout(() => { // needed for firefox cross iframe focus
+                iframe.contentWindow.focus();
+            }, 100);
+        }
+    }, _('Returns to the previously selected analysis and shifts focus into the results output.'));
+    Keyboard.addKeyboardListener('Alt+ArrowUp', () => { // navigate to results panel
+        resultsView.selectedView.setFocus();
+    }, _('Returns to the previously selected analysis and shifts focus to the results output.'));
     
 
     if (host.isElectron)
-        Keyboard.addKeyboardListener('Ctrl+F4', () => host.closeWindow(), 'Close jamovi application');
+        Keyboard.addKeyboardListener('Ctrl+F4', () => host.closeWindow(), _('Close jamovi window'));
 
     Keyboard.on('focus', (event) => {
         if (Keyboard.inAccessibilityMode())
             ribbonModel.getSelectedTab().$el[0].focus();
         else
-        Keyboard.setFocusMode('default');
+            Keyboard.setFocusMode('default');
     });
 
     Keyboard.on('focusModeChanged', (options) => {
@@ -423,7 +457,8 @@ $(document).ready(async() => {
                 }, 100);
             }
         },
-        position: { x: '15px', y: '15px' }
+        position: { x: '15px', y: '15px' },
+        label: _('Analysis Options')
         }
     );
 
@@ -438,8 +473,6 @@ $(document).ready(async() => {
     $results.attr('aria-label', 'Analyses Results');
     $results.attr('aria-live', 'polite');
 
-    let lastSelectedAnalysis;
-
     instance.on('change:selectedAnalysis', function(event) {
         if ('selectedAnalysis' in event.changed) {
             let analysis = event.changed.selectedAnalysis;
@@ -449,8 +482,6 @@ $(document).ready(async() => {
                     _annotationReturnTab = 'analyses';
                     splitPanel.setVisibility('main-options', true);
                     optionspanel.setAnalysis(analysis);
-                    if (analysis != null)
-                        lastSelectedAnalysis = analysis;
                     if (ribbonModel.get('selectedTab') === 'data' || ribbonModel.get('selectedTab') === 'variables')
                         ribbonModel.set('selectedTab', 'analyses');
 

@@ -333,7 +333,8 @@ const OptionListControl = function (params) {
 
             cell.clickable(columnInfo.selectable);
             if (columnInfo.selectable) {
-                cell.$el.attr('role', 'listitem');
+                cell.$el.attr('role', 'option');
+                cell.$el.attr('aria-selected', false);
                 if (ctrl.getLabelId) {
                     let labelId = ctrl.getLabelId();
                     if (labelId)

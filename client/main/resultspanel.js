@@ -163,7 +163,31 @@ const ResultsPanel = Backbone.View.extend({
         if (isEmptyAnalysis)
             classes = 'empty-analysis';
 
+
         let $container = $(`<div class="jmv-results-container results-loop-list-item results-loop-auto-select  ${ classes }" tabindex="-1" role="listitem" aria-label="${ isEmptyAnalysis ? 'Annotation Field' : (analysis.results.title + '- Results')}"></div>`);
+        
+
+        let $after = $(this._refsTable);
+        if (analysis.results.index > 0) {
+            let $siblings = this.$el.children('.jmv-results-container');
+            let index = analysis.results.index - 1;
+            if (index < $siblings.length)
+                $after = $siblings[index];
+        }
+
+        
+
+        $container.insertBefore($after);
+
+        $container.attr('data-analysis-name', analysis.name);
+
+        if ( ! isEmptyAnalysis)
+            this.resultsLooper.highlightElement($container[0], true, false);
+
+        let $cover = $('<div class="jmv-results-cover"></div>').appendTo($container);
+        let $iframe = $(element).appendTo($container);
+        let iframe = $iframe[0];
+
         $container.on('keydown', (event) => {
             if (event.keyCode === 13) { //enter
                 this.model.set('selectedAnalysis', analysis);
@@ -176,22 +200,6 @@ const ResultsPanel = Backbone.View.extend({
                 }
             }
         });
-
-        let $after = $(this._refsTable);
-        if (analysis.results.index > 0) {
-            let $siblings = this.$el.children('.jmv-results-container');
-            let index = analysis.results.index - 1;
-            if (index < $siblings.length)
-                $after = $siblings[index];
-        }
-
-        $container.insertBefore($after);
-
-        $container.attr('data-analysis-name', analysis.name);
-
-        let $cover = $('<div class="jmv-results-cover"></div>').appendTo($container);
-        let $iframe = $(element).appendTo($container);
-        let iframe = $iframe[0];
 
         let selected = this.model.get('selectedAnalysis');
         if (selected !== null && analysis.id === selected.id) {
@@ -888,18 +896,8 @@ const ResultsPanel = Backbone.View.extend({
                 this.$el.stop().animate({ scrollTop: itemBottom - viewHeight }, { duration: 'slow', easing: 'swing' });
         }
     },
-    setFocus(analysis) {
-        if ( ! analysis) {
-            let analysisObjs = Array.from(this.model.analyses()).filter(analysis => analysis.hasUserOptions());
-            if (analysisObjs.length > 0)
-                analysis = analysisObjs[0];
-        }
+    setFocus() {
         focusLoop.enterFocusLoop(this.el, { withMouse: false });
-        if (analysis)  {
-            let newSelectedResults = this.resources[analysis.id];
-            if (newSelectedResults)
-                this.resultsLooper.selectElement(newSelectedResults.$container[0], false);
-        }
     },
     _selectedChanged(event) {
         let oldSelected = this.model.previous('selectedAnalysis');
