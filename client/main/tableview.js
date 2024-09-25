@@ -157,7 +157,7 @@ const TableView = SilkyView.extend({
         this.$topLeftCell.css('width', this._rowHeaderWidth);
 
         this.controller = options.controller;
-        this.controller.registerView('spreadsheet', this);
+        this.controller.registerView('spreadsheet', this, { title: _('Spreadsheet') });
         this.selection = options.controller.selection;
 
         this.on('columnAppended', (colNo) => {
@@ -1500,6 +1500,9 @@ const TableView = SilkyView.extend({
 
         if (ch !== undefined)
             this._edited = true;
+    },
+    getFocusControl() {
+        return this._focusCell;
     },
     _applyEdit() {
         if ( ! this._edited)

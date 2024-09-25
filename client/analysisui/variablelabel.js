@@ -104,6 +104,7 @@ const VariableLabel = function(params) {
         let displayValue = this.getValue();
         this.$label.text(displayValue);
         this._updateIcon(displayValue);
+        this.$label.attr('aria-label', this.getAriaLabel());
     };
 };
 

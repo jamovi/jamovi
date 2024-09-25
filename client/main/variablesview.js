@@ -10,12 +10,8 @@ const Backbone = require('backbone');
 Backbone.$ = $;
 
 const keyboardJS = require('keyboardjs');
-const dialogs = require('dialogs')({cancel:false});
 
 const SilkyView = require('./view');
-const Notify = require('./notification');
-const { csvifyCells, htmlifyCells } = require('../common/utils/formatio');
-const ActionHub = require('./actionhub');
 const ContextMenu = require('./contextmenu');
 const Statusbar = require('./statusbar/statusbar');
 const { contextMenuListener } = require('../common/utils');
@@ -52,7 +48,7 @@ const VariablesView = SilkyView.extend({
                 <input type="search" class="search" placeholder="${_('Search variables')}"  aria-description="${_('Search variables')}"></input>
             </div>
             <div class="jmv-variables-container" role="none">
-                <div class="jmv-variables-body" role="list" aria-label="Variables List" aria-multiselectable="true">
+                <div class="jmv-variables-body" role="listbox" aria-label="Variables List" aria-multiselectable="true" tabindex="0">
 
                 </div>
             </div>`);
@@ -118,7 +114,7 @@ const VariablesView = SilkyView.extend({
         });
 
         this.controller = options.controller;
-        this.controller.registerView('variables', this);
+        this.controller.registerView('variables', this, { title: _('Variables View') });
         this.selection = options.controller.selection;
         this.selectionIncludesHidden = true;
 
@@ -142,6 +138,9 @@ const VariablesView = SilkyView.extend({
         $(document).on('mousemove', event => this._mouseMove(event));
         $(document).on('mouseup', event => this._mouseUp(event));
     },
+    getFocusControl() {
+        return this.$body[0];
+    },
     _selectRow(row, editable) {
         this.selectedRows.push(row);
 
@@ -149,6 +148,9 @@ const VariablesView = SilkyView.extend({
         $row.addClass('selected');
         row.$select.prop('checked', true);
         row.$select.attr('aria-checked', true);
+
+        if (this.controller.focusedOn === this)
+            _focusLoop.speakMessage(`${row.column.name} ${row.column.measureType} ${row.column.dataType}`);
 
         if (editable && ! row.editableTimer) {
             row.editableTimer = setTimeout(function () {
@@ -312,7 +314,7 @@ const VariablesView = SilkyView.extend({
 
         let editingIds = this.model.get('editingVar');
 
-        let $select = $(`<input role="listitem" aria-labelledby="${ labelId }" type="checkbox" data-index="${colNo}" class="select" tabindex="-1"></input>`);
+        let $select = $(`<input role="option" aria-labelledby="${ labelId }" type="checkbox" data-index="${colNo}" class="select" tabindex="-1"></input>`);
         this._addSelectEvents($select);
 
         this.$body.append(this._applyColumnData(this._createCell($select, row, 1, '', true), column, colNo));
@@ -753,7 +755,6 @@ const VariablesView = SilkyView.extend({
     },
 
     _notEditingKeyPress(event) {
-
         if (event.altKey)
             return;
 

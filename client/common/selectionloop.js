@@ -22,7 +22,7 @@ class SelectionLoop extends EventEmitter {
         this.container.addEventListener('focusin', (event) => {
             let element = event.target;
             if (element != this.container)
-                this.highlightElement(element);
+                this.highlightElement(element, false, false);
         });
 
         this.itemClass = `${this.name}-list-item`;

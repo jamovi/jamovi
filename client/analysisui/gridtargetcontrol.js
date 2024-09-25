@@ -13,7 +13,7 @@ const Toolbar = require('../common/toolbar/toolbar');
 const ToolbarButton = require('../common/toolbar/toolbarbutton');
 const ToolbarGroup = require('../common/toolbar/toolbargroup');
 const ToolbarSeparator = require('../common/toolbar/toolbarseparator');
-const _focusLoop = require('../common/focusloop');
+const A11y = require('../common/focusloop');
 
 const TargetListSupport = function(supplier) {
     DragNDrop.extendTo(this);
@@ -605,22 +605,22 @@ const GridTargetContainer = function(params) {
             let action = this.getDefaultTransferAction();
             let selectedItems = this.getSupplierItems(action, true);
             if (selectedItems.length === 0)
-                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Add selected items to {0} list', [label])); 
+                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Add items to {0}', [label])); 
             else if (selectedItems.length === 1) 
-                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Add selected item {1} to {0} list', [label, selectedItems[0].value.toAriaLabel()]));
+                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Add item {1} to {0}', [label, selectedItems[0].value.toAriaLabel()]));
             else 
-                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Add {1} selected items to {0} list', [label, selectedItems.length]));            
+                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Add {1} items to {0}', [label, selectedItems.length]));            
         }
         else {
             let count = this.targetGrid.selectedCellCount();
             if (count === 0)
-                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Remove selected items from {0} list', [label]));
+                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Remove items from {0}', [label]));
             else if (count === 1) {
                 let cell = this.targetGrid.getSelectedCell(0);
-                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Remove the selected item {1} from {0} list', [label, cell.item.getAriaLabel()]));
+                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Remove {1} from {0}', [label, cell.item.getAriaLabel()]));
             }
             else
-                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Remove the {1} selected items from {0} list', [label, count]));
+                this.$buttons.find('.jmv-variable-transfer').attr('aria-label', s_('Remove {1} items from {0}', [label, count]));
         }
     };
 
@@ -833,10 +833,16 @@ const GridTargetContainer = function(params) {
         this.targetGrid.beginPropertyEdit();
         let postProcessSelectionIndex = null;
         let postProcessList = null;
+        let label = this.getTranslatedProperty('label');
         if (this.gainOnClick) {
             let selectedItems = this.getSupplierItems(action);
             let selectedCount = selectedItems.length;
             if (selectedCount > 0) {
+                if (selectedItems.length === 1) 
+                    A11y.speakMessage(s_('{vars} added to {list}.', {vars: selectedItems[0].value.toAriaLabel(), list: label}));
+                else 
+                    A11y.speakMessage(s_('{vars} items added to {list}.', {vars: selectedCount, list: label}));   
+
                 for (let i = 0; i < selectedCount; i++) {
                     let selectedItem = selectedItems[i];
                     if (postProcessSelectionIndex === null || postProcessSelectionIndex > selectedItem.index) {
@@ -865,16 +871,23 @@ const GridTargetContainer = function(params) {
             let length = 0;
             let selectionCount = this.targetGrid.selectedCellCount();
             let index = 0;
+            let removedVar = null;
             while (this.targetGrid.selectedCellCount() > index) {
                 let cell = this.targetGrid.getSelectedCell(index);
-
+                removedVar = cell.item.getAriaLabel();
                 let rowIndex = this.targetGrid.displayRowToRowIndex(cell.data.row);
                 if (postProcessSelectionIndex === null || postProcessSelectionIndex > rowIndex)
                     postProcessSelectionIndex = rowIndex;
 
                 if (this.targetGrid.removeFromOption(this.targetGrid.getCellInfo(cell)) === false)
-                    index += 1;
+                    index += 1; 
             }
+
+            let removedCount = selectionCount - index;
+            if (removedCount === 1)
+                A11y.speakMessage(s_('{vars} removed from {list}.', {vars: removedVar, list: label}));
+            else
+                A11y.speakMessage(s_('{vars} items removed from {list}.', {vars: removedCount, list: label})); 
             postProcessList = this.targetGrid;
         }
 
@@ -1071,7 +1084,7 @@ const GridTargetContainer = function(params) {
         let label = this.getPropertyValue('label');
         if (label !== null) {
             label = this.translate(label);
-            this.labelId = _focusLoop.getNextAriaElementId('label');
+            this.labelId = A11y.getNextAriaElementId('label');
             this.$label = $(`<div id="${this.labelId}" style="white-space: nowrap;" class="silky-target-list-header silky-control-margin-${this.getPropertyValue('margin')}">${label}</div>`);
             grid.addCell(column, row, this.$label);
             this.container.controls[0].$el.attr('aria-labelledby', this.labelId);

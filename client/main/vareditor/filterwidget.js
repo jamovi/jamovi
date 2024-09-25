@@ -37,7 +37,7 @@ const FilterWidget = Backbone.View.extend({
         this.$filterListButtons = $('<div class="jmv-filter-list-buttons"></div>').appendTo(this.$el);
         this.$filterList = $('<div class="jmv-filter-list-box"></div>').appendTo(this.$el);
 
-        this.$addFilter = $(`<button class="filter-button filter-button-tooltip add-filter" title="${_('Add new filter')}"></button>`).appendTo(this.$filterListButtons);
+        this.$addFilter = $(`<button class="filter-button filter-button-tooltip add-filter" aria-label="${_('Add new filter')}"></button>`).appendTo(this.$filterListButtons);
         this.$addFilter.on('click', (event) => {
             this._internalCreate = true;
             this._addFilter();
@@ -55,7 +55,7 @@ const FilterWidget = Backbone.View.extend({
 
         let filtersVisible = this.dataset.get('filtersVisible');
 
-        this.$showFilter = $(`<button class="filter-button filter-button-tooltip ${(filtersVisible ? 'show-filter-columns' : 'hide-filter-columns')}" title="${_('Show filter columns')}"></button>`).appendTo(this.$filterListButtons);
+        this.$showFilter = $(`<button class="filter-button filter-button-tooltip ${(filtersVisible ? 'show-filter-columns' : 'hide-filter-columns')}" aria-label="${_('Show filter columns')}"></button>`).appendTo(this.$filterListButtons);
         this.$showFilter.on('click', (event) => {
             this.dataset.toggleFilterVisibility();
         });
@@ -400,16 +400,16 @@ const FilterWidget = Backbone.View.extend({
 
         if (rIndex > 0) {
             $(`<div class="equal">${_('and')}</div>`).appendTo($formulaBox);
-            let $removeNested = $('<button class="remove-nested" title="Remove nested filter"><span class="mif-cross"></span></button>').appendTo($formulaBox);
+            let $removeNested = $(`<button class="remove-nested" aria-label="${_('Remove nested filter')}"><span class="mif-cross"></span></button>`).appendTo($formulaBox);
             this.removeNestedEvents($removeNested, relatedColumn.id);
         }
         else {
             $('<div class="equal">=</div>').appendTo($formulaBox);
-            let $addNested = $(`<button class="add-nested" title="${_('Add another nested filter')}"><span class="mif-plus"></span></button>`).appendTo($formulaBox);
+            let $addNested = $(`<button class="add-nested" aria-label="${_('Add another nested filter')}"><span class="mif-plus"></span></button>`).appendTo($formulaBox);
             this.addNestedEvents($addNested, rootColumn.id);
         }
 
-        let $showEditor = $(`<button class="show-editor" title="${_('Show formula editor')}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
+        let $showEditor = $(`<button class="show-editor" aria-label="${_('Show formula editor')}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
 
         $showEditor.on('click', (event) => {
             if (this._$wasEditingFormula !== $formula) {
@@ -493,12 +493,12 @@ const FilterWidget = Backbone.View.extend({
         $(`<div class="label-parent"><div class="label">${_('Filter {i}', {i: (index + 1)} )}</div></div>`).appendTo($titleBox);
         let $middle = $('<div class="middle-box"></div>').appendTo($titleBox);
         let $statusBox = $('<div class="status-box" tabindex="0"></div>').appendTo($middle);
-        let $active = $(`<div class="active" title="${_('Filter is active')}"><div class="switch"></div></div>`).appendTo($statusBox);
+        let $active = $(`<div class="active" aria-label="${_('Filter is active')}"><div class="switch"></div></div>`).appendTo($statusBox);
         let $status = $(`<div class="status">${_('active')}</div>`).appendTo($statusBox);
         $('<div class="header-splitter"></div>').appendTo($titleBox);
 
 
-        let $removeButton = $(`<button class="remove-filter-btn" title="${_('Remove filter')}"><span class="mif-cross"></button></div>`);
+        let $removeButton = $(`<button class="remove-filter-btn" aria-label="${_('Remove filter')}"><span class="mif-cross"></button></div>`);
         $removeButton.appendTo($titleBox);
 
 

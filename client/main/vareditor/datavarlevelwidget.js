@@ -15,7 +15,7 @@ const DataVarLevelWidget = function(level, model, i, readOnly) {
     if (level.pinned)
         this.$el.addClass('pinned');
 
-    this.$pin = $(`<button class="pin" title="${ _('Pin level') }"></button>`).appendTo(this.$el);
+    this.$pin = $(`<button class="pin" aria-label="${ _('Pin level') }"></button>`).appendTo(this.$el);
     this.$pin.on('click', () => {
         setTimeout(() => { // delay so that the parent control click can suspend applying the settings
             let level = null;

@@ -11,7 +11,12 @@ class Menu extends EventEmitter {
 
         this.connected = false;
 
-        let menuId = focusLoop.getNextAriaElementId('menu');
+        let menuId = null;
+        if (options && options.id) 
+            menuId = options.id;
+        else
+            menuId = focusLoop.getNextAriaElementId('menu');
+        this.menuId = menuId;
 
         this.owner = owner;
         this.level = (level == null || level == undefined) ? 0 : level;
@@ -74,6 +79,25 @@ class Menu extends EventEmitter {
             $parent = menu.$el;
 
         this.$el.appendTo($parent);
+    }
+
+    setOwner(owner) {
+        this.owner = owner;
+
+        if (this.owner) {
+            this.owner.setAttribute('aria-haspopup', true);
+            this.owner.setAttribute('aria-expanded', false);
+            this.owner.setAttribute('aria-controls', this.menuId);
+            this.owner.setAttribute('aria-owns', this.menuId);
+            this.owner.classList.add('menu-owner');
+
+            let labelId = this.owner.getAttribute('id');
+            if (labelId)
+                this.$el.attr('aria-labelledby', labelId);  
+
+            let token = focusLoop.getFocusToken(this.$el[0]);
+            token.exitSelector = new WeakRef(this.owner);
+        }
     }
 
     changeLevel(level) {

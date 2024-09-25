@@ -16,6 +16,7 @@ const PageSideload = Backbone.View.extend({
     initialize() {
 
         this.$el.addClass('jmv-store-page-sideload');
+        this.$el.attr('role', 'tabpanel');
         this.$body = $('<div class="jmv-store-body"></div>').appendTo(this.$el);
         this.$drop = $('<button class="jmv-store-page-installed-drop" tabindex="-1"><span class="mif-file-upload"></span></button>')
             .appendTo(this.$body)

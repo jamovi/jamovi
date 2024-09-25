@@ -490,7 +490,8 @@ const LayoutSupplierView = function(params) {
 
         c1.setStretchFactor(1);
 
-        c1.$el.attr('role', 'listitem');
+        c1.$el.attr('role', 'option');
+        c1.$el.attr('aria-selected', false);
         c1.$el.attr('aria-label', item.value.toAriaLabel());
 
         item.$el = c1.$el;
@@ -592,8 +593,18 @@ const LayoutSupplierView = function(params) {
 
         c1.setStretchFactor(1);
 
-        c1.$el.attr('role', 'listitem');
-        c1.$el.attr('aria-label', item.value.toAriaLabel());
+        c1.$el.attr('role', 'option');
+        c1.$el.attr('aria-selected', false);
+
+        let label = item.value.toAriaLabel();
+        if (item.properties.power !== 1)
+            label += ` Power ${item.properties.power}`;
+        if (variableType !== 'none')
+            label += ` ${variableType}`;
+        if (dataType !== 'none')
+            label += ` ${dataType}`;
+
+        c1.$el.attr('aria-label', label );
  
         item.$el = c1.$el;
     };

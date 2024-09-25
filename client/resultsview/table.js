@@ -147,7 +147,7 @@ const TableView = Elem.View.extend({
         let rowSelectable = table.rowSelect ? ' row-selectable' : '';
 
         let titleId = focusLoop.getNextFocusId('label');
-        this.$table = $(`<table aria-labelledby="${titleId}" class="jmv-results-table-table${rowSelectable}"></table>`);
+        this.$table = $(`<table aria-labelledby="${titleId}" class="jmv-results-table-table${rowSelectable}" tabindex="0"></table>`);
         
         this.addContent(this.$table);
 

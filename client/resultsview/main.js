@@ -81,10 +81,15 @@ class Main {  // this is constructed at the bottom
 
         focusLoop.addFocusLoop(document.body);
         focusLoop.on('focus', (event) => {
-            if (focusLoop.inAccessibilityMode()) {
-                focusLoop.enterFocusLoop(document.body, { withMouse: false });
-            }
+            focusLoop.enterFocusLoop(document.body, { withMouse: false });
         });
+
+        focusLoop.on('blur', (event) => {
+            focusLoop.leaveFocusLoop(document.body, false);
+        });
+
+        //focusLoop.setFocusMode(focusMode);
+
 
         document.body.setAttribute('tabindex', '-1');
 
@@ -338,6 +343,8 @@ class Main {  // this is constructed at the bottom
                 if (this.resultsDefn.isEmpty)
                     this.$results.addClass('annotation');
             }
+
+            focusLoop.addFocusLoop(this.$results[0]);
                 
             this.results = createItem(
                 this.resultsDefn.results,

@@ -6,6 +6,7 @@ Backbone.$ = $;
 const Annotations = require('./annotations');
 
 const Elem = require('./element');
+const _focusLoop = require('../common/focusloop');
 
 const GroupModel = Elem.Model.extend({
     defaults : {
@@ -43,13 +44,22 @@ const GroupView = Elem.View.extend({
             this.hcTag = `</h${ this.level + 1 }>`;
 
             this.$el.addClass('jmv-results-group');
+            
+
+            let labelId = _focusLoop.getNextAriaElementId('label');
+
+            this.$el.attr('aria-labelledby', labelId);
 
             if (this.level === 0 && (this.parent === undefined || this.parent.parent === undefined)) {
+                this.$el.attr('role', 'region');
                 let annotation = Annotations.create(this.address(), 'heading', this.level, { text: this.model.attributes.title });
+                annotation.$el.attr('id', labelId);
                 annotation.$el.prependTo(this.$el);
             }
             else {
+                this.$el.attr('role', 'group');
                 this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).prependTo(this.$el);
+                this.$title.attr('id', labelId);
                 this.$title.prependTo(this.$el);
             }
 

@@ -33,7 +33,7 @@ const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
             src="${iframeUrl}${instanceId}/"
             class="silky-options-control silky-hidden-options-control"
             style="overflow: hidden; box-sizing: border-box;"
-            title="${analysis.name} Options"></iframe>`;
+            aria-label="${analysis.name} Options"></iframe>`;
 
     this.$frame = $(element);
     $target.append(this.$frame);

@@ -5,6 +5,7 @@ const FormatDef = require('./formatdef');
 const GridOptionListControl = require('./gridoptionlistcontrol');
 const RequestDataSupport = require('./requestdatasupport');
 const SuperClass = require('../common/superclass');
+const focusLoop = require('../common/focusloop');
 
 const VariablesListBox = function (params) {
 
@@ -169,8 +170,10 @@ const VariablesListBox = function (params) {
         if (itemValue.format.name === 'variable' && item.properties !== undefined)
             allowItem = this._checkIfVariableTypeAllowed(item.properties);
 
-        if ( ! allowItem &&  ! silent)
+        if ( ! allowItem &&  ! silent) {
+            focusLoop.speakMessage(s_('{var} not permitted. Incorrect measure or data type.', {var: itemValue.toAriaLabel()}));
             this._flashIcons();
+        }
 
         return allowItem;
     });

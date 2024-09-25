@@ -14,8 +14,8 @@ const Heading = function(address, text) {
         this.lastSelection = null;
         this.originalHeading = text;
 
-        this.$el = $(`<div class="jmv-editable-header">
-                        <h1 contenteditable spellcheck="false">${ text }</h1>
+        this.$el = $(`<div class="jmv-editable-header" tabindex="0" aria-label="${_('Analysis Heading')}">
+                        <h1 contenteditable spellcheck="false" tabindex="-1">${ text }</h1>
                       </div>`
                     );
 
