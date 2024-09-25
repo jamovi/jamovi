@@ -41,7 +41,7 @@ const DataVarWidget = Backbone.View.extend({
         focusToken.on('focusleave', () => {
             this._focusLeaving = true;
         });
-        this.$addLevelButton = $(`<button class="add-level" title="${_('Add new level')}"><span class="mif-plus"></span></button>`).appendTo(this.$levelsCrtl);
+        this.$addLevelButton = $(`<button class="add-level" aria-label="${_('Add new level')}"><span class="mif-plus"></span></button>`).appendTo(this.$levelsCrtl);
         this.$levelsContainer = $('<div class="container"></div>').appendTo(this.$levelsCrtl);
         this.$levelsTitle = $(`<div class="title">${_('Levels')}</div>`).appendTo(this.$levelsContainer);
         this.$levels = $('<div class="levels"></div>').appendTo(this.$levelsContainer);
@@ -83,7 +83,9 @@ const DataVarWidget = Backbone.View.extend({
                 let levels = this.model.get('levels');
                 this._addingLevel = true;
                 let response = await new Promise((resolve, reject) => {
-                    dialogs.prompt(_('Enter level value'), '', (result) => {
+                    let msg = _('Enter level value');
+                    focusLoop.speakMessage(msg);
+                    dialogs.prompt(msg, '', (result) => {
                         let widget = document.body.querySelector('.dialog-widget.prompt');
                         focusLoop.leaveFocusLoop(widget, false);
                         if (result === undefined)

@@ -8,6 +8,7 @@ const Annotations = require('./annotations');
 
 const Elem = require('./element');
 const b64 = require('../common/utils/b64');
+const _focusLoop = require('../common/focusloop');
 
 const ArrayModel = Elem.Model.extend({
     defaults : {
@@ -41,6 +42,7 @@ const ArrayView = Elem.View.extend({
         this.hcTag = '</h' + (this.level+1) + '>';
 
         this.$el.addClass('jmv-results-array');
+        this.$el.attr('role', 'group');
 
         if (this.model === null)
             this.model = new ArrayModel();
@@ -110,8 +112,12 @@ const ArrayView = Elem.View.extend({
         if (this.$select)
             this.$select.detach();
 
-        if ( ! this.$title)
+        if ( ! this.$title) {
             this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).prependTo(this.$el);
+            this.labelId = _focusLoop.getNextAriaElementId('label');
+            this.$title.attr('id', this.labelId);
+            this.$el.attr('aria-labelledby', this.labelId);
+        }
         else
             this.$title.text(this.model.attributes.title);
         if (this.model.attributes.element.layout === 1) {

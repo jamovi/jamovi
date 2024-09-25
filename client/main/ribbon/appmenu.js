@@ -46,7 +46,7 @@ const AppMenuButton = Backbone.View.extend({
         this.$header = $('<div class="jmv-ribbon-appmenu-header" role="none"></div>').appendTo(this.$menu);
         this.$icon = $('<div class="jmv-ribbon-appmenu-icon" role="none"></div>').appendTo(this.$header);
         this.$backOuter = $('<div class="jmv-ribbon-appmenu-back" role="none"></div>').appendTo(this.$header);
-        this.$back = $(`<button class="jmv-ribbon-appmenu-back-button" title="${_('Hide preferences')}"></button>`).appendTo(this.$backOuter);
+        this.$back = $(`<button class="jmv-ribbon-appmenu-back-button" aria-label="${_('Close preferences')}"></button>`).appendTo(this.$backOuter);
         this.$backButton = $('<div></div>').appendTo(this.$back);
 
         this.$back.on('click', event => {

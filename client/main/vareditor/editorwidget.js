@@ -50,7 +50,7 @@ const EditorWidget = Backbone.View.extend({
 
         this.$descBox = $('<div class="desc-box"></div>').appendTo(this.$el);
 
-        this.$title = $(`<input class="jmv-variable-editor-widget-title single-variable-support" type="text" maxlength="63" aria-label="${_('Name')}">`).appendTo(this.$descBox);
+        this.$title = $(`<input class="jmv-variable-editor-widget-title single-variable-support" type="text" maxlength="63" aria-label="${_('Variable Name')}">`).appendTo(this.$descBox);
         this._addTextEvents(this.$title, 'name');
         this.model.on('change:name', event => {
             if ( ! this.attached)
@@ -64,7 +64,7 @@ const EditorWidget = Backbone.View.extend({
             this.model.set('name', this.$title.val());
         } );
 
-        this.$description = $(`<div class="jmv-variable-editor-widget-description single-variable-support" type="text" placeholder="${_('Description')}" aria-label="${_('Description')}"  contenteditable="true" tabindex="0">`).appendTo(this.$descBox);
+        this.$description = $(`<div class="jmv-variable-editor-widget-description single-variable-support" type="text" placeholder="${_('Description')}" aria-label="${_('Variable Description')}"  contenteditable="true" tabindex="0">`).appendTo(this.$descBox);
         this._addTextEvents(this.$description, 'description');
         this.model.on('change:description', event => {
             if ( ! this.attached)

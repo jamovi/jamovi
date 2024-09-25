@@ -15,7 +15,11 @@ const init = function(name) {
     let $tarp = $('<div class="tarp">');
     $tarp.appendTo($body);
     $tarp.on('click', event => {
-        $tarp.trigger('tarp-clicked');
+        $tarp.trigger('tarp-clicked', event);
+        event.preventDefault();
+        event.stopPropagation();
+    });
+    $tarp.on('pointerdown', event => {
         event.preventDefault();
         event.stopPropagation();
     });
@@ -60,8 +64,10 @@ const show = function(name, cancellable = true, opacity = 0, zIndex = 99) {
                     delete $params[params.name];
                     $tarp.remove();
                 }
+                event.preventDefault();
+                event.stopPropagation();
             };
-            $tarp.one('mouseup', params.onMouseDown);
+            $tarp.one('pointerup', params.onMouseDown);
 
             $tarp.show();
         });

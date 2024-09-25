@@ -315,7 +315,7 @@ const Available = ModulesBase.extend({
         this._parent.on('change:modules', () => this._updateOps());
     },
     retrieve() {
-
+        this.set('error', null);
         this.set('status', 'loading');
 
         host.version.then((version) => {

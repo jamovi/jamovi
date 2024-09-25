@@ -22,11 +22,11 @@ const Store = Backbone.View.extend({
         this.$el.addClass('jmv-store');
         this.$el.attr('tabindex', '-1');
 
-        focusLoop.addFocusLoop(this.$el[0], { level: 2, closeHandler: this.hide.bind(this) });
+        focusLoop.addFocusLoop(this.$el[0], { level: 2, closeHandler: this.hide.bind(this), modal: true });
 
         this.$header = $('<div class="jmv-store-header"></div>').appendTo(this.$el);
 
-        this.$close = $(`<div class="jmv-store-button-close" title="${_('Hide library')}"><span class="mif-arrow-up"></span></div>`).appendTo(this.$header);
+        this.$close = $(`<button class="jmv-store-button-close" aria-label="${_('Hide library')}"><span class="mif-arrow-up"></span></button>`).appendTo(this.$header);
 
         this.$close.on('click', event => {
             this.hide();
@@ -51,7 +51,7 @@ const Store = Backbone.View.extend({
             { name: 'store', title: _('Available') },
             { name: 'sideload', title: _('Sideload')} ]) {
 
-            let $tab = $(util.format('<div class="jmv-store-tab store-tabs-list-item store-tabs-auto-select" data-tab="%s" tabindex="-1"><div class="jmv-store-tab-inner">%s</div></div>', tab.name, tab.title));
+            let $tab = $(util.format('<div class="jmv-store-tab store-tabs-list-item store-tabs-auto-select" data-tab="%s" tabindex="-1" role="tab"><div class="jmv-store-tab-inner">%s</div></div>', tab.name, tab.title));
             $tab.appendTo(this.$tabContainer);
         }
 
@@ -61,9 +61,9 @@ const Store = Backbone.View.extend({
 
         this.$pageContainer = $('<div class="jmv-store-page-container"></div>').appendTo(this.$el);
 
-        this.$pageInst  = $('<div class="jmv-store-page jmv-store-page-installed left"></div>').appendTo(this.$pageContainer);
-        this.$pageStore = $('<div class="jmv-store-page jmv-store-page-store"></div>').appendTo(this.$pageContainer);
-        this.$pageSideload = $('<div class="jmv-store-page jmv-store-page-sideload right"></div>').appendTo(this.$pageContainer);
+        this.$pageInst  = $('<div class="jmv-store-page jmv-store-page-installed left" aria-hidden="true"></div>').appendTo(this.$pageContainer);
+        this.$pageStore = $('<div class="jmv-store-page jmv-store-page-store" aria-hidden="true"></div>').appendTo(this.$pageContainer);
+        this.$pageSideload = $('<div class="jmv-store-page jmv-store-page-sideload right" aria-hidden="true"></div>').appendTo(this.$pageContainer);
 
         let settings = this.model.settings();
 
@@ -101,8 +101,10 @@ const Store = Backbone.View.extend({
 
         this._selectedIndex = index;
         this.$tabs.removeClass('selected');
+        this.$tabs.attr('aria-selected', false);
         let $selected = $(this.$tabs[index]);
         $selected.addClass('selected');
+        $selected.attr('aria-selected', true);
         $selected.focus();
 
         let css = $selected.position();
@@ -118,16 +120,19 @@ const Store = Backbone.View.extend({
                 $page.removeClass('right');
                 $page.addClass('left');
                 $page.css('visibility', 'hidden');
+                $page.attr('aria-hidden', 'true');
             }
             else if (i > index) {
                 $page.removeClass('left');
                 $page.addClass('right');
                 $page.css('visibility', 'hidden');
+                $page.attr('aria-hidden', 'true');
             }
             else {
                 $page.removeClass('right');
                 $page.removeClass('left');
                 $page.css('visibility', 'visible');
+                $page.attr('aria-hidden', 'false');
             }
         }
     },
@@ -144,13 +149,10 @@ const Store = Backbone.View.extend({
         tarp.show('store', false, 0.3);
         let modules = this.model.modules();
         modules.available().retrieve();
-
-        setTimeout(() => {
-            focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
-        }, 200);
-
+        focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
     },
     hide: function() {
+        focusLoop.leaveFocusLoop(this.$el[0], false);
         this.$el.removeClass('visible');
         tarp.hide('store');
     }
