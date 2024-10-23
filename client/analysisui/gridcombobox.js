@@ -61,8 +61,9 @@ const GridCombobox = function(params) {
         this.$input = $(t);
         this.updateDisplayValue();
         this.$input.change(function(event) {
+            let opts = self.getOptionsProperty();
             let select = self.$input[0];
-            let option = options[select.selectedIndex];
+            let option = opts[select.selectedIndex];
             let value = option.name;
             self.setValue(value);
         });
@@ -102,11 +103,30 @@ const GridCombobox = function(params) {
             select.selectedIndex = index;
     };
 
+    this.updateOptionsList = function() {
+        if ( ! this.$input) 
+            return;
+
+        let options = this.getOptionsProperty();
+
+        let html = '';
+        for (let i = 0; i < options.length; i++)
+            html += '<option>' + this.translate(options[i].title) + '</option>';
+
+        this.$input.empty();
+        this.$input.html(html);
+
+        this.updateDisplayValue();
+    };
+
     this._override('onPropertyChanged', (baseFunction, name) => {
         if (baseFunction !== null)
             baseFunction.call(this, name);
 
-        if (name === 'enable') {
+        if (name === 'options') {
+            this.updateOptionsList();
+        }
+        else if (name === 'enable') {
             let enabled = this.getPropertyValue(name);
             this.$input.prop('disabled', enabled === false);
             if (this.$label !== null) {
