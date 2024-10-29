@@ -87,7 +87,7 @@ body {
 }
 
 :focus {
-    outline-color: #4e5966;
+    /*outline-color: #4e5966;*/
 }
 
 [focusmode="default"] :focus {

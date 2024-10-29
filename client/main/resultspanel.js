@@ -95,6 +95,10 @@ const ResultsPanel = Backbone.View.extend({
         this._ready = false;
 
         this._refsTable = document.createElement('jmv-references');
+        this._refsTable.setAttribute('role', 'listitem');
+        this._refsTable.setAttribute('tabindex', '-1');
+        this._refsTable.setAttribute('aria-label', _('References'));
+        this._refsTable.classList.add('results-loop-list-item', 'results-loop-auto-select');
         this._refsTable.style.display = 'none';
         this._refsTable.setAnalyses(this.model.analyses());
         contextMenuListener(this._refsTable, (event) => {
@@ -102,6 +106,12 @@ const ResultsPanel = Backbone.View.extend({
             event.stopPropagation();
             this._refsRightClicked(event);
             return false;
+        });
+        this._refsTable.addEventListener('keydown', (event) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyC') {
+                this._menuEvent({op: 'refsCopy'})
+                event.stopPropagation();
+            }
         });
         this._refsTable.addEventListener('click', (event) => this._resultsClicked(event, 'refsTable'));
         this.el.appendChild(this._refsTable);
@@ -181,7 +191,7 @@ const ResultsPanel = Backbone.View.extend({
 
         $container.attr('data-analysis-name', analysis.name);
 
-        if ( ! isEmptyAnalysis)
+        if ( ! isEmptyAnalysis || analysis.index === 0)
             this.resultsLooper.highlightElement($container[0], true, false);
 
         let $cover = $('<div class="jmv-results-cover"></div>').appendTo($container);
@@ -565,6 +575,9 @@ const ResultsPanel = Backbone.View.extend({
                     this._checkIfEverythingReady();
 
                     break;
+                case 'copy':
+                    this.copyItem(id, eventData);
+                    break;
                 case 'menu':
                     let offset = $iframe.offset();
                     eventData.pos.left += offset.left;
@@ -606,6 +619,11 @@ const ResultsPanel = Backbone.View.extend({
                     break;
             }
         }
+    },
+    copyItem(id, data) {
+        let address = data.address.slice();
+        address.unshift(id);
+        this._menuEvent({ op: 'copy', address });
     },
     _showMenu(id, data) {
 

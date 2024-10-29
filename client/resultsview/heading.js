@@ -14,7 +14,7 @@ const Heading = function(address, text) {
         this.lastSelection = null;
         this.originalHeading = text;
 
-        this.$el = $(`<div class="jmv-editable-header" tabindex="0" aria-label="${_('Analysis Heading')}">
+        this.$el = $(`<div class="jmv-editable-header" tabindex="0" aria-label="${_(`Analysis Heading - {title}`, {title: text})}" role="textbox" aria-roledescription="Press enter to edit">
                         <h1 contenteditable spellcheck="false" tabindex="-1">${ text }</h1>
                       </div>`
                     );
@@ -22,6 +22,12 @@ const Heading = function(address, text) {
         this._host = this.$el[0];
         this.$heading = this.$el.find('h1');
 
+        this._host.addEventListener('keydown', (event) => {
+            if (event.code === 'Enter') {
+                this.$heading[0].focus();
+                event.preventDefault();
+            }
+        });
 
         this._focusEvent = this._focused.bind(this);
         this._blurEvent = this._blurred.bind(this);
@@ -154,6 +160,8 @@ const Heading = function(address, text) {
     };
 
     this._headingChanged = function() {
+
+        this.$el.attr('aria-label', _('Analysis Heading - {title}', {title: this.$heading.text()}));
         if (this.isEdited())
             this._host.classList.add('edited');
         else

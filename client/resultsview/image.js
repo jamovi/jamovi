@@ -32,12 +32,14 @@ const ImageView = Elem.View.extend({
         Elem.View.prototype.initialize.call(this, data);
 
         this.$el.addClass('jmv-results-image');
-        //this.$el.attr('role', 'img');
+
+        let imageId = focusLoop.getNextAriaElementId('image');
+        this.$el.attr('role', 'img');
+        this.$el.attr('aria-labelledby', imageId);
 
         this.$status = $('<div class="jmv-results-image-status-indicator"></div>');
         this.$status.prependTo(this.$el);
-        let imageId = focusLoop.getNextAriaElementId('image');
-        //this.$el.attr('aria-labelledby', imageId);
+        
         this.$title = $(`<h${this.level+1} id="${imageId}" class="jmv-results-image-title"></h${this.level+1}>`);
         this.$title.prependTo(this.$el);
 
@@ -45,9 +47,7 @@ const ImageView = Elem.View.extend({
             this.model = new ImageModel();
 
         let address = flatten(this.address());
-        this.$image = $(`<div class="jmv-results-image-image" role="img" aria-labelledBy="${imageId}" tabindex="0" data-address="${ encodeURI(address) }">`).appendTo(this.$el);
-
-
+        this.$image = $(`<div class="jmv-results-image-image" data-address="${ encodeURI(address) }">`).appendTo(this.$el);
 
         this.render();
     },

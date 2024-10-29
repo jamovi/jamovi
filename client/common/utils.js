@@ -14,6 +14,35 @@ export function contextMenuListener(element, callback) {
         return callback(event);
     }); // needed for ipads as well because the results panel simulates contextmenu events
 
+    if (window.navigator.platform.indexOf("Win") === -1) {  // not windows
+        element.addEventListener('keydown', (event) => {
+            if (event.shiftKey && event.code === 'F10') {  // add shift -> F10 shortcut for context menu
+                event.pageX = event.target.offsetLeft + (event.target.offsetWidth / 2);
+                event.pageY = event.target.offsetTop + (event.target.offsetHeight / 2);
+
+                let clientRect = event.target.getBoundingClientRect();
+                event.clientX = clientRect.left + (clientRect.width / 2);
+                event.clientY = clientRect.top  + (clientRect.height / 2);
+
+                const clickEvent = new MouseEvent('contextmenu', {
+                    view: window,
+                    bubbles: true,
+                    cancelable: true,
+                    pageX: event.target.offsetLeft + (event.target.offsetWidth / 2),
+                    pageY: event.target.offsetTop + (event.target.offsetHeight / 2),
+                    clientX: clientRect.left + (clientRect.width / 2),
+                    clientY: clientRect.top  + (clientRect.height / 2),
+                    //screenX: event.screenX,
+                    //screenY: event.screenY
+                });
+
+                event.preventDefault();
+                event.stopPropagation();
+                callback.call(this, clickEvent);
+            }
+        });
+    }
+
     if (['iPad Simulator',
         'iPhone Simulator',
         'iPod Simulator',

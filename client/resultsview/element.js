@@ -8,6 +8,7 @@ const focusLoop = require('../common/focusloop');
 
 const b64 = require('../common/utils/b64');
 const { contextMenuListener } = require('../common/utils');
+const { getContext } = require('keyboardjs');
 
 require('./refs');
 
@@ -19,7 +20,7 @@ const ElementModel = Backbone.Model.extend({
 });
 
 const ElementView = Backbone.View.extend({
-    initialize(data) {
+    initialize(data, interalFocus) {
 
         this.layout = new Tracker();
 
@@ -34,8 +35,6 @@ const ElementView = Backbone.View.extend({
         this.$el.attr('data-name', b64.enc(this.model.attributes.name));
 
         contextMenuListener(this.$el[0], event => {
-            if ('activeElement' in document)
-                document.activeElement.blur();
             event.stopPropagation();
             this._sendEvent({ type: 'menu', data: { entries: [], pos: { left: event.pageX, top: event.pageY } } });
             event.preventDefault();
@@ -51,7 +50,20 @@ const ElementView = Backbone.View.extend({
         this.refs.setRefs(this.model.attributes.refs);
         this.el.appendChild(this.refs);
 
+        if ( ! interalFocus)
+            this.setFocusElement(this.el);
+
         this.ready = Promise.resolve();
+    },
+    setFocusElement(element) {
+        element.classList.add('selectedable-result-item')
+        element.setAttribute('tabindex', '0');
+        element.addEventListener('keydown', (event) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyC') {
+                this.copyContentToClipboard()
+                event.stopPropagation();
+            }
+        });
     },
     render() {
         let error = this.model.get('error');
@@ -117,11 +129,18 @@ const ElementView = Backbone.View.extend({
         $el.insertAfter(before);
         this.addIndex += 1;
     },
+    copyContentToClipboard() {
+        this._sendEvent({ type: 'copy', data: { address: this.address(), type: this.type(),
+            label: this.label(),
+            name: this.type().toLowerCase() } });
+    },
     _sendEvent(event) {
         if (this.parent === null)
             return;
 
-        if (event.type === 'menu') {
+        if (event.type === 'copy')
+            this.parent._sendEvent(event);
+        else if (event.type === 'menu') {
             let options = this._menuOptions();
             let entry = {
                 type: this.type(),

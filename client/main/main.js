@@ -27,6 +27,7 @@ const I18n = require('../common/i18n');
 
 const Instance = require('./instance');
 const Notify = require('./notification');
+import _focusLoop from '../common/focusloop';
 import { UserFacingError } from './errors';
 const Keyboard = require('../common/focusloop');
 
@@ -240,34 +241,49 @@ $(document).ready(async() => {
         Keyboard.setFocusMode('default');
     }, _('Focus on variable list'));
     Keyboard.addKeyboardListener('Alt+KeyF', () => { // navigate to file menu
+        Keyboard.setFocusMode('keyboard');
         optionspanel.hideOptions();
         ribbon.openFileMenu(false);
     }, _('Open the main menu'));
     Keyboard.addKeyboardListener('Alt+KeyE', () => { // navigate to variable setup
+        Keyboard.setFocusMode('keyboard');
         optionspanel.hideOptions();
         viewController.showVariableEditor();
     }, _('Focus on the variable setup'));
     Keyboard.addKeyboardListener('Alt+KeyM', () => { // navigate to Application menu
+        Keyboard.setFocusMode('keyboard');
         ribbon.appMenu.toggleMenu(false);
     }, _('Open application menu'));
     Keyboard.addKeyboardListener('Alt+KeyL', () => { // navigate to Modules library
+        Keyboard.setFocusMode('keyboard');
         ribbonModel.getTab('analyses').store.show(1);
     }, _('Open the jamovi module library'));
     Keyboard.addKeyboardListener('Alt+ArrowLeft', () => { // navigate to Options panel
         let iframe = document.querySelector(`.results-loop-highlighted-item > iframe`);
-        let id = parseInt(iframe.getAttribute('data-id'));
-        let analysis = instance.analyses().get(id);
-        if (analysis) {
-            instance.set('selectedAnalysis', analysis);
-            optionspanel.setFocus();
+        if (iframe) {
+            let id = parseInt(iframe.getAttribute('data-id'));
+            let analysis = instance.analyses().get(id);
+            if (analysis) {
+                Keyboard.setFocusMode('keyboard');
+                resultsView.hideWelcome();
+                instance.set('selectedAnalysis', analysis);
+                if (analysis.hasUserOptions())
+                    optionspanel.setFocus();
+                else
+                    resultsView.selectedView.setFocus();
+            }
         }
     }, _('Returns to the previously selected analysis and opens the options panel, with focus set in the options panel.'));
     Keyboard.addKeyboardListener('Alt+ArrowRight', () => { // navigate to results panel
+        resultsView.hideWelcome();
+        Keyboard.setFocusMode('keyboard');
         resultsView.selectedView.setFocus();
     }, _('Returns to the previously selected analysis and shifts focus to the results output.'));
     Keyboard.addKeyboardListener('Alt+ArrowDown', () => { // navigate to analysis content
         let iframe = document.querySelector(`.results-loop-highlighted-item > iframe`);
         if (iframe) {
+            resultsView.hideWelcome();
+            Keyboard.setFocusMode('keyboard');
             iframe.focus();
             setTimeout(() => { // needed for firefox cross iframe focus
                 iframe.contentWindow.focus();
@@ -275,7 +291,9 @@ $(document).ready(async() => {
         }
     }, _('Returns to the previously selected analysis and shifts focus into the results output.'));
     Keyboard.addKeyboardListener('Alt+ArrowUp', () => { // navigate to results panel
-        resultsView.selectedView.setFocus();
+            resultsView.hideWelcome();
+            Keyboard.setFocusMode('keyboard');
+            resultsView.selectedView.setFocus();
     }, _('Returns to the previously selected analysis and shifts focus to the results output.'));
     
 
@@ -446,28 +464,10 @@ $(document).ready(async() => {
     splitPanel.addPanel('main-options', { adjustable: false, fixed: true, anchor: 'right', visible: false });
     splitPanel.addPanel('results', { adjustable: true, fixed: true, anchor: 'right' });
 
-    let $mainOptions = $('#main-options');
-    Keyboard.applyShortcutOptions($mainOptions[0], {
-        key: 'O',
-        maintainAccessibility: true,
-        action: (event) => {
-            if (optionspanel._currentResources) {
-                optionspanel._currentResources.$frame[0].focus();
-                setTimeout(function() { // needed for firefox cross iframe focus
-                  optionspanel._currentResources.$frame[0].contentWindow.focus();
-                }, 100);
-            }
-        },
-        position: { x: '15px', y: '15px' },
-        label: _('Analysis Options')
-        }
-    );
 
     let $mainTable = $('#main-table');
     $mainTable.attr('role', 'region');
     $mainTable.attr('aria-label', 'Spreadsheet');
-    //$mainTable.attr('aria-live', 'polite');
-
 
     let $results = $('#results');
     $results.attr('role', 'region');

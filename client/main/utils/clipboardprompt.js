@@ -31,6 +31,10 @@ class ClipboardPrompt extends HTMLElement {
         this._host.addEventListener('keydown', (event) => this._onKeyDown(event));
     }
 
+    focusElement() {
+        return this._copy;
+    }
+
     _css() {
         return `
             .text {

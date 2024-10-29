@@ -126,7 +126,7 @@ const GroupView = Elem.View.extend({
 
         let current = null;
         if (this.isEmptyAnalysis || (this.hasTitle !== false && this.model.attributes.title !== '' && ! childOfSelectList))
-            current = this._includeAnnotation(current, this.address().join('/'), this, true);
+            current = this._includeAnnotation(current, this.address().join('/'), this, true, _('{title} Initial Annotation', {title: this.model.attributes.title}));
 
 
         for (let i = 0; i < elements.length; i++) {
@@ -167,11 +167,25 @@ const GroupView = Elem.View.extend({
 
             current = this._includeBreak(current, childAddress);
 
-            if ((! child.hasAnnotations || child.hasAnnotations()) && element.name)
-                current = this._includeAnnotation(current, childAddress, child, false);
+            if ((! child.hasAnnotations || child.hasAnnotations()) && element.name) 
+                current = this._includeAnnotation(current, childAddress, child, false, this.createElementTitle(element));
         }
 
         this.ready = Promise.all(promises);
+    },
+    createElementTitle(element) {
+        switch (element.type) {
+            case 'table':
+                return _('Annotation for table {name}', {name: element.title });
+            case 'group':
+                return _('Annotation for group {name}', {name: element.title });
+            case 'array':
+                return _('Annotation for list {name}', {name: element.title });
+            case 'image':
+                return _('Annotation for image {name}', {name: element.title });
+            default:
+                return _('Annotation for item {name}', {name: element.title }); 
+        }
     },
     _includeItem(current, childAddress, element, options) {
         return this.layout.include(childAddress + ':item:' + element.type, () => {
@@ -197,13 +211,13 @@ const GroupView = Elem.View.extend({
             return $('<br>').insertAfter(current.$el);
         });
     },
-    _includeAnnotation(current, childAddress, item, isTop) {
+    _includeAnnotation(current, childAddress, item, isTop, title) {
         let suffix = isTop ? 'topText' : 'bottomText';
         let control = this.layout.include(childAddress + ':' + suffix, (annotation) => {
             if (annotation)
                 Annotations.activate(annotation, this.level);
             else
-                annotation = Annotations.create(item.address(), suffix, this.level);
+                annotation = Annotations.create(item.address(), suffix, this.level, { title });
 
             if (isTop)
                 this.$container[0].prepend(annotation.$el[0]);

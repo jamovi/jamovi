@@ -255,6 +255,11 @@
     position: absolute;
 }
 
+.jmv-table-cell-selected:not(.has-edit-focus) {
+    box-shadow: 0 0 0 2px #9f9f9f !important;
+    background-color: rgba(110, 110, 110, 0.1) !important;
+}
+
 .jmv-column-header.highlighted,
 .jmv-row-header-cell.highlighted {
     background-color: #CCCCCC ;

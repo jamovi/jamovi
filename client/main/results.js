@@ -23,10 +23,10 @@ const ResultsView = Backbone.View.extend({
         this.$el.attr('tabindex', '-1');
         focusLoop.applyShortcutOptions(this.$el[0], {
                 key: 'R',
-                maintainAccessibility: true,
+                maintainAccessibility: true, 
                 action: (event) => {
-                    focusLoop.enterFocusLoop(this.selectedView.$el[0], { withMouse: false });
-                    this.model.set('selectedAnalysis', null);
+                    this.hideWelcome();
+                    this.selectedView.setFocus();
                 },
                 position: { x: '15px', y: '15px' }
             }
@@ -95,6 +95,7 @@ const ResultsView = Backbone.View.extend({
 
         this.welcome = document.createElement('div');
         this.welcome.classList.add('jmv-welcome-panel');
+        this.welcome.setAttribute('role', 'none');
 
         this.welcome.appendChild(iframe);
         this.$el[0].appendChild(this.welcome);
