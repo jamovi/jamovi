@@ -127,6 +127,8 @@ export const copyToClipboard = etron.copyToClipboard || (async function(data) {
     }
 });
 
+export const setLanguage = etron.setLanguage || (() => {});
+
 export const pasteFromClipboard = etron.pasteFromClipboard || (function() {
     let readFnc = navigator.clipboard.read;
     if (navigator.clipboard.read) {
@@ -268,6 +270,7 @@ export default {
     showOpenDialog,
     showSaveDialog,
     showSaveDialogExternal,
+    setLanguage,
     showMessageBox,
     os,
     openUrl,

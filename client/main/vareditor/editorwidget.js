@@ -64,7 +64,7 @@ const EditorWidget = Backbone.View.extend({
             this.model.set('name', this.$title.val());
         } );
 
-        this.$description = $(`<div class="jmv-variable-editor-widget-description single-variable-support" type="text" placeholder="${_('Description')}" aria-label="${_('Variable Description')}"  contenteditable="true" tabindex="0">`).appendTo(this.$descBox);
+        this.$description = $(`<div class="jmv-variable-editor-widget-description single-variable-support" type="text" spellcheck="true" placeholder="${_('Description')}" aria-label="${_('Variable Description')}" contenteditable="true" tabindex="0">`).appendTo(this.$descBox);
         this._addTextEvents(this.$description, 'description');
         this.model.on('change:description', event => {
             if ( ! this.attached)

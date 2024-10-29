@@ -430,7 +430,7 @@ const FilterWidget = Backbone.View.extend({
         let $formulaPair = $('<div class="formula-pair"></div>').appendTo($formulaBox);
 
         let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))];
-        let $formula = $('<div class="formula' + ((rIndex > 0) ? ' and-formula' : '') + '" type="text" placeholder="e.g. ' + _example + '" contenteditable="true" tabindex="0"></div>').appendTo($formulaPair);
+        let $formula = $('<div class="formula' + ((rIndex > 0) ? ' and-formula' : '') + '" type="text" spellcheck="false" placeholder="e.g. ' + _example + '" contenteditable="true" tabindex="0"></div>').appendTo($formulaPair);
 
         $formula.on('input', (event) => {
             dropdown.updatePosition();
@@ -503,7 +503,7 @@ const FilterWidget = Backbone.View.extend({
 
 
         let $formulaList = $('<div class="formula-list"></div>').appendTo($filter);
-        let $description = $(`<div class="description" type="text" placeholder="${_('Description')}" tabindex="0"></div>`).appendTo($filter);
+        let $description = $(`<div class="description" type="text" spellcheck="true" placeholder="${_('Description')}" tabindex="0"></div>`).appendTo($filter);
 
         $removeButton.on('click', async (event) => {
             if (this._removingFilter)
