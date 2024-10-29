@@ -23,16 +23,20 @@ class FocusLoopToken extends Token {
     }
 }
 
+let nextShadowId = 0;
+
 // the FocusLoop is a static class that manages which control has focus (not selection/highlight)
 // and the movement and behaviour of that focus between and within controls
 class FocusLoop extends EventEmitter {
 
-    constructor(desktopMode) {
+    constructor(desktopMode, shadowId = '') {
         super();
 
+        this.shadowId = shadowId;
         this._mainWindow = window.top;
-        this._isMainWindow = this._mainWindow === window;
-        this._windowName = this._isMainWindow ? 'MainWindow' : window.name;
+        this._isMainWindow = this._mainWindow === window && this.shadowId === '';
+        this._isMainWindowShadow = this._mainWindow === window && this.shadowId !== '';
+        this._windowName = this._isMainWindow ? 'MainWindow' : `${window.name}${this.shadowId} `;
 
         this._availableModalId = 1;
         this._availableFocusId = 0;
@@ -63,10 +67,10 @@ class FocusLoop extends EventEmitter {
         }
 
         window.addEventListener('message', event => {
-            if (event.source === window)
-                return;
-
             let data = event.data;
+
+            if (event.source === window && data.shadowId === this.shadowId)
+                return;
 
             if (data.type !== 'focusLoop')
                 return;
@@ -107,7 +111,7 @@ class FocusLoop extends EventEmitter {
                             let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
                             if (transfer) {
                                 event.preventDefault();
-                                this.broadcast('processKeyObj', [keyObj], true);  
+                                this.broadcast('processKeyObj', [keyObj], false);  
                             }
                         }
                     }
@@ -191,7 +195,7 @@ class FocusLoop extends EventEmitter {
                             let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
                             if (transfer) {
                                 event.preventDefault();
-                                this.broadcast('processKeyObj', [keyObj], true);  
+                                this.broadcast('processKeyObj', [keyObj], false);  
                             }
                         }
                     }
@@ -278,6 +282,11 @@ class FocusLoop extends EventEmitter {
         }
 
         window.addEventListener('focusout', (event) => {
+            if (this._focusControlPaused) {
+                if (event.relatedTarget !== this._focusControlPaused)
+                    this._focusControlPaused.focus();
+                return;
+            }
 
             if (this._focusPassing || this.isBluring)
                 return;
@@ -302,6 +311,12 @@ class FocusLoop extends EventEmitter {
         });
 
         window.addEventListener('focusin', (event) => {
+            if (this._focusControlPaused) {
+                if (event.target !== this._focusControlPaused)
+                    this._focusControlPaused.focus();
+                return;
+            }
+
             let element = event.target;
             if (this._activeModalToken && this._activeModalToken.el.contains(element) === false) {
                 this._activeModalToken.el.focus();
@@ -319,7 +334,7 @@ class FocusLoop extends EventEmitter {
                     if (details.usesKeyboard || this.containsFocusableMenuLevel(event.composedPath()) || (this.inKeyboardMode() && ! this._mouseClicked)) {
                         let keyboardMode = 'hover';
                         if ( ! element.classList.contains('menu-level'))
-                            keyboardMode = (this.focusMode === 'keyboard' && !this._mouseClicked) ? 'keyboard' : 'hover';
+                            keyboardMode = (/*this.focusMode === 'keyboard' &&*/ !this._mouseClicked) ? 'keyboard' : 'hover';
                         this.setFocusMode(keyboardMode);
                     }
                     else
@@ -341,8 +356,20 @@ class FocusLoop extends EventEmitter {
             this.updateBaseKeyPaths();
     }
 
+    getShadowFocusLoop() {
+        return new FocusLoop(false, nextShadowId++);
+    }
+
+    pauseFocusControl(element) {
+        this._focusControlPaused = element;
+    }
+
+    resumeFocusControl() {
+        this._focusControlPaused = null;
+    }
+
     speakMessage(message) {
-        if (this._isMainWindow) {
+        if (this._isMainWindow || this._isMainWindowShadow) {
             let msg = document.createElement('div');
             msg.innerHTML = message;
             
@@ -550,14 +577,14 @@ class FocusLoop extends EventEmitter {
     }
 
     broadcast(id, args, transferFocus) {
-        let data = { id, args, type: 'focusLoop' };
+        let data = { id, args, type: 'focusLoop', shadowId: this.shadowId };
         if (this._isMainWindow === false) {
             if (transferFocus)
                 this.transferFocus(this._mainWindow);
-            this._mainWindow.postMessage(data, '*');
         }
+        this._mainWindow.postMessage(data, '*');
         for (let i = 0; i < this._mainWindow.frames.length; i++) {
-            if (this._mainWindow.frames[i] !== window)
+            //if (this._mainWindow.frames[i] !== window)
                 this._mainWindow.frames[i].postMessage(data, '*');
         }
     }
@@ -1287,7 +1314,7 @@ class FocusLoop extends EventEmitter {
         let reservedKeys = details.requires;
 
         let parent = target.closest('.menu-level');
-        if (parent.classList.contains('focus-listener')) {
+        if (parent.classList.contains('focus-listener') && parent.parentElement) {
             let upperListener = parent.parentElement.closest('.focus-listener');
             if (upperListener) {
                 parent.removeEventListener('keydown', this._handleKeyPress);
@@ -1342,8 +1369,10 @@ class FocusLoop extends EventEmitter {
                 else {
                     let loopContainer = this.nullishCheck(target.closest('[vloop="true"]'), parent);
                     list = this.keyboardfocusableElements(loopContainer, level);
-                    if (this.findNextElement(target, list, 'up'))
+                    if (this.findNextElement(target, list, 'up')) {
                         event.preventDefault();
+                        event.stopPropagation();
+                    }
                 }
                 break;
             case "ArrowDown":
@@ -1355,8 +1384,10 @@ class FocusLoop extends EventEmitter {
                 else {
                     let loopContainer = this.nullishCheck(target.closest('[vloop="true"]'), parent);
                     list = this.keyboardfocusableElements(loopContainer, level);
-                    if (this.findNextElement(target, list, 'down'))
+                    if (this.findNextElement(target, list, 'down')) {
                         event.preventDefault();
+                        event.stopPropagation();
+                    }
                 }
                 break;
             case "ArrowLeft":
@@ -1369,8 +1400,10 @@ class FocusLoop extends EventEmitter {
                     let loopContainer = this.nullishCheck(target.closest('[hloop="true"]'), parent);
                     //if (loopContainer.getAttribute('hloop') === 'true') {
                         list = this.keyboardfocusableElements(loopContainer, level);
-                        if (this.findNextElement(target, list, 'left'))
+                        if (this.findNextElement(target, list, 'left')) {
                             event.preventDefault();
+                            event.stopPropagation();
+                        }
                     //}
                 }
                 break;
@@ -1383,8 +1416,10 @@ class FocusLoop extends EventEmitter {
                 else {
                     let loopContainer = this.nullishCheck(target.closest('[hloop="true"]'), parent);
                     list = this.keyboardfocusableElements(loopContainer, level);
-                    if (this.findNextElement(target, list, 'right'))
+                    if (this.findNextElement(target, list, 'right')) {
                         event.preventDefault();
+                        event.stopPropagation();
+                    }
                 }
                 break;
             case "Escape":
@@ -1429,6 +1464,7 @@ class FocusLoop extends EventEmitter {
                     parent.focus();
 
                 event.preventDefault();
+                event.stopPropagation();
                 break;
             case 'Enter':
                 if (keyToEnter) {

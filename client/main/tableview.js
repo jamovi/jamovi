@@ -73,7 +73,7 @@ const TableView = SilkyView.extend({
                 <div class="jmv-table-body" role="presentation">
                     <div class="jmv-column-row-header" style="left: 0 ;" aria-hidden="true");></div>
                     <div class="jmv-sub-selections"></div>
-                    <div class="jmv-table-cell-selected">
+                    <div class="jmv-table-cell-selected has-edit-focus">
                         <div class="selection-sizer top-left-sizer"></div>
                         <div class="selection-sizer bottom-right-sizer"></div>
                     </div>
@@ -250,6 +250,15 @@ const TableView = SilkyView.extend({
         this._editNote = new Notify({ duration: 3000 });
 
         this.selection.clearSelectionList();
+
+        focusLoop.on('focusModeChanged', () => {
+            if (this.$selection) {
+                if (focusLoop.focusMode === 'default')
+                    this.$selection[0].classList.add('has-edit-focus');
+                else
+                    this.$selection[0].classList.remove('has-edit-focus');
+            }
+        });
     },
     
     onEditingVarChanged(editingColumns) {

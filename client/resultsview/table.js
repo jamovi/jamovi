@@ -131,7 +131,7 @@ const isVis = function(column) {
 const TableView = Elem.View.extend({
     initialize(data) {
 
-        Elem.View.prototype.initialize.call(this, data);
+        Elem.View.prototype.initialize.call(this, data, true);
 
         this.$el.addClass('jmv-results-table');
 
@@ -147,7 +147,7 @@ const TableView = Elem.View.extend({
         let rowSelectable = table.rowSelect ? ' row-selectable' : '';
 
         let titleId = focusLoop.getNextFocusId('label');
-        this.$table = $(`<table aria-labelledby="${titleId}" class="jmv-results-table-table${rowSelectable}" tabindex="0"></table>`);
+        this.$table = $(`<table aria-labelledby="${titleId}" class="jmv-results-table-table${rowSelectable}"></table>`);
         
         this.addContent(this.$table);
 
@@ -165,8 +165,10 @@ const TableView = Elem.View.extend({
         this.model.on('change:sortedCells', () => this.render());
         this.refs._refTable.addEventListener('changed', () => this.render());
 
+        this.setFocusElement(this.$table[0]);
         this.render();
     },
+
     type() {
         return 'Table';
     },

@@ -23,6 +23,14 @@
     margin: 10px 0;
 }
 
+.selectedable-result-item:focus, .focus-activated {
+    outline: Highlight auto 1px;
+    outline: -webkit-focus-ring-color auto 1px;
+}
+.selectedable-result-item:not(#results), .focus-activated:not(#results) {
+    outline-offset: 12px;
+}
+
 #results.weights
 {
     background-color: #ffffff;

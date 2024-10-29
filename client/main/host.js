@@ -109,6 +109,7 @@ let clipboardPrompt;
 
 export const copyToClipboard = etron.copyToClipboard || (async function(data) {
 
+    let hasFocus = document.activeElement;
     if ( ! clipboardPromptBox) {
         clipboardPromptBox = document.createElement('jmv-infobox');
         document.body.appendChild(clipboardPromptBox);
@@ -124,6 +125,8 @@ export const copyToClipboard = etron.copyToClipboard || (async function(data) {
     }
     finally {
         clipboardPromptBox.hide();
+        if (hasFocus)
+            hasFocus.focus();
     }
 });
 

@@ -88,11 +88,6 @@ class Main {  // this is constructed at the bottom
             focusLoop.leaveFocusLoop(document.body, false);
         });
 
-        //focusLoop.setFocusMode(focusMode);
-
-
-        document.body.setAttribute('tabindex', '-1');
-
         $(document).mousedown(this, (event) => this._mouseDown(event));
         $(document).mouseup(this, (event) => this._mouseUp(event));
         $(document).mousemove(this, (event) => this._mouseMove(event));
@@ -128,21 +123,28 @@ class Main {  // this is constructed at the bottom
 
     _sendMenuRequest(event) {
         let entries = event.data.entries;
-        if (this.resultsDefn.isEmpty) {
-            entries[0].type = 'Note';
-            entries[0].name = 'note';
-            entries[0].label = _('Note');
-        }
-        else {
-            entries[0].type = 'Analysis';
-            entries[0].name = 'analysis';
-            entries[0].label = _('Analysis');
+        if (entries) {
+            if (this.resultsDefn.isEmpty) {
+                entries[0].type = 'Note';
+                entries[0].name = 'note';
+                entries[0].label = _('Note');
+            }
+            else {
+                entries[0].type = 'Analysis';
+                entries[0].name = 'analysis';
+                entries[0].label = _('Analysis');
+            }
         }
 
         this.mainWindow.postMessage(event, '*');
 
-        let lastEntry = entries[entries.length-1];
-        this._menuEvent({ type: 'activated', address: lastEntry.address });
+        let lastEntryAddress = event.data.address;
+        if (entries) {
+            let lastEntry = entries[entries.length-1];
+            lastEntryAddress = lastEntry.address;
+            this._menuEvent({ type: 'activated', address: lastEntryAddress });
+        }
+
     }
 
     _sendAnnotationRequest(name, data) {
@@ -333,6 +335,8 @@ class Main {  // this is constructed at the bottom
             this._refTable.setup(this.resultsDefn.refs, this.resultsDefn.refsMode);
 
             if (this.resultsDefn.ns === 'jmv' && this.resultsDefn.name === 'weights') {
+                document.body.setAttribute('aria-roledescription', `Analyses wieghts`);
+
                 this.resultsDefn.results.title = '';
                 this.resultsDefn.hasTitle = false;
                 this.resultsDefn.allowAnnotations = false;
@@ -340,8 +344,14 @@ class Main {  // this is constructed at the bottom
             }
             else {
                 this.$results = $('<div id="results"></div>');
-                if (this.resultsDefn.isEmpty)
+                if (this.resultsDefn.isEmpty) {
                     this.$results.addClass('annotation');
+                    document.body.setAttribute('aria-roledescription', `Annotation`);
+                    document.body.setAttribute('tabindex', '');
+                }
+                else {
+                    document.body.setAttribute('aria-roledescription', `${this.resultsDefn.results.title} Analysis`);
+                }
             }
 
             focusLoop.addFocusLoop(this.$results[0]);
@@ -392,6 +402,15 @@ class Main {  // this is constructed at the bottom
             });
 
             $(document).ready(() => {
+                if (navigator.platform === 'Win32')
+                    $('body').addClass('windows');
+                else if (navigator.platform === 'MacIntel')
+                    $('body').addClass('mac');
+                else if (navigator.platform.startsWith('Linux'))
+                    $('body').addClass('linux');
+                else
+                    $('body').addClass('other');
+
                 let erd = ERDM({ strategy: 'scroll' });
                 erd.listenTo(this.$results[0], (element) => {
                     this._notifyResize();
@@ -517,7 +536,8 @@ class Main {  // this is constructed at the bottom
     _menuEvent(event) {
 
         if (this.active !== null) {
-            this.$selector.css('opacity', '0');
+            this.active.$el.removeClass('focus-activated');
+            //this.$selector.css('opacity', '0');
             this.active = null;
         }
 
@@ -535,7 +555,8 @@ class Main {  // this is constructed at the bottom
 
         switch (event.type) {
             case 'activated':
-                let pos = this.active.$el.offset();
+                this.active.$el.addClass('focus-activated');
+                /*let pos = this.active.$el.offset();
                 let width = this.active.$el.outerWidth();
                 let height = this.active.$el.outerHeight();
                 let padTB = 0;
@@ -549,7 +570,7 @@ class Main {  // this is constructed at the bottom
                     top:    pos.top  - padTB,
                     width:  width  + 2 * padLR,
                     height: height + 2 * padTB,
-                    opacity: 1 });
+                    opacity: 1 });*/
                 break;
         }
     }

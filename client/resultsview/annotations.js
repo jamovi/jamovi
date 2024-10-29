@@ -52,7 +52,7 @@ Annotations.create = function(address, suffix, levelIndex, data) {
         if (suffix === 'heading')
             control = new Heading(address, data.text);
         else
-            control = new Annotation(address, suffix);
+            control = new Annotation(address, suffix, data?.title);
         Annotations.controls.push(control);
     }
 

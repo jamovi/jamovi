@@ -1,6 +1,8 @@
 
 'use strict';
 
+let focusLoop = require('../common/focusloop').getShadowFocusLoop();
+
 class References extends HTMLElement {
     constructor() {
         super();
@@ -12,21 +14,31 @@ class References extends HTMLElement {
 
         this._root = this.attachShadow({ mode: 'open' });
 
+        let labelId = focusLoop.getNextAriaElementId('label');
+
         let style = document.createElement('style');
         style.textContent = this._css();
         this._root.appendChild(style);
 
+        this._root.host.addEventListener('keydown', (event) => {
+            if (event.altKey && event.code === 'ArrowDown') {
+                focusLoop.enterFocusLoop(this._body, { withMouse: false });
+            }
+        });
+
         let heading = document.createElement('h1');
         heading.textContent = _('References');
-        heading.setAttribute('id', 'ref_heading');
+        heading.setAttribute('id', labelId);
 
         this._body = document.createElement('div');
         this._body.className += ' body';
         this._body.setAttribute('role', 'list');
-        this._body.setAttribute('aria-labelledby', 'ref_heading');
+        this._body.setAttribute('aria-labelledby', labelId);
 
         this._root.appendChild(heading);
         this._root.appendChild(this._body);
+        
+        focusLoop.addFocusLoop(this._body, { level: 1 });
     }
 
     setAnalyses(analyses) {
@@ -176,19 +188,34 @@ class References extends HTMLElement {
 
         refs = refs.filter((x) => x !== null);
 
+        let refElemets = this._body.querySelectorAll('jmv-reference');
+        refElemets.forEach((refElement) => {
+            refElement.removeEventListener('keydown', this.refKeyDown);
+        });
+
         this._body.innerHTML = '';
 
+        let firstRef = null;
         for (let i = 0; i < refs.length; i++) {
             let ref = refs[i];
             let el = document.createElement('jmv-reference');
             el.setup(i + 1, ref.text);
             el.setAttribute('role', 'listitem');
+            el.setAttribute('tabindex', '0');
+            el.addEventListener('keydown', this.refKeyDown);
+            if ( ! firstRef)
+                firstRef = el;
             this._body.appendChild(el);
         }
 
         this._refs = refs;
         this._modules = modules;
         this._numbers = null;
+    }
+
+    refKeyDown(event) {
+        if (event.code === 'Space') 
+            event.target.setSelected( ! event.target.selected);
     }
 
     resolve(moduleName, ref) {

@@ -10,6 +10,7 @@ const Parchment = Quill.import('parchment');
 const TextBlot = Quill.import('blots/text');
 
 import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
+import _focusLoop from '../common/focusloop';
 
 //////////////////////////////////////////////////////////////////////////////
 // Needed to fix an issue with how quill interacts with highlightjs
@@ -66,7 +67,7 @@ FormulaBlot.tagName = 'SPAN';
 
 Quill.register(FormulaBlot, true);
 
-const Annotation = function(address, suffix) {
+const Annotation = function(address, suffix, title) {
 
     this.initialise = function(address, suffix) {
         this.path = address.join('/') + ':' + suffix;
@@ -75,8 +76,8 @@ const Annotation = function(address, suffix) {
         this.isFocused = false;
         this.lastSelection = null;
 
-        this.$el = $(`<div class="jmv-annotation body">
-            <div class="editor-box" tabindex="0" aria-label="${_('Annotation')}">
+        this.$el = $(`<div class="jmv-annotation body" tabindex="0" role="region" aria-roledescription="${title}" aria-description="${_('Press enter to edit')}">
+            <div class="editor-box">
                 <div class="editor jmv-note-theme"></div>
             </div>
         </div>`);
@@ -102,17 +103,20 @@ const Annotation = function(address, suffix) {
                   maxStack: 500,
                   userOnly: true
                 },
-                clipboard: { },
+                clipboard: { }
             },
             placeholder: '>',
             theme: 'snow'
         });
 
+
         this.editor.keyboard.addBinding({
             key: 'Escape'
         }, (range, context) => {
-            this.editor.blur();
+            //this.editor.blur();
+            this._host.focus();
         });
+        
 
         let saveFunction = this.editor.theme.tooltip.save;
         this.editor.theme.tooltip.save = () => {
@@ -151,8 +155,29 @@ const Annotation = function(address, suffix) {
         this._host = this.$el[0];
         this._body = this.$el[0];
 
+        this._host.addEventListener('keydown', (event) => {
+            if (event.code === 'Enter') {
+                this.ql_editor.focus();
+                event.preventDefault();
+            }
+        });
+
         this.ql_editor = this._body.querySelector('.ql-editor');
         this.ql_editor.setAttribute('tabindex', '-1');
+        this.ql_editor.setAttribute('role', 'document');
+        this.ql_editor.setAttribute('aria-label', `${_('Annotation')}`);
+        this.ql_editor.addEventListener('keydown', (event) => {
+            if (event.code === 'Tab') {
+                event.stopPropagation();
+            }
+        });
+
+        this.ql_editor.addEventListener('focusout', (event) => {
+            this._transferElement = event.relatedTarget;
+        });
+        this.ql_editor.addEventListener('focusin', (event) => {
+            this._transferElement = null;
+        });
 
 
 
@@ -179,8 +204,10 @@ const Annotation = function(address, suffix) {
     this._blur = function (event) {
         if (!this.selectionClearTimeOut) {
             this.selectionClearTimeOut = setTimeout(() => {
+                _focusLoop.pauseFocusControl(this._transferElement);
                 this.editor.setSelection(null);
                 this.selectionClearTimeOut = null;
+                _focusLoop.resumeFocusControl();
             }, 10);
         }
     };
@@ -260,8 +287,9 @@ const Annotation = function(address, suffix) {
     this._event = function(eventName, range, oldRange, source) {
         if (eventName === 'selection-change') {
 
-            if (range === null)
+            if (range === null) {
                 this._blurred();
+            }
             else {
                 this.lastSelection = this.editor.getSelection();
                 this._fireEvent('annotation-format-changed', this.editor.getFormat());

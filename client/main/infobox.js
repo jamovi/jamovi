@@ -115,6 +115,11 @@ class InfoBox extends HTMLElement {
             }
             else if (this._isElement(info)) {
                 this.appendChild(info);
+                if (info.focusElement)
+                    setTimeout(() => {
+                
+                    info.focusElement().focus();
+                }, 100);
             }
             else {
                 show = false;
