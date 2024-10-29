@@ -327,8 +327,11 @@ const LayoutSupplierView = function(params) {
     this.getSelectedItems = function() {
         let items = [];
         let selectionCount = this.supplierGrid.selectedCellCount();
-        for (let i = 0; i < selectionCount; i++)
-            items.push(this.getItem(this.supplierGrid.getSelectedCell(i).data.row - 1));
+        for (let i = 0; i < selectionCount; i++) {
+            let item = this.getItem(this.supplierGrid.getSelectedCell(i).data.row - 1);
+            if (item)
+                items.push(item);
+        }
 
         return items;
     };
