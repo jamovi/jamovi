@@ -158,6 +158,10 @@ async function pasteFromClipboard() {
     return { text, html };
 }
 
+async function setLanguage(code) {
+    await ipc.invoke('set-language', code);
+}
+
 function setDialogProvider(provider) {
     dialogProvider = provider;
 }
@@ -222,6 +226,7 @@ contextBridge.exposeInMainWorld(
         navigate,
         constructMenu,
         copyToClipboard,
+        setLanguage,
         pasteFromClipboard,
         showSaveDialog,
         showSaveDialogExternal,

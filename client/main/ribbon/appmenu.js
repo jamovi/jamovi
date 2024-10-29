@@ -128,7 +128,7 @@ const AppMenuButton = Backbone.View.extend({
         this.$importHeading = $(`<div id="${importId}" class="jmv-ribbon-appmenu-subheading">${_('Import')}</div>`).appendTo(this.$import);
 
         this.$missings = $(`<label class="jmv-ribbon-appmenu-item"><div>${_('Default missings')}</div></label>`).appendTo(this.$import);
-        this.$missingsInput = $('<input type="text" size="10" class="jmv-import-missings" list="missings">').appendTo(this.$missings);
+        this.$missingsInput = $('<input type="text" spellcheck="false" size="10" class="jmv-import-missings" list="missings">').appendTo(this.$missings);
         //this.$missingsItems = $('<datalist id="missings"><option value="NA"><option value="-999999"></datalist>').appendTo(this.$missings);
         this.$missingsInput.on('keydown', (event) => {
             if (event.keyCode === 13)

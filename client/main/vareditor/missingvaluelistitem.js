@@ -40,7 +40,7 @@ const MissingValueListItem = function(value) {
 
         let $fp = $('<div class="formula-list-item"></div>').appendTo(this.$el);
 
-        let $formula = $('<div class="formula" type="text" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" style="text-indent:' + indent + '">' + formula + '</div>').appendTo($fp);
+        let $formula = $('<div class="formula" type="text" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" spellcheck="false" style="text-indent:' + indent + '">' + formula + '</div>').appendTo($fp);
 
         let indexOfDollar = prefix.indexOf('$');
         if (indexOfDollar !== -1) {

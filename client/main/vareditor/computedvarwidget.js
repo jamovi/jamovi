@@ -142,7 +142,7 @@ const ComputedVarWidget = Backbone.View.extend({
         let $formulaPair = $('<div class="formula-pair"></div>').appendTo($formulaBox);
 
         let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))];
-        this.$formula = $('<div class="formula" type="text" placeholder="eg: ' + _example + '" contenteditable="true" aria-label="formula" tabindex="0"></div>').appendTo($formulaPair);
+        this.$formula = $('<div class="formula" type="text" placeholder="eg: ' + _example + '" contenteditable="true" spellcheck="false" aria-label="formula" tabindex="0"></div>').appendTo($formulaPair);
 
         this.$formula.on('input', (event) => {
             dropdown.updatePosition();

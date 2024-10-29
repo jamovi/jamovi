@@ -502,6 +502,11 @@ ipc.on('notify-return', (event, returned) => {
     }
 });
 
+ipc.handle('set-language', (event, code) => {
+    const webContents = event.sender;
+    webContents.session.setSpellCheckerLanguages([code]);
+});
+
 // handle requests sent from the browser instances
 ipc.on('request', (event, arg) => {
 

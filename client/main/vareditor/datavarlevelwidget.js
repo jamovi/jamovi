@@ -31,7 +31,7 @@ const DataVarLevelWidget = function(level, model, i, readOnly) {
 
 
     if (this.readOnly === false)
-        this.$label = $('<input class="jmv-variable-editor-level-label" data-index="' + i + '" type="text" value="' + level.label + '" />').appendTo(this.$el);
+        this.$label = $('<input class="jmv-variable-editor-level-label" data-index="' + i + '" type="text" spellcheck="true" value="' + level.label + '" />').appendTo(this.$el);
     else
         this.$label = $('<div class="jmv-variable-editor-level-label">' + level.label + '</div>').appendTo(this.$el);
 

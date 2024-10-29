@@ -40,7 +40,7 @@ const PageModules = Backbone.View.extend({
 
         let $searchBox = $('<div class="store-page-searchbox"><div class="search-icon"></div></div>').appendTo(this.$el);
         let searchAriaLabel = this.$el.hasClass('jmv-store-page-store') ? _('Search available modules') : _('Search installed modules');
-        this.$search    = $(`<input class="search-text" type="textbox" placeholder="${_('Search')}" aria-label="${searchAriaLabel}"></input>`).appendTo($searchBox);
+        this.$search    = $(`<input class="search-text" type="text" spellcheck="true" placeholder="${_('Search')}" aria-label="${searchAriaLabel}"></input>`).appendTo($searchBox);
         this.$body    = $('<div class="jmv-store-body"></div>').appendTo(this.$el);
         this.$content = $(`<div class="jmv-store-content" aria-label="${_('Modules')}"></div>`).appendTo(this.$body);
         this.$loading = $('<div class="jmv-store-loading"></div>').appendTo(this.$body);

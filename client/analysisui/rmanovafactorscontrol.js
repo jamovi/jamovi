@@ -32,7 +32,7 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
             isEmpty = false;
         }
 
-        this.$label = $('<input class="silky-option-listitem centre-text rma-factor-label" type="text" value="' + label + '">');
+        this.$label = $('<input class="silky-option-listitem centre-text rma-factor-label" type="text" spellcheck="false" value="' + label + '">');
         let blurCall = event => {
             if (event.target !== this.$label[0])
                 this.$label.blur();
@@ -150,7 +150,7 @@ const rmafcItem = function(parent, data, isFirst, isLast) {
             $levelButton = this.levelButtons[index];
         }
         else {
-            $t = $('<input class="silky-option-listitem" type="text" value="' + text + '">');
+            $t = $('<input class="silky-option-listitem" type="text" spellcheck="false" value="' + text + '">');
             let blurCall = event => {
                 if (event.target !== $t[0])
                     $t.blur();

@@ -57,10 +57,10 @@ const TransformEditor = function(dataset) {
         this.formula = [ '' ];
 
         this.$top = $('<div class="jmv-transform-editor-top"></div>').appendTo(this.$el);
-        this.$title = $('<input class="jmv-transform-editor-widget-title" type="text" maxlength="63">').appendTo(this.$top);
+        this.$title = $('<input class="jmv-transform-editor-widget-title" type="text" spellcheck="true" maxlength="63">').appendTo(this.$top);
         this.$descBox = $('<div class="desc-box"></div>').appendTo(this.$top);
-        this.$description = $(`<div class="jmv-transform-editor-widget-description" type="text" placeholder="${_('Description')}" contenteditable="true" tabindex="0">`).appendTo(this.$descBox);
-        this.$shortname = $(`<div class="jmv-transform-editor-widget-shortname" type="text" placeholder="${_('Variable suffix')}" contenteditable="true" tabindex="0">`).appendTo(this.$descBox);
+        this.$description = $(`<div class="jmv-transform-editor-widget-description" type="text" spellcheck="true" placeholder="${_('Description')}" contenteditable="true" tabindex="0">`).appendTo(this.$descBox);
+        this.$shortname = $(`<div class="jmv-transform-editor-widget-shortname" type="text" spellcheck="false" placeholder="${_('Variable suffix')}" contenteditable="true" tabindex="0">`).appendTo(this.$descBox);
 
         this.setInputEvents = function($element, isDiv, propertyName) {
             let _applyOnBlur = true;
@@ -716,7 +716,7 @@ const TransformEditor = function(dataset) {
         if (elements.$formulas === undefined)
             elements.$formulas = [ ];
 
-        let $formula = $('<div class="formula" tabindex="0" type="text" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" data-index="' + index + '">' + formula + '</div>').appendTo($fp);
+        let $formula = $('<div class="formula" tabindex="0" type="text" spellcheck="false" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" data-index="' + index + '">' + formula + '</div>').appendTo($fp);
 
         let indexOfDollar = prefix.indexOf('$');
         if (indexOfDollar !== -1) {
