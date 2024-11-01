@@ -92,7 +92,7 @@ class ClipboardPrompt extends HTMLElement {
         `;
     }
 
-    copy(content) {
+    async copy(content) {
         if (navigator.clipboard.write) {
             this.list = { };
             if (content.text)
@@ -100,7 +100,8 @@ class ClipboardPrompt extends HTMLElement {
             if (content.html)
                 this.list["text/html"] = new Blob([content.html], { type: "text/html" });
             if (content.image)
-                this.list["image/png"] = new Blob([content.image], { type: "image/png" });
+                // expects dataURI string
+                this.list["image/png"] = await(await fetch(content.image)).blob();
         }
         else {
             if ('html' in content) {
