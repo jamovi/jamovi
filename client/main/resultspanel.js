@@ -176,6 +176,12 @@ const ResultsPanel = Backbone.View.extend({
 
         let $container = $(`<div class="jmv-results-container results-loop-list-item results-loop-auto-select  ${ classes }" tabindex="-1" role="listitem" aria-label="${ isEmptyAnalysis ? 'Annotation Field' : (analysis.results.title + '- Results')}"></div>`);
         
+        $container.on('keydown', (event) => {
+            if ((event.ctrlKey || event.metaKey) && event.code === 'KeyC') {
+                this._menuEvent({ op: 'copy', address: [ analysis.id] });
+                event.stopPropagation();
+            }
+        });
 
         let $after = $(this._refsTable);
         if (analysis.results.index > 0) {
@@ -184,8 +190,6 @@ const ResultsPanel = Backbone.View.extend({
             if (index < $siblings.length)
                 $after = $siblings[index];
         }
-
-        
 
         $container.insertBefore($after);
 
