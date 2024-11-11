@@ -583,14 +583,6 @@ class ViewController {
                 event.preventDefault();
             }
         }
-        else {
-            switch(event.key) {
-                case 'F3':
-                    this._toggleVariableEditor();
-                    event.preventDefault();
-                    break;
-            }
-        }
     }
 
     async _insertRows() {

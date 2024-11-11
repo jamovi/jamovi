@@ -101,138 +101,141 @@ class FocusLoop extends EventEmitter {
             }
         });
 
-        if (desktopMode) {
-            window.addEventListener('keydown', (event) => {
-                let keyObj = this.eventToKeyObj(event);
-                let hasModifier = true; //keyObj.ctrlKey || keyObj.altKey || keyObj.shiftKey || (event.keyCode >= 112 && event.keyCode <= 143) || event.key === 'Escape'; //F keys
-                if (hasModifier) {
-                    if (this.processKeyObj(keyObj) === false) {
-                        if (this._isMainWindow === false) {
-                            let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
-                            if (transfer) {
-                                event.preventDefault();
-                                this.broadcast('processKeyObj', [keyObj], false);  
-                            }
-                        }
-                    }
-                    else
-                        event.preventDefault();
-                }
-
-                if (event.altKey && event.key === 'F4')
-                    return;
-
-                if (event.ctrlKey) {
-                    this.ctrlDown = true;
-                    return;
-                }
-
-                if ( this._activeModalToken && !this._activeModalToken.allowKeyPaths)
-                    return;
+        if (this._isMainWindowShadow === false) {
+            if (desktopMode) {
                 
-                if (event.altKey) {
-                    if (this.focusMode !== 'shortcuts') {
-                        this.altDown = true;
-                        if ( ! this.altTimer) {
-                            this.shortcutPath = '';
-                            this.altTimer = setTimeout(() => {
-                                if (this.ctrlDown === false) {
-                                    this.setFocusMode('shortcuts');
-                                    this.turnedOn = true;
+                window.addEventListener('keydown', (event) => {
+                    let keyObj = this.eventToKeyObj(event);
+                    let hasModifier = true; //keyObj.ctrlKey || keyObj.altKey || keyObj.shiftKey || (event.keyCode >= 112 && event.keyCode <= 143) || event.key === 'Escape'; //F keys
+                    if (hasModifier) {
+                        if (this.processKeyObj(keyObj) === false) {
+                            if (this._isMainWindow === false) {
+                                let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
+                                if (transfer) {
+                                    event.preventDefault();
+                                    this.broadcast('processKeyObj', [keyObj], false);  
                                 }
-                                this.altTimer = null;
-                            }, 1000);
-                        }
-
-                        if (event.keyCode !== 18)
-                            this.shortcutPath += event.key.toUpperCase();
-                    }
-
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-            });
-
-            window.addEventListener('keyup', (event) => {
-                if (event.ctrlKey)
-                    this.ctrlDown = true;
-
-                if (event.keyCode === 18) {  //to surpress the defualt browser behaviour for an alt key press
-                    this.altDown = false;
-                    if (this.altTimer) {
-                        clearTimeout(this.altTimer);
-                        this.altTimer = null;
-                    }
-
-                    if (this.ctrlDown === false) {
-                        
-                        if (!this.turnedOn) {
-                            if (this.focusMode === 'shortcuts' /*this.inAccessibilityMode()*/) {
-                                this.shortcutPath = '';
-                                this.setFocusMode('default');
                             }
-                            else
-                                this.setFocusMode('shortcuts');
                         }
-                        this.turnedOn = false;
+                        else
+                            event.preventDefault();
+                    }
+
+                    if (event.altKey && event.key === 'F4')
+                        return;
+
+                    if (event.ctrlKey) {
+                        this.ctrlDown = true;
+                        return;
+                    }
+
+                    if ( this._activeModalToken && !this._activeModalToken.allowKeyPaths)
+                        return;
+                    
+                    if (event.altKey) {
+                        if (this.focusMode !== 'shortcuts') {
+                            this.altDown = true;
+                            if ( ! this.altTimer) {
+                                this.shortcutPath = '';
+                                this.altTimer = setTimeout(() => {
+                                    if (this.ctrlDown === false) {
+                                        this.setFocusMode('shortcuts');
+                                        this.turnedOn = true;
+                                    }
+                                    this.altTimer = null;
+                                }, 1000);
+                            }
+
+                            if (event.keyCode !== 18)
+                                this.shortcutPath += event.key.toUpperCase();
+                        }
 
                         event.preventDefault();
                         event.stopPropagation();
                     }
+                });
 
-                    this.ctrlDown = false;
-                }
-            });
-        }
-        else {
-            window.addEventListener('keydown', (event) => {
-                let keyObj = this.eventToKeyObj(event);
+                window.addEventListener('keyup', (event) => {
+                    if (event.ctrlKey)
+                        this.ctrlDown = true;
 
-                let hasModifier = true; //keyObj.ctrlKey || keyObj.altKey || keyObj.shiftKey || (event.keyCode >= 112 && event.keyCode <= 143) || event.key === 'Escape'; //F keys
-                if (hasModifier) {
-                    if (this.processKeyObj(keyObj) === false) {
-                        if (this._isMainWindow === false) {
-                            let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
-                            if (transfer) {
-                                event.preventDefault();
-                                this.broadcast('processKeyObj', [keyObj], false);  
+                    if (event.keyCode === 18) {  //to surpress the defualt browser behaviour for an alt key press
+                        this.altDown = false;
+                        if (this.altTimer) {
+                            clearTimeout(this.altTimer);
+                            this.altTimer = null;
+                        }
+
+                        if (this.ctrlDown === false) {
+                            
+                            if (!this.turnedOn) {
+                                if (this.focusMode === 'shortcuts' /*this.inAccessibilityMode()*/) {
+                                    this.shortcutPath = '';
+                                    this.setFocusMode('default');
+                                }
+                                else
+                                    this.setFocusMode('shortcuts');
+                            }
+                            this.turnedOn = false;
+
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+
+                        this.ctrlDown = false;
+                    }
+                });
+            }
+            else {
+                window.addEventListener('keydown', (event) => {
+                    let keyObj = this.eventToKeyObj(event);
+
+                    let hasModifier = true; //keyObj.ctrlKey || keyObj.altKey || keyObj.shiftKey || (event.keyCode >= 112 && event.keyCode <= 143) || event.key === 'Escape'; //F keys
+                    if (hasModifier) {
+                        if (this.processKeyObj(keyObj) === false) {
+                            if (this._isMainWindow === false) {
+                                let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
+                                if (transfer) {
+                                    event.preventDefault();
+                                    this.broadcast('processKeyObj', [keyObj], false);  
+                                }
                             }
                         }
+                        else
+                            event.preventDefault();
                     }
-                    else
+
+                    if (event.altKey && event.key !== 'Alt') // as modifier
+                        this._starting = false
+                    else if (event.key === 'Alt') {
+                        if ( ! this._activeModalToken || this._activeModalToken.allowKeyPaths)
+                            this._starting = true;
+                    }
+                });
+
+                window.addEventListener('keyup', (event) => {
+                    if (this._starting === false)
+                        return;
+
+                    this._starting = false;
+
+                    if (event.key === 'Alt') { // not as modifier
+                        if (event.ctrlKey === false) {
+                            if (this.focusMode === 'shortcuts' /*this.inAccessibilityMode()*/) {
+                                this.shortcutPath = '';
+                                this.setFocusMode('default');
+                            }
+                            else if (this.focusMode !== 'shortcuts') {
+                                this.shortcutPath = '';
+                                this.setFocusMode('shortcuts');
+                            }
+                        }
+
                         event.preventDefault();
-                }
-
-                if (event.altKey && event.key !== 'Alt') // as modifier
-                    this._starting = false
-                else if (event.key === 'Alt') {
-                    if ( ! this._activeModalToken || this._activeModalToken.allowKeyPaths)
-                        this._starting = true;
-                }
-            });
-
-            window.addEventListener('keyup', (event) => {
-                if (this._starting === false)
-                    return;
-
-                this._starting = false;
-
-                if (event.key === 'Alt') { // not as modifier
-                    if (event.ctrlKey === false) {
-                        if (this.focusMode === 'shortcuts' /*this.inAccessibilityMode()*/) {
-                            this.shortcutPath = '';
-                            this.setFocusMode('default');
-                        }
-                        else if (this.focusMode !== 'shortcuts') {
-                            this.shortcutPath = '';
-                            this.setFocusMode('shortcuts');
-                        }
+                        event.stopPropagation();
                     }
-
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-            });
+                });
+            }
         }
 
         
@@ -1294,7 +1297,7 @@ class FocusLoop extends EventEmitter {
             modalId = this._activeModalToken.modalId;
         
         if ( ! handleInfo.modalSpecific || handleInfo.modalId === modalId)
-            return handleInfo.handle.call();  
+            return handleInfo.handle.call() !== false;  
 
         return false;
     }
