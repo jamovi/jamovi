@@ -21,16 +21,6 @@ const VariableEditor = Backbone.View.extend({
     initialize(options) {
         this.$el.empty();
         this.$el.addClass('jmv-variable-editor');
-        focusLoop.applyShortcutOptions(this.$el[0], {
-            key: 'Z',
-            action: (event) => {
-                setTimeout(() => {
-                    focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
-                }, 0);
-            },
-            position: { x: '25%', y: '25%' },
-            label: _('Variable setup panel')
-        });
 
         focusLoop.addFocusLoop(this.$el[0]);
 
