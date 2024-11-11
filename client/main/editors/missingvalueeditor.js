@@ -1,7 +1,6 @@
 'use strict';
 
 const $ = require('jquery');
-const keyboardJS = require('keyboardjs');
 const tarp = require('../utils/tarp');
 const MissingValueList = require('../vareditor/missingvaluelist');
 
@@ -31,17 +30,14 @@ const MissingValueEditor = function(model) {
 
         this._undoFormula = this.model.get('missingValues');
 
-        keyboardJS.pause();
         this.model.suspendAutoApply();
         $contents.addClass('super-focus');
         tarp.show('missings', true, 0.1, 299).then(() => {
             $contents.removeClass('super-focus');
             this.model.apply();
-            keyboardJS.resume();
         }, () => {
             $contents.removeClass('super-focus');
             this.model.apply();
-            keyboardJS.resume();
         });
     };
 

@@ -2,8 +2,6 @@
 'use strict';
 
 const host = require('./host');
-const keyboardJS = require('keyboardjs');
-
 
 class InfoBox extends HTMLElement {
 
@@ -127,7 +125,6 @@ class InfoBox extends HTMLElement {
         }
 
         if (show) {
-            keyboardJS.pause('infobox');
             this._host.style.display = null;
             setTimeout(() => {
                 this._body.style.opacity = 1;
@@ -178,7 +175,6 @@ class InfoBox extends HTMLElement {
         this._host.style.opacity = null;
         this._body.style.opacity = null;
         this._processEnterKey = false;
-        keyboardJS.resume('infobox');
     }
 
     complete() {

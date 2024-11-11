@@ -8,19 +8,7 @@ const TransformListItem = function(transform, checked) {
     this.name = transform.name;
     this.checked = checked;
 
-    this.$el = $('<div class="jmv-transform-list-item"></div>');
-
-    this.$el.on('mouseenter', (event) => {
-        this.$edit.removeClass('hidden');
-        this.$duplicate.removeClass('hidden');
-        this.$remove.removeClass('hidden');
-    });
-
-    this.$el.on('mouseleave', (event) => {
-        this.$edit.addClass('hidden');
-        this.$duplicate.addClass('hidden');
-        this.$remove.addClass('hidden');
-    });
+    this.$el = $('<div role=""presentation" class="jmv-transform-list-item"></div>');
 
     this._calculateColour = function(colourIndex) {
         let base = colourIndex % 12;
@@ -34,10 +22,25 @@ const TransformListItem = function(transform, checked) {
 
     this.$icon = $('<div class="icon"></div>').appendTo(this.$el);
     this.$colour = $('<div class="colour" style="background-color: ' + this._calculateColour(transform.colourIndex) + '"></div>').appendTo(this.$el);
-    this.$label = $('<button class="label">' + this.name + '</button>').appendTo(this.$el);
-    this.$edit = $(`<div class="edit hidden" aria-label="${_('Edit transform')}"></div>`).appendTo(this.$el);
-    this.$duplicate = $(`<div class="duplicate hidden" aria-label="${_('Duplicate transform')}"></div>`).appendTo(this.$el);
-    this.$remove = $(`<div class="remove hidden" aria-label="${_('Delete transform')}"><span class="mif-cross"></span></div>`).appendTo(this.$el);
+    this.$label = $('<button role="listitem" class="label">' + this.name + '</button>').appendTo(this.$el);
+    this.$edit = $(`<button class="edit hidden" aria-label="${_('Edit transform - {transformName}', {transformName: this.name})}"></button>`).appendTo(this.$el);
+    this.$duplicate = $(`<button class="duplicate hidden" aria-label="${_('Duplicate transform  - {transformName}', {transformName: this.name})}"></button>`).appendTo(this.$el);
+    this.$remove = $(`<button class="remove hidden" aria-label="${_('Delete transform  - {transformName}', {transformName: this.name})}"><span class="mif-cross"></span></button>`).appendTo(this.$el);
+
+    this.$el.on('focusin', (event) => {
+        this.$edit.removeClass('hidden');
+        this.$duplicate.removeClass('hidden');
+        this.$remove.removeClass('hidden');
+    });
+
+    this.$el.on('focusout', (event) => {
+        if (this.$el[0].contains(event.relatedTarget))
+            return;
+
+        this.$edit.addClass('hidden');
+        this.$duplicate.addClass('hidden');
+        this.$remove.addClass('hidden');
+    });
 
     this.$edit.on('click', (event) => {
         this.$el.trigger('editing', this);

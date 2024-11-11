@@ -89,7 +89,7 @@ const EditorPanel = Backbone.View.extend({
         this.trigger('notification', note);
     },
     isVisible() {
-        return this.$el.hasClass('hidden');
+        return this.$el.hasClass('hidden') === false;
     }
 
 });

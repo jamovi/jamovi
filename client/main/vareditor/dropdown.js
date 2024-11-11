@@ -50,6 +50,14 @@ const dropdown = function() {
         }
     });
 
+    this.$el.on('keydown', (event) => {
+        if (event.code === 'Escape') {
+            this.hide({ data: { dropdown: this, check: false } });
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    });
+
     this.hide = function(event) {
         let self = event.data.dropdown;
         if (( ! event.data.check || self._inTools === false) && self._shown) {
@@ -64,6 +72,7 @@ const dropdown = function() {
                 this._resolve();
                 this._resolve = null;
             }
+            focusLoop.leaveFocusLoop(this.$el[0]);
         }
 
         self._inTools = false;
@@ -121,7 +130,7 @@ const dropdown = function() {
         }
 
         setTimeout(() => {
-            focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
+            focusLoop.enterFocusLoop(this.$el[0], { withMouse: false, exitSelector: $formula[0] });
         }, 200);
 
 

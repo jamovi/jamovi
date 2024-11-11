@@ -50,6 +50,12 @@
     filter: opacity(60%);
 }
 
+.jmv-transform-list-item > * {
+    border: none;
+    padding: 0px;
+    background-color: transparent;
+}
+
 .jmv-transform-list-item > .duplicate {
     margin: 5px;
     border-radius: 2px;
