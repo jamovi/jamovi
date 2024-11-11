@@ -245,10 +245,14 @@ $(document).ready(async() => {
         optionspanel.hideOptions();
         ribbon.openFileMenu(false);
     }, _('Open the main menu'));
+    Keyboard.addKeyboardListener('F3', (event) => { // toggle variable setup
+        viewController._toggleVariableEditor();
+    }, _('Toggle variable setup'));
     Keyboard.addKeyboardListener('Alt+KeyE', () => { // navigate to variable setup
         Keyboard.setFocusMode('keyboard');
         optionspanel.hideOptions();
         viewController.showVariableEditor();
+        Keyboard.enterFocusLoop(editor.$el[0], { withMouse: false });
     }, _('Focus on the variable setup'));
     Keyboard.addKeyboardListener('Alt+KeyM', () => { // navigate to Application menu
         Keyboard.setFocusMode('keyboard');
