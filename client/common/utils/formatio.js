@@ -566,7 +566,7 @@ function _htmlifyDiv(el, options) {
         xhr.onload = function(e) {
             let mime = this.getResponseHeader('content-type');
             let data = new Uint8Array(this.response);
-            let b64 = btoa(String.fromCharCode.apply(null, data));
+            let b64 = data.toString();
             let dataURI = `data:${ mime };base64,${b64}`;
             resolve(dataURI);
         };
