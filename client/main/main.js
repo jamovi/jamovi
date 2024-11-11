@@ -227,7 +227,7 @@ $(document).ready(async() => {
     Keyboard.addKeyboardListener('Ctrl+KeyS', () => ActionHub.get('save').do(), _('Save project'));
     Keyboard.addKeyboardListener('Ctrl+KeyO', () => ActionHub.get('open').do(), _('Open data file'));
     Keyboard.addKeyboardListener('Escape', () => {
-        if (Keyboard.focusMode === 'default')
+        if (splitPanel.getSection(0).width < 100 && Keyboard.focusMode === 'default')
             optionspanel.hideOptions();
     }, _('Hide analysis options'));
     Keyboard.addKeyboardListener('Alt+KeyS', () => { // navigate to spreadsheet
@@ -252,7 +252,7 @@ $(document).ready(async() => {
         Keyboard.setFocusMode('keyboard');
         optionspanel.hideOptions();
         viewController.showVariableEditor();
-        Keyboard.enterFocusLoop(editor.$el[0], { withMouse: false });
+        editor.setFocus();
     }, _('Focus on the variable setup'));
     Keyboard.addKeyboardListener('Alt+KeyM', () => { // navigate to Application menu
         Keyboard.setFocusMode('keyboard');
@@ -636,7 +636,6 @@ $(document).ready(async() => {
 
     resultsView.$el.on('analysisLostFocus', (event) => {
         $(window).focus();
-        optionspanel.hideOptions();
     });
 
     resultsView.$el.on('activeFormatChanged', (event, data) => {

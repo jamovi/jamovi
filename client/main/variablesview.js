@@ -9,8 +9,6 @@ const ColourPalette = require('./editors/colourpalette');
 const Backbone = require('backbone');
 Backbone.$ = $;
 
-const keyboardJS = require('keyboardjs');
-
 const SilkyView = require('./view');
 const ContextMenu = require('./contextmenu');
 const Statusbar = require('./statusbar/statusbar');
@@ -87,12 +85,7 @@ const VariablesView = SilkyView.extend({
         });
 
         this.$search.on('focus', () => {
-            keyboardJS.pause('variable-search');
             this.$search.select();
-        });
-
-        this.$search.on('blur', () => {
-            keyboardJS.resume('variable-search');
         });
 
         this.$body.on('mouseleave', (event) => {
@@ -442,7 +435,6 @@ const VariablesView = SilkyView.extend({
         self.internalFocus = false;
 
         let propertyName = $el.attr('data-property');
-        keyboardJS.pause('varview-' + propertyName);
         document.execCommand('selectAll', false, null);
         let column = self._getRowByIndex(parseInt($el.attr('data-columnindex'))).column;
         self._editingColumn = column;
@@ -462,7 +454,6 @@ const VariablesView = SilkyView.extend({
             self._editingColumn = null;
         }
         self.internalBluring = false;
-        keyboardJS.resume('varview-' + propertyName);
     },
 
     textElementKeyDown(event) {

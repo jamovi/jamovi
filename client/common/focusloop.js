@@ -915,11 +915,16 @@ class FocusLoop extends EventEmitter {
     }
 
     enterFocusLoop(loopElement, options) {
-        // { withMouse, direction }
+        // { withMouse, direction, exitSelector }
         this._mouseClicked = options.withMouse;
         let token = this.loopOptions.get(loopElement);
         if (token.modal)
             this.beginModalMode(token);
+
+        if (options.exitSelector)
+            token.exitSelector = options.exitSelector;
+        if (token.exitSelector && typeof token.exitSelector !== 'string' && token.exitSelector.deref === undefined)
+            token.exitSelector = new WeakRef(token.exitSelector);
 
         if ( ! options.withMouse) {
             let parent = loopElement.closest('.menu-level');
@@ -971,7 +976,7 @@ class FocusLoop extends EventEmitter {
             if (element) {
                 validExitElement = true;
                 let parent = element.closest('.menu-level');
-                this._focusPassing = this.inAccessibilityMode() || parent.hasAttribute('tabindex');
+                this._focusPassing = this.inKeyboardMode() || parent.hasAttribute('tabindex');
                 if (this._focusPassing)
                     this._passedFocus = element;
             }
@@ -1437,7 +1442,7 @@ class FocusLoop extends EventEmitter {
                     event.preventDefault();
                 else if (this.focusMode !== 'shortcuts') {
                     setTimeout(() => {  // to allow the keydown event to proceed while maintaining a little longer accessibility mode as true (if true)
-                        target.blur();
+                        this.setFocusMode('default');
                     }, 0);
 
                 }

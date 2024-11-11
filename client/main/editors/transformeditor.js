@@ -1,7 +1,6 @@
 'use strict';
 
 const $ = require('jquery');
-const keyboardJS = require('keyboardjs');
 const opsToolbar = require('./operatordropdown');
 const tarp = require('../utils/tarp');
 const formulaToolbar = require('../vareditor/formulatoolbar');
@@ -65,13 +64,11 @@ const TransformEditor = function(dataset) {
         this.setInputEvents = function($element, isDiv, propertyName) {
             let _applyOnBlur = true;
             $element.focus(() => {
-                keyboardJS.pause('transform-' + propertyName);
                 $element.select();
             } );
 
             $element.blur(() => {
                 if (_applyOnBlur) {
-                    keyboardJS.resume('transform-' + propertyName);
                     let id = this._id;
                     let values = { };
                     if (isDiv)
@@ -193,13 +190,9 @@ const TransformEditor = function(dataset) {
         });
 
         this.$insertBox.focus(() => {
-            keyboardJS.pause('transform');
             this._focusFormulaControls();
         } );
 
-        this.$insertBox.blur(() => {
-            keyboardJS.resume('transform');
-        } );
 
         this.$list = $('<div class="content-list"></div>').appendTo(this.$contents);
         this.$options = $('<div class="jmv-transform-editor-options"></div>').appendTo(this.$list);
@@ -741,11 +734,9 @@ const TransformEditor = function(dataset) {
             if (hasOp && elements._opEditClicked === false)
                 $opEdit.hide();
             elements._opEditClicked = false;
-            keyboardJS.resume('transform');
         });
 
         $formula.on('focus', (event) => {
-            keyboardJS.pause('transform');
             elements.$formulaBox.addClass('selected');
             elements.$focusedFormula = $formula;
             this._focusFormulaControls();

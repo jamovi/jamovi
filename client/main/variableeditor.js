@@ -32,10 +32,7 @@ const VariableEditor = Backbone.View.extend({
             label: _('Variable setup panel')
         });
 
-        let focusToken = focusLoop.addFocusLoop(this.$el[0]);
-        focusToken.on('focusleave', () => {
-            this.model.set('editingVar', null);
-        });
+        focusLoop.addFocusLoop(this.$el[0]);
 
         this.currentIds = null;
 
@@ -248,6 +245,12 @@ const VariableEditor = Backbone.View.extend({
             this.$main.attr('data-type', this.commonColumn.columnType);
             this.editorModel.setColumn(this.model.attributes.editingVar, this.commonColumn.columnType);
         }
+    },
+    setFocus() {
+        if (this.editorPanel.isVisible())
+            focusLoop.enterFocusLoop(this.editorPanel.$el[0], { withMouse: false });
+        else
+            focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
     },
     _editingVarChanged(event) {
 

@@ -9,15 +9,15 @@ const TransformList = function() {
         return target === this.$middle[0];
     };
 
-    this.$el = $('<div class="jmv-transform-list"></div>');
+    this.$el = $('<div class="jmv-transform-list" role="list"></div>');
 
     this.$top = $('<div class="top"></div>').appendTo(this.$el);
-    this.$none =$(`<button class="transform-none-item">${_('None')}</button>`).appendTo(this.$top);
+    this.$none =$(`<button role="listitem" class="transform-none-item">${_('None')}</button>`).appendTo(this.$top);
 
-    this.$middle = $('<div class="middle"></div>').appendTo(this.$el);
+    this.$middle = $('<div role="presentation" class="middle"></div>').appendTo(this.$el);
 
-    this.$bottom = $('<div class="bottom"></div>').appendTo(this.$el);
-    this.$createNew = $(`<button class="transform-create">${_('Create New Transform...')}</button>`).appendTo(this.$bottom);
+    this.$bottom = $('<div role="presentation" class="bottom"></div>').appendTo(this.$el);
+    this.$createNew = $(`<button role="listitem" class="transform-create">${_('Create New Transform...')}</button>`).appendTo(this.$bottom);
 
     this.$createNew.on('click', (event) => {
         this.$el.trigger('create-transform');

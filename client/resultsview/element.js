@@ -8,7 +8,6 @@ const focusLoop = require('../common/focusloop');
 
 const b64 = require('../common/utils/b64');
 const { contextMenuListener } = require('../common/utils');
-const { getContext } = require('keyboardjs');
 
 require('./refs');
 
