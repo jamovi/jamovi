@@ -544,7 +544,7 @@ cdef class Column:
                 else:
                     level_i = self.level_count
                     level_v = value.encode('utf-8')
-                    self._this.appendLevel(level_i, level_v, ''.encode('utf-8'), False)
+                    self._this.appendLevel(level_i, level_v, level_v, False)
                 self._this.setIValue(index, level_i, initing)
         else:
             self._this.setIValue(index, value, initing)
