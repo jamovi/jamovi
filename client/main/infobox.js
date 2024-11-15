@@ -58,11 +58,14 @@ class InfoBox extends HTMLElement {
 
     setup(info, params) {
 
-        if (this._visible
-                && info.title === this._displayInfo.title
+        const useExisting = this._visible && (
+            (info['message-src'] && info['message-src'] === this._displayInfo['message-src'])
+            || (info.title === this._displayInfo.title
                 && info.message === this._displayInfo.message
-                && info.status === this._displayInfo.status
-                && info['message-src'] === this._displayInfo['message-src']) {
+                && info.status === this._displayInfo.status)
+        )
+
+        if (useExisting) {
 
             if (this._loaded === false)
                 this._displayInfo = info;
@@ -71,7 +74,7 @@ class InfoBox extends HTMLElement {
                 this._iframe.contentWindow.postMessage(info.data);
             }
 
-            return;
+            return this._complete;
         }
 
         if (params === undefined)
@@ -115,7 +118,7 @@ class InfoBox extends HTMLElement {
                 this.appendChild(info);
                 if (info.focusElement)
                     setTimeout(() => {
-                
+
                     info.focusElement().focus();
                 }, 100);
             }
