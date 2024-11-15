@@ -429,6 +429,12 @@ def read(data, path, prog_cb, **kwargs):
                                 import_value = meta_label[1]
                                 if len(meta_label) > 2:
                                     import_value = meta_label[2]
+
+                                # under some circumstances, jamovi wrote empty strings for import values
+                                # this breaks all sorts of things, so we fix it here (#1573)
+                                if import_value == '':
+                                    import_value = meta_label[1]
+
                                 if len(meta_label) > 3:
                                     pinned = meta_label[3]
                                 else:
