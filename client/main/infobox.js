@@ -66,7 +66,6 @@ class InfoBox extends HTMLElement {
         )
 
         if (useExisting) {
-
             if (this._loaded === false)
                 this._displayInfo = info;
             else if (info['message-src'] && info.data) {
@@ -231,7 +230,7 @@ class InfoBox extends HTMLElement {
             let data = event.data;
             if (data.status === 'complete') {
                 this.hide();
-                this._resolve();
+                this._resolve(data.data);
             }
             if (data.status === 'show') {
                 this._indicator.style.display = 'none';
