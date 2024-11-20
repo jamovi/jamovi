@@ -299,7 +299,7 @@ $(document).ready(async() => {
             Keyboard.setFocusMode('keyboard');
             resultsView.selectedView.setFocus();
     }, _('Returns to the previously selected analysis and shifts focus to the results output.'));
-    
+
 
     if (host.isElectron)
         Keyboard.addKeyboardListener('Ctrl+F4', () => host.closeWindow(), _('Close jamovi window'));
@@ -881,7 +881,10 @@ $(document).ready(async() => {
                     const { hash } = window.location;
                     if (hash.startsWith('#/verified'))
                         status['message-src'] += hash;
-                    await infoBox.setup(status);
+                    let response = await infoBox.setup(status);
+                    if (response && response.action === 'skip')
+                        filePath = '';
+
                     await auth.waitForSignIn();
                     options.authToken = await auth.getAuthToken();
                     // notify any background shared workers that the account has changed
