@@ -848,11 +848,11 @@ $(document).ready(async() => {
             accessKey: params.get('key') || null,
         };
 
-        if (params.get('temp')) {
+        if (params.get('temp'))
             options.temp = true;
-            if (params.get('title'))
-                options.title = decodeURI(params.get('title'));
-        }
+
+        if (params.get('title'))
+            options.title = decodeURIComponent(params.get('title'));
 
         const notify = (progress) => {
             if (progress.p !== undefined) {
