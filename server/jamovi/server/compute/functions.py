@@ -143,23 +143,30 @@ def BETA(index, alpha: float = 1.0, beta: float = 1.0):
 @returns(DataType.INTEGER, MeasureType.ORDINAL)
 def MATCH(index, needle, *haystack):
     if is_missing(needle):
-        -2147483648
+        return -2147483648
     for index, value in enumerate(haystack):
         if is_equal(needle, value):
             return index + 1
-    else:
-        return -2147483648
+    return -2147483648
 
 
 @row_wise
 @returns(DataType.INTEGER, MeasureType.NOMINAL, range(1, 10000))
 @levels(range(1, 10000))
-def HLOOKUP(index, lookup_index: int, *args):
+def HLOOKUP(index, lookup_index: int, *args, ignore_missing: int = 0):
     lookup_index -= 1  # was indexed from 1
-    if lookup_index >= 0 and lookup_index < len(args):
-        return args[lookup_index]
-    else:
+    if lookup_index < 0 or lookup_index >= len(args):
         return -2147483648
+    if ignore_missing == 0:
+        return args[lookup_index]
+    arg_i = 0
+    for v in args:
+        if is_missing(v):
+            continue
+        if arg_i == lookup_index:
+            return v
+        arg_i += 1
+    return -2147483648
 
 
 @row_wise
@@ -410,6 +417,16 @@ def VALUE(index, x: str):
         return float(x)
     except ValueError:
         return NaN
+
+
+@row_wise
+@returns(DataType.INTEGER, MeasureType.CONTINUOUS)
+def COUNT(index, *args):
+    c = 0
+    for v in args:
+        if not is_missing(v):
+            c += 1
+    return c
 
 
 @row_wise
