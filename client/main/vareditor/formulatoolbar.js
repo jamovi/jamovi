@@ -145,11 +145,13 @@ function allFunctions($functionsContent) {
 
     $functionsContent.append($(`<div class="subtitle" data-name="">${_('Reference')}</div>`));
     $functionsContent.append($('<div class="item" data-name="HLOOKUP">HLOOKUP</div>'));
-    descriptions.HLOOKUP = { label: 'HLOOKUP( <i>index, value 1, value 2, ...</i> )', content: _('The value in the provided values at index.') };
+    descriptions.HLOOKUP = { label: 'HLOOKUP( <i>index, value 1, value 2, ..., ignore_missing=0</i> )', content: _('The value in the provided values at index.') };
     $functionsContent.append($('<div class="item" data-name="MATCH">MATCH</div>'));
     descriptions.MATCH = { label: 'MATCH( <i>value, value 1, value 2, ...</i> )', content: _('The index of value in the provided values.') };
 
     $functionsContent.append($(`<div class="subtitle" data-name="">${_('Misc')}</div>`));
+    $functionsContent.append($('<div class="item" data-name="COUNT">COUNT</div>'));
+    descriptions.COUNT = { label: 'COUNT( <i>value 1, value 2, ...</i> )', content: _('Counts the number of non-missing values') };
     $functionsContent.append($('<div class="item" data-name="FILTER">FILTER</div>'));
     descriptions.FILTER = { label: 'FILTER( <i>variable, filter expression</i> )', content: _('Filters a variable using the filter expression.') };
     $functionsContent.append($('<div class="item" data-name="INT">INT</div>'));
