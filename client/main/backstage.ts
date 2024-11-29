@@ -1082,9 +1082,9 @@ const BackstageModel = Backbone.Model.extend({
 const BackstageView = SilkyView.extend({
     className: 'backstage',
     initialize: function() {
-        let focusToken = focusLoop.addFocusLoop(this.$el[0], { level: 1, modal: true, allowKeyPaths: true } );
+        let focusToken = focusLoop.addFocusLoop(this.$el[0], { exitSelector: '.jmv-ribbon-tab[data-tabname="file"]', level: 1, modal: true, allowKeyPaths: true, exitKeys: ['Escape'] } );
         focusToken.on('focusleave', (event) => {
-            if (focusLoop.focusMode === 'shortcuts' && focusLoop.shortcutPath.startsWith('F'))
+            if (focusLoop.focusMode === 'shortcuts' && focusLoop.shortcutPath.startsWith('F') && focusLoop.shortcutPath.length > 1)
                 event.cancel = true;
             else
                 this.deactivate();

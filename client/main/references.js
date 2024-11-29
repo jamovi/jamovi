@@ -14,6 +14,8 @@ class References extends HTMLElement {
 
         this._root = this.attachShadow({ mode: 'open' });
 
+        focusLoop.attachShadowRoot(this._root);
+
         let labelId = focusLoop.getNextAriaElementId('label');
 
         let style = document.createElement('style');
