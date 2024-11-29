@@ -33,6 +33,8 @@ const Keyboard = require('../common/focusloop');
 
 require('./utils/headeralert');
 
+import lobby from './extras/lobby/index.ts';
+
 
 window._ = I18n._;
 window.n_ = I18n._n;
@@ -878,10 +880,7 @@ $(document).ready(async() => {
                 status = await stream;
 
                 if (status.status === 'requires-auth') {
-                    const { hash } = window.location;
-                    if (hash.startsWith('#/verified'))
-                        status['message-src'] += hash;
-                    let response = await infoBox.setup(status);
+                    let response = await lobby.show();
                     if (response && response.action === 'skip')
                         filePath = '';
 

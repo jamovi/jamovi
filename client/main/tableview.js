@@ -1204,6 +1204,7 @@ const TableView = SilkyView.extend({
             this._focusCell.setAttribute('type', 'text');
             this._focusCell.setAttribute('role', 'gridcell');
             this._focusCell.setAttribute('aria-selected', true);
+            this._focusCell.setAttribute('autocomplete', 'off');
             this._focusCell.id = 'focusCell';
             this._focusCell.classList.add('temp-focus-cell');
             let pasteEventHandle = this._pasteEventHandler.bind(this);

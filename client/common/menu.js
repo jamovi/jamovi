@@ -57,10 +57,10 @@ class Menu extends EventEmitter {
                 this.owner.classList.add('mouse-over');
         });
 
-        let opts = { level: level, hoverFocus: true };
+        let opts = { level: level, hoverFocus: true, exitKeys: ['Escape'] };
 
         if (options && options.exitKeys)
-            opts.exitKeys = options.exitKeys;
+            opts.exitKeys = opts.exitKeys.concat(options.exitKeys);
         
         if (this.owner)
             opts.exitSelector = new WeakRef(this.owner);

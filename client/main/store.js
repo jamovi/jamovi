@@ -22,7 +22,7 @@ const Store = Backbone.View.extend({
         this.$el.addClass('jmv-store');
         this.$el.attr('tabindex', '-1');
 
-        focusLoop.addFocusLoop(this.$el[0], { level: 2, closeHandler: this.hide.bind(this), modal: true });
+        focusLoop.addFocusLoop(this.$el[0], { level: 2, closeHandler: this.hide.bind(this), modal: true, exitKeys: ['Escape'] });
 
         this.$header = $('<div class="jmv-store-header"></div>').appendTo(this.$el);
 
