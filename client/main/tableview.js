@@ -1201,6 +1201,7 @@ const TableView = SilkyView.extend({
 
         if ( ! this._focusCell) {
             this._focusCell = this._createCell(0, 0, -1, -1, true);
+            this._focusCell.classList.add('has-editing-mode');
             this._focusCell.setAttribute('type', 'text');
             this._focusCell.setAttribute('role', 'gridcell');
             this._focusCell.setAttribute('aria-selected', true);

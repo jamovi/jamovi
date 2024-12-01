@@ -105,8 +105,10 @@ class FocusLoop extends EventEmitter {
                 
                 window.addEventListener('keydown', (event) => {
                     let keyObj = this.eventToKeyObj(event);
-                    let hasModifier = true; //keyObj.ctrlKey || keyObj.altKey || keyObj.shiftKey || (event.keyCode >= 112 && event.keyCode <= 143) || event.key === 'Escape'; //F keys
-                    if (hasModifier) {
+                    let isEditableTextbox = (document.activeElement?.tagName === 'INPUT' && document.activeElement?.type === 'text' || document.activeElement?.isContentEditable);
+                    if (isEditableTextbox && document.activeElement.classList.contains('has-editing-mode'))
+                        isEditableTextbox = this.defaultFocusControl.classList.contains('editing');
+                    if (isEditableTextbox === false) {
                         if (this.processKeyObj(keyObj) === false) {
                             if (this._isMainWindow === false && this._baseKeyPaths) {
                                 let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
@@ -189,8 +191,10 @@ class FocusLoop extends EventEmitter {
                 window.addEventListener('keydown', (event) => {
                     let keyObj = this.eventToKeyObj(event);
 
-                    let hasModifier = true; //keyObj.ctrlKey || keyObj.altKey || keyObj.shiftKey || (event.keyCode >= 112 && event.keyCode <= 143) || event.key === 'Escape'; //F keys
-                    if (hasModifier) {
+                    let isEditableTextbox = (document.activeElement?.tagName === 'INPUT' && document.activeElement?.type === 'text' || document.activeElement?.isContentEditable);
+                    if (isEditableTextbox && document.activeElement.classList.contains('has-editing-mode'))
+                        isEditableTextbox = this.defaultFocusControl.classList.contains('editing');
+                    if (isEditableTextbox === false) {
                         if (this.processKeyObj(keyObj) === false) {
                             if (this._isMainWindow === false && this._baseKeyPaths) {
                                 let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
