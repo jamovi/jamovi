@@ -880,7 +880,15 @@ $(document).ready(async() => {
                 status = await stream;
 
                 if (status.status === 'requires-auth') {
-                    let response = await lobby.show();
+
+                    let location, params;
+                    const match = window.location.hash.match(/^#(verified)\??(.*)$/);
+                    if (match) {
+                        location = 'verified';
+                        params = Object.fromEntries(new URLSearchParams(match[2]));
+                    }
+
+                    let response = await lobby.show(location, params);
                     if (response && response.action === 'skip')
                         filePath = '';
 
