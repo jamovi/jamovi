@@ -33,7 +33,7 @@ const Keyboard = require('../common/focusloop');
 
 require('./utils/headeralert');
 
-import lobby from './extras/lobby/index.ts';
+import lobby from './extras/lobby';
 
 
 window._ = I18n._;
