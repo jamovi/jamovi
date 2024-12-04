@@ -1,7 +1,7 @@
 
 'use strict';
 
-let focusLoop = require('../common/focusloop').getShadowFocusLoop();
+let focusLoop = require('../common/focusloop');
 
 class References extends HTMLElement {
     constructor() {
@@ -13,8 +13,6 @@ class References extends HTMLElement {
         this._numbers = null;
 
         this._root = this.attachShadow({ mode: 'open' });
-
-        focusLoop.attachShadowRoot(this._root);
 
         let labelId = focusLoop.getNextAriaElementId('label');
 
