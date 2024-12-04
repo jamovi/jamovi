@@ -22,20 +22,16 @@ class FocusLoopToken extends Token {
     }
 }
 
-let nextShadowId = 0;
-
 // the FocusLoop is a static class that manages which control has focus (not selection/highlight)
 // and the movement and behaviour of that focus between and within controls
 class FocusLoop extends EventEmitter {
 
-    constructor(desktopMode, shadowId = '') {
+    constructor(desktopMode) {
         super();
 
-        this.shadowId = shadowId;
         this._mainWindow = window.top;
-        this._isMainWindow = this._mainWindow === window && this.shadowId === '';
-        this._isMainWindowShadow = this._mainWindow === window && this.shadowId !== '';
-        this._windowName = this._isMainWindow ? 'MainWindow' : `${window.name}${this.shadowId} `;
+        this._isMainWindow = this._mainWindow === window;
+        this._windowName = this._isMainWindow ? 'MainWindow' : `${window.name} `;
 
         this._availableModalId = 1;
         this._availableFocusId = 0;
@@ -68,7 +64,7 @@ class FocusLoop extends EventEmitter {
         window.addEventListener('message', event => {
             let data = event.data;
 
-            if (event.source === window && data.shadowId === this.shadowId)
+            if (event.source === window)
                 return;
 
             if (data.type !== 'focusLoop')
@@ -100,262 +96,260 @@ class FocusLoop extends EventEmitter {
             }
         });
 
-        if (this._isMainWindowShadow === false) {
-            if (desktopMode) {
-                
-                window.addEventListener('keydown', (event) => {
-                    let keyObj = this.eventToKeyObj(event);
-                    let isEditableTextbox = (document.activeElement?.tagName === 'INPUT' && document.activeElement?.type === 'text' || document.activeElement?.isContentEditable);
-                    if (isEditableTextbox && document.activeElement.classList.contains('has-editing-mode'))
-                        isEditableTextbox = this.defaultFocusControl.classList.contains('editing');
-                    if (isEditableTextbox === false) {
-                        if (this.processKeyObj(keyObj) === false) {
-                            if (this._isMainWindow === false && this._baseKeyPaths) {
-                                let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
-                                if (transfer) {
-                                    event.preventDefault();
-                                    this.broadcast('processKeyObj', [keyObj], false);  
-                                }
+        if (desktopMode) {
+            
+            window.addEventListener('keydown', (event) => {
+                let keyObj = this.eventToKeyObj(event);
+                let isEditableTextbox = (document.activeElement?.tagName === 'INPUT' && document.activeElement?.type === 'text' || document.activeElement?.isContentEditable);
+                if (isEditableTextbox && document.activeElement.classList.contains('has-editing-mode'))
+                    isEditableTextbox = this.defaultFocusControl.classList.contains('editing');
+                if (isEditableTextbox === false) {
+                    if (this.processKeyObj(keyObj) === false) {
+                        if (this._isMainWindow === false && this._baseKeyPaths) {
+                            let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
+                            if (transfer) {
+                                event.preventDefault();
+                                this.broadcast('processKeyObj', [keyObj], false);  
                             }
                         }
-                        else
-                            event.preventDefault();
                     }
-
-                    if (event.altKey && event.key === 'F4')
-                        return;
-
-                    if (event.ctrlKey) {
-                        this.ctrlDown = true;
-                        return;
-                    }
-
-                    if ( this._activeModalToken && !this._activeModalToken.allowKeyPaths)
-                        return;
-                    
-                    if (event.altKey) {
-                        if (this.focusMode !== 'shortcuts') {
-                            this.altDown = true;
-                            if ( ! this.altTimer) {
-                                this.shortcutPath = '';
-                                this.altTimer = setTimeout(() => {
-                                    if (this.ctrlDown === false) {
-                                        this.setFocusMode('shortcuts');
-                                        this.turnedOn = true;
-                                    }
-                                    this.altTimer = null;
-                                }, 1000);
-                            }
-
-                            if (event.keyCode !== 18)
-                                this.shortcutPath += event.key.toUpperCase();
-                        }
-
+                    else
                         event.preventDefault();
-                        event.stopPropagation();
-                    }
-                });
+                }
 
-                window.addEventListener('keyup', (event) => {
-                    if (event.ctrlKey)
-                        this.ctrlDown = true;
+                if (event.altKey && event.key === 'F4')
+                    return;
 
-                    if (event.keyCode === 18) {  //to surpress the defualt browser behaviour for an alt key press
-                        this.altDown = false;
-                        if (this.altTimer) {
-                            clearTimeout(this.altTimer);
-                            this.altTimer = null;
-                        }
+                if (event.ctrlKey) {
+                    this.ctrlDown = true;
+                    return;
+                }
 
-                        if (this.ctrlDown === false) {
-                            
-                            if (!this.turnedOn) {
-                                if (this.focusMode === 'shortcuts' /*this.inAccessibilityMode()*/) {
-                                    this.shortcutPath = '';
-                                    this.setFocusMode('default');
-                                }
-                                else
+                if ( this._activeModalToken && !this._activeModalToken.allowKeyPaths)
+                    return;
+                
+                if (event.altKey) {
+                    if (this.focusMode !== 'shortcuts') {
+                        this.altDown = true;
+                        if ( ! this.altTimer) {
+                            this.shortcutPath = '';
+                            this.altTimer = setTimeout(() => {
+                                if (this.ctrlDown === false) {
                                     this.setFocusMode('shortcuts');
-                            }
-                            this.turnedOn = false;
-
-                            event.preventDefault();
-                            event.stopPropagation();
-                        }
-
-                        this.ctrlDown = false;
-                    }
-                });
-            }
-            else {
-                window.addEventListener('keydown', (event) => {
-                    let keyObj = this.eventToKeyObj(event);
-
-                    let isEditableTextbox = (document.activeElement?.tagName === 'INPUT' && document.activeElement?.type === 'text' || document.activeElement?.isContentEditable);
-                    if (isEditableTextbox && document.activeElement.classList.contains('has-editing-mode'))
-                        isEditableTextbox = this.defaultFocusControl.classList.contains('editing');
-                    if (isEditableTextbox === false) {
-                        if (this.processKeyObj(keyObj) === false) {
-                            if (this._isMainWindow === false && this._baseKeyPaths) {
-                                let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
-                                if (transfer) {
-                                    event.preventDefault();
-                                    this.broadcast('processKeyObj', [keyObj], false);  
+                                    this.turnedOn = true;
                                 }
-                            }
+                                this.altTimer = null;
+                            }, 1000);
                         }
-                        else
-                            event.preventDefault();
+
+                        if (event.keyCode !== 18)
+                            this.shortcutPath += event.key.toUpperCase();
                     }
 
-                    if (event.altKey && event.key !== 'Alt') // as modifier
-                        this._starting = false
-                    else if (event.key === 'Alt') {
-                        if ( ! this._activeModalToken || this._activeModalToken.allowKeyPaths)
-                            this._starting = true;
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            });
+
+            window.addEventListener('keyup', (event) => {
+                if (event.ctrlKey)
+                    this.ctrlDown = true;
+
+                if (event.keyCode === 18) {  //to surpress the defualt browser behaviour for an alt key press
+                    this.altDown = false;
+                    if (this.altTimer) {
+                        clearTimeout(this.altTimer);
+                        this.altTimer = null;
                     }
-                });
 
-                window.addEventListener('keyup', (event) => {
-                    if (this._starting === false)
-                        return;
-
-                    this._starting = false;
-
-                    if (event.key === 'Alt') { // not as modifier
-                        if (event.ctrlKey === false) {
+                    if (this.ctrlDown === false) {
+                        
+                        if (!this.turnedOn) {
                             if (this.focusMode === 'shortcuts' /*this.inAccessibilityMode()*/) {
                                 this.shortcutPath = '';
                                 this.setFocusMode('default');
                             }
-                            else if (this.focusMode !== 'shortcuts') {
-                                this.shortcutPath = '';
+                            else
                                 this.setFocusMode('shortcuts');
-                            }
                         }
+                        this.turnedOn = false;
 
                         event.preventDefault();
                         event.stopPropagation();
                     }
-                });
-            }
 
-            window.addEventListener('focus', (event) => {
-                this.emit('focus', event);
-    
-                this.isBluring = false;
-                this.isBlured = false;
-    
-                if (this.focusMode === 'default' && this._isMainWindow === false) {
-                    this._broadcastTimeout = setTimeout(() => {
-                        this._broadcastTimeout = null;
-                        this.broadcastFocusMode(this.focusMode);
-                    }, 0);
+                    this.ctrlDown = false;
                 }
-            });
-    
-            window.addEventListener('pointerdown', (event) => {
-                this._mouseClicked = true;
-                if (this.inAccessibilityMode()) {
-                    setTimeout(() => {
-                        let info = this.elementFocusDetails(event.target);
-                        if (info.usesKeyboard)
-                            this.setFocusMode('hover');
-                        else
-                            this.setFocusMode('default');
-                    }, 0);
-                }
-            });
-    
-            window.addEventListener('blur', (event) => {
-                if (this._bluringTimeout) {
-                    clearTimeout(this._bluringTimeout);
-                    this._bluringTimeout = null;
-                }
-    
-                this.isBluring = false;
-                this.isBlured = true;
-    
-                this.emit('blur', event);
-            });
-    
-            if (this._isMainWindow) {
-                document.addEventListener('visibilitychange', (event) => {
-                    this.setFocusMode('default');
-                });
-            }
-    
-            window.addEventListener('focusout', (event) => {
-                if (this._focusControlPaused) {
-                    if (event.relatedTarget !== this._focusControlPaused)
-                        this._focusControlPaused.focus();
-                    return;
-                }
-    
-                if (this._focusPassing || this.isBluring)
-                    return;
-    
-                if (event.relatedTarget === null && this._activeModalToken) {
-                    this.findFocusableElement(this._activeModalToken.el);
-                    return;
-                }
-    
-                //If default focus control looses focus for some reason it gives it back.
-                if (event.target === this.defaultFocusControl && event.relatedTarget === null  && this._inDefaultMode) {
-                    event.target.focus();
-                }
-    
-                if (event.relatedTarget === null && this.focusMode !== 'shortcuts') {
-                    this._bluringTimeout = setTimeout(() => {
-                        this.setFocusMode('default');
-                        this._bluringTimeout = null;
-                    }, 0);
-    
-                }
-            });
-    
-            window.addEventListener('focusin', (event) => {
-                if (this._focusControlPaused) {
-                    if (event.target !== this._focusControlPaused)
-                        this._focusControlPaused.focus();
-                    return;
-                }
-    
-                let element = event.target;
-                if (this._activeModalToken && this._activeModalToken.el.contains(element) === false) {
-                    this.findFocusableElement(this._activeModalToken.el);
-                    return;
-                }
-                else if (element === document.body)
-                    this.setFocusMode('default');
-                else if (element !== null && element.classList.contains('temp-focus-cell') === false) {
-                    if (element === this._passedFocus) {
-                        this._passedFocus = null;
-                        this._focusPassing = false;
-                    }
-                    else if (! this.inAccessibilityMode()) {
-                        let details = this.elementFocusDetails(element);
-                        if (details.usesKeyboard || this.containsFocusableMenuLevel(event.composedPath()) || (this.inKeyboardMode() && ! this._mouseClicked)) {
-                            let keyboardMode = 'hover';
-                            if ( ! element.classList.contains('menu-level'))
-                                keyboardMode = (/*this.focusMode === 'keyboard' &&*/ !this._mouseClicked) ? 'keyboard' : 'hover';
-                            this.setFocusMode(keyboardMode);
-                        }
-                        else
-                            this.setFocusMode('default');
-                    }
-                    else if (this.focusMode === 'shortcuts') {
-                        let details = this.elementFocusDetails(element);
-                        if (! details.containsShortcutKeys)
-                            this.setFocusMode('accessible');
-                    }
-                }
-                else if (this.focusMode !== this.focusDefault)
-                    this.setFocusMode('default');
-    
-                this._mouseClicked = false;
             });
         }
+        else {
+            window.addEventListener('keydown', (event) => {
+                let keyObj = this.eventToKeyObj(event);
+
+                let isEditableTextbox = (document.activeElement?.tagName === 'INPUT' && document.activeElement?.type === 'text' || document.activeElement?.isContentEditable);
+                if (isEditableTextbox && document.activeElement.classList.contains('has-editing-mode'))
+                    isEditableTextbox = this.defaultFocusControl.classList.contains('editing');
+                if (isEditableTextbox === false) {
+                    if (this.processKeyObj(keyObj) === false) {
+                        if (this._isMainWindow === false && this._baseKeyPaths) {
+                            let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
+                            if (transfer) {
+                                event.preventDefault();
+                                this.broadcast('processKeyObj', [keyObj], false);  
+                            }
+                        }
+                    }
+                    else
+                        event.preventDefault();
+                }
+
+                if (event.altKey && event.key !== 'Alt') // as modifier
+                    this._starting = false
+                else if (event.key === 'Alt') {
+                    if ( ! this._activeModalToken || this._activeModalToken.allowKeyPaths)
+                        this._starting = true;
+                }
+            });
+
+            window.addEventListener('keyup', (event) => {
+                if (this._starting === false)
+                    return;
+
+                this._starting = false;
+
+                if (event.key === 'Alt') { // not as modifier
+                    if (event.ctrlKey === false) {
+                        if (this.focusMode === 'shortcuts' /*this.inAccessibilityMode()*/) {
+                            this.shortcutPath = '';
+                            this.setFocusMode('default');
+                        }
+                        else if (this.focusMode !== 'shortcuts') {
+                            this.shortcutPath = '';
+                            this.setFocusMode('shortcuts');
+                        }
+                    }
+
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            });
+        }
+
+        window.addEventListener('focus', (event) => {
+            this.emit('focus', event);
+
+            this.isBluring = false;
+            this.isBlured = false;
+
+            if (this.focusMode === 'default' && this._isMainWindow === false) {
+                this._broadcastTimeout = setTimeout(() => {
+                    this._broadcastTimeout = null;
+                    this.broadcastFocusMode(this.focusMode);
+                }, 0);
+            }
+        });
+
+        window.addEventListener('pointerdown', (event) => {
+            this._mouseClicked = true;
+            if (this.inAccessibilityMode()) {
+                setTimeout(() => {
+                    let info = this.elementFocusDetails(event.target);
+                    if (info.usesKeyboard)
+                        this.setFocusMode('hover');
+                    else
+                        this.setFocusMode('default');
+                }, 0);
+            }
+        });
+
+        window.addEventListener('blur', (event) => {
+            if (this._bluringTimeout) {
+                clearTimeout(this._bluringTimeout);
+                this._bluringTimeout = null;
+            }
+
+            this.isBluring = false;
+            this.isBlured = true;
+
+            this.emit('blur', event);
+        });
+
+        if (this._isMainWindow) {
+            document.addEventListener('visibilitychange', (event) => {
+                this.setFocusMode('default');
+            });
+        }
+
+        window.addEventListener('focusout', (event) => {
+            if (this._focusControlPaused) {
+                if (event.relatedTarget !== this._focusControlPaused)
+                    this._focusControlPaused.focus();
+                return;
+            }
+
+            if (this._focusPassing || this.isBluring)
+                return;
+
+            if (event.relatedTarget === null && this._activeModalToken) {
+                this.findFocusableElement(this._activeModalToken.el);
+                return;
+            }
+
+            //If default focus control looses focus for some reason it gives it back.
+            if (event.target === this.defaultFocusControl && event.relatedTarget === null  && this._inDefaultMode) {
+                event.target.focus();
+            }
+
+            if (event.relatedTarget === null && this.focusMode !== 'shortcuts') {
+                this._bluringTimeout = setTimeout(() => {
+                    this.setFocusMode('default');
+                    this._bluringTimeout = null;
+                }, 0);
+
+            }
+        });
+
+        window.addEventListener('focusin', (event) => {
+            if (this._focusControlPaused) {
+                if (event.target !== this._focusControlPaused)
+                    this._focusControlPaused.focus();
+                return;
+            }
+
+            let element = event.target;
+            if (this._activeModalToken && this._activeModalToken.el.contains(element) === false) {
+                this.findFocusableElement(this._activeModalToken.el);
+                return;
+            }
+            else if (element === document.body)
+                this.setFocusMode('default');
+            else if (element !== null && element.classList.contains('temp-focus-cell') === false) {
+                if (element === this._passedFocus) {
+                    this._passedFocus = null;
+                    this._focusPassing = false;
+                }
+                else if (! this.inAccessibilityMode()) {
+                    let details = this.elementFocusDetails(element);
+                    if (details.usesKeyboard || this.containsFocusableMenuLevel(event.composedPath()) || (this.inKeyboardMode() && ! this._mouseClicked)) {
+                        let keyboardMode = 'hover';
+                        if ( ! element.classList.contains('menu-level'))
+                            keyboardMode = (/*this.focusMode === 'keyboard' &&*/ !this._mouseClicked) ? 'keyboard' : 'hover';
+                        this.setFocusMode(keyboardMode);
+                    }
+                    else
+                        this.setFocusMode('default');
+                }
+                else if (this.focusMode === 'shortcuts') {
+                    let details = this.elementFocusDetails(element);
+                    if (! details.containsShortcutKeys)
+                        this.setFocusMode('accessible');
+                }
+            }
+            else if (this.focusMode !== this.focusDefault)
+                this.setFocusMode('default');
+
+            this._mouseClicked = false;
+        });
 
         if ( ! this._isMainWindow)
             this.updateBaseKeyPaths();
@@ -371,14 +365,6 @@ class FocusLoop extends EventEmitter {
         }
         else
             element.focus();
-    }
-
-    attachShadowRoot(shadowRoot) {
-        this._shadowRoot = shadowRoot;
-    }
-
-    getShadowFocusLoop() {
-        return new FocusLoop(false, nextShadowId++);
     }
 
     pauseFocusControl(element) {
@@ -552,7 +538,7 @@ class FocusLoop extends EventEmitter {
             if (this.defaultFocusControl && this.focusMode === 'default')
                 this.defaultFocusControl.focus();
 
-            if (this._isMainWindow && !this._isMainWindowShadow && (this.focusMode === 'shortcuts' || prevMode === 'shortcuts') && this.focusMode !== prevMode)
+            if (this._isMainWindow && (this.focusMode === 'shortcuts' || prevMode === 'shortcuts') && this.focusMode !== prevMode)
                 this.updateShortcuts();
             if ( ! fromBroadcast && this.isBluring === false && this.isBlured === false)
                 this.broadcastFocusMode(value, options);
@@ -587,8 +573,8 @@ class FocusLoop extends EventEmitter {
     }
 
     invoke(invokeWindow, id, args, transferFocus) {
-        let data = { id, args, type: 'focusLoop', shadowId: this.shadowId };
-        if (invokeWindow !== window || this.shadowId !== '') {
+        let data = { id, args, type: 'focusLoop' };
+        if (invokeWindow !== window) {
             if (transferFocus)
                 this.transferFocus(invokeWindow);
             invokeWindow.postMessage(data, '*');
@@ -598,14 +584,16 @@ class FocusLoop extends EventEmitter {
     }
 
     broadcast(id, args, transferFocus) {
-        let data = { id, args, type: 'focusLoop', shadowId: this.shadowId };
+        let data = { id, args, type: 'focusLoop' };
         if (this._isMainWindow === false) {
             if (transferFocus)
                 this.transferFocus(this._mainWindow);
         }
-        this._mainWindow.postMessage(data, '*');
+        if (this._isMainWindow === false)
+            this._mainWindow.postMessage(data, '*');
         for (let i = 0; i < this._mainWindow.frames.length; i++) {
-            this._mainWindow.frames[i].postMessage(data, '*');
+            if (window !== this._mainWindow.frames[i])
+                this._mainWindow.frames[i].postMessage(data, '*');
         }
     }
 
@@ -640,7 +628,7 @@ class FocusLoop extends EventEmitter {
 
     addFocusLoop(element, options) {
 
-        // options = { level, closeHandler, exitSelector, hoverFocus, keyToEnter, modal, exitKeys }
+        // options = { level, closeHandler, exit Selector, hoverFocus, keyToEnter, modal, exitKeys }
 
         if (options === undefined)
             options = { };
@@ -657,6 +645,12 @@ class FocusLoop extends EventEmitter {
             element.setAttribute('aria-modal', true);
             if (element.hasAttribute('tabindex') === false)
                 element.setAttribute('tabindex', '-1');
+
+            element.addEventListener('focus', (event) => {
+                this.findFocusableElement(element);
+                event.stopPropagation();
+                event.preventDefault();
+            });
         }
 
         let token = new FocusLoopToken(element, options, modalId, this);
@@ -933,8 +927,12 @@ class FocusLoop extends EventEmitter {
     }
 
     keyboardfocusableElements(element, level, onlyTabbable) {
+
+        if (element.shadowRoot)
+            element = element.shadowRoot;
+
         let tabbable = onlyTabbable ? ':not([tabindex="-1"])' : '';
-        return [...element.querySelectorAll(`
+        let list = [...element.querySelectorAll(`
         a[href]${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *),
         button${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *),
         input${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *),
@@ -943,6 +941,28 @@ class FocusLoop extends EventEmitter {
         details${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *),
         [tabindex]${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *)`)]
                 .filter(el => el.offsetWidth > 0 && el.offsetHeight > 0 && !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden') && window.getComputedStyle(el).visibility !== "hidden");
+
+        if (onlyTabbable) {
+           list.sort((a,b) => {
+                let a_index = a.getAttribute('tabindex');
+                let b_index = b.getAttribute('tabindex');
+
+                a_index = a_index === null ? 0 : parseInt(a_index);
+                b_index = b_index === null ? 0 : parseInt(b_index);
+
+                if (a_index === b_index)
+                    return 0;
+                if (a_index === null || a_index === 0)
+                    return 1;
+                if (b_index === null || b_index === 0)
+                    return -1;
+
+                return a_index - b_index;
+            });
+            console.log(list)
+        }
+
+        return list;
     }
 
     enterFocusLoop(loopElement, options) {
@@ -1358,10 +1378,16 @@ class FocusLoop extends EventEmitter {
             return;
 
         let target = event.target;
+        if (target.shadowRoot && target.shadowRoot.activeElement)
+            target = target.shadowRoot.activeElement;
+
         let details = this.elementFocusDetails(target);
         let reservedKeys = details.requires;
 
         let parent = target.closest('.menu-level');
+        if (parent === null && event.target.shadowRoot)
+            parent = event.target;
+
         if (parent.classList.contains('focus-listener') && parent.parentElement) {
             let upperListener = parent.parentElement.closest('.focus-listener');
             if (upperListener) {
@@ -1388,13 +1414,13 @@ class FocusLoop extends EventEmitter {
         }
 
         let keyToEnter = false;
-        if (event.target === parent) {
+        if (target === parent) {
             //let token = this.loopOptions.get(parent);
             keyToEnter = token.keyToEnter;
             if (keyToEnter) {
                 parent = target.parentElement.closest('.menu-level');
                 if ( ! parent)
-                    parent = event.target;
+                    parent = target;
             }
         }
 
@@ -1414,7 +1440,7 @@ class FocusLoop extends EventEmitter {
                 if (this.focusMode === 'shortcuts')
                     this.setFocusMode('accessible', { noTransfer: true, silent: false });
 
-                if (event.target === parent)
+                if (target === parent)
                     this.enterFocusLoop(parent, { withMouse: false, direction: 'up' });
                 else {
                     let loopContainer = this.nullishCheck(target.closest('[vloop="true"]'), parent);
@@ -1429,7 +1455,7 @@ class FocusLoop extends EventEmitter {
                 if (this.focusMode === 'shortcuts')
                     this.setFocusMode('accessible', { noTransfer: true, silent: false });
 
-                if (event.target === parent)
+                if (target === parent)
                     this.enterFocusLoop(parent, { withMouse: false, direction: 'down' });
                 else {
                     let loopContainer = this.nullishCheck(target.closest('[vloop="true"]'), parent);
@@ -1444,7 +1470,7 @@ class FocusLoop extends EventEmitter {
                 if (this.focusMode === 'shortcuts')
                     this.setFocusMode('accessible', { noTransfer: true, silent: false });
 
-                if (event.target === parent)
+                if (target === parent)
                     this.enterFocusLoop(parent, { withMouse: false });
                 else {
                     let loopContainer = this.nullishCheck(target.closest('[hloop="true"]'), parent);
@@ -1461,7 +1487,7 @@ class FocusLoop extends EventEmitter {
                 if (this.focusMode === 'shortcuts')
                     this.setFocusMode('accessible', { noTransfer: true, silent: false });
 
-                if (event.target === parent)
+                if (target === parent)
                     this.enterFocusLoop(parent, { withMouse: false });
                 else {
                     let loopContainer = this.nullishCheck(target.closest('[hloop="true"]'), parent);
@@ -1491,7 +1517,7 @@ class FocusLoop extends EventEmitter {
                     this.setFocusMode('accessible', { noTransfer: true, silent: false });
 
                 list = this.keyboardfocusableElements(parent, level, true);
-                let index = list.indexOf(event.target);
+                let index = list.indexOf(target);
 
                 let newFocus = null;
                 if (event.shiftKey) {
@@ -1515,7 +1541,7 @@ class FocusLoop extends EventEmitter {
                 break;
             case 'Enter':
                 if (keyToEnter) {
-                    this.enterFocusLoop(event.target, { withMouse: false });
+                    this.enterFocusLoop(target, { withMouse: false });
                     event.preventDefault();
                 }
                 break;
