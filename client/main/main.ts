@@ -869,26 +869,31 @@ $(document).ready(async() => {
                 infoBox.setup(progress);
         };
 
-        let status;
+        let status: { status: 'OK' | 'requires-auth', event: String, params: { [name: string]: any } };
 
         try {
+            let location;
+            let params;
+
+            const match = window.location.hash.match(/^#([^?]+)(.*)$/);
+            if (match) {
+                location = match[1];
+                params = Object.fromEntries(new URLSearchParams(match[2]));
+            }
+
             while (true) {
 
-                let stream = instance.open(filePath, options);
-                for await (let progress of stream)
-                    notify(progress);
-                status = await stream;
+                if ( ! location) {
+                    let stream = instance.open(filePath, options);
+                    for await (let progress of stream)
+                        notify(progress);
+                    status = await stream;
+                    location = status.event;
+                    params = status.params;
+                }
 
-                if (status.status === 'requires-auth') {
-
-                    let location, params;
-                    const match = window.location.hash.match(/^#(verified)\??(.*)$/);
-                    if (match) {
-                        location = 'verified';
-                        params = Object.fromEntries(new URLSearchParams(match[2]));
-                    }
-
-                    let response = await lobby.show(location, params);
+                if (location || status.status === 'requires-auth') {
+                    const response = await lobby.show(location, params);
                     if (response && response.action === 'skip')
                         filePath = '';
 
@@ -896,6 +901,9 @@ $(document).ready(async() => {
                     options.authToken = await auth.getAuthToken();
                     // notify any background shared workers that the account has changed
                     new BroadcastChannel('account-events').postMessage({ type: 'reset' });
+
+                    location = undefined;
+                    params = undefined;
                 }
                 else {
                     break;
@@ -968,13 +976,8 @@ $(document).ready(async() => {
             resultsView.showWelcome();
         }
     }
-    if (!welcomeShown)
+    if ( ! welcomeShown)
         resultsView.hidePlaceHolder();
-
-    for await (let event of auth.events()) {
-        if (event.type === 'request-auth')
-            infoBox.setup({ 'message-src': event.url });
-    }
 
 });
 
