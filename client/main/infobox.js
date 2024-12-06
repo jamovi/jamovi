@@ -122,6 +122,9 @@ class InfoBox extends HTMLElement {
                 params.cancelable = info.cancelable === undefined ? false : info.cancelable;
                 this._processEnterKey = true;
                 this._focusLoopElement = this._container;
+                setTimeout(() => {
+                    this._button.focus();
+            }, 100);
             }
             else if (this._isElement(info)) {
                 if (info !== this._currentElement) {
@@ -139,7 +142,6 @@ class InfoBox extends HTMLElement {
                 this.appendChild(this._currentElement);
                 if (this._currentElement.focusElement)
                     setTimeout(() => {
-
                         this._currentElement.focusElement().focus();
                 }, 100);
             }

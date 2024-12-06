@@ -933,13 +933,13 @@ class FocusLoop extends EventEmitter {
 
         let tabbable = onlyTabbable ? ':not([tabindex="-1"])' : '';
         let list = [...element.querySelectorAll(`
-        a[href]${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *),
-        button${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *),
-        input${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *),
-        textarea${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *),
-        select${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *),
-        details${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *),
-        [tabindex]${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *)`)]
+        a[href]${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *):not(.not-focusable *),
+        button${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *):not(.not-focusable *),
+        input${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *):not(.not-focusable *),
+        textarea${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *):not(.not-focusable *),
+        select${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *):not(.not-focusable *),
+        details${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *):not(.not-focusable *),
+        [tabindex]${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *):not(.not-focusable *)`)]
                 .filter(el => el.offsetWidth > 0 && el.offsetHeight > 0 && !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden') && window.getComputedStyle(el).visibility !== "hidden");
 
         if (onlyTabbable) {
@@ -959,7 +959,6 @@ class FocusLoop extends EventEmitter {
 
                 return a_index - b_index;
             });
-            console.log(list)
         }
 
         return list;
