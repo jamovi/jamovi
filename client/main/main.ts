@@ -33,7 +33,9 @@ const Keyboard = require('../common/focusloop');
 
 require('./utils/headeralert');
 
-import lobby from './extras/lobby';
+import lobby, { hasLobby } from './extras/lobby';
+import { IInstanceOpenOptions } from './instance';
+import { IInstanceOpenStatus } from './instance';
 
 
 window._ = I18n._;
@@ -365,7 +367,7 @@ $(document).ready(async() => {
     };
     document.ondrop = (event) => {
         for (let file of event.dataTransfer.files)
-            instance.open(file.path);
+            backstageModel.requestOpen({ path: file.path, title: file.name });
         event.preventDefault();
     };
 
@@ -838,24 +840,6 @@ $(document).ready(async() => {
         if (match)
             instanceId = match[1];
 
-        const params = new URLSearchParams(window.location.search);
-
-        let filePath = params.get('open');
-        if (filePath) {
-            filePath = decodeURIComponent(filePath);
-        }
-
-        const options = {
-            authToken: null,
-            accessKey: params.get('key') || null,
-        };
-
-        if (params.get('temp'))
-            options.temp = true;
-
-        if (params.get('title'))
-            options.title = decodeURIComponent(params.get('title'));
-
         const notify = (progress) => {
             if (progress.p !== undefined) {
                 progNotif.set({
@@ -869,33 +853,29 @@ $(document).ready(async() => {
                 infoBox.setup(progress);
         };
 
-        let status: { status: 'OK' | 'requires-auth', event: String, params: { [name: string]: any } };
+        let options: IInstanceOpenOptions = { };
+        let status: IInstanceOpenStatus;
 
         try {
-            let location;
-            let params;
+            let location: string | undefined;
+            let params: { [name: string]: any } | undefined;
 
             const match = window.location.hash.match(/^#([^?]+)(.*)$/);
             if (match) {
                 location = match[1];
-                params = Object.fromEntries(new URLSearchParams(match[2]));
+                params = {}
+                for (const [name, value] of new URLSearchParams(match[2]))
+                    params[name] = decodeURIComponent(value)
+                if (location === 'open')
+                    options = params;
             }
 
             while (true) {
 
-                if ( ! location) {
-                    let stream = instance.open(filePath, options);
-                    for await (let progress of stream)
-                        notify(progress);
-                    status = await stream;
-                    location = status.event;
-                    params = status.params;
-                }
-
-                if (location || status.status === 'requires-auth') {
+                if ( ! instanceId && hasLobby) {
                     const response = await lobby.show(location, params);
-                    if (response && response.action === 'skip')
-                        filePath = '';
+                    if (response.action === 'open')
+                        options = response.data;
 
                     await auth.waitForSignIn();
                     options.authToken = await auth.getAuthToken();
@@ -905,15 +885,21 @@ $(document).ready(async() => {
                     location = undefined;
                     params = undefined;
                 }
-                else {
+
+                let stream = instance.open(options);
+                for await (let progress of stream)
+                    notify(progress);
+                status = await stream;
+                if (status.status === 'OK')
                     break;
-                }
+                else if (status.event === 'full')
+                    location = 'full';
             }
         }
         catch (e) {
-            if (host.isElectron && filePath !== '') {
+            if (host.isElectron && options.path) {
                 // if opening fails, open a blank data set
-                status = await instance.open('');
+                status = await instance.open({ path: '' });
                 let notif;
                 if (e instanceof UserFacingError)
                     notif = { title: e.message, message: e.cause, type: 'error', duration: 3000 };

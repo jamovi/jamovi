@@ -39,6 +39,23 @@ interface CreateAnalysisOptions {
 
 import { parse as parseJsonLines } from './utils/jsonlines';
 
+export interface IInstanceOpenOptions {
+    path?: string,
+    file?: File,
+    title?: string,
+    temp?: boolean,
+    authToken?: string,
+    accessKey?: string,
+}
+
+export interface IInstanceOpenStatus {
+    status: 'OK' | 'requires-auth' | 'error',
+    title?: string,
+    message?: string,
+    'message-src'?: string,
+    event?: 'full',
+}
+
 
 const Instance = Backbone.Model.extend({
 
@@ -163,13 +180,7 @@ const Instance = Backbone.Model.extend({
             return prog;
         });
     },
-    open(file, options) {
-
-        options = options || { };
-
-        // nuke any vestigal path ... this will be tidied up at some point
-        options = Object.assign({}, options);
-        delete options.path;
+    open(options: IInstanceOpenOptions) {
 
         return new ProgressStream(async (setProgress) => {
 
@@ -184,7 +195,9 @@ const Instance = Backbone.Model.extend({
 
             while (true) {
 
-                if (file instanceof File) {
+                if (options.file) {
+
+                    const file = options.file;
 
                     // fetch doesn't support upload progress, so we need to use xhr
                     let xhr = new XMLHttpRequest();
@@ -266,8 +279,17 @@ const Instance = Backbone.Model.extend({
                 }
                 else {
 
-                    if (file === undefined || file === null) {
+                    if ('path' in options) {
+                        const data = new FormData();
+                        data.append('options', JSON.stringify(options));
 
+                        response = await fetch('open?p=', {
+                            method: 'POST',
+                            headers: headers,
+                            body: data,
+                        });
+                    }
+                    else {
                         let url = 'open?p=';
 
                         if (options.accessKey)
@@ -275,21 +297,6 @@ const Instance = Backbone.Model.extend({
 
                         response = await fetch(url, {
                             method: 'GET',
-                            credentials: 'include',
-                            cache: 'no-store',
-                            headers: headers,
-                        });
-                    }
-                    else {
-
-                        const data = new FormData();
-                        data.append('options', JSON.stringify(Object.assign({ path: file }, options)));
-
-                        response = await fetch('open?p=', {
-                            method: 'POST',
-                            body: data,
-                            credentials: 'include',
-                            cache: 'no-store',
                             headers: headers,
                         });
                     }

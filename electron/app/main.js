@@ -672,26 +672,22 @@ const createWindow = function(open) {
     if (open.id)
         url += open.id + '/';
 
+    if (accessKey)
+        url += `?access_key=${ accessKey }`;
+
     if (open.open) {
 
         let filePath = open.open;
         if ( ! (filePath.startsWith('http://') || filePath.startsWith('https://')))
             filePath = path.resolve(filePath);
 
-        url = `${ url }?open=${ encodeURIComponent(filePath) }`;
+        url = `${ url }#open?path=${ encodeURIComponent(filePath) }`;
 
         if (open.temp) {
             url = `${ url }&temp=1`;
             if (open.title)
                 url = `${ url }&title=${ encodeURIComponent(open.title) }`;
         }
-    }
-
-    if (accessKey) {
-        if (url.endsWith('/'))
-            url += `?access_key=${ accessKey }`;
-        else
-            url += `&access_key=${ accessKey }`;
     }
 
     // wind.openDevTools();
