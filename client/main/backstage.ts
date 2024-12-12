@@ -906,7 +906,7 @@ const BackstageModel = Backbone.Model.extend({
 
         let deactivated = false;
         try {
-            let stream = this.instance.open(options.path, options);
+            let stream = this.instance.open(options);
             for await (let progress of stream) {
 
                 progNotif.set({
