@@ -148,7 +148,7 @@ const TableView = Elem.View.extend({
 
         let titleId = focusLoop.getNextFocusId('label');
         this.$table = $(`<table aria-labelledby="${titleId}" class="jmv-results-table-table${rowSelectable}"></table>`);
-        
+
         this.addContent(this.$table);
 
         this.$titleCell = $('<caption class="jmv-results-table-title-cell" scope="col" colspan="1"></caption>').prependTo(this.$table);
@@ -467,6 +467,7 @@ const TableView = Elem.View.extend({
             for (let colNo = 0; colNo < cells.header.length - 1; colNo++) {
                 swapped.body[colNo] = new Array(cells.body.length + 1);
                 let cell = cells.header[colNo + 1];
+                cell.sups = '';
                 swapped.body[colNo][0] = cell;
             }
             //fix body
@@ -575,12 +576,12 @@ const TableView = Elem.View.extend({
 
             let rowHtml = '';
             for (let colNo = 0; colNo < cells.body[rowNo].length; colNo++) {
-                
+
                 let cell = cells.body[rowNo][colNo];
                 let isRowHeader = colNo < rowHeadingCount;
 
                 if ( ! cell || ! cell.combineBelow || (cell && cell.value !== '')) { //skip cells that are blank
-                    
+
                     if (cell) {
                         let rowSpan = 1;
                         if (cell.combineBelow || colNo < rowHeadingCount) {
@@ -607,7 +608,7 @@ const TableView = Elem.View.extend({
 
                         if (cell.beginGroup)
                             classes += ' jmv-results-table-cell-group-begin';
-                        
+
                         if (content === '')
                             content = '&nbsp;';
 
@@ -683,7 +684,7 @@ const TableView = Elem.View.extend({
         }
     },
     determineRowHeaderCount(cells) {
-        
+
         let head = cells.header[0];
         let headerValue = head.value;
         let hasRowHeaders = headerValue === '' && cells.body[0][0].type === 'text';
@@ -736,7 +737,7 @@ const TableView = Elem.View.extend({
         let items = value.split(' ✻ ');
         if (items.length === 1)
             return null;
-        
+
         return this.termToAriaDescription(items);
     },
     termToAriaDescription: function(raw) {
