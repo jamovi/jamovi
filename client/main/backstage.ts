@@ -565,7 +565,7 @@ const BackstageModel = Backbone.Model.extend({
 
             if ( ! result.cancelled) {
                 let file = result.files[0];
-                this.requestOpen({ path: file });
+                this.requestOpen({ file });
             }
         }
         else if (type === 'import') {
