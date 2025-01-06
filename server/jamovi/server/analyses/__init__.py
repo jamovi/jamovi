@@ -1,4 +1,7 @@
 
-from .analysis import Analysis  # noqa: F401
-from .iterator import AnalysisIterator  # noqa: F401
-from .analyses import Analyses  # noqa: F401
+from .analysis import Analysis
+from .iterator import AnalysisIterator
+from .analyses import Analyses
+from .analysesdoc import AnalysesDoc
+
+__all__ = ["Analysis", "AnalysisIterator", "Analyses", "AnalysesDoc"]

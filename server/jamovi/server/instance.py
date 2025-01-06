@@ -20,6 +20,7 @@ from .instancemodel import InstanceModel
 from . import formatio
 from .modtracker import ModTracker
 from .permissions import Permissions
+from .analyses import AnalysesDoc
 
 from .exceptions import FileExistsException
 from .exceptions import UserException
@@ -65,6 +66,10 @@ from .i18n import _
 EURO_REGEX = re.compile(r'^\d+,\d+$')
 
 
+OP_SET = jcoms.GetSet.Value('SET')
+OP_GET = jcoms.GetSet.Value('GET')
+
+
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
@@ -81,7 +86,8 @@ ConnectionStatus = namedtuple('ConnectionStatus',
 
 class Instance:
 
-    _file_sync_client: ClientSession
+    _analyses_doc: AnalysesDoc
+    _file_sync_client: ClientSession | None
 
     def __init__(self, session, instance_path, instance_id, settings):
 
@@ -100,6 +106,7 @@ class Instance:
         self._coms = None
         self._perms = Permissions.retrieve()
         self._mod_tracker = ModTracker(self._data)
+        self._analyses_doc = AnalysesDoc()
 
         now = monotonic()
 
@@ -278,25 +285,44 @@ class Instance:
 
         self._idle_since = monotonic()
 
-        if type(request) == jcoms.DataSetRR:
+        if isinstance(request, jcoms.DataSetRR):
             self._on_dataset(request)
-        elif type(request) == jcoms.OpenRequest:
+        elif isinstance(request, jcoms.OpenRequest):
             await self._on_open(request)
-        elif type(request) == jcoms.InfoRequest:
+        elif isinstance(request, jcoms.InfoRequest):
             self._on_info(request)
-        elif type(request) == jcoms.SettingsRequest:
+        elif isinstance(request, jcoms.SettingsRequest):
             self._on_settings(request)
-        elif type(request) == jcoms.AnalysisRequest:
+        elif isinstance(request, jcoms.AnalysisRequest):
             await self._on_analysis(request)
-        elif type(request) == jcoms.FSRequest:
+        elif isinstance(request, jcoms.FSRequest):
             self._on_fs_request(request)
-        elif type(request) == jcoms.ModuleRR:
+        elif isinstance(request, jcoms.ModuleRR):
             await self._on_module(request)
-        elif type(request) == jcoms.StoreRequest:
+        elif isinstance(request, jcoms.StoreRequest):
             await self._on_store(request)
+        elif isinstance(request, jcoms.ProjectRR):
+            self._on_project_message(request)
         else:
             log.info('unrecognised request')
             log.info(request.payloadType)
+
+    def _on_project_message(self, request: jcoms.ProjectRR):
+
+        response = jcoms.ProjectRR()
+
+        if request.op == OP_GET:
+            if request.incDoc:
+                vector, update = self._analyses_doc.get_changes()
+                response.docVector = vector
+                response.docUpdate = update
+        else:
+            if request.incDoc:
+                update = request.docUpdate
+                self._analyses_doc.apply_changes(update)
+
+        if self._coms is not None:
+            self._coms.send(response, self._instance_id, request)
 
     def _on_results(self, analysis):
         if self._coms is not None:
@@ -1399,7 +1425,7 @@ class Instance:
         try:
             response = jcoms.DataSetRR()
 
-            if request.op == jcoms.GetSet.Value('SET'):
+            if request.op == OP_SET:
                 with self._data.attach():
                     response.op = request.op
                     self._clone_cell_selections(request, response)
@@ -1408,7 +1434,7 @@ class Instance:
                     self._on_dataset_set(request, response)
                     if request.noUndo is False:
                         self._mod_tracker.end_event()
-            elif request.op == jcoms.GetSet.Value('GET'):
+            elif request.op == OP_GET:
                 with self._data.attach(read_only=True):
                     response.op = request.op
                     self._clone_cell_selections(request, response)

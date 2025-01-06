@@ -607,6 +607,16 @@ enum SpecialValues {
     NOT_A_NUMBER = 1;
 }
 
+message ProjectRR {
+    GetSet op = 1;
+    bool incDoc = 2;
+    bytes docUpdate = 3;
+    bytes docVector = 4;
+
+    bool incData = 5;
+    DataSetRR dataset = 6;
+}
+
 message DataSetRR {
 
     message DataBlock {

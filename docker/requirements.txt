@@ -11,3 +11,4 @@ aiohttp
 duckdb
 loguru
 pytest
+y-py
