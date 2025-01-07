@@ -397,6 +397,8 @@ function _htmlify(el, options) {
                 'caption-side'
             ];
             tag = 'th'; // because word doesn't honour caption elements for tables
+            prepend = '<thead><tr>';
+            append = '</tr></thead>';
             break;
         case 'td':
         case 'th':
