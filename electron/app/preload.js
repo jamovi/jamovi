@@ -200,8 +200,8 @@ async function showOpenDialog(options) {
         return { cancelled: true };
     }
     else {
-        let files = result.filePaths.map(x => x.replace(/\\/g, '/'));
-        return { cancelled: false, files };
+        const paths = result.filePaths.map(x => x.replace(/\\/g, '/'));
+        return { cancelled: false, paths };
     }
 }
 
