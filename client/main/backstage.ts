@@ -564,8 +564,14 @@ const BackstageModel = Backbone.Model.extend({
             });
 
             if ( ! result.cancelled) {
-                let file = result.files[0];
-                this.requestOpen({ file });
+                if (result.files) {
+                    const file = result.files[0];
+                    this.requestOpen({ file });
+                }
+                else {
+                    const path = result.paths[0];
+                    this.requestOpen({ path });
+                }
             }
         }
         else if (type === 'import') {
