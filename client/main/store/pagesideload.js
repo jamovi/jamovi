@@ -29,9 +29,9 @@ const PageSideload = Backbone.View.extend({
             let result = await host.showOpenDialog({ filters });
 
             if ( ! result.cancelled) {
-                let file = result.files[0];
+                const path = result.paths[0];
                 try {
-                    await this.model.install(file);
+                    await this.model.install(path);
                     this._installSuccess();
                 }
                 catch (e) {
