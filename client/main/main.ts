@@ -34,8 +34,9 @@ const Keyboard = require('../common/focusloop');
 require('./utils/headeralert');
 
 import lobby, { hasLobby } from './extras/lobby';
+import { InstanceOpenStream } from './instance';
 import { IInstanceOpenOptions } from './instance';
-import { IInstanceOpenStatus } from './instance';
+import { IInstanceOpenResult } from './instance';
 
 
 window._ = I18n._;
@@ -836,9 +837,9 @@ $(document).ready(async() => {
         await coms.ready;
 
         let instanceId;
-        let match = /\/([a-z0-9-]+)\/$/.exec(window.location.pathname);
-        if (match)
-            instanceId = match[1];
+        const iidMatch = /\/([a-z0-9-]+)\/$/.exec(window.location.pathname);
+        if (iidMatch)
+            instanceId = iidMatch[1];
 
         const notify = (progress) => {
             if (progress.p !== undefined) {
@@ -854,71 +855,73 @@ $(document).ready(async() => {
         };
 
         let options: IInstanceOpenOptions = { };
-        let status: IInstanceOpenStatus;
+        let result: IInstanceOpenResult;
+        let location: string | undefined;
+        let params: { [name: string]: any } | undefined;
 
-        try {
-            let location: string | undefined;
-            let params: { [name: string]: any } | undefined;
+        const match = window.location.hash.match(/^#([^?]+)(.*)$/);
+        if (match) {
+            location = match[1];
+            params = {}
+            for (const [name, value] of new URLSearchParams(match[2]))
+                params[name] = decodeURIComponent(value)
+            if (location === 'open')
+                options = params;
+        }
 
-            const match = window.location.hash.match(/^#([^?]+)(.*)$/);
-            if (match) {
-                location = match[1];
-                params = {}
-                for (const [name, value] of new URLSearchParams(match[2]))
-                    params[name] = decodeURIComponent(value)
-                if (location === 'open')
-                    options = params;
+        while (true) {
+
+            if ( ! instanceId && hasLobby) {
+                const response = await lobby.show(location, params);
+                if (response.action === 'open')
+                    options = response.data;
+
+                await auth.waitForSignIn();
+                options.authToken = await auth.getAuthToken();
+                // notify any background shared workers that the account has changed
+                new BroadcastChannel('account-events').postMessage({ type: 'reset' });
             }
 
-            while (true) {
-
-                if ( ! instanceId && hasLobby) {
-                    const response = await lobby.show(location, params);
-                    if (response.action === 'open')
-                        options = response.data;
-
-                    await auth.waitForSignIn();
-                    options.authToken = await auth.getAuthToken();
-                    // notify any background shared workers that the account has changed
-                    new BroadcastChannel('account-events').postMessage({ type: 'reset' });
-
-                    location = undefined;
-                    params = undefined;
-                }
-
-                let stream = instance.open(options);
+            try {
+                const stream: InstanceOpenStream = instance.open(options);
                 for await (let progress of stream)
                     notify(progress);
-                status = await stream;
-                if (status.status === 'OK')
+                result = await stream;
+
+                if (result.status === 'OK')
                     break;
-                else if (status.event === 'full')
+
+                if (result.status === 'requires-auth' && result.event === 'full') {
                     location = 'full';
+                    params = {};
+                    continue;
+                }
             }
-        }
-        catch (e) {
-            if (host.isElectron && options.path) {
-                // if opening fails, open a blank data set
-                status = await instance.open({ path: '' });
-                let notif;
-                if (e instanceof UserFacingError)
-                    notif = { title: e.message, message: e.cause, type: 'error', duration: 3000 };
-                else
-                    notif = { title: _('Unable to open'), message: e.message, type: 'error', duration: 3000 };
-                notifications.notify(new Notify(notif));
-            }
-            else {
-                throw e;
+            catch (e) {
+                if (hasLobby && location === 'open') {
+                    throw new UserFacingError(_('This data set could not be opened'), { cause: e.cause, status: 'disconnected' });
+                }
+                else if (host.isElectron && options.path) {
+                    // if opening fails, open a blank data set
+                    result = await instance.open({ path: '' });
+                    let notif;
+                    if (e instanceof UserFacingError)
+                        notif = { title: e.message, message: e.cause, type: 'error', duration: 3000 };
+                    else
+                        notif = { title: _('Unable to open'), message: e.message, type: 'error', duration: 3000 };
+                    notifications.notify(new Notify(notif));
+                    break;
+                }
+                else {
+                    throw e;
+                }
             }
         }
 
-        if ('url' in status)
-            history.replaceState({}, '', `${host.baseUrl}${status.url}`);
+        infoBox.hide();
 
-        if (status.message || status.title || status['message-src'])
-            infoBox.setup(status);
-        else
-            infoBox.hide();
+        if ('url' in result)
+            history.replaceState({}, '', `${host.baseUrl}${result.url}`);
 
         instanceId = /\/([a-z0-9-]+)\/$/.exec(window.location.pathname)[1];
         await instance.connect(instanceId);
@@ -934,7 +937,6 @@ $(document).ready(async() => {
                 title: e.message,
                 message: e.cause,
                 status: e.status,
-                'message-src': e.messageSrc,
             });
         }
         else {

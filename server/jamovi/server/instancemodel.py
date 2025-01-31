@@ -48,7 +48,7 @@ class InstanceModel:
     _transform_next_id: int
     _log: object
     _row_tracker: RowTracker
-    file_sync: HttpSync
+    file_sync: HttpSync | None
 
     def __init__(self, instance):
         self._instance = instance

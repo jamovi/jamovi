@@ -20,7 +20,7 @@ const Modules = require('./modules');
 const I18n = require('../common/i18n');
 
 const Settings = require('./settings');
-const ProgressStream = require('./utils/progressstream');
+import ProgressStream from './utils/progressstream';
 
 const { flatten, unflatten } = require('../common/utils/addresses');
 
@@ -48,16 +48,36 @@ export interface IInstanceOpenOptions {
     accessKey?: string,
 }
 
-export interface IInstanceOpenStatus {
-    status: 'OK' | 'requires-auth' | 'error',
-    title?: string,
-    message?: string,
-    'message-src'?: string,
+interface IInstanceOpenRequiresInteraction {
+    status: 'requires-auth',
     event?: 'full',
 }
 
+interface IInstanceOpenError {
+    status: 'terminated',
+    message: string,
+    cause: string,
+}
 
-const Instance = Backbone.Model.extend({
+interface IInstanceOpenSuccess {
+    status: 'OK',
+    url?: string,
+}
+
+export type IInstanceOpenResult = IInstanceOpenSuccess | IInstanceOpenRequiresInteraction | IInstanceOpenError;
+
+export interface IInstanceOpenProgress {
+    title: string,
+    p: number,
+    n: number,
+    cancel: () => void,
+    'message-src'?: string,
+}
+
+export type InstanceOpenStream = ProgressStream<IInstanceOpenProgress, IInstanceOpenResult>;
+
+
+export const Instance = Backbone.Model.extend({
 
     initialize() {
 
@@ -180,9 +200,9 @@ const Instance = Backbone.Model.extend({
             return prog;
         });
     },
-    open(options: IInstanceOpenOptions) {
+    open(options: IInstanceOpenOptions): InstanceOpenStream {
 
-        return new ProgressStream(async (setProgress) => {
+        return new ProgressStream(async (setProgress): Promise<IInstanceOpenResult> => {
 
             let response;
             let welcomeUrl;
