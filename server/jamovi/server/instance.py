@@ -25,6 +25,8 @@ from .exceptions import FileExistsException
 from .exceptions import UserException
 
 from .syncs import create_file_sync
+from .syncs import HttpSync
+from .syncs import HttpSyncFileInfo
 
 import os
 import os.path
@@ -677,7 +679,10 @@ class Instance:
                 return resolved_list
 
         if self._file_sync_client is None:
-            self._file_sync_client = ClientSession(raise_for_status=True, connector=BlockLocalConnector())
+            self._file_sync_client = ClientSession(
+                raise_for_status=True,
+                connector=BlockLocalConnector(ssl=ssl_context()),
+            )
 
         return self._file_sync_client
 
@@ -695,10 +700,10 @@ class Instance:
         try:
 
             if (self._data.file_sync is not None and
-                    self._data.file_sync.url == path):
+                    self._data.file_sync.matches(path)):
                 file_sync = self._data.file_sync
             elif is_url(path):
-                file_sync = create_file_sync(path, options)
+                file_sync = create_file_sync(path, options, self.file_sync_client)
             else:
                 file_sync = None
 
@@ -750,7 +755,7 @@ class Instance:
 
                 with open(path, 'rb') as file:
                     overwrite = options.get('overwrite', False)
-                    stream = file_sync.write(self.file_sync_client, ssl_context(), file, file_size, overwrite)
+                    stream = file_sync.write(file, file_size, overwrite)
                     async for progress in stream:
                         return_stream.write((multiplier + progress * multiplier, 1000))
                     file_info: HttpSyncFileInfo = await stream
@@ -797,7 +802,10 @@ class Instance:
                 if cause == '':
                     cause = _('Access is denied. You may not have the appropriate permissions to access this resource.')
             elif isinstance(e, OSError):
-                cause = e.strerror
+                if e.strerror:
+                    cause = e.strerror
+                else:
+                    cause = str(e)
             else:
                 cause = str(e)
 
@@ -922,7 +930,7 @@ class Instance:
             old_mm = None
             # temp_file = None
             # temp_file_path = None
-            file_sync = None
+            file_sync: HttpSync | None = None
 
             try:
                 url = None
@@ -930,9 +938,9 @@ class Instance:
                 if is_url(path):
 
                     url = path
-                    file_sync = create_file_sync(url, options)
+                    file_sync = create_file_sync(url, options, self.file_sync_client)
 
-                    read_stream = file_sync.read(self.file_sync_client, ssl_context())
+                    read_stream = file_sync.read()
                     async for progress in read_stream:
                         progress_to_50 = (500 * progress, 1000)
                         stream.write(progress_to_50)

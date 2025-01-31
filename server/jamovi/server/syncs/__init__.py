@@ -1,12 +1,13 @@
 
 import pkgutil
 import importlib
-from ssl import SSLContext
 
 from aiohttp import ClientSession
 
 import jamovi.server.syncs as syncs
 from jamovi.server.syncs.http import HttpSync
+from jamovi.server.syncs.http import HttpSyncFileInfo
+from jamovi.server.syncs.http import HttpSyncException
 
 
 # https://packaging.python.org/en/latest/guides/creating-and-discovering-plugins/#using-namespace-packages
@@ -25,10 +26,11 @@ plugins = {
 }
 
 
-def create_file_sync(url: str, options: dict):
+def create_file_sync(url: str, options: dict, client: ClientSession) -> HttpSync:
     for plugin in plugins.values():
         if plugin.handles(url):
-            return plugin.Sync(url, options)
-    else:
-        return HttpSync(url, options)
+            return plugin.Sync(url, options, client)
+    return HttpSync(url, options, client)
 
+
+__all__ = ['create_file_sync', 'HttpSync', 'HttpSyncFileInfo', 'HttpSyncException']

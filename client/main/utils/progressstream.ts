@@ -1,11 +1,20 @@
 
 'use strict';
 
-export class ProgressStream {
+export class ProgressStream<P, R> implements AsyncIterable<P>, PromiseLike<R> {
 
-    constructor(fun) {
+    _progress: P;
+    setProgress: (progress: P) => void;
 
-        this._progress = undefined;
+    _progress_prom: Promise<void>;
+    _resolve_progress: () => void;
+    _reject_progress: (e?: any) => void;
+
+    _results_prom: Promise<R>;
+    _resolve_result: (r: R) => void;
+    _reject_result: (e?: any) => void;
+
+    constructor(fun: (setProgress: (progress: P) => void) => PromiseLike<R>) {
 
         this._results_prom = new Promise((resolve, reject) => {
             this._resolve_result = resolve;
@@ -18,7 +27,7 @@ export class ProgressStream {
         });
 
         let self = this;
-        this.setProgress = function(progress) {
+        this.setProgress = function(progress: P) {
             self._progress = progress;
             self._resolve_progress();
         };
@@ -44,14 +53,14 @@ export class ProgressStream {
         this._reject_result(error);
     }
 
-    then(onSuccess, onError) {
-        return this._results_prom.then(onSuccess, onError);
+    then<TResult1 = R, TResult2 = never>(onfulfilled?: ((value: R) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): PromiseLike<TResult1 | TResult2> {
+        return this._results_prom.then(onfulfilled, onrejected);
     }
 
     [Symbol.asyncIterator]() {
         var self = this;
         return {
-            async next() {
+            async next(): Promise<IteratorResult<P>> {
                 try {
                     await self._progress_prom;
                     self._progress_prom = new Promise((resolve, reject) => {
@@ -63,7 +72,7 @@ export class ProgressStream {
                     if (e)
                         throw e;
                     else
-                        return { done: true };
+                        return { done: true, value: undefined };
                 }
             }
         };
