@@ -146,19 +146,15 @@ let format = function(value, format) {
         return str;
     }
     else {
-        let exponent = Math.floor(Math.log10(Math.abs(value)));
-        let mantissa = value/Math.pow(10, exponent);
+        const exponent = Math.floor(Math.log10(Math.abs(value)));
+        const mantissa = value/Math.pow(10, exponent);
         if (value === 0)
             return value.toFixed(format.dp);
-        let expntSpan = Math.log10(exponent);
-        let sign = '+';
-        if (value < 1) {
-            sign = '-';
-        }
+        const expSign = Math.abs(value) < 1 ? '-' : '+';
         let spaces = format.expw - Math.floor(Math.log10(Math.abs(exponent)));
         spaces = Math.max(spaces, 0);
-        let gap = Array(spaces).join(' ');
-        return mantissa.toFixed(format.sf-1)+'e'+gap+sign+Math.abs(exponent);
+        const gap = Array(spaces).join(' ');
+        return mantissa.toFixed(format.sf-1)+'e'+gap+expSign+Math.abs(exponent);
     }
 
 };
