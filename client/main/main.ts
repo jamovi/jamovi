@@ -806,7 +806,8 @@ $(document).ready(async() => {
             const response = await host.showMessageBox({
                 type: 'question',
                 buttons: [ _('Save'), _('Cancel'), _("Don't Save") ],
-                defaultId: 1,
+                defaultId: 0,
+                cancelId: 1,
                 message: _("Save changes to '{title}'?", {title: instance.attributes.title}),
             });
             if (response === 1) {  // Cancel
