@@ -582,8 +582,16 @@ const BackstageModel = Backbone.Model.extend({
                 defaultPath: path.join(osPath, '')
             });
 
-            if ( ! result.cancelled)
-                this.requestImport({ paths: result.files });
+            if ( ! result.cancelled) {
+                if (result.files) {
+                    const file = result.files[0];
+                    this.requestImport({ files: result.files });
+                }
+                else {
+                    const paths = result.paths;
+                    this.requestImport({ paths });
+                }
+            }
         }
         else if (type === 'save') {
 
