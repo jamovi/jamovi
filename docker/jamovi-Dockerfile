@@ -1,6 +1,6 @@
 
 FROM ubuntu:jammy as base
-FROM jamovi/jamovi-deps:2.6 as r-base
+FROM jamovi/jamovi-deps:2.6.32 as r-base
 
 
 ##### NODE #####

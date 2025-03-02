@@ -60,7 +60,7 @@ RUN R -e "\
         'lmerTest', 'multcomp', 'readxl', 'reshape2', 'tidyr', 'vcd', 'vroom', 'Hmisc', \
         'broom', 'mi', 'readr', 'rockchalk', 'vcdExtra', 'haven', 'modelr', 'qgraph', \
         'sem', 'doBy', 'labelled', 'semPlot', 'broom.helpers', 'pbkrtest', 'car', \
-        'ggstats', 'GGally', 'afex'); \
+        'ggstats', 'GGally', 'afex', 'matrixStats'); \
     for (pkg in packages) {               \
         install.packages(                 \
             pkg,                          \
