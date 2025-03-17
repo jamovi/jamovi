@@ -33,7 +33,7 @@ class Main {  // this is constructed at the bottom
         };
         window.mod_ = this.translateUsingModule.bind(this);*/
 
-        this.mainWindow = window.top;
+        this.mainWindow = window.parent;
         this.results = null;
         this.$results = null;
         this.resultsDefn = null;
@@ -355,7 +355,7 @@ class Main {  // this is constructed at the bottom
             }
 
             focusLoop.addFocusLoop(this.$results[0]);
-                
+
             this.results = createItem(
                 this.resultsDefn.results,
                 this.resultsDefn.options,
