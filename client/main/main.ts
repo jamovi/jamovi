@@ -25,6 +25,9 @@ const VariableEditor = require('./variableeditor');
 const ActionHub = require('./actionhub');
 const I18n = require('../common/i18n');
 
+// needs to be assigned before the inclusion of focusloop
+window.name = 'jamovi';
+
 const Instance = require('./instance');
 const Notify = require('./notification');
 import _focusLoop from '../common/focusloop';

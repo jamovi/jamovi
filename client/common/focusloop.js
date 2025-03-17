@@ -29,9 +29,8 @@ class FocusLoop extends EventEmitter {
     constructor(desktopMode) {
         super();
 
-        this._mainWindow = window.top;
-        this._isMainWindow = this._mainWindow === window;
-        this._windowName = this._isMainWindow ? 'MainWindow' : `${window.name} `;
+        this._isMainWindow = (window.name === 'jamovi');
+        this._mainWindow = (this._isMainWindow ? window : window.parent);
 
         this._availableModalId = 1;
         this._availableFocusId = 0;
@@ -97,7 +96,7 @@ class FocusLoop extends EventEmitter {
         });
 
         if (desktopMode) {
-            
+
             window.addEventListener('keydown', (event) => {
                 let keyObj = this.eventToKeyObj(event);
                 let isEditableTextbox = (document.activeElement?.tagName === 'INPUT' && document.activeElement?.type === 'text' || document.activeElement?.isContentEditable);
@@ -109,7 +108,7 @@ class FocusLoop extends EventEmitter {
                             let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
                             if (transfer) {
                                 event.preventDefault();
-                                this.broadcast('processKeyObj', [keyObj], false);  
+                                this.broadcast('processKeyObj', [keyObj], false);
                             }
                         }
                     }
@@ -127,7 +126,7 @@ class FocusLoop extends EventEmitter {
 
                 if ( this._activeModalToken && !this._activeModalToken.allowKeyPaths)
                     return;
-                
+
                 if (event.altKey) {
                     if (this.focusMode !== 'shortcuts') {
                         this.altDown = true;
@@ -163,7 +162,7 @@ class FocusLoop extends EventEmitter {
                     }
 
                     if (this.ctrlDown === false) {
-                        
+
                         if (!this.turnedOn) {
                             if (this.focusMode === 'shortcuts' /*this.inAccessibilityMode()*/) {
                                 this.shortcutPath = '';
@@ -195,7 +194,7 @@ class FocusLoop extends EventEmitter {
                             let transfer = this.keyObjToKeyPath(keyObj) in this._baseKeyPaths;
                             if (transfer) {
                                 event.preventDefault();
-                                this.broadcast('processKeyObj', [keyObj], false);  
+                                this.broadcast('processKeyObj', [keyObj], false);
                             }
                         }
                     }
@@ -379,7 +378,7 @@ class FocusLoop extends EventEmitter {
         if (this._isMainWindow) {
             let msg = document.createElement('div');
             msg.innerHTML = message;
-            
+
             if (this._speechBox.childNodes.length > 20) {
                 this._speechBox.innerHTML = '';
             }
@@ -1338,15 +1337,15 @@ class FocusLoop extends EventEmitter {
             return false;
 
         let handles = this.list[ctrlKey ? 'Ctrl' : '-'];
-        if ( ! handles) 
+        if ( ! handles)
             return false;
 
         handles = handles[altKey ? 'Alt' : '-'];
-        if ( ! handles) 
+        if ( ! handles)
             return false;
 
         handles = handles[shiftKey ? 'Shift' : '-'];
-        if ( ! handles) 
+        if ( ! handles)
             return false;
 
         let key = keyObj.key;
@@ -1359,9 +1358,9 @@ class FocusLoop extends EventEmitter {
         let modalId = -1;
         if (this._activeModalToken)
             modalId = this._activeModalToken.modalId;
-        
+
         if ( ! handleInfo.modalSpecific || handleInfo.modalId === modalId)
-            return handleInfo.handle.call() !== false;  
+            return handleInfo.handle.call() !== false;
 
         return false;
     }
