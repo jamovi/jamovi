@@ -2,6 +2,7 @@
 'use strict';
 
 const $ = require('jquery');
+const focusLoop = require('../../common/focusloop');
 
 const TransformListItem = function(transform, checked) {
     this.transform = transform;
@@ -22,7 +23,8 @@ const TransformListItem = function(transform, checked) {
 
     this.$icon = $('<div class="icon"></div>').appendTo(this.$el);
     this.$colour = $('<div class="colour" style="background-color: ' + this._calculateColour(transform.colourIndex) + '"></div>').appendTo(this.$el);
-    this.$label = $('<button role="listitem" class="label">' + this.name + '</button>').appendTo(this.$el);
+    this.id = focusLoop.getNextAriaElementId('listitem');
+    this.$label = $(`<button role="listitem" id="${this.id}" class="label">${this.name}</button>`).appendTo(this.$el);
     this.$edit = $(`<button class="edit hidden" aria-label="${_('Edit transform - {transformName}', {transformName: this.name})}"></button>`).appendTo(this.$el);
     this.$duplicate = $(`<button class="duplicate hidden" aria-label="${_('Duplicate transform  - {transformName}', {transformName: this.name})}"></button>`).appendTo(this.$el);
     this.$remove = $(`<button class="remove hidden" aria-label="${_('Delete transform  - {transformName}', {transformName: this.name})}"><span class="mif-cross"></span></button>`).appendTo(this.$el);

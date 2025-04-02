@@ -9,6 +9,7 @@ const ActionHub = require('../actionhub');
 const focusLoop = require('../../common/focusloop');
 const Menu = require('../../common/menu');
 const EventEmitter = require('events');
+const { s6e } = require('../../common/utils');
 
 class RibbonButton extends EventEmitter {
 
@@ -237,7 +238,7 @@ class RibbonButton extends EventEmitter {
         let html = '';
         html += '   <div class="jmv-ribbon-button-icon" role="none">' + (this.icon === null ? '' : this.icon) + '</div>';
         if (this.size === 'medium' || this.size === 'large') {
-            html += `   <div id="${this.labelId}" class="jmv-ribbon-button-label">${this.title}</div>`;
+            html += `   <div id="${this.labelId}" class="jmv-ribbon-button-label">${s6e(this.title)}</div>`;
             if ( ! this.ariaLabel)
                 this.$el.attr('aria-labelledby', this.labelId);
         }

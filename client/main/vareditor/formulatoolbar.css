@@ -39,7 +39,7 @@
 }
 
 
-.jmv-formula-toolbar-options > .ops-box > .op > .content > .subtitle {
+.jmv-formula-toolbar-options > .ops-box > .op > .content .subtitle {
     border-bottom: 1px solid #CCCCCC;
     /*border-top: 1px solid #CCCCCC;*/
     text-align: center;
@@ -61,22 +61,22 @@
     max-height: 120px;
 }
 
-.jmv-formula-toolbar-options > .ops-box > .op > .content > .item {
+.jmv-formula-toolbar-options > .ops-box > .op > .content .item {
     flex-grow: 1;
     text-align: left;
     padding: 3px 6px;
     white-space: pre;
 }
 
-.jmv-formula-toolbar-options > .ops-box > .op > .content > .item:hover {
+.jmv-formula-toolbar-options > .ops-box > .op > .content .item:hover {
     background-color: #F0F0F0;
 }
 
-.jmv-formula-toolbar-options > .ops-box > .op > .content > .item-activated {
+.jmv-formula-toolbar-options > .ops-box > .op > .content:focus .item-activated {
     background-color: #E8E8E8;
 }
 
-.jmv-formula-toolbar-options > .ops-box > .op > .content > .item-grayed-out {
+.jmv-formula-toolbar-options > .ops-box > .op > .content .item-grayed-out {
     -webkit-filter: grayscale(100%);
     filter: grayscale(100%);
     opacity: 0.6;

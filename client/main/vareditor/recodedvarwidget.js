@@ -46,6 +46,7 @@ const RecodedVarWidget = Backbone.View.extend({
         this._updateChannelList();
 
         this.variableList = new VariableList();
+        this.$variableList.attr('aria-owns', this.variableList.id);
         this.$variableList.on('mousedown', (event) => {
             if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$variableList)
                 dropdown.hide();
@@ -64,7 +65,7 @@ const RecodedVarWidget = Backbone.View.extend({
         });
 
         this.$variableList.on('keydown', event => {
-            if (event.key === 'Enter') {
+            if (event.key === 'Enter' || event.key === ' ') {
                 if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$variableList)
                     dropdown.hide();
                 else
@@ -76,6 +77,12 @@ const RecodedVarWidget = Backbone.View.extend({
                 event.preventDefault();
                 this.$variableList.focus();
             }
+            else if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                dropdown.hide();
+                this.$variableList.focus();
+            }
         });
 
         this.variableList.$el.on('selected-variable', (event, variable) => {
@@ -84,6 +91,7 @@ const RecodedVarWidget = Backbone.View.extend({
         });
 
         this.transformList = new TransformList();
+        this.$transformList.attr('aria-owns', this.transformList.id);
         this.$transformList.on('mousedown', (event) => {
             if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$transformList)
                 dropdown.hide();
@@ -95,7 +103,7 @@ const RecodedVarWidget = Backbone.View.extend({
         });
 
         this.$transformList.on('keydown', event => {
-            if (event.key === 'Enter') {
+            if (event.key === 'Enter' || event.key === ' ') {
                 if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$transformList)
                     dropdown.hide();
                 else
@@ -242,12 +250,16 @@ const RecodedVarWidget = Backbone.View.extend({
         this._updateChannelList();
         this._updateTransformList();
     },
-    _updateChannelList() {
+    _updateChannelList(event) {
         if (this.attached === false)
             return;
 
         let currentColumnId = this.model.attributes.ids[0];
         let dataset = this.model.dataset;
+        let currentColumnName = dataset.getColumnById(currentColumnId).name;
+        if (event && event.changed.length === 1 && event.changed[0] === currentColumnName)
+            return;
+        
         let columns = [];
         for (let column of dataset.attributes.columns) {
             if (column.id !== currentColumnId && column.columnType !== 'none' && column.columnType !== 'filter')

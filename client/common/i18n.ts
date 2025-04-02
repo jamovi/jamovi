@@ -1,8 +1,21 @@
 'use strict';
 
-const Jed = require('jed');
+import Jed from 'jed';
+
+function s6e(x) {
+    return x.replace(/</g, '&lt;')  //to break html insertion
+    .replace(/>/g, '&gt;')  // to really break html insertion
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")  // markdown to html
+    .replace(/__(.*?)__/g, "<strong>$1</strong>")  // markdown to html
+    .replace(/\*(.*?)\*/g, "<i>$1</i>")  // markdown to html
+    .replace(/_(.*?)_/g, "<i>$1</i>");  // markdown to html
+}
 
 class I18n {
+    _availableLanguages: Array<string>;
+    language: string;
+    jed: typeof Jed;
+    localeData: any;
 
     constructor() {
         this._ = this._.bind(this);
@@ -29,7 +42,7 @@ class I18n {
         return this._availableLanguages;
     }
 
-    _(key, formats, options={ prefix: '', postfix: '' }) {
+    _(key:string, formats:{[key:string]:string}, options:{prefix:string, postfix:string}={ prefix: '', postfix: ''}): string {
         let value = null;
         if ( ! this.jed)
             value = key;
@@ -38,10 +51,13 @@ class I18n {
 
         if (formats)
             value = this.format(value, formats, options);
+
+        value = s6e(value);
+
         return value;
     }
 
-    _c(context, key, formats) {
+    _c(context, key, formats): string {
         let value = null;
         if ( ! this.jed)
             value = key;
@@ -50,10 +66,13 @@ class I18n {
 
         if (formats)
             value = this.format(value, formats);
+
+        value = s6e(value);
+
         return value;
     }
 
-    _nc(context, key, plural, count, formats) {
+    _nc(context, key, plural, count, formats): string {
         let value = null;
         if ( ! this.jed) {
             if (count != 1)
@@ -72,10 +91,13 @@ class I18n {
         }
         if (formats)
             value = this.format(value, formats);
+
+        value = s6e(value);
+
         return value;
     }
 
-    _n(key, plural, count, formats) {
+    _n(key, plural, count, formats): string {
         let value = null;
         if ( ! this.jed) {
             if (count != 1)
@@ -94,22 +116,25 @@ class I18n {
         }
         if (formats)
             value = this.format(value, formats);
+
+        value = s6e(value);
+
         return value;
     }
 
-    __(compound, options={ prefix: '', postfix: '' }) {
+    __(compound, options={ prefix: '', postfix: '' }): string {
         const parts = compound.split('\u0004');
         if (parts.length < 2 || parts[1] === '') {
-            return _(parts[0]);
+            return this._(parts[0]);
         }
         else {
             const key = parts[0];
             const values = JSON.parse(parts[1]);
-            return _(key, values, options);
+            return this._(key, values, options);
         }
     }
 
-    format(fstring, values, options={ prefix: '', postfix: '' }) {
+    format(fstring:string, values:{[key:string]:string}, options:{prefix:string, postfix:string}={ prefix: '', postfix: '' }): string {
         const { prefix, postfix } = options;
         if (typeof values === 'string') {
             return fstring.replace('{}', `${ prefix }${ values }${ postfix }`);

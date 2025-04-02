@@ -15,6 +15,7 @@ const Statusbar = require('./statusbar/statusbar');
 const { contextMenuListener } = require('../common/utils');
 const _focusLoop = require('../common/focusloop');
 
+
 const VariablesView = SilkyView.extend({
     className: 'variablesview',
     initialize(options) {

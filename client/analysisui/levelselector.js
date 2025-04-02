@@ -5,6 +5,7 @@ const GridOptionControl = require('./gridoptioncontrol');
 const RequestDataSupport = require('./requestdatasupport');
 const FormatDef = require('./formatdef');
 const _focusLoop = require('../common/focusloop');
+const { s6e } = require('../common/utils');
 
 const LevelSelector = function(params) {
 
@@ -114,7 +115,7 @@ const LevelSelector = function(params) {
                     if (this.levels[i].label === displayValue)
                         selIndex = i;
 
-                    html += '<option>' + this.levels[i].label + '</option>';
+                    html += '<option>' + s6e(this.levels[i].label) + '</option>';
                 }
             }
             else

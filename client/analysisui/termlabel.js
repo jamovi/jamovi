@@ -40,7 +40,7 @@ const TermLabel = function(params) {
         if (this.$label) {
             let value = this.getValue();
             let displayValue = this._format.toString(value);
-            this.$label.html(displayValue);
+            this.$label.text(displayValue);
             this.$label.attr('aria-label', this._format.toAriaLabel(value));
             if (value !== null)
                 this.updateView(value);

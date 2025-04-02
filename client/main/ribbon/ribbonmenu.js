@@ -25,6 +25,9 @@ const RibbonMenu = Backbone.View.extend({
         this.dock = right ? 'right' : 'left';
         this.shortcutKey = shortcutKey;
 
+        this.labelId = focusLoop.getNextAriaElementId('label');
+        this.$el.attr('aria-labelledby', this.labelId);
+
         if (shortcutKey) {
             let keySplit = shortcutKey.split('-');
             let stcOptions = { key: keySplit[0].toUpperCase(), action: event => this._clicked(event, false) };
@@ -189,11 +192,17 @@ const RibbonMenu = Backbone.View.extend({
         if (item.hidden)
             classes += ' menu-item-hiding';
 
-        let html = `<button role="menuitem" data-name="${ item.name }" data-ns="${ item.ns }" data-title="${ item.title }" data-rtitle="${ item.resultsTitle }" class="${ classes }" tabindex="0">`;
+        let labelId1 = focusLoop.getNextAriaElementId('label');
+        let labelId2 = '';
+        if (item.subtitle && item.subtitle !== item.title)
+            labelId2 = focusLoop.getNextAriaElementId('label');
+
+        let html = `<button role="menuitem" aria-labelledby="${labelId1} ${labelId2}" data-name="${ item.name }" data-ns="${ item.ns }" data-title="${ item.title }" data-rtitle="${ item.resultsTitle }" class="${ classes }" tabindex="0">`;
         html += '<div class="description">';
-        html += '<div>' + item.title + '</div>';
+        html += `<div id="${labelId1}">${item.title}</div>`;
         if (item.subtitle)
-            html += '<div class="jmv-ribbon-menu-item-sub">' + item.subtitle + '</div>';
+            html += `<div id="${labelId2}" class="jmv-ribbon-menu-item-sub">${item.subtitle}</div>`;
+
         html += '</div>';
         html += '</button>';
 
@@ -205,12 +214,18 @@ const RibbonMenu = Backbone.View.extend({
     },
     _createModuleItem(item, level) {
         let classes = 'jmv-ribbon-menu-item module';
-        let html = `<button role="menuitem" data-name="${ item.name }" data-ns="${  item.ns }" data-title="${ item.title }" class="${ classes }" tabindex="0">`;
+
+        let titleId = focusLoop.getNextAriaElementId('label');
+        let subTitleId = '';
+        if (item.subtitle && item.subtitle !== item.title)
+            subTitleId = focusLoop.getNextAriaElementId('label');
+
+        let html = `<button role="menuitem" aria-labelledby="${titleId}${subTitleId}" data-name="${ item.name }" data-ns="${  item.ns }" data-title="${ item.title }" class="${ classes }" tabindex="0">`;
         html += '<div class="to-analyses-arrow"></div>';
         html += '<div class="description">';
-        html += '<div>' + item.title + '</div>';
+        html += `<div id="${titleId}">${item.title}</div>`;
         if (item.subtitle)
-            html += `<div class="jmv-ribbon-menu-item-sub">${ item.subtitle }</div>`;
+            html += `<div id="${subTitleId}" class="jmv-ribbon-menu-item-sub">${ item.subtitle }</div>`;
         html += '</div>';
         html += '</button>';
         item.$el = $(html);
@@ -277,7 +292,7 @@ const RibbonMenu = Backbone.View.extend({
 
         let html = '';
         let $icon = $('<div class="jmv-ribbon-button-icon"></div>');
-        let $label = $('<div class="jmv-ribbon-button-label">' + this.title + '</div>');
+        let $label = $(`<div id="${this.labelId}" class="jmv-ribbon-button-label">${this.title}</div>`);
 
         if ( ! this.menu) {
             this.menu = new Menu(this.$el[0], 1, { className: 'analysis-menu', exitKeys: [ 'Alt+ArrowUp' ] });

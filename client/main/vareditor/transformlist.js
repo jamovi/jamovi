@@ -3,13 +3,15 @@
 
 const $ = require('jquery');
 const TransformListItem = require('./transformlistitem');
+const focusLoop = require('../../common/focusloop');
 
 const TransformList = function() {
     this.isScrollTarget = function(target) {
         return target === this.$middle[0];
     };
 
-    this.$el = $('<div class="jmv-transform-list" role="list"></div>');
+    this.id = focusLoop.getNextAriaElementId('list');
+    this.$el = $(`<div id="${this.id}" class="jmv-transform-list" role="list"></div>`);
 
     this.$top = $('<div class="top"></div>').appendTo(this.$el);
     this.$none =$(`<button role="listitem" class="transform-none-item">${_('None')}</button>`).appendTo(this.$top);

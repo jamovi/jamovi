@@ -11,6 +11,7 @@ const MissingValueEditor = require('../editors/missingvalueeditor');
 const MeasureList = require('./measurelist');
 const dialogs = require('dialogs')({cancel:false});
 const focusLoop = require('../../common/focusloop');
+const { s6e } = require('../../common/utils');
 
 const DataVarWidget = Backbone.View.extend({
     className: 'DataVarWidget',
@@ -248,7 +249,7 @@ const DataVarWidget = Backbone.View.extend({
                 }
 
                 if (part !== '')
-                    label = `${ label }<span>${ part }</span>`;
+                    label = `${ label }<span>${ s6e(part) }</span>`;
             }
         }
         this.$missingValueButton.find('.list').html(label);
@@ -294,6 +295,7 @@ const DataVarWidget = Backbone.View.extend({
 
 
         this.measureList = new MeasureList(false);
+        this.$measureList.attr('aria-owns', this.measureList.id);
         this.$measureList.on('mousedown', (event) => {
             if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList) {
                 dropdown.hide();
@@ -322,7 +324,7 @@ const DataVarWidget = Backbone.View.extend({
         });
 
         this.$measureList.on('keydown', event => {
-            if (event.key === 'Enter') {
+            if (event.key === 'Enter' || event.key === ' ') {
                 if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList) {
                     dropdown.hide();
                     this.$measureList.attr('aria-expanded', false);
@@ -335,6 +337,12 @@ const DataVarWidget = Backbone.View.extend({
                 }
                 event.preventDefault();
                 event.stopPropagation();
+                this.$measureList.focus();
+            }
+            else if (event.key === 'Escape') {
+                event.preventDefault();
+                event.stopPropagation();
+                dropdown.hide();
                 this.$measureList.focus();
             }
         });

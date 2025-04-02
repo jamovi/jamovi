@@ -19,7 +19,7 @@ const dropdown = function() {
     }, true);
 
     this.$el = $('<div class="jmv-dropdown-widget dropdown-hidden dropdown-remove" tabindex="-1"></div>');
-    let options = { hoverFocus: true };
+    let options = { level: 1, hoverFocus: false, closeHandler: () => { this.hide({ data: { dropdown: this, check: false } }); }, exitKeys: ['Escape'] };
     focusLoop.addFocusLoop(this.$el[0], options);
 
     this.$contents = $('<div class="jmv-dropdown-contents"></div>').appendTo(this.$el);
@@ -40,22 +40,12 @@ const dropdown = function() {
 
     });
 
-    $(document).on('mouseup', (event) => {
-        let divRect = this.$el[0].getBoundingClientRect();
-        let inTool = event.clientX >= divRect.left && event.clientX <= divRect.right && event.clientY >= divRect.top && event.clientY <= divRect.bottom;
+    this.$el.on('focusout', (event) => {
+        if (this.$el[0].contains(event.relatedTarget))
+            return;
 
-        if (inTool) {
-            if (this.$formula)
-                this.$formula.focus();
-        }
-    });
-
-    this.$el.on('keydown', (event) => {
-        if (event.code === 'Escape') {
-            this.hide({ data: { dropdown: this, check: false } });
-            event.preventDefault();
-            event.stopPropagation();
-        }
+        if (this._shown && event.relatedTarget !== this.$formula[0])
+            this.hide( { data: { dropdown: this, check: false } });
     });
 
     this.hide = function(event) {
@@ -63,8 +53,8 @@ const dropdown = function() {
         if (( ! event.data.check || self._inTools === false) && self._shown) {
             self.$el.addClass('dropdown-hidden dropdown-remove');
             self.$content.off('hide-dropdown', null, this.hide);
-            //self.$formula.off('blur.dropdown', null, this.hide);
             self.$formula.trigger('editor:closing');
+            self.$formula.attr('aria-expanded', false);
             self.$formula = null;
             self._shown = false;
             self._waiting = false;
@@ -72,7 +62,7 @@ const dropdown = function() {
                 this._resolve();
                 this._resolve = null;
             }
-            focusLoop.leaveFocusLoop(this.$el[0]);
+            
         }
 
         self._inTools = false;
@@ -104,6 +94,12 @@ const dropdown = function() {
         this.$el.offset(data);
         this.$el.css('min-width', width);
     };
+
+    this.onFocusOut = function(event) {
+        if (this._shown && this.$el[0].contains(event.relatedTarget) === false && this.$el[0] !== event.relatedTarget)
+            this.hide( { data: { dropdown: this, check: false } });
+    };
+    this.onFocusOut = this.onFocusOut.bind(this);
 
     this.show = function($formula, content, wait) {
 
@@ -140,12 +136,17 @@ const dropdown = function() {
         this._shown = true;
         this._waiting = wait;
 
-        //if (this.$formula)
-        //    this.$formula.off('blur.dropdown', null, this.hide);
+        if (this.$formula) {
+            this.$formula.attr('aria-expanded', false);
+            this.$formula.off('focusout', this.onFocusOut);
+        }
 
         this.$formula = $formula;
 
-        //this.$formula.on('blur.dropdown', null, { dropdown: this, check: true }, this.hide);
+        if (this.$formula) {
+            this.$formula.attr('aria-expanded', true);
+            this.$formula.on('focusout', this.onFocusOut);
+        }
 
         if ( ! wait)
             this._findPosition();
@@ -191,4 +192,15 @@ const content = function() {
     return _dropdown.item;
 };
 
-module.exports = { init, show, hide, updatePosition, focusedOn, clicked, isVisible, content };
+const enter = function() {
+    focusLoop.enterFocusLoop(_dropdown.$el[0], { withMouse: false, exitSelector: _dropdown.$formula[0] });
+}
+
+const hasFocus = function(relatedTarget) {
+    if (relatedTarget === undefined)
+        relatedTarget = document.activeElement;
+
+    return relatedTarget && (_dropdown.$el[0].contains(relatedTarget) || _dropdown.$el[0] === relatedTarget);
+}
+
+module.exports = { init, show, hide, updatePosition, focusedOn, clicked, isVisible, content, enter, hasFocus };

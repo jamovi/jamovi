@@ -1030,7 +1030,7 @@ class FocusLoop extends EventEmitter {
             if (element) {
                 validExitElement = true;
                 let parent = element.closest('.menu-level');
-                this._focusPassing = this.inKeyboardMode() || parent.hasAttribute('tabindex');
+                this._focusPassing = this.inKeyboardMode() || element.hasAttribute('tabindex') || parent.hasAttribute('tabindex');
                 if (this._focusPassing)
                     this._passedFocus = element;
             }
