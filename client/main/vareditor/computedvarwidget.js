@@ -92,8 +92,13 @@ const ComputedVarWidget = Backbone.View.extend({
                 this.model.set('formula', this.$formula[0].textContent);
                 window.clearTextSelection();
             }
-
         });
+
+       /* this.$formula.on('focusout', (event) => {
+            if (dropdown.isVisible() && dropdown.hasFocus(event.relatedTarget) === false)
+                dropdown.hide();
+        });*/
+
         this.$formula.on('keydown', (event) => {
             if (event.keyCode === 13 && event.shiftKey === false) {    //enter
                 this._editorClicked = false;
@@ -104,6 +109,10 @@ const ComputedVarWidget = Backbone.View.extend({
             }
 
             if (event.keyCode === 9) {    //tab
+                if (dropdown.isVisible()) {
+                    dropdown.enter();
+                    event.stopPropagation();
+                }
                 event.preventDefault();
             }
         });
@@ -121,7 +130,7 @@ const ComputedVarWidget = Backbone.View.extend({
 
         $('<div class="equal">=</div>').appendTo($formulaBox);
 
-        this.$showEditor = $(`<button class="show-editor" aria-label="${_('Show formula editor')}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
+        this.$showEditor = $(`<button class="show-editor" aria-label="${_('Show formula editor')}" aria-controls="${this.formulasetup.id}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
 
         this.$showEditor.on('click', (event) => {
             if (this._$wasEditingFormula !== this.$formula) {
@@ -129,7 +138,7 @@ const ComputedVarWidget = Backbone.View.extend({
                 dropdown.show(this.$formula, this.formulasetup).then(() => {
                     this._editorClicked = false;
                 });
-                this.$formula.focus();
+                //this.$formula.focus();
                 this.$showEditor.addClass('is-active');
             }
         });
@@ -143,6 +152,17 @@ const ComputedVarWidget = Backbone.View.extend({
 
         let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))];
         this.$formula = $('<div class="formula" type="text" placeholder="eg: ' + _example + '" contenteditable="true" spellcheck="false" aria-label="formula" tabindex="0"></div>').appendTo($formulaPair);
+
+        document.addEventListener("selectionchange", () => {
+            const sel = window.getSelection();
+            if (this.$formula && (this.$formula[0].contains(sel.anchorNode) || sel.anchorNode === this.$formula[0])) {
+                let range = sel.getRangeAt(0);
+                this.$formula.attr('sel-start', range.startOffset);
+                this.$formula.attr('sel-end', range.endOffset);
+            }
+        });
+
+        //focusLoop.addFocusLoop(this.$formula[0], { include: dropdown.$el[0] });
 
         this.$formula.on('input', (event) => {
             dropdown.updatePosition();

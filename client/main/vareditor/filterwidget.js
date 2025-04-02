@@ -409,13 +409,12 @@ const FilterWidget = Backbone.View.extend({
             this.addNestedEvents($addNested, rootColumn.id);
         }
 
-        let $showEditor = $(`<button class="show-editor" aria-label="${_('Show formula editor')}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
+        let $showEditor = $(`<button aria-controls="${this.formulaSetup.id}" class="show-editor" aria-label="${_('Show formula editor')}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
 
         $showEditor.on('click', (event) => {
             if (this._$wasEditingFormula !== $formula) {
                 dropdown.show($formula, this.formulaSetup, $formulaBox[0].getAttribute('data-expanding') === 'true' || $filter[0].getAttribute('data-expanding') === 'true');
                 this.formulaSetup.show($formula, null);
-                $formula.focus();
                 $showEditor.addClass('is-active');
             }
             event.stopPropagation();
@@ -431,6 +430,25 @@ const FilterWidget = Backbone.View.extend({
 
         let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))];
         let $formula = $('<div class="formula' + ((rIndex > 0) ? ' and-formula' : '') + '" type="text" spellcheck="false" placeholder="e.g. ' + _example + '" contenteditable="true" tabindex="0"></div>').appendTo($formulaPair);
+
+        document.addEventListener("selectionchange", () => {
+            const sel = window.getSelection();
+            if ($formula && ($formula[0].contains(sel.anchorNode) || sel.anchorNode === $formula[0])) {
+                let range = sel.getRangeAt(0);
+                $formula.attr('sel-start', range.startOffset);
+                $formula.attr('sel-end', range.endOffset);
+            }
+        });
+
+        $formula.on('keydown', (event) => {
+            if (event.keyCode === 9) {    //tab
+                if (dropdown.isVisible()) {
+                    dropdown.enter();
+                    event.stopPropagation();
+                }
+                event.preventDefault();
+            }
+        });
 
         $formula.on('input', (event) => {
             dropdown.updatePosition();

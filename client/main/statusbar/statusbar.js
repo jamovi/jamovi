@@ -52,7 +52,7 @@ const Statusbar = function() {
         let item = this._infoLabels[id];
         if (item.properties.value != value) {
             item.properties.value = value;
-            item.$el.html((item.properties.label === undefined ? item.properties.value : (item.properties.label + ' ' + item.properties.value)));
+            item.$el.text((item.properties.label === undefined ? item.properties.value : (item.properties.label + ' ' + item.properties.value)));
         }
     };
 

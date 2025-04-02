@@ -3,6 +3,7 @@
 
 const $ = require('jquery');
 const MeasureListItem = require('./measurelistitem');
+const focusLoop = require('../../common/focusloop');
 
 const MeasureList = function(includeAuto) {
     this.includeAuto = includeAuto === undefined ? true : false;
@@ -10,9 +11,11 @@ const MeasureList = function(includeAuto) {
         return target === this.$middle[0];
     };
 
-    this.$el = $('<div class="jmv-measure-list"></div>');
+    this.id = focusLoop.getNextAriaElementId('list');
 
-    this.$middle = $('<div class="middle" role="list"></div>').appendTo(this.$el);
+    this.$el = $(`<div id="${this.id}" role="list" class="jmv-measure-list"></div>`);
+
+    this.$middle = $('<div class="middle" role="presentation"></div>').appendTo(this.$el);
 
     this.setParent = function($element) {
         if (this.$parent) {
@@ -31,8 +34,10 @@ const MeasureList = function(includeAuto) {
         let val = this.$parent.val();
         this.$el.find('.jmv-measure-list-item[data-id=' + this.$parent.val() + ']').addClass('highlighted');
         let $element = this.$el.find('.jmv-measure-list-item.highlighted');
-        if ($element.length > 0)
+        if ($element.length > 0) {
             $element[0].scrollIntoView(false);
+            this.$parent.attr('aria-activedescendant', $element.attr('id'));
+        }
     };
 
     this.populate = function() {

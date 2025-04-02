@@ -3,6 +3,7 @@
 
 const $ = require('jquery');
 const VariableListItem = require('./variablelistitem');
+const focusLoop = require('../../common/focusloop');
 
 const VariableList = function() {
     this.isScrollTarget = function(target) {
@@ -11,10 +12,11 @@ const VariableList = function() {
 
     this.items = [];
 
-    this.$el = $('<div class="jmv-variable-list"></div>');
-    this.$none =$(`<div class="jmv-variable-list-item none-item" data-id="0">${_('None')}</div>`).appendTo(this.$el);
+    this.id = focusLoop.getNextAriaElementId('list');
+    this.$el = $(`<div id="${this.id}" class="jmv-variable-list" role="list"></div>`);
+    this.$none =$(`<div class="jmv-variable-list-item none-item" data-id="0" role="listitem">${_('None')}</div>`).appendTo(this.$el);
 
-    this.$middle = $('<div class="middle"></div>').appendTo(this.$el);
+    this.$middle = $('<div class="middle" role="presentation"></div>').appendTo(this.$el);
 
     this.$none.on('click', (event) => {
         this.$el.trigger('selected-variable', { name: _('None'), id: 0 });
@@ -37,8 +39,10 @@ const VariableList = function() {
         let val = this.$parent.val();
         this.$el.find('.jmv-variable-list-item[data-id=' + this.$parent.val() + ']').addClass('highlighted');
         let $element = this.$el.find('.jmv-variable-list-item.highlighted');
-        if ($element.length > 0)
+        if ($element.length > 0) {
             $element[0].scrollIntoView(false);
+            this.$parent.attr('aria-activedescendant', $element[0].getAttribute('id'));
+        }
     };
 
 

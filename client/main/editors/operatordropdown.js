@@ -74,8 +74,8 @@ const dropdown = function() {
 
     let info = this.descriptions.equal;
     if (info !== undefined) {
-        this.$label.html(info.label);
-        this.$description.html(info.content);
+        this.$label.text(info.label);
+        this.$description.text(info.content);
     }
 
     this.$functionsContent.on("click", (event) => {
@@ -93,17 +93,17 @@ const dropdown = function() {
             $(event.target).addClass("item-activated");
             let info = this.descriptions[$(event.target).data('name')];
             if (info !== undefined) {
-                this.$label.html(info.label);
-                this.$description.html(info.content);
+                this.$label.text(info.label);
+                this.$description.text(info.content);
             }
             else {
-                this.$label.html('');
-                this.$description.html(_('No information about this function is avaliable'));
+                this.$label.text('');
+                this.$description.text(_('No information about this function is avaliable'));
             }
         }
         else {
-            this.$label.html('');
-            this.$description.html('');
+            this.$label.text('');
+            this.$description.text('');
         }
     });
 

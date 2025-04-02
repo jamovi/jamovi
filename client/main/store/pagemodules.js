@@ -45,7 +45,7 @@ const PageModules = Backbone.View.extend({
         this.$content = $(`<div class="jmv-store-content" aria-label="${_('Modules')}"></div>`).appendTo(this.$body);
         this.$loading = $('<div class="jmv-store-loading"></div>').appendTo(this.$body);
         let progressLabelId = _focusLoop.getNextAriaElementId('label');
-        this.$installing = $(`<div class="jmv-store-installing" role="progressbar" labelledby="${progressLabelId}" aria-valuenow="0"><h2 id="${progressLabelId}">Installing</h2><div class="jmv-store-progress"><div class="jmv-store-progress-bar"></div></div><div class="jmv-store-installing-description">Installing module</div><!--button class="jmv-store-cancel">Cancel</button--></div>`).appendTo(this.$body);
+        this.$installing = $(`<div class="jmv-store-installing" role="progressbar" aria-labelledby="${progressLabelId}" aria-valuenow="0"><h2 id="${progressLabelId}">Installing</h2><div class="jmv-store-progress"><div class="jmv-store-progress-bar"></div></div><div class="jmv-store-installing-description">Installing module</div><!--button class="jmv-store-cancel">Cancel</button--></div>`).appendTo(this.$body);
         this.$error   = $('<div class="jmv-store-error" aria-hidden="true" style="display:none;"><h2 class="jmv-store-error-message"></h2><div class="jmv-store-error-cause"></div><button class="jmv-store-error-retry">Retry</button></div>').appendTo(this.$body);
 
         this.moduleSelection = new selectionLoop('modules', this.$content[0], true);

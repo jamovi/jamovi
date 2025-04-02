@@ -54,7 +54,7 @@ const EditorPanel = Backbone.View.extend({
 
         if (item) {
              this.$contents.append(item.$el);
-             this.$title.html(item.title);
+             this.$title.text(item.title);
              if (item.$icon) {
                  item.$icon.prependTo(this.$titleBox);
                  this.$icon = item.$icon;
