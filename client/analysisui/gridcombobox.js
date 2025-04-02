@@ -4,6 +4,7 @@ const $ = require('jquery');
 const GridOptionControl = require('./gridoptioncontrol');
 const FormatDef = require('./formatdef');
 const _focusLoop = require('../common/focusloop');
+const { s6e } = require('../common/utils');
 
 const GridCombobox = function(params) {
 
@@ -44,7 +45,7 @@ const GridCombobox = function(params) {
         let columnUsed = 0;
         let cell = null;
         if (label !== "") {
-            this.$label = $(`<label for="${id}" class="silky-option-combo-label silky-control-margin-${this.getPropertyValue("margin")}" style="display: inline; white-space: nowrap;" >${label}</label>`);
+            this.$label = $(`<label for="${id}" class="silky-option-combo-label silky-control-margin-${this.getPropertyValue("margin")}" style="display: inline; white-space: nowrap;" >${s6e(label)}</label>`);
             cell = grid.addCell(column, row, this.$label);
             cell.setAlignment("left", "center");
             columnUsed += 1;
@@ -110,8 +111,9 @@ const GridCombobox = function(params) {
         let options = this.getOptionsProperty();
 
         let html = '';
-        for (let i = 0; i < options.length; i++)
+        for (let i = 0; i < options.length; i++) {
             html += '<option>' + this.translate(options[i].title) + '</option>';
+        }
 
         this.$input.empty();
         this.$input.html(html);
