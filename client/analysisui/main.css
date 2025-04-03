@@ -257,7 +257,7 @@ h1 {
     flex: 0 0 0;
 }
 
-.unavaliable_variable .silky-list-item-value {
+.unavailable_variable .silky-list-item-value {
     color: #AAAAAA;
     text-decoration: line-through;
 }

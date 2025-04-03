@@ -78,9 +78,9 @@ const TermLabel = function(params) {
             count += 1;
             if (count === columnNames.length) {
                 if (columnFound === false)
-                   this.$el.addClass('unavaliable_variable');
+                   this.$el.addClass('unavailable_variable');
                else
-                   this.$el.removeClass('unavaliable_variable');
+                   this.$el.removeClass('unavailable_variable');
             }
         };
         for (let i = 0; i < columnNames.length; i++) {

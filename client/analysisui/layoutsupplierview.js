@@ -446,7 +446,7 @@ const LayoutSupplierView = function(params) {
         return this._targetCount > 1;
     };
 
-    this.selectNextAvaliableItem = function(from) {
+    this.selectNextAvailableItem = function(from) {
         let cell = null;
         for (let r = from + 1; r < this._items.length + 1; r++) {
             cell = this.supplierGrid.getCell(0, r);

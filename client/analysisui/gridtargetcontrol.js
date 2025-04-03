@@ -898,7 +898,7 @@ const GridTargetContainer = function(params) {
         this._supplier.filterSuppliersList();
 
         if (postProcessSelectionIndex !== null)
-            postProcessList.selectNextAvaliableItem(postProcessSelectionIndex);
+            postProcessList.selectNextAvailableItem(postProcessSelectionIndex);
     };
 
     this._enableButtons = function(toolbar, value, disableSupplyOnly) {

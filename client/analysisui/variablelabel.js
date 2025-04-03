@@ -68,9 +68,9 @@ const VariableLabel = function(params) {
             this.$icon.removeClass();
 
             if (rData.columnFound === false)
-               this.$el.addClass('unavaliable_variable');
+               this.$el.addClass('unavailable_variable');
            else
-               this.$el.removeClass('unavaliable_variable');
+               this.$el.removeClass('unavailable_variable');
 
             let measureType = rData.measureType;
             if (measureType === undefined)
