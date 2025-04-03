@@ -1180,11 +1180,13 @@ const TableView = SilkyView.extend({
         }
     },
     _pasteEventHandler(event) {
-        const text = event.clipboardData.getData('text/plain');
-        const html = event.clipboardData.getData('text/html');
-        let content = { text: text, html: html };
-        this.controller.pasteClipboardToSelection(this, content);
-        event.preventDefault();
+        if (this._modifyingCellContents === false) {
+            const text = event.clipboardData.getData('text/plain');
+            const html = event.clipboardData.getData('text/html');
+            let content = { text: text, html: html };
+            this.controller.pasteClipboardToSelection(this, content);
+            event.preventDefault();
+        }
     },
     _inputEventHandler(event) {
         if (this._editing)
