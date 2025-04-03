@@ -86,9 +86,9 @@ const LevelSelector = function(params) {
                 return;
 
             if (rData.columnFound === false)
-               this.$el.addClass('unavaliable_variable');
+               this.$el.addClass('unavailable_variable');
            else
-               this.$el.removeClass('unavaliable_variable');
+               this.$el.removeClass('unavailable_variable');
 
             if (this.$label !== null)
                 this.$label.removeClass('disabled-text');

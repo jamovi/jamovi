@@ -432,7 +432,7 @@ const OptionListControl = function (params) {
         }
     });
 
-    this.selectNextAvaliableItem = function(from) {
+    this.selectNextAvailableItem = function(from) {
         let cell = this.getCell(0, this.rowIndexToDisplayIndex(from >= this._localData.length ? this._localData.length - 1 : from));
         this.selectCell(cell);
     };

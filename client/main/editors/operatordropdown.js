@@ -98,7 +98,7 @@ const dropdown = function() {
             }
             else {
                 this.$label.text('');
-                this.$description.text(_('No information about this function is avaliable'));
+                this.$description.text(_('No information about this function is available'));
             }
         }
         else {

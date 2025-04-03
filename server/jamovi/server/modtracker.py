@@ -9,7 +9,7 @@ from . import jamovi_pb2 as jcoms
 
 class ModTracker:
 
-    MAX_SPACE_AVALIABLE = 52428800
+    MAX_SPACE_AVAILABLE = 52428800
     MAX_HISTORY_LENGTH = 1000
 
     def __init__(self, _data):
@@ -95,7 +95,7 @@ class ModTracker:
 
         event_data['space_used'] = last_size + event_data['space_used']
 
-        make_space = event_data['space_used'] - ModTracker.MAX_SPACE_AVALIABLE
+        make_space = event_data['space_used'] - ModTracker.MAX_SPACE_AVAILABLE
         if make_space > 0:
             start = -1
             offset = 0
@@ -486,7 +486,7 @@ class ModTracker:
                             cell.d = value
                             size += sys.getsizeof(cell.d)
                             is_clear = False
-                    if is_clear is False and size > ModTracker.MAX_SPACE_AVALIABLE:
+                    if is_clear is False and size > ModTracker.MAX_SPACE_AVAILABLE:
                         end_redo = True
                         break
             elif column.data_type == DataType.TEXT:
@@ -504,7 +504,7 @@ class ModTracker:
                             cell.s = value
                             size += sys.getsizeof(cell.s)
                             is_clear = False
-                    if is_clear is False and size > ModTracker.MAX_SPACE_AVALIABLE:
+                    if is_clear is False and size > ModTracker.MAX_SPACE_AVAILABLE:
                         end_redo = True
                         break
             else:
@@ -522,7 +522,7 @@ class ModTracker:
                             cell.i = value
                             is_clear = False
                             size += sys.getsizeof(cell.i)
-                    if is_clear is False and size > ModTracker.MAX_SPACE_AVALIABLE:
+                    if is_clear is False and size > ModTracker.MAX_SPACE_AVAILABLE:
                         end_redo = True
                         break
         if is_clear:
