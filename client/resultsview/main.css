@@ -68,11 +68,11 @@
     background-image: url(/resultsview/assets/action-error.svg);
     filter: invert(57%) sepia(9%) saturate(2617%) hue-rotate(313deg) brightness(73%) contrast(106%);
 }
-  
+
   [aria-invalid="true"] .jmv-results-error-placement {
     visibility: visible;
   }
-  
+
 
 .jmv-results-error-placement .error-box {
     display: flex;
@@ -657,4 +657,10 @@ pre {
     height: 20px;
     opacity: 1;
     overflow: visible;
+}
+
+.header-content-wrapper {
+    margin: 0 10px;
+    padding: 5px;
+    border-bottom: 1px solid #000 !important;
 }

@@ -505,8 +505,20 @@ const TableView = Elem.View.extend({
                     span++;
                 }
                 else {
-                    html += '<th scope="colgroup" class="jmv-results-table-cell" colspan="' + (span) + '">' + content + '</th>';
-                    span = 1;
+                     // Rimuovi il bordo dalla cella principale e disattiva il padding
+                     let noStyle = ' style="border: none; padding: 0;"';
+
+                     // Invece di mettere il bordo sulla cella, creiamo un div interno con classe
+                     let innerContent = '';
+                     if (content) {
+                         innerContent = '<div class="header-content-wrapper">' + content + '</div>';
+                     }
+                     else {
+                         innerContent = '&nbsp;';
+                     }
+
+                     html += '<th scope="colgroup" class="jmv-results-table-cell"' + noStyle + ' colspan="' + span + '">' + innerContent + '</th>';
+                     span = 1;
                 }
             }
 
@@ -518,7 +530,6 @@ const TableView = Elem.View.extend({
             this.$columnHeaderRowSuper.remove();
             this.$columnHeaderRowSuper = null;
         }
-
 
         html = '';
 
