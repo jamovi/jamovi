@@ -3,7 +3,8 @@
 const $ = require('jquery');
 
 const host = require('./host');
-const auth = require('./auth/auth');
+
+import * as auth from './auth/auth';
 
 let Coms = require('./coms');
 let coms = new Coms();
@@ -866,13 +867,19 @@ $(document).ready(async() => {
             params = {}
             for (const [name, value] of new URLSearchParams(match[2]))
                 params[name] = decodeURIComponent(value)
-            if (location === 'open')
+
+            if (location === 'embed') {
+                const embedOptions = { channelId: parseInt(params.channelId) };
+                options = Object.assign(options, await auth.embed(embedOptions));
+            }
+            else if (location === 'open') {
                 options = params;
+            }
         }
 
         while (true) {
 
-            if ( ! instanceId && hasLobby) {
+            if ( ! instanceId && hasLobby && ! options.authToken) {
                 const response = await lobby.show(location, params);
                 if (response.action === 'open')
                     options = response.data;

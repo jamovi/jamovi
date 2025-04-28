@@ -14,7 +14,7 @@ export class ProgressStream<P, R> implements AsyncIterable<P>, PromiseLike<R> {
     _resolve_result: (r: R) => void;
     _reject_result: (e?: any) => void;
 
-    constructor(fun: (setProgress: (progress: P) => void) => PromiseLike<R>) {
+    constructor(fun?: (setProgress: (progress: P) => void) => PromiseLike<R>) {
 
         this._results_prom = new Promise((resolve, reject) => {
             this._resolve_result = resolve;
