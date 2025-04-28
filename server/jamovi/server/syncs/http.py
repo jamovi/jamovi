@@ -140,7 +140,8 @@ class HttpSync:
             stream.set_exception(e)
 
     async def _read(self, stream: ProgressStream) -> None:
-        async with self._client.get(self._url) as response:
+        headers = self._options.get('headers', None)
+        async with self._client.get(self._url, headers=headers) as response:
             await self._read_response(response, stream)
 
     async def __write(self, content: BinaryIO, content_size: int, overwrite: bool, stream: ProgressStream) -> None:

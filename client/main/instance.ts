@@ -41,11 +41,13 @@ import { parse as parseJsonLines } from './utils/jsonlines';
 
 export interface IInstanceOpenOptions {
     path?: string,
+    url?: string,
     file?: File,
     title?: string,
     temp?: boolean,
     authToken?: string,
     accessKey?: string,
+    headers?: { [key: string]: string },
 }
 
 interface IInstanceOpenRequiresInteraction {
@@ -201,6 +203,11 @@ export const Instance = Backbone.Model.extend({
         });
     },
     open(options: IInstanceOpenOptions): InstanceOpenStream {
+
+        if ('url' in options) {
+            options.path = options.url;
+            delete options.url;
+        }
 
         return new ProgressStream(async (setProgress): Promise<IInstanceOpenResult> => {
 

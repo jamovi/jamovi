@@ -3,34 +3,42 @@
 
 import ProgressStream from '../utils/progressstream';
 
-function events() {
+export function events() {
     let stream = new ProgressStream();
-    stream.resolve();
+    stream.resolve(undefined);
     return stream;
 }
 
-function promptSignIn(opts) {
+export function promptSignIn(opts) {
 
 }
 
-function currentUser() {
+export function currentUser() {
     return null;
 }
 
-async function getAuthToken(forceRefresh) {
+export async function getAuthToken(forceRefresh) {
     return null;
 }
 
-async function signOut() {
+export async function signOut() {
 
 }
 
-async function waitForSignIn() {
+export async function waitForSignIn() {
 
 }
 
-function init() {
+export function init() {
 
 }
 
-export default { init, currentUser, events, getAuthToken, signOut, promptSignIn, waitForSignIn };
+export interface IEmbedOptions {
+    channelId: number;
+}
+
+export async function embed(options: IEmbedOptions): Promise<{ [x: string]: any }> {
+    return { };
+}
+
+export default { init, currentUser, events, getAuthToken, signOut, promptSignIn, waitForSignIn, embed };
