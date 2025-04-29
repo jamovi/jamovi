@@ -13,16 +13,23 @@ the easiest way to build and work on jamovi, is to build it as a docker containe
 git clone https://github.com/jamovi/jamovi.git
 cd jamovi
 git submodule update --init --recursive
-docker-compose build
+docker compose build
 ```
 
 once built, it can be run with:
 
 ```bash
-docker-compose up
+docker compose up
 ```
 
 this launches an embedded web-server, and jamovi can be accessed with a web-browser at the url http://127.0.0.1:41337
+
+Note: If you are using an older version of Docker that does not support docker compose, you can install docker-compose separately and use it instead:
+
+```bash
+docker-compose build
+docker-compose up
+```
 
 
 # Development
