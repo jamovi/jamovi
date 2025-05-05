@@ -17,7 +17,7 @@ export function currentUser() {
     return null;
 }
 
-export async function getAuthToken(forceRefresh) {
+export async function getAuthToken(forceRefresh = false) {
     return null;
 }
 
