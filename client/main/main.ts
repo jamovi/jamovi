@@ -879,7 +879,9 @@ $(document).ready(async() => {
 
         while (true) {
 
-            if ( ! instanceId && hasLobby && ! options.authToken) {
+            const embeddedAndReady = (location === 'embed' && options.authToken);
+
+            if ( ! instanceId && hasLobby && ! embeddedAndReady) {
                 const response = await lobby.show(location, params);
                 if (response.action === 'open')
                     options = response.data;
