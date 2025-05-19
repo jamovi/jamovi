@@ -19,18 +19,24 @@ from .i18n import _
 
 
 class DownloadError(Exception):
-    def __init__(self):
-        super().__init__(_('Unable to reach the library'))
+    def __init__(self, message=None):
+        if message is None:
+            message = _('Unable to reach the library')
+        super().__init__(message)
 
 
 class NoNetworkError(DownloadError):
-    def __init__(self):
-        super().__init__(_('No internet connection'))
+    def __init__(self, message=None):
+        if message is None:
+            message = _('No internet connection')
+        super().__init__(message)
 
 
 class CaptivePortalError(DownloadError):
-    def __init__(self):
-        super().__init__(_('Unable to access the internet (likely due to a captive portal)'))
+    def __init__(self, message=None):
+        if message is None:
+            message = _('Unable to access the internet (likely due to a captive portal)')
+        super().__init__(message)
 
 
 class DownloadInfo:
@@ -88,16 +94,17 @@ class Download:
             info.stream.set_result(info.file)
         except SSLCertVerificationError as e:
             try:
+                # check for captive portal
                 response = await self._client.fetch(
                     'http://clients3.google.com/generate_204')
                 if response.code != 204:
-                    raise CaptivePortalError
+                    raise CaptivePortalError from e
                 else:
-                    raise DownloadError
-            except OSError as e:
-                raise NoNetworkError
+                    raise DownloadError from e
+            except OSError:
+                raise NoNetworkError from e
         except OSError as e:
-            raise NoNetworkError
+            raise NoNetworkError from e
 
 
     def _header_callback(self, info, line):
