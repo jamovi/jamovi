@@ -220,7 +220,7 @@ const PageModules = Backbone.View.extend({
                     <div class="jmv-store-module-rhs">
                         <h2 id=${labelId} class="mark-search">${ moduleLabel }<span class="version">${ version }</span></h2>
                         <div class="authors">${module.authors.join(', ')}</div>
-                        <div class="description">${module.description}</div>`;
+                        <div class="description">${translator(module.description)}</div>`;
 
             for (let op of module.ops) {
                 let disabled = (op === 'installed' || op === 'old' || op === 'incompatible');
