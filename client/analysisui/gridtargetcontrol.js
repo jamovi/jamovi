@@ -286,6 +286,7 @@ const GridTargetContainer = function(params) {
     this.gainOnClick = true;
     this._supplier = null;
     this._actionsBlocked = false;
+    this._actionStarted = 0;
 
     this.targetGrids = [];
 
@@ -312,11 +313,13 @@ const GridTargetContainer = function(params) {
     };
 
     this._onSupplierSelectionChanged = function() {
-        this.setButtonsMode(this.gainOnClick); // update aria tags
+        if (this._actionStarted === 0)
+            this.setButtonsMode(this.gainOnClick); // update aria tags
     };
 
     this.targetGridSelectionChanged = function() {
-        this.setButtonsMode(this.gainOnClick); // update aria tags
+        if (this._actionStarted === 0)
+            this.setButtonsMode(this.gainOnClick); // update aria tags
     };
     this.targetGridSelectionChanged = this.targetGridSelectionChanged.bind(this);
 
@@ -827,6 +830,7 @@ const GridTargetContainer = function(params) {
         if (this.targetGrid === null)
             return;
 
+        this._actionStarted += 1;
         this._supplier.blockFilterProcess = true;
 
         this.targetGrid.option.beginEdit();
@@ -899,6 +903,8 @@ const GridTargetContainer = function(params) {
 
         if (postProcessSelectionIndex !== null)
             postProcessList.selectNextAvailableItem(postProcessSelectionIndex);
+
+        this._actionStarted -= 1;
     };
 
     this._enableButtons = function(toolbar, value, disableSupplyOnly) {
