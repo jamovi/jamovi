@@ -951,6 +951,7 @@ class Server:
                 script-src  'self' 'unsafe-eval' 'unsafe-inline';
                 style-src 'self' 'unsafe-inline';
                 frame-src 'self' { hosts } https://www.jamovi.org;
+                connect-src 'self' data:;
             '''.replace('\n', '')
 
             log.info(f'listening across origin(s): { hosts }')
