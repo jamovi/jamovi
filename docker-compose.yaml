@@ -1,7 +1,7 @@
 version: '3'
 services:
   jamovi-deps:
-    image: jamovi/jamovi-deps:2.6.32
+    image: jamovi/jamovi-deps:2.7
     build:
       context: .
       dockerfile: docker/deps-Dockerfile
@@ -32,7 +32,7 @@ services:
   #     - '24678:24678'
 
   tests:
-    image: jamovi/jamovi:2.6
+    image: jamovi/jamovi:2.7
     build:
       context: .
       dockerfile: docker/jamovi-Dockerfile
@@ -42,7 +42,7 @@ services:
     command: ["/usr/bin/python3 -m pytest /usr/lib/jamovi/server"]
 
   jamovi:
-    image: jamovi/jamovi:2.6
+    image: jamovi/jamovi:2.7
     container_name: jamovi
     build:
       context: .

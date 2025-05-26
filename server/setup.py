@@ -35,7 +35,7 @@ if os.name == 'nt':  # windows
     extra_compile_args = ["/D", "UNICODE"]
     extra_link_args = [ ]
     include_dirs += [ 'C:/local/boost_1_84_0' ]
-    protoc_path = 'C:\\rtools44\\x86_64-w64-mingw32.static.posix\\bin\\protoc.exe'
+    protoc_path = 'C:\\rtools45\\x86_64-w64-mingw32.static.posix\\bin\\protoc.exe'
 
 elif os.uname()[0] == "Linux":
     libraries = [ "boost_filesystem", "boost_system" ]
