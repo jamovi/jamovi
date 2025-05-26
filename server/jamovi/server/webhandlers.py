@@ -9,9 +9,14 @@ from tornado.httpclient import HTTPRequest
 
 class ForwardHandler(RequestHandler):
 
+    _base_url: str
+    _default_filename: str
+    _status_sent: bool
+
     def initialize(self, base_url: str, default_filename: str = 'index.html'):
         self._base_url = base_url
         self._default_filename = default_filename
+        self._status_sent = False
 
     async def get(self, path):
 
@@ -19,7 +24,7 @@ class ForwardHandler(RequestHandler):
 
         def add_header(line):
             if not self._status_sent:
-                status = parse_response_start_line(line)
+                status = parse_response_start_line(line.rstrip())
                 self.set_status(status.code, status.reason)
                 self._status_sent = True
             else:
