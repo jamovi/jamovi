@@ -44,6 +44,19 @@ const TransformListItem = function(transform, checked) {
         this.$remove.addClass('hidden');
     });
 
+    
+    this.$el.on('pointerenter', (event) => {
+        this.$edit.removeClass('hidden');
+        this.$duplicate.removeClass('hidden');
+        this.$remove.removeClass('hidden');
+    });
+
+    this.$el.on('pointerleave', (event) => {
+        this.$edit.addClass('hidden');
+        this.$duplicate.addClass('hidden');
+        this.$remove.addClass('hidden');
+    });
+
     this.$edit.on('click', (event) => {
         this.$el.trigger('editing', this);
         event.preventDefault();
