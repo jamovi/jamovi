@@ -150,7 +150,7 @@ class References extends HTMLElement {
             name: 'R',
             type: 'software',
             authors: { complete: 'R Core Team' },
-            year: 2024,
+            year: 2025,
             title: 'R: A Language and environment for statistical computing',
             publisher: '(Version 4.5) [Computer software]. Retrieved from https://cran.r-project.org',
             url: 'https://cran.r-project.org',
