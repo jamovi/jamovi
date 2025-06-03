@@ -11,21 +11,27 @@ RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && \
 ENV LANG en_US.UTF-8
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    libprotoc-dev
+    libprotoc-dev \
+    libglu1-mesa \
+    libgl1
 
 RUN echo "options(repos=c(pm='$CRAN_MIRROR'))" > $R_HOME/etc/Rprofile.site
 
 RUN R -e "\
-    packages <- c('R6', 'RColorBrewer', 'base64enc', 'brio', 'cpp11', 'curl', 'evaluate', \
-        'farver', 'fastmap', 'magrittr', 'praise', 'rappdirs', 'rprojroot', 'utf8', \
-        'viridisLite', 'yaml', 'Matrix', 'Rcpp', 'cli', 'crayon', 'digest', 'fansi', \
-        'fs', 'glue', 'isoband', 'jsonlite', 'labeling', 'mime', 'pkgconfig', 'ps', \
-        'remotes', 'rlang', 'stringi', 'withr', 'xfun', 'RInside', 'RProtoBuf', \
-        'cachem', 'desc', 'diffobj', 'highr', 'htmltools', 'lifecycle', 'processx', \
-        'tinytex', 'callr', 'fontawesome', 'gtable', 'jquerylib', 'knitr', 'memoise', \
-        'sass', 'scales', 'systemfonts', 'vctrs', 'waldo', 'bslib', 'pillar', \
-        'pkgbuild', 'textshaping', 'pkgload', 'ragg', 'rmarkdown', 'tibble', 'ggplot2', \
-        'testthat'); \
+    packages <- c('R6', 'RColorBrewer', 'backports', 'base64enc', 'brio', 'cpp11', 'curl', \
+        'devEMF', 'evaluate', 'farver', 'fastmap', 'fontBitstreamVera', \
+        'fontLiberation', 'magrittr', 'praise', 'rappdirs', 'rprojroot', 'sys', 'utf8', \
+        'uuid', 'viridisLite', 'yaml', 'zip', 'Rcpp', 'askpass', 'cli', 'crayon', \
+        'data.table', 'digest', 'fansi', 'fontquiver', 'fs', 'generics', 'glue', \
+        'isoband', 'jsonlite', 'labeling', 'mime', 'pkgconfig', 'ps', 'remotes', \
+        'rlang', 'stargazer', 'stringi', 'withr', 'xfun', 'xtable', 'RInside', \
+        'RProtoBuf', 'cachem', 'desc', 'diffobj', 'highr', 'htmltools', 'lifecycle', \
+        'openssl', 'openxlsx', 'processx', 'tinytex', 'xml2', 'callr', 'fontawesome', \
+        'gtable', 'jquerylib', 'knitr', 'memoise', 'sass', 'scales', 'systemfonts', \
+        'vctrs', 'waldo', 'bslib', 'gdtools', 'pillar', 'pkgbuild', 'purrr', 'stringr', \
+        'textshaping', 'tidyselect', 'pkgload', 'ragg', 'rmarkdown', 'tibble', 'dplyr', \
+        'ggplot2', 'htmlwidgets', 'officer', 'testthat', 'flextable', 'rgl', 'rvg', \
+        'tidyr', 'broom', 'export'); \
     for (pkg in packages) {               \
         install.packages(                 \
             pkg,                          \
@@ -43,23 +49,21 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     libxml2
 
 RUN R -e "\
-    packages <- c('BH', 'RcppParallel', 'backports', 'bitops', 'ca', 'carData', 'contfrac', \
-        'glasso', 'jpeg', 'lisrelToR', 'matrixStats', 'mnormt', 'nloptr', 'numDeriv', \
-        'pbivnorm', 'png', 'prettyunits', 'quadprog', 'qvcalc', 'rematch', 'rstudioapi', \
-        'zip', 'Deriv', 'Formula', 'GPArotation', 'MatrixModels', 'PMCMR', 'RUnit', \
-        'RcppEigen', 'SparseM', 'TH.data', 'XML', 'abind', 'caTools', 'cellranger', \
-        'checkmate', 'coda', 'colorspace', 'corpcor', 'cowplot', 'data.table', \
-        'deSolve', 'elliptic', 'estimability', 'fdrtool', 'forcats', 'generics', \
-        'ggrepel', 'ggridges', 'gridExtra', 'gtools', 'here', 'hms', 'htmlwidgets', \
-        'igraph', 'lavaan', 'microbenchmark', 'minqa', 'mvnormtest', 'mvtnorm', \
-        'openxlsx', 'patchwork', 'pbapply', 'plyr', 'purrr', 'rbibutils', 'relimp', \
-        'ssanv', 'stringr', 'tidyselect', 'xtable', 'zoo', 'Rdpack', 'StanHeaders', \
-        'dplyr', 'emmeans', 'exactci', 'gnm', 'gplots', 'htmlTable', 'hypergeo', \
-        'kutils', 'lmtest', 'progress', 'psych', 'quantreg', 'reshape2', 'rpf', \
-        'sandwich', 'viridis', 'BayesFactor', 'Hmisc', 'OpenMx', 'ROCR', 'exact2x2', \
-        'multcomp', 'readxl', 'reformulas', 'tidyr', 'vcd', 'broom', 'ggstats', 'lme4', \
-        'qgraph', 'vcdExtra', 'GGally', 'arm', 'lmerTest', 'modelr', 'rockchalk', \
-        'doBy', 'mi', 'pbkrtest', 'sem', 'car', 'semPlot', 'afex'); \
+    packages <- c('BH', 'RcppParallel', 'bitops', 'ca', 'carData', 'contfrac', 'glasso', 'jpeg', \
+        'lisrelToR', 'matrixStats', 'mnormt', 'nloptr', 'numDeriv', 'pbivnorm', 'png', \
+        'prettyunits', 'quadprog', 'qvcalc', 'rematch', 'rstudioapi', 'Deriv', \
+        'Formula', 'GPArotation', 'Matrix', 'PMCMR', 'RUnit', 'RcppEigen', 'SparseM', \
+        'TH.data', 'XML', 'abind', 'caTools', 'cellranger', 'checkmate', 'coda', \
+        'colorspace', 'corpcor', 'cowplot', 'deSolve', 'elliptic', 'estimability', \
+        'fdrtool', 'forcats', 'ggrepel', 'ggridges', 'gridExtra', 'gtools', 'here', \
+        'hms', 'lavaan', 'microbenchmark', 'minqa', 'modelr', 'mvnormtest', 'mvtnorm', \
+        'patchwork', 'pbapply', 'plyr', 'rbibutils', 'relimp', 'ssanv', 'zoo', \
+        'MatrixModels', 'Rdpack', 'StanHeaders', 'doBy', 'emmeans', 'exactci', \
+        'ggstats', 'gnm', 'gplots', 'htmlTable', 'hypergeo', 'igraph', 'kutils', \
+        'lmtest', 'progress', 'psych', 'reshape2', 'rpf', 'sandwich', 'viridis', \
+        'BayesFactor', 'GGally', 'Hmisc', 'OpenMx', 'ROCR', 'exact2x2', 'multcomp', \
+        'quantreg', 'readxl', 'reformulas', 'vcd', 'lme4', 'qgraph', 'vcdExtra', 'arm', \
+        'lmerTest', 'pbkrtest', 'rockchalk', 'car', 'mi', 'afex', 'sem', 'semPlot'); \
     for (pkg in packages) {               \
         install.packages(                 \
             pkg,                          \

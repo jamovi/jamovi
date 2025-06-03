@@ -1,6 +1,6 @@
 
 FROM ubuntu:noble as base
-FROM jamovi/jamovi-deps:2.7 as r-base
+FROM jamovi/jamovi-deps:2.7.1 as r-base
 
 
 ##### NODE #####
