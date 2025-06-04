@@ -175,7 +175,7 @@ const ResultsPanel = Backbone.View.extend({
 
 
         let $container = $(`<div class="jmv-results-container results-loop-list-item results-loop-auto-select  ${ classes }" tabindex="-1" role="listitem" aria-label="${ isEmptyAnalysis ? 'Annotation Field' : (analysis.results.title + '- Results')}"></div>`);
-        
+
         $container.on('keydown', (event) => {
             if ((event.ctrlKey || event.metaKey) && event.code === 'KeyC') {
                 this._menuEvent({ op: 'copy', address: [ analysis.id] });
@@ -786,7 +786,9 @@ const ResultsPanel = Backbone.View.extend({
                         { name: 'PDF', description: _('PDF Document {ext}', { ext: '(.pdf)' }), extensions: [ 'pdf' ] },
                         { name: 'PNG', description: _('PNG Image {ext}', { ext: '(.png)' }), extensions: [ 'png' ] },
                         { name: 'SVG', description: _('SVG Image {ext}', { ext: '(.svg)' }), extensions: [ 'svg' ] },
-                        { name: 'EPS', description: _('EPS Image {ext}', { ext: '(.eps)' }), extensions: [ 'eps' ] }, ]
+                        { name: 'EPS', description: _('EPS Image {ext}', { ext: '(.eps)' }), extensions: [ 'eps' ] },
+                        { name: 'PPTX', description: _('PowerPoint Slide {ext}', { ext: '(.pptx)' }), extensions: [ 'pptx' ] },
+                    ]
                 };
                 let result = await host.showSaveDialog(options);
                 if (result.cancelled)
