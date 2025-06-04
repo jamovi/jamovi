@@ -1,6 +1,7 @@
 FROM rstudio/r-base:4.5.0-noble AS r-base
 ENV R_HOME /opt/R/4.5.0/lib/R
 ENV CRAN_MIRROR https://packagemanager.posit.co/cran/__linux__/noble/2025-05-25
+ENV JAMOVI_REPO https://repo.jamovi.org/cran/2025-05-25
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     locales
@@ -15,7 +16,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     libglu1-mesa \
     libgl1
 
-RUN echo "options(repos=c(pm='$CRAN_MIRROR'))" > $R_HOME/etc/Rprofile.site
+RUN echo "options(repos=c(jr='$JAMOVI_REPO', pm='$CRAN_MIRROR'))" > $R_HOME/etc/Rprofile.site
 
 RUN R -e "\
     packages <- c('R6', 'RColorBrewer', 'backports', 'base64enc', 'brio', 'cpp11', 'curl', \
@@ -30,7 +31,7 @@ RUN R -e "\
         'gtable', 'jquerylib', 'knitr', 'memoise', 'sass', 'scales', 'systemfonts', \
         'vctrs', 'waldo', 'bslib', 'gdtools', 'pillar', 'pkgbuild', 'purrr', 'stringr', \
         'textshaping', 'tidyselect', 'pkgload', 'ragg', 'rmarkdown', 'tibble', 'dplyr', \
-        'ggplot2', 'htmlwidgets', 'officer', 'testthat', 'flextable', 'rgl', 'rvg', \
+        'ggplot2', 'htmlwidgets', 'officer', 'testthat', 'flextable', 'rvg', \
         'tidyr', 'broom', 'export'); \
     for (pkg in packages) {               \
         install.packages(                 \
