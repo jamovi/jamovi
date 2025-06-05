@@ -15,14 +15,11 @@ export class HTMLElementCreator {
         return element;
     };
 
-    public static parse(html: string) : HTMLElement {
+    public static parse<T extends HTMLElement> (html: string) : T {
         let template = document.createElement('template');
         template.innerHTML = html.trim(); // trim to avoid whitespace nodes
         let child = template.content.firstElementChild;
-        if (child instanceof HTMLElement)
-            return child;
-
-        throw 'Should only return HTMLElement type';
+        return child as T;
     }
 }
 

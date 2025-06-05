@@ -1,20 +1,20 @@
 
 'use strict';
 
-const $ = require('jquery');
 const EnumPropertyFilter = require('./enumpropertyfilter');
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 const get = function(parent) {
 
     let icons = parent.getPropertyValue('icons');
     let iconPosition = parent.getPropertyValue('iconPosition');
-    let $el = $('<div class="jmv-option-icons" data-icon-position="' + iconPosition + '"></div>');
+    let el = HTML.parse('<div class="jmv-option-icons" data-icon-position="' + iconPosition + '"></div>');
     for (let i = 0; i < icons.length; i++) {
-        let $icon = $('<div class="jmv-option-icon" data-icon="' + icons[i] + '"></div>');
-        $el.append($icon);
+        let icon = HTML.parse('<div class="jmv-option-icon" data-icon="' + icons[i] + '"></div>');
+        el.append(icon);
     }
 
-    return $el;
+    return el;
 };
 
 const addSupport = function(parent) {
