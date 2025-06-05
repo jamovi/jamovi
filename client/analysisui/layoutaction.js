@@ -1,6 +1,5 @@
 'use strict';
 
-const $ = require('jquery');
 const LayoutActionResource = require('./layoutactionresource');
 const SuperClass = require('../common/superclass');
 

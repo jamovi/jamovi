@@ -8,11 +8,11 @@ const HiddenScrollBarSupport = function() {
     this.timeoutId2 = null;
     this.noscroll = false;
 
-    this.$el.scroll((event) => {
+    this.el.scroll((event) => {
         this._resetScrollIssue(1000, 100);
     });
 
-    this.$el.click((event) => {
+    this.el.click((event) => {
         this._resetScrollIssue(-1, 500);
     });
 
@@ -38,10 +38,10 @@ const HiddenScrollBarSupport = function() {
 
         let reset = () => {
             this.noscroll = true;
-            this.$el.addClass('mac-scroll-fix');
+            this.el.classList.add('mac-scroll-fix');
             this.timeoutId2 = setTimeout(() => {
                 this.noscroll = false;
-                this.$el.removeClass('mac-scroll-fix');
+                this.el.classList.remove('mac-scroll-fix');
             }, noScrollDelay);
         };
 
@@ -51,7 +51,7 @@ const HiddenScrollBarSupport = function() {
             reset();
     };
 
-    observer.observe(this.$el[0], {
+    observer.observe(this.el, {
       childList: true,
       subtree: true
     });

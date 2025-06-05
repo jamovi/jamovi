@@ -3,27 +3,22 @@
 'use strict';
 
 const $ = require('jquery');
-const Backbone = require('backbone');
 
 import Framesg from 'framesg';
 
-Backbone.$ = $;
-
-const Options = require('./options');
-const OptionsView = require('./optionsview');
+import Options from './options';
+import OptionsView from './optionsview';
 const ui = require('./layoutdef');
-const Format = require('./format.js');
-const FormatDef = require('./formatdef');
+import Format from './format';
+import { FormatDef } from './formatdef';
 const DefaultControls = require('./defaultcontrols');
 const LayoutUpdateCheck = require('./layoutupdatecheck');
 const View = require('./actions');
 const GridTargetControl = require('./gridtargetcontrol');
 const GridControl = require('./gridcontrol');
 const OptionControl = require('./optioncontrol');
-const GridOptionControl = require('./gridoptioncontrol');
 const LayoutActionManager = require('./layoutactionmanager');
 const RequestDataSupport = require('./requestdatasupport');
-const GridOptionListControl = require('./gridoptionlistcontrol');
 const ApplyMagicEvents = require('./applymagicevents').applyMagicEvents;
 const Keyboard = require('../common/focusloop');
 
@@ -173,6 +168,7 @@ const Analysis = function(def, i18nDef, jamoviVersion, id) {
         this.model = { options: optionsManager, ui: layoutDef, actionManager: actionManager, currentStage: 0 };
 
         this.View = new OptionsView(this.model);
+        this.View.$el = $(this.View.el);  // to maintain backwards compatibility with older modules.
 
         this.View.setRequestedDataSource(this);
         this.View.setI18nSource(this);
@@ -285,7 +281,7 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
                 $optionsBlock.append($errorList);
             }
             else {
-                $optionsBlock.append(analysis.View.$el);
+                $optionsBlock.append(analysis.View.el);
                 analysis.View.render();
                 
                 $optionsBlock.find('.placeholder-options').remove();
@@ -337,13 +333,15 @@ function updateOptions(values) {
     model.options.endEdit();
 }
 
-function setOptionsValues(data) {
+function setOptionsValues(data, editType) {
+    editType = editType || 'absolute';
+
     if (analysis.inError)
         return;
     
     if (analysis.View.isLoaded() === false) {
         setTimeout(() => {
-            setOptionsValues(data);
+            setOptionsValues(data, editType);
         }, 0);
         return;
     }
@@ -363,6 +361,12 @@ function setOptionsValues(data) {
             }
             else
                 model.options.setOptionValue(key, value, params);
+        }
+        if (editType === 'absolute') {
+            for (let op of model.options._list) {
+                if (data.options === null || (op.name in data.options) === false)
+                    model.options.setOptionValue(op.name, null, params);
+            }
         }
         if (titleSet === false)
             setTitle('');
