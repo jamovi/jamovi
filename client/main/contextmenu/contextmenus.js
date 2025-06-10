@@ -1,13 +1,11 @@
 
 'use strict';
 
-const $ = require('jquery');
+import RibbonSeparator from '../ribbon/ribbonseparator';
+import RibbonGroup from '../ribbon/ribbongroup';
+import ContextMenuButton from './contextmenubutton';
 
-const RibbonSeparator = require('../ribbon/ribbonseparator');
-const RibbonGroup = require('../ribbon/ribbongroup');
-const ContextMenuButton = require('./contextmenubutton');
-
-const createRowMenuItems = function(plural) {
+export const createRowMenuItems = function(plural) {
     return [
         new RibbonGroup({ orientation: 'vertical', items: [
             new ContextMenuButton({ title: _('Cut'), name: 'cut', iconId: 'cut' }),
@@ -30,7 +28,7 @@ const createRowMenuItems = function(plural) {
     ];
 };
 
-const createFilterRowMenuItems = function() {
+export const createFilterRowMenuItems = function() {
     return [
         new RibbonGroup({ orientation: 'vertical', items: [
             new ContextMenuButton({ title: _('Copy'), name: 'copy', iconId: 'copy' })
@@ -51,7 +49,7 @@ const createFilterRowMenuItems = function() {
     ];
 };
 
-const createVariableMenuItems = function(plural, noData) {
+export const createVariableMenuItems = function(plural, noData) {
     let menu = [
         new RibbonGroup({ orientation: 'vertical', items: [
             new ContextMenuButton({ title: _('Add Variable'), name: 'addVar', subItems: [
@@ -94,7 +92,7 @@ const createVariableMenuItems = function(plural, noData) {
     return menu;
 };
 
-const createAppendVariableMenuItems = function() {
+export const createAppendVariableMenuItems = function() {
     return [
         new RibbonGroup({ orientation: 'vertical', items: [
             new RibbonGroup({ title: _('Transformed Variable'), orientation: 'vertical', titlePosition: 'top', items: [
@@ -115,7 +113,7 @@ const createAppendVariableMenuItems = function() {
     ];
 };
 
-const createFilterMenuItems = function(noData) {
+export const createFilterMenuItems = function(noData) {
     if (noData) {
         return [
             new RibbonGroup({ orientation: 'vertical', items: [
@@ -144,7 +142,7 @@ const createFilterMenuItems = function(noData) {
     }
 };
 
-const createResultsObjectMenuItems = function(entries, parent, levelId) {
+export const createResultsObjectMenuItems = function(entries, parent, levelId) {
     let items = [];
     for (let entry of entries) {
 
@@ -181,4 +179,4 @@ const createResultsObjectMenuItems = function(entries, parent, levelId) {
     return [new RibbonGroup({ orientation: 'vertical', items: items })];
 };
 
-module.exports = { createRowMenuItems, createVariableMenuItems, createResultsObjectMenuItems, createFilterMenuItems, createFilterRowMenuItems, createAppendVariableMenuItems };
+export default { createRowMenuItems, createVariableMenuItems, createResultsObjectMenuItems, createFilterMenuItems, createFilterRowMenuItems, createAppendVariableMenuItems };

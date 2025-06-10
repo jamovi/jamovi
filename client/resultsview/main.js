@@ -129,6 +129,11 @@ class Main {  // this is constructed at the bottom
                 entries[0].name = 'note';
                 entries[0].label = _('Note');
             }
+            else if (this.resultsDefn.ns === 'jmvplot') {
+                entries[0].type = 'Analysis';
+                entries[0].name = 'analysis';
+                entries[0].label = _('Plot');
+            }
             else {
                 entries[0].type = 'Analysis';
                 entries[0].name = 'analysis';

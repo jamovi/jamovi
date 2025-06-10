@@ -1,5 +1,4 @@
-import SilkyView from '../view';
-import $ from 'jquery';
+
 import pathtools from '../utils/pathtools';
 import { s6e } from '../../common/utils';
 import focusLoop from '../../common/focusloop';
@@ -10,7 +9,10 @@ import { FSItemType } from './fsentry';
 import { isUrl } from './fsentry';
 
 import host from '../host';
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import type { IBrowseType, IBackstagePanelView } from './fsentry';
 
+import { EventDistributor } from '../../common/eventmap';
 
 function crc16(s) {
     if (s.length === 0)
@@ -30,59 +32,85 @@ function crc16(s) {
     return crc;
 }
 
-export const FSEntryBrowserView = SilkyView.extend({
+export class FSEntryBrowserView extends EventDistributor implements IBackstagePanelView {
+    model: FSEntryListModel;
+    _selectedIndices: number[] = [];
+    _baseSelectionIndex = -1;
+    multiMode = false;
+    _clickedItem: HTMLElement;
+    items: HTMLElement[];
+    _selected: boolean;
+    itemsList: HTMLElement;
+    footer: HTMLElement;
+    header: HTMLElement;
+    filterExtensions: string[];
+    shortcutPath: string;
+    initialised = false;
 
-    initialize : function() {
-        this._selectedIndices = [];
-        this._baseSelectionIndex = -1;
-        this.multiMode = false;
+    constructor(model: FSEntryListModel) {
+        super();
 
-        if ( ! this.model)
-            this.model = new FSEntryListModel();
+        this.setEventMap({
+            'dblclick .silky-bs-fslist-item' : this._itemDoubleClicked,
+            'click .silky-bs-fslist-browser-check-button' : this._toggleMultiMode,
+            'click .silky-bs-fslist-browser-back-button' : this._backClicked,
+            'click .silky-bs-fslist-browser-save-button' : this._saveClicked,
+            'keydown .silky-bs-fslist-browser-save-name' : this._nameKeypressHandle,
+            'change .silky-bs-fslist-browser-save-filetype' : this._saveTypeChanged,
+            'change .silky-bs-fslist-browser-save-name' : this._nameChanged,
+            'keyup .silky-bs-fslist-browser-save-name' : this._nameChanged,
+            'paste .silky-bs-fslist-browser-save-name' : this._nameChanged,
+            'focus .silky-bs-fslist-browser-save-name' : this._nameGotFocus,
+            'focus .silky-bs-fslist-browser-save-filetype' : this._focusChanged,
+            'click .silky-bs-fslist-browse-button' : this._manualBrowse,
+            'keydown .silky-bs-fslist-items' : this._keyPressHandle,
+            'focus .silky-bs-fslist-items' : this._listFocus,
+            'pointerdown .silky-bs-fslist-items' : this._listPointerDown,
+            'keydown .silky-bs-fslist-browser-import-name' : this._importNameKeypressHandle,
+            'click .silky-bs-fslist-browser-import-button' : this._importClicked,
+            'change .silky-bs-fslist-browser-import-name' : this._importNameChanged,
+            'keyup .silky-bs-fslist-browser-import-name' : this._importNameChanged,
+            'paste .silky-bs-fslist-browser-import-name' : this._importNameChanged,
+            'focus .silky-bs-fslist-browser-import-name' : this._nameGotFocus,
+            'focus .silky-bs-fslist-browser-import-filetype' : this._focusChanged,
+            'input .search' : this._searchChanged,
+            'click .jmv-bs-fslist-checkbox': this._checkclicked
+        });
 
+        this.model = model;
+    }
+
+    connectedCallback() {
         this.model.on('change:items change:dirInfo change:status', this._render, this);
         this.model.on('change:suggestedPath', this._suggestedChanged, this);
 
-        this.$el.addClass('silky-bs-fslist');
+        if ( ! this.initialised) {
+            this.classList.add('silky-bs-choices-list');
+            this.classList.add('silky-bs-fslist');
+            this.initialised = true;
+        }
+
+        this.innerHTML = '';
         this._createHeader();
         this._render();
-    },
-    events : {
-        'dblclick .silky-bs-fslist-item' : '_itemDoubleClicked',
-        'click .silky-bs-fslist-browser-check-button' : '_toggleMultiMode',
-        'click .silky-bs-fslist-browser-back-button' : '_backClicked',
-        'click .silky-bs-fslist-browser-save-button' : '_saveClicked',
-        'keydown .silky-bs-fslist-browser-save-name' : '_nameKeypressHandle',
-        'change .silky-bs-fslist-browser-save-filetype' : '_saveTypeChanged',
-        'change .silky-bs-fslist-browser-save-name' : '_nameChanged',
-        'keyup .silky-bs-fslist-browser-save-name' : '_nameChanged',
-        'paste .silky-bs-fslist-browser-save-name' : '_nameChanged',
-        'focus .silky-bs-fslist-browser-save-name' : '_nameGotFocus',
-        'focus .silky-bs-fslist-browser-save-filetype' : '_focusChanged',
-        'click .silky-bs-fslist-browse-button' : '_manualBrowse',
-        'keydown .silky-bs-fslist-items' : '_keyPressHandle',
-        'focus .silky-bs-fslist-items' : '_listFocus',
-        'pointerdown .silky-bs-fslist-items' : '_listPointerDown',
-        'keydown .silky-bs-fslist-browser-import-name' : '_importNameKeypressHandle',
-        'click .silky-bs-fslist-browser-import-button' : '_importClicked',
-        'change .silky-bs-fslist-browser-import-name' : '_importNameChanged',
-        'keyup .silky-bs-fslist-browser-import-name' : '_importNameChanged',
-        'paste .silky-bs-fslist-browser-import-name' : '_importNameChanged',
-        'focus .silky-bs-fslist-browser-import-name' : '_nameGotFocus',
-        'focus .silky-bs-fslist-browser-import-filetype' : '_focusChanged',
-        'input .search' : '_searchChanged',
-        'keydown .search': '_searchKeyDown',
-        'click .jmv-bs-fslist-checkbox': '_checkclicked'
-    },
-    _checkclicked(event) {
+    }
+
+    disconnectedCallback() {
+        this.model.off('change:items change:dirInfo change:status', this._render, this);
+        this.model.off('change:suggestedPath', this._suggestedChanged, this);
+    }
+
+    private _checkclicked(event) {
         event.preventDefault();
-    },
-    preferredWidth() {
+    }
+
+    public preferredWidth() {
         return '750px';
-    },
-    _suggestedChanged: function(event) {
-        let $saveName = this.$el.find('.silky-bs-fslist-browser-save-name');
-        if ($saveName.length > 0) {
+    }
+
+    private _suggestedChanged() {
+        let saveName = this.querySelector<HTMLInputElement>('.silky-bs-fslist-browser-save-name');
+        if (saveName) {
             let filePath = this.model.attributes.suggestedPath;
             if (filePath) {
                 let extension = path.extname(filePath);
@@ -91,81 +119,116 @@ export const FSEntryBrowserView = SilkyView.extend({
             else
                 filePath = '';
 
-            $saveName.val(filePath);
+            saveName.value = filePath;
 
-            let $button = this.$el.find('.silky-bs-fslist-browser-save-button');
+            const button = this.querySelector('.silky-bs-fslist-browser-save-button');
             if (filePath)
-                $button.removeClass('disabled-div');
+                button.classList.remove('disabled-div');
             else
-                $button.addClass('disabled-div');
+                button.classList.add('disabled-div');
         }
-    },
-    _listPointerDown: function(event) {
-        this._clickedItem = document.elementFromPoint(event.pageX, event.pageY);
-        this._clickedItem = this._clickedItem.closest('.silky-bs-fslist-item');
+    }
+
+    private _listPointerDown(event) {
+        this._clickedItem = document.elementFromPoint(event.pageX, event.pageY).closest('.silky-bs-fslist-item');
         if (this._clickedItem) {
             let fromChecked = event.target.classList.contains('jmv-bs-fslist-checkbox') && !event.target.getAttribute('checked');
             this.clickItem(this._clickedItem, event.ctrlKey, event.shiftKey, fromChecked);
         }
             
-    },
-    _listFocus: function (event) {
+    }
+
+    private _listFocus() {
         if (this._clickedItem) {
             this._clickedItem = null;
             return;
         }
-        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[0] : ((this.$items && this.$items.length > 0) ? 0 : -1);
-        if (selectedIndex >= 0 && selectedIndex < this.$items.length){
+        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[0] : ((this.items && this.items.length > 0) ? 0 : -1);
+        if (selectedIndex >= 0 && selectedIndex < this.items.length){
             this.clearSelection();
             this._selectedIndices = [selectedIndex];
             this._baseSelectionIndex = -1;
-            this.$items[selectedIndex].addClass('silky-bs-fslist-selected-item');
-            this.$items[selectedIndex].attr('aria-selected', 'true');
-            this.$items[selectedIndex].find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
+            this.items[selectedIndex].classList.add('silky-bs-fslist-selected-item');
+            this.items[selectedIndex].setAttribute('aria-selected', 'true');
+            const checkbox = this.items[selectedIndex].querySelector<HTMLInputElement>('.jmv-bs-fslist-checkbox');
+            if (checkbox)
+                checkbox.checked = true;
             this._selected = true;
 
-            let offset = this.$items[selectedIndex].position();
-            if (offset.top < 0)
-                this.$itemsList.animate({ scrollTop: this.$itemsList.scrollTop() + offset.top }, 100);
+            let item = this.items[selectedIndex];
+            let list = this.itemsList;
+
+            const offsetTop = item.offsetTop - list.offsetTop;
+
+            if (offsetTop < 0) {
+                list.scrollTo({
+                    top: list.scrollTop + offsetTop,
+                    behavior: 'smooth'
+                });
+            }
+
             this.updateActiveDescendant();
         }
-    },
-    _setSelection: function($target) {
+    }
+
+    private _setSelection(target: HTMLElement): void {
         if (this._selectedIndices.length > 0)
             this.clearSelection();
-        this._selectedIndices.push($target.data('index'));
-        $target.addClass('silky-bs-fslist-selected-item');
-        $target.attr('aria-selected', 'true');
-        $target.find('.jmv-bs-fslist-checkbox').prop('checked', true);
+
+        const indexAttr = target.getAttribute('data-index');
+        const index = indexAttr !== null ? parseInt(indexAttr, 10) : NaN;
+        if (!isNaN(index))
+            this._selectedIndices.push(index);
+
+        target.classList.add('silky-bs-fslist-selected-item');
+        target.setAttribute('aria-selected', 'true');
+
+        const checkbox = target.querySelector<HTMLInputElement>('.jmv-bs-fslist-checkbox');
+        if (checkbox)
+            checkbox.checked = true;
+
         this.updateActiveDescendant();
-    },
-    _searchChanged: function(event) {
+    }
+
+    private _searchChanged() {
         this._render();
-        this.$itemsList.scrollTop(0);
-    },
-    _saveTypeChanged : function() {
-        let selected = this.$el.find('option:selected');
-        this.filterExtensions = selected.data('extensions');
+        this.itemsList.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    private _saveTypeChanged() {
+        const selected = this.querySelector('option:checked') as HTMLOptionElement | null;
+        this.filterExtensions = selected ? JSON.parse(selected.dataset.extensions) ?? null : null;
         this._render();
-    },
-    _validExtension : function(ext) {
-        let extOptions = this.$el.find('.silky-bs-fslist-browser-save-filetype option');
+    }
+
+    private _validExtension(ext: string): number {
+        const extOptions = this.querySelectorAll<HTMLElement>(
+            '.silky-bs-fslist-browser-save-filetype option'
+        );
+
         for (let i = 0; i < extOptions.length; i++) {
-            let exts = $(extOptions[i]).data('extensions');
+            const option = extOptions[i];
+            const exts: string[] = JSON.parse(option.dataset.extensions);
+
             for (let j = 0; j < exts.length; j++) {
-                if (('.' + exts[j]) === ext)
+                if (`.${exts[j]}` === ext) {
                     return i;
+                }
             }
         }
+
         return -1;
-    },
-    _nameGotFocus: function(event) {
+    }
+
+    private _nameGotFocus() {
         this.clearSelection();
-    },
-    _focusChanged: function(event) {
+    }
+
+    private _focusChanged() {
         this.clearSelection();
-    },
-    _orderItems: function(orderby, direction, items) {
+    }
+
+    private _orderItems(orderby: 'type', direction: 0 | 1, items: any[]) {
 
         if (items.length <= 1)
             return;
@@ -182,31 +245,37 @@ export const FSEntryBrowserView = SilkyView.extend({
                 }
             }
         }
-    },
-    setShortcutPath: function(path) {
+    }
+
+    public setShortcutPath(path) {
         if (this.shortcutPath !== path) {
             this.shortcutPath = path;
-            let $shortcutKeyElements = this.$el.find('[shortcut-key]');
-            for (let i = 0; i < $shortcutKeyElements.length; i++) {
-                let element = $shortcutKeyElements[i];
+            //let $shortcutKeyElements = this.$el.find('[shortcut-key]');
+            let shortcutKeyElements = this.querySelectorAll<HTMLElement>('[shortcut-key]');
+            for (let i = 0; i < shortcutKeyElements.length; i++) {
+                let element = shortcutKeyElements[i];
                 focusLoop.applyShortcutOptions(element, { path: this.shortcutPath });
             }
             focusLoop.updateShortcuts({ silent: true});
         }
-    },
-    _manualBrowse: function(event) {
+    }
+
+    private _manualBrowse() {
         let filename = '';
-        let type = 'open';
+        let type: IBrowseType = 'open';
         if (this.model.clickProcess === 'save' || this.model.clickProcess === 'export') {
             type = 'save';
-            filename = this.$header.find('.silky-bs-fslist-browser-save-name').val().trim();
+            const inputEl = this.header.querySelector<HTMLInputElement>('.silky-bs-fslist-browser-save-name');
+            const filename = inputEl?.value.trim() ?? '';
+            //filename = this.$header.find('.silky-bs-fslist-browser-save-name').val().trim();
         }
         else if (this.model.clickProcess === 'import')
             type = 'import';
 
         this.model.requestBrowse({ list: this.model.fileExtensions, type, filename });
-    },
-    _createFileTypeSelector: function() {
+    }
+
+    private _createFileTypeSelector() {
         let html = '';
         html += '           <div class="silky-bs-fslist-browser-save-filetype">';
         html += `               <select class="silky-bs-fslist-browser-save-filetype-inner" aria-label="${ _('File type') }">`;
@@ -221,8 +290,9 @@ export const FSEntryBrowserView = SilkyView.extend({
         html += '               </select>';
         html += '           </div>';
         return html;
-    },
-    _createFooter: function() {
+    }
+
+    private _createFooter() {
         let isSaving = this.model.clickProcess === 'save' || this.model.clickProcess === 'export';
         let multiSelect = this.model.get('multiselect');
 
@@ -245,11 +315,12 @@ export const FSEntryBrowserView = SilkyView.extend({
         }
 
         html += '</div>';
-        this.$footer = $(html);
+        this.footer = HTML.parse(html);
 
-        this.$el.append(this.$footer);
-    },
-    _createBody() {
+        this.append(this.footer);
+    }
+
+    private _createBody() {
 
         let isSaving = this.model.clickProcess === 'save' || this.model.clickProcess === 'export';
 
@@ -260,22 +331,26 @@ export const FSEntryBrowserView = SilkyView.extend({
                             <div class="image"></div>
                             <input class="search" type="search" aria-label="${_('Search files')}" aria-controls="${itemListId}"></input>
                         </div>`;
-            this.$el.append(searchHtml);
+            this.append(HTML.parse(searchHtml));
 
-            let $search = this.$el.find('.searchbox > .search');
-            if ($search.length > 0)
-                focusLoop.applyShortcutOptions($search[0], { key: 'S', position: { x: '5%', y: '50%' } });
+            //let $search = this.$el.find('.searchbox > .search');
+            let search = this.querySelector('.searchbox > .search');
+            if (search)
+                focusLoop.applyShortcutOptions(search, { key: 'S', position: { x: '5%', y: '50%' } });
         }
 
-        this.$itemsList = $(`<div id="${itemListId}" role="list" aria-multiselectable="false" class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow: auto; height:100%" tabindex="0"></div>`);
-        this.$el.append(this.$itemsList);
-    },
-    _createHeader() {
-        let html = '';
-        if ( ! host.isElectron)
-            html = `<div class="title-bar"><div class="place-title">${ this.model.attributes.title }</div></div>`;
-        html += '<div class="silky-bs-fslist-header">';
+        this.itemsList = HTML.create('div', { id: itemListId, role: 'list', 'aria-multiselectable': false, class:"silky-bs-fslist-items", style:"flex: 1 1 auto; overflow: auto; height:100%", tabindex:"0"});//`<div id="${itemListId}" role="list" aria-multiselectable="false" class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow: auto; height:100%" tabindex="0"></div>`);
+        this.append(this.itemsList);
+    }
 
+    private _createHeader() {
+        let html = '';
+        if ( ! host.isElectron) {
+            html = `<div class="title-bar"><div class="place-title">${ this.model.attributes.title }</div></div>`;
+            this.append(HTML.parse(html));
+        }
+
+        html = '<div class="silky-bs-fslist-header">';
 
         let isSaving = this.model.clickProcess === 'save' || this.model.clickProcess === 'export';
 
@@ -328,34 +403,40 @@ export const FSEntryBrowserView = SilkyView.extend({
         }
 
         html += '</div>';
-        this.$header = $(html);
+        this.header = HTML.parse(html);
 
-        let $multiMode = this.$header.find('.silky-bs-fslist-browser-check-button');
-        if ($multiMode.length > 0)
-            focusLoop.applyShortcutOptions($multiMode[0], { key: 'C', action: this._toggleMultiMode.bind(this) });
+        let multiMode = this.header.querySelector<HTMLElement>('.silky-bs-fslist-browser-check-button');
+        if (multiMode)
+            focusLoop.applyShortcutOptions(multiMode, { key: 'C', action: this._toggleMultiMode.bind(this) });
 
-        let $back = this.$header.find('.silky-bs-fslist-browser-back-button');
-        if ($back.length > 0)
-            focusLoop.applyShortcutOptions($back[0], { key: 'B', position: { x: '20%', y: '25%' }, action: this._backClicked.bind(this), blocking: true });
+        let back = this.header.querySelector<HTMLElement>('.silky-bs-fslist-browser-back-button');
+        if (back)
+            focusLoop.applyShortcutOptions(back, { key: 'B', position: { x: '20%', y: '25%' }, action: this._backClicked.bind(this), blocking: true });
 
-        let $browse = this.$header.find('.silky-bs-fslist-browse-button');
-        if ($browse.length > 0)
-            focusLoop.applyShortcutOptions($browse[0], { key: 'E', action: this._manualBrowse.bind(this) });
+        let browse = this.header.querySelector<HTMLElement>('.silky-bs-fslist-browse-button');
+        if (browse)
+            focusLoop.applyShortcutOptions(browse, { key: 'E', action: this._manualBrowse.bind(this) });
 
-        let $saveName = this.$header.find('.silky-bs-fslist-browser-save-name');
-        if ($saveName.length > 0)
-            focusLoop.applyShortcutOptions($saveName[0], { key: 'F' });
+        let saveName = this.header.querySelector<HTMLElement>('.silky-bs-fslist-browser-save-name');
+        if (saveName)
+            focusLoop.applyShortcutOptions(saveName, { key: 'F' });
 
-        if (focusLoop.inAccessibilityMode() === false)
-            this.$header.find('.silky-bs-fslist-browser-save-name').focus(function() { $(this).select(); } );
+        if (focusLoop.inAccessibilityMode() === false) {
+            const input = this.header.querySelector<HTMLInputElement>('.silky-bs-fslist-browser-save-name');
+            if (input) {
+                input.addEventListener('focus', () => {
+                    input.select();
+                });
+            }
+        }
 
-        this.$el.append(this.$header);
+        this.append(this.header);
 
         this._createBody();
 
         if (focusLoop.inAccessibilityMode() === false && (this.model.clickProcess === 'save' || this.model.clickProcess === 'export')) {
             setTimeout(() => {
-                this.$header.find('.silky-bs-fslist-browser-save-name').focus();
+                saveName.focus();
             }, 400);
         }
 
@@ -365,35 +446,41 @@ export const FSEntryBrowserView = SilkyView.extend({
             this._createFooter();
 
             let extValue = this._validExtension(extension);
-            if (extValue != -1)
-                this.$el.find('.silky-bs-fslist-browser-save-filetype-inner').val(extValue);
+            if (extValue != -1) {
+                const select = this.querySelector<HTMLSelectElement>('.silky-bs-fslist-browser-save-filetype-inner');
+                if (select)
+                    select.value = extValue.toString();
+            }
         }
-    },
-    _nameKeypressHandle: function(event) {
+    }
+
+    private _nameKeypressHandle(event) {
 
         if (event.metaKey || event.ctrlKey || event.altKey)
             return;
 
         switch(event.key) {
             case 'Enter':
-                this._saveClicked(event);
+                this._saveClicked();
                 event.preventDefault();
                 break;
         }
-    },
-    _importNameKeypressHandle: function(event) {
+    }
+
+    private _importNameKeypressHandle(event) {
 
         if (event.metaKey || event.ctrlKey || event.altKey)
             return;
 
         switch(event.key) {
             case 'Enter':
-                this._importClicked(event);
+                this._importClicked();
                 event.preventDefault();
                 break;
         }
-    },
-    createAlphaNumericTag: function(prefix, id) {
+    }
+
+    private createAlphaNumericTag(prefix, id) {
         if (id <= 9) {
             return prefix + id;
         }
@@ -408,11 +495,12 @@ export const FSEntryBrowserView = SilkyView.extend({
         }
         return prefix + s;
 
-    },
-    _render : function() {
+    }
+
+    private _render() {
 
         if (this.model.writeOnly) {
-            this.$itemsList.empty();
+            this.itemsList.innerHTML = '';
             this.clearSelection();
             return;
         }
@@ -425,44 +513,48 @@ export const FSEntryBrowserView = SilkyView.extend({
         if (dirInfo !== undefined)
             filePath = pathtools.normalise(dirInfo.path).replace(/\//g, ' \uFE65 ');
 
-        this.$header.find('.silky-bs-fslist-browser-location').text(filePath);
+        //this.$header.find('.silky-bs-fslist-browser-location').text(filePath);
+        const locationEl = this.header.querySelector<HTMLElement>('.silky-bs-fslist-browser-location');
+        if (locationEl)
+            locationEl.textContent = filePath;
 
         let searchValue = '';
-        let $search = this.$el.find('.searchbox > input');
+        let search = this.querySelector<HTMLInputElement>('.searchbox > input');
 
-        $search.attr('aria-label', _('Search for file in directory {0}', [filePath]));
+        if (search) {
+            search.setAttribute('aria-label', _('Search for file in directory {0}', [filePath]));
 
-        if ($search.length > 0) {
-            searchValue = $search.val().trim();
+            searchValue = search.value.trim();
+
             if (focusLoop.inAccessibilityMode() === false) {
                 setTimeout(() => {
-                    $search.focus();
+                    search.focus();
                 }, 250);
             }
         }
 
-        let $backbutton = this.$el.find('.silky-bs-fslist-browser-back-button');
-        if ($backbutton)
-        $backbutton.attr('aria-label', _('Move back from directory {0}', [filePath]));
+        let backbutton = this.querySelector<HTMLElement>('.silky-bs-fslist-browser-back-button');
+        if (backbutton)
+            backbutton.setAttribute('aria-label', _('Move back from directory {0}', [filePath]));
 
-        this.$itemsList.attr('aria-label', _('{0} directory contents', [filePath]));
+        this.itemsList.setAttribute('aria-label', _('{0} directory contents', [filePath]));
 
         let html = '';
         this._orderItems('type', 1, items);
-        this.$items = [];
-        this.$itemsList.empty();
+        this.items = [];
+        this.itemsList.innerHTML = '';
 
         if (status === 'error') {
             let errorMessage = this.model.get('error');
-            this.$itemsList.append(`<span>${ s6e(errorMessage) }</span>`);
+            this.itemsList.append(HTML.parse(`<span>${ s6e(errorMessage) }</span>`));
         }
         else if (status === 'loading') {
-            this.$itemsList.append(`
+            this.itemsList.append(HTML.parse(`
                 <div class="indicator-box">
                     <div class="loading-indicator"></div>
                     <span>Loading directory information...</span>
                 </div>
-            `);
+            `));
         }
         else if (status === 'ok') {
 
@@ -578,9 +670,9 @@ export const FSEntryBrowserView = SilkyView.extend({
 
                 html += '</div>';
 
-                let $item = $(html);
+                let itemElement = HTML.parse(html);
                 let sct = this.createAlphaNumericTag('Q', ++itemIndex);
-                focusLoop.applyShortcutOptions($item[0], {
+                focusLoop.applyShortcutOptions(itemElement, {
                     key: sct,
                     path: this.shortcutPath,
                     action: this._itemClicked.bind(this),
@@ -588,126 +680,158 @@ export const FSEntryBrowserView = SilkyView.extend({
                     position: { x: '0%', y: '0%', internal: true }
                 });
 
-                $item.data('name', name);
-                $item.data('path', itemPath);
-                $item.data('type', itemType);
-                $item.data('index', this.$items.length);
-                this.$itemsList.append($item);
-                this.$items.push($item);
+                itemElement.dataset.name = name;
+                itemElement.dataset.path = itemPath;
+                itemElement.dataset.type = itemType.toString();
+                itemElement.dataset.index = this.items.length.toString();
+
+                this.itemsList.append(itemElement);
+                this.items.push(itemElement);
             }
 
-            if (this.$items.length === 0) {
+            if (this.items.length === 0) {
                 this.clearSelection();
-                this.$itemsList.append(`<span>${_('No recognised data files were found.')}</span>`);
+                this.itemsList.append(HTML.parse(`<span>${_('No recognised data files were found.')}</span>`));
             }
             else
-                this._setSelection(this.$items[0]);
+                this._setSelection(this.items[0]);
         }
         focusLoop.updateShortcuts({ shortcutPath: this.shortcutPath, silent: true});
-    },
-    _getSelectedPaths : function() {
+    }
+
+    private _getSelectedPaths() {
         let paths = [];
-        for (let i of this._selectedIndices)
-            paths.push(this.$items[i].data('path'));
+        for (let i of this._selectedIndices) {
+            paths.push(this.items[i].dataset.path);
+        }
         return paths;
-    },
-    _setMultiMode : function(value) {
+    }
+
+    private _setMultiMode(value: boolean) {
         if (value !== this.multiMode) {
-            let $button = this.$header.find('.silky-bs-fslist-browser-check-button');
+            const button = this.header.querySelector<HTMLElement>('.silky-bs-fslist-browser-check-button');
             if (this.multiMode) {
                 this.multiMode = false;
-                $button.removeClass('on');
-                this.$itemsList.attr('aria-multiselectable', 'false');
-                this.$itemsList.find('.jmv-bs-fslist-checkbox').addClass('hidden');
-                this.$footer.find('.silky-bs-fslist-import-options').addClass('hidden');
+                button.classList.remove('on');
+                this.itemsList.setAttribute('aria-multiselectable', 'false');
+                const checkboxes = this.itemsList.querySelectorAll<HTMLElement>('.jmv-bs-fslist-checkbox');
+                checkboxes.forEach(el => el.classList.add('hidden'));
+
+                const importOptions = this.footer.querySelector<HTMLElement>('.silky-bs-fslist-import-options');
+                if (importOptions)
+                    importOptions.classList.add('hidden');
+
                 this.clearSelection();
             }
             else {
                 this.multiMode = true;
-                this.$itemsList.attr('aria-multiselectable', 'true');
-                this.$itemsList.find('.jmv-bs-fslist-checkbox').removeClass('hidden');
-                this.$footer.find('.silky-bs-fslist-import-options').removeClass('hidden');
-                $button.addClass('on');
+                this.itemsList.setAttribute('aria-multiselectable', 'true');
+                const checkboxes = this.itemsList.querySelectorAll<HTMLElement>('.jmv-bs-fslist-checkbox');
+                checkboxes.forEach(el => el.classList.remove('hidden'));
+
+                const importOptions = this.footer.querySelector<HTMLElement>('.silky-bs-fslist-import-options');
+                if (importOptions)
+                    importOptions.classList.remove('hidden');
+                button.classList.add('on');
             }
         }
-    },
-    _toggleMultiMode : function() {
+    }
+
+    private _toggleMultiMode() {
         this._setMultiMode( ! this.multiMode);
-    },
-    updateActiveDescendant() {
+    }
+
+    private updateActiveDescendant() {
         if (this._selectedIndices.length > 0) {
-            let $activeItem = this.$items[this._selectedIndices[this._selectedIndices.length - 1]];
-            this.$itemsList.attr('aria-activedescendant', $activeItem.attr('id'));
+            let activeItem = this.items[this._selectedIndices[this._selectedIndices.length - 1]];
+            this.itemsList.setAttribute('aria-activedescendant', activeItem.getAttribute('id'));
         }
         else
-            this.$itemsList.attr('aria-activedescendant', '');
-    },
-    removeNonFileItemsFromSelection() {
+            this.itemsList.setAttribute('aria-activedescendant', '');
+    }
+
+    private removeNonFileItemsFromSelection() {
         let filtered = [];
         for (let i of this._selectedIndices) {
-            let itemType = this.$items[i].data('type');
+            const itemTypeStr = this.items[i].dataset.type;
+            let itemType = itemTypeStr !== undefined ? parseInt(itemTypeStr, 10) as FSItemType : undefined;
             if (itemType === FSItemType.File)
                 filtered.push(i);
             else {
-                this.$items[i].removeClass('silky-bs-fslist-selected-item');
-                this.$items[i].attr('aria-selected', 'false');
-                this.$items[i].find('.jmv-bs-fslist-checkbox').prop('checked', false);
+                this.items[i].classList.remove('silky-bs-fslist-selected-item');
+                this.items[i].setAttribute('aria-selected', 'false');
+                const checkbox = this.items[i].querySelector<HTMLInputElement>('.jmv-bs-fslist-checkbox');
+                if (checkbox)
+                    checkbox.checked = false;
             }
         }
         this._selectedIndices = filtered;
-    },
-    clickItem: function (target, ctrlKey, shiftKey, fromChecked) {
-        let $target = $(target);
+    }
+
+    private clickItem(target: HTMLElement, ctrlKey: boolean, shiftKey: boolean, fromChecked: boolean) {
         let multiSelect = this.model.get('multiselect');
         let modifier = ctrlKey || shiftKey || fromChecked;
 
-        let itemType = $target.data('type');
-        let itemPath = $target.data('path');
-        let itemTitle = $target.data('name');
+        const itemTypeStr = target.dataset.type;
+        let itemType = itemTypeStr !== undefined ? parseInt(itemTypeStr, 10) as FSItemType : undefined;
+        let itemPath = target.dataset.path;
+        let itemTitle = target.dataset.name;
         if (itemType !== FSItemType.File || this.model.clickProcess === 'open') {
             this.clearSelection();
             this.model.requestOpen({ path: itemPath, title: itemTitle, type: itemType });
             focusLoop.updateShortcuts({ shortcutPath: this.shortcutPath });
         }
         else if (itemType === FSItemType.File && this.model.clickProcess === 'import') {
+            let index = target.dataset.index !== undefined ? parseInt(target.dataset.index, 10) : -1;
             if (multiSelect && this._selectedIndices.length > 0 && modifier) {
                 this.removeNonFileItemsFromSelection();
-                let index = $target.data('index');
+                //let index = target.dataset.index !== undefined ? parseInt(target.dataset.index, 10) : -1;
+                //let index = $target.data('index');
                 if (ctrlKey || fromChecked) {
                     let ii = this._selectedIndices.indexOf(index);
                     if (ii != -1) {
-                        this.$items[index].removeClass('silky-bs-fslist-selected-item');
-                        this.$items[index].attr('aria-selected', 'false');
-                        this.$items[index].find('.jmv-bs-fslist-checkbox').prop('checked', false);
+                        this.items[index].classList.remove('silky-bs-fslist-selected-item');
+                        this.items[index].setAttribute('aria-selected', 'false');
+                        let checkbox = this.items[index].querySelector<HTMLInputElement>('.jmv-bs-fslist-checkbox');
+                        if (checkbox) 
+                            checkbox.checked = false;
                         this._selectedIndices.splice(ii, 1);
                     }
                     else {
-                        this._selectedIndices.push($target.data('index'));
-                        $target.addClass('silky-bs-fslist-selected-item');
-                        $target.attr('aria-selected', 'true');
-                        $target.find('.jmv-bs-fslist-checkbox').prop('checked', true);
+                        this._selectedIndices.push(index);
+                        target.classList.add('silky-bs-fslist-selected-item');
+                        target.setAttribute('aria-selected', 'true');
+                        let checkbox = target.querySelector<HTMLInputElement>('.jmv-bs-fslist-checkbox');
+                        if (checkbox) 
+                            checkbox.checked = false;
                     }
                     this._baseSelectionIndex = -1;
                 }
                 else if (shiftKey) {
                     for (let i of this._selectedIndices) {
-                        this.$items[i].removeClass('silky-bs-fslist-selected-item');
-                        this.$items[i].attr('aria-selected', 'false');
-                        this.$items[i].find('.jmv-bs-fslist-checkbox').prop('checked', false);
+                        this.items[i].classList.remove('silky-bs-fslist-selected-item');
+                        this.items[i].setAttribute('aria-selected', 'false');
+                        let checkbox = this.items[i].querySelector<HTMLInputElement>('.jmv-bs-fslist-checkbox');
+                        if (checkbox) 
+                            checkbox.checked = false;
                     }
 
                     let indices = [];
                     let start = this._baseSelectionIndex == -1 ? this._selectedIndices[this._selectedIndices.length - 1] : this._baseSelectionIndex;
                     for (let i = start; i !== index; i = i + ((index > start) ? 1 : -1)) {
                         indices.push(i);
-                        this.$items[i].addClass('silky-bs-fslist-selected-item');
-                        this.$items[i].attr('aria-selected', 'true');
-                        this.$items[i].find('.jmv-bs-fslist-checkbox').prop('checked', true);
+                        this.items[i].classList.add('silky-bs-fslist-selected-item');
+                        this.items[i].setAttribute('aria-selected', 'true');
+                        let checkbox = this.items[i].querySelector<HTMLInputElement>('.jmv-bs-fslist-checkbox');
+                        if (checkbox) 
+                            checkbox.checked = true;
                     }
-                    indices.push($target.data('index'));
-                    $target.addClass('silky-bs-fslist-selected-item');
-                    $target.attr('aria-selected', 'true');
-                    $target.find('.jmv-bs-fslist-checkbox').prop('checked', true);
+                    indices.push(index);
+                    target.classList.add('silky-bs-fslist-selected-item');
+                    target.setAttribute('aria-selected', 'true');
+                    let checkbox = target.querySelector<HTMLInputElement>('.jmv-bs-fslist-checkbox');
+                    if (checkbox) 
+                        checkbox.checked = true;
                     this._selectedIndices = indices;
                     this._baseSelectionIndex = this._selectedIndices[0];
                 }
@@ -715,30 +839,41 @@ export const FSEntryBrowserView = SilkyView.extend({
             else {
                 if (this._selectedIndices.length > 0)
                     this.clearSelection();
-                this._selectedIndices.push($target.data('index'));
-                $target.addClass('silky-bs-fslist-selected-item');
-                $target.attr('aria-selected', 'true');
-                $target.find('.jmv-bs-fslist-checkbox').prop('checked', true);
+                this._selectedIndices.push(index);
+                target.classList.add('silky-bs-fslist-selected-item');
+                target.setAttribute('aria-selected', 'true');
+                let checkbox = target.querySelector<HTMLInputElement>('.jmv-bs-fslist-checkbox');
+                if (checkbox) 
+                    checkbox.checked = true;
             }
 
             if ((multiSelect === false || modifier === false) && this.multiMode === false) {
                 let paths = this._getSelectedPaths();
                 this.model.requestImport({ paths });
-                this.$footer.find('.silky-bs-fslist-import-options').addClass('hidden');
+                const importOptions = this.footer.querySelector<HTMLElement>('.silky-bs-fslist-import-options');
+                if (importOptions)
+                    importOptions.classList.add('hidden');
+                
                 this._setMultiMode(false);
-                this.$itemsList.find('.jmv-bs-fslist-checkbox').addClass('hidden');
+                const checkboxes = this.itemsList.querySelectorAll<HTMLElement>('.jmv-bs-fslist-checkbox');
+                checkboxes.forEach(el => {
+                    el.classList.add('hidden');
+                });
             }
             else {
                 let name = '';
                 if (this._selectedIndices.length > 0) {
-                    name = this.$items[this._selectedIndices[0]].data('name');
+                    name = this.items[this._selectedIndices[0]].dataset.name;
                     if (this._selectedIndices.length > 1) {
                         name = '"' + name + '"';
                         for (let i = 1; i < this._selectedIndices.length; i++)
-                            name = name + ' "' + this.$items[this._selectedIndices[i]].data('name') + '"';
+                            name = name + ' "' + this.items[this._selectedIndices[i]].dataset.name + '"';
                     }
                 }
-                this.$footer.find('.silky-bs-fslist-browser-import-name').val(name);
+                const input = this.footer.querySelector<HTMLInputElement>('.silky-bs-fslist-browser-import-name');
+                if (input)
+                    input.value = name;
+                //this.$footer.find('.silky-bs-fslist-browser-import-name').val(name);
                 this._importNameChanged();
                 this._selected = true;
                 this._setMultiMode(true);
@@ -747,29 +882,37 @@ export const FSEntryBrowserView = SilkyView.extend({
         else {
             if (this._selectedIndices.length > 0) {
                 for (let i of this._selectedIndices) {
-                    this.$items[i].removeClass('silky-bs-fslist-selected-item');
-                    this.$items[i].attr('aria-selected', 'false');
-                    this.$items[i].find('.jmv-bs-fslist-checkbox').prop('checked', false);
+                    this.items[i].classList.remove('silky-bs-fslist-selected-item');
+                    this.items[i].setAttribute('aria-selected', 'false');
+                    let checkbox = this.items[i].querySelector<HTMLInputElement>('.jmv-bs-fslist-checkbox');
+                    if (checkbox) 
+                        checkbox.checked = false;
                 }
             }
 
-            this._selectedIndices = [$target.data('index')];
+            this._selectedIndices = [parseInt(target.dataset.index)];
             this._baseSelectionIndex = -1;
-            let name = $target.data('name');
-            $target.addClass('silky-bs-fslist-selected-item');
-            $target.attr('aria-selected', 'true');
-            $target.find('.jmv-bs-fslist-checkbox').prop('checked', true);
+            let name = target.dataset.name;
+            target.classList.add('silky-bs-fslist-selected-item');
+            target.setAttribute('aria-selected', 'true');
+            let checkbox = target.querySelector<HTMLInputElement>('.jmv-bs-fslist-checkbox');
+            if (checkbox) 
+                checkbox.checked = true;
 
-            this.$header.find('.silky-bs-fslist-browser-save-name').val(name);
+            const input = this.header.querySelector<HTMLInputElement>('.silky-bs-fslist-browser-save-name');
+            if (input)
+                input.value = name;
             this._nameChanged();
             this._selected = true;
         }
         this.updateActiveDescendant();
-    },
-    _itemClicked : function(event) {
+    }
+
+    private _itemClicked(event) {
         this.clickItem(event.currentTarget, event.ctrlKey || event.metaKey, event.shiftKey, false);
-    },
-    _keyPressHandle : function(event) {
+    }
+
+    private _keyPressHandle(event) {
         if (event.metaKey || event.ctrlKey || event.altKey)
             return;
 
@@ -786,10 +929,11 @@ export const FSEntryBrowserView = SilkyView.extend({
                 break;
             case 'Enter':
                 if (this._selectedIndices.length > 0) {
-                    let $target = this.$items[this._selectedIndices[0]];
-                    let itemType = $target.data('type');
-                    let itemPath = $target.data('path');
-                    let itemTitle = $target.data('name');
+                    let target = this.items[this._selectedIndices[0]];
+                    const itemTypeStr = target.dataset.type;
+                    let itemType = itemTypeStr !== undefined ? parseInt(itemTypeStr, 10) as FSItemType : undefined;
+                    let itemPath = target.dataset.path;
+                    let itemTitle = target.dataset.name;
                     if (itemType !== FSItemType.File || this.model.clickProcess === 'open')
                         this.model.requestOpen({ path: itemPath, title: itemTitle, type: itemType });
                     else if (itemType === FSItemType.File && this.model.clickProcess === 'import')
@@ -803,67 +947,81 @@ export const FSEntryBrowserView = SilkyView.extend({
                 event.stopPropagation();
                 break;
         }
-    },
-    clearSelection: function() {
+    }
+
+    private clearSelection() {
         for (let i of this._selectedIndices) {
-            if (this.$items[i]) {
-                this.$items[i].removeClass('silky-bs-fslist-selected-item');
-                this.$items[i].find('.jmv-bs-fslist-checkbox').prop('checked', false);
-                this.$items[i].attr('aria-selected', 'false');
+            if (this.items[i]) {
+                this.items[i].classList.remove('silky-bs-fslist-selected-item');
+                let checkbox = this.items[i].querySelector<HTMLInputElement>('.jmv-bs-fslist-checkbox');
+                if (checkbox) 
+                    checkbox.checked = false;
+                this.items[i].setAttribute('aria-selected', 'false');
             }
         }
         this._selectedIndices = [];
         this._baseSelectionIndex = -1;
-        if (this.$footer)
-            this.$footer.find('.silky-bs-fslist-browser-import-name').val('');
+        if (this.footer) {
+            const input = this.footer.querySelector<HTMLInputElement>('.silky-bs-fslist-browser-import-name');
+            if (input)
+                input.value = '';
+        }
         this._selected = false;
         this.updateActiveDescendant();
-    },
+    }
 
-    incrementSelection: function() {
-        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[this._selectedIndices.length - 1] : (this.$items.length > 0 ? 0 : -1);
-        if (selectedIndex !== -1 && selectedIndex !== this.$items.length - 1){
+    private incrementSelection() {
+        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[this._selectedIndices.length - 1] : (this.items.length > 0 ? 0 : -1);
+        if (selectedIndex !== -1 && selectedIndex !== this.items.length - 1){
             this.clearSelection();
             selectedIndex += 1;
             this._selectedIndices = [selectedIndex];
             this._baseSelectionIndex = -1;
-            this.$items[selectedIndex].addClass('silky-bs-fslist-selected-item');
-            this.$items[selectedIndex].attr('aria-selected', 'true');
-            this.$items[selectedIndex].find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
+            this.items[selectedIndex].classList.add('silky-bs-fslist-selected-item');
+            this.items[selectedIndex].setAttribute('aria-selected', 'true');
+            let checkbox = this.items[selectedIndex].querySelector<HTMLInputElement>('.jmv-bs-fslist-checkbox');
+            if (checkbox) 
+                checkbox.checked = true;
             this._selected = true;
 
-            let offset = this.$items[selectedIndex].position();
-            let height = this.$items[selectedIndex].height();
-            if (offset.top + height > this.$itemsList.height()) {
-                let r = this.$itemsList.scrollTop() + (offset.top + height - this.$itemsList.height() + 1);
-                this.$itemsList.animate({scrollTop: r}, 100);
+            let offset = { top: this.items[selectedIndex].offsetTop };
+            let height = this.items[selectedIndex].offsetHeight;
+            if (offset.top + height > this.itemsList.offsetHeight) {
+                let r = this.itemsList.scrollTop + (offset.top + height - this.itemsList.offsetHeight + 1);
+                this.itemsList.scrollTo({ top: r, behavior: 'smooth' });
             }
+
             this.updateActiveDescendant();
         }
-    },
-    decrementSelection: function() {
-        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[this._selectedIndices.length - 1] : (this.$items.length > 0 ? 0 : -1);
+    }
+
+    private decrementSelection() {
+        let selectedIndex = this._selectedIndices.length > 0 ? this._selectedIndices[this._selectedIndices.length - 1] : (this.items.length > 0 ? 0 : -1);
         if (selectedIndex > 0){
             this.clearSelection();
             selectedIndex -= 1;
             this._selectedIndices = [selectedIndex];
             this._baseSelectionIndex = -1;
-            this.$items[selectedIndex].addClass('silky-bs-fslist-selected-item');
-            this.$items[selectedIndex].attr('aria-selected', 'true');
-            this.$items[selectedIndex].find('.jmv-bs-fslist-checkbox').prop( 'checked', true );
+            this.items[selectedIndex].classList.add('silky-bs-fslist-selected-item');
+            this.items[selectedIndex].setAttribute('aria-selected', 'true');
+            let checkbox = this.items[selectedIndex].querySelector<HTMLInputElement>('.jmv-bs-fslist-checkbox');
+            if (checkbox) 
+                checkbox.checked = true;
             this._selected = true;
 
-            let offset = this.$items[selectedIndex].position();
+            let offset = { top: this.items[selectedIndex].offsetTop };
             if (offset.top < 0)
-                this.$itemsList.animate({ scrollTop: this.$itemsList.scrollTop() + offset.top }, 100);
+                this.itemsList.scrollTo({ top: this.itemsList.scrollTop + offset.top, behavior: 'smooth' });
             this.updateActiveDescendant();
         }
-    },
-    _itemDoubleClicked : function(event) {
-        let $target = $(event.currentTarget);
-        let itemType = $target.data('type');
-        let itemPath = $target.data('path');
-        let itemTitle = $target.data('name');
+    }
+
+    private _itemDoubleClicked(event: MouseEvent) {
+        let target = event.currentTarget as HTMLElement;
+        const itemTypeStr = target.dataset.type;
+        let itemType = itemTypeStr !== undefined ? parseInt(itemTypeStr, 10) as FSItemType : undefined;
+        let itemPath = target.dataset.path;
+        let itemTitle = target.dataset.name;
         if (itemType === FSItemType.File)
             this._setMultiMode(false);
         if (itemType !== FSItemType.File || this.model.clickProcess === 'open')
@@ -874,26 +1032,30 @@ export const FSEntryBrowserView = SilkyView.extend({
             this.model.requestSave({ path: itemPath });
         else if (itemType === FSItemType.File && this.model.clickProcess === 'export')
             this.model.requestExport({ path: itemPath });
-    },
-    _nameChanged : function(event) {
-        let $button = this.$header.find('.silky-bs-fslist-browser-save-button');
-        let name = this.$header.find('.silky-bs-fslist-browser-save-name').val().trim();
-        if (name === '')
-            $button.addClass('disabled-div');
-        else
-            $button.removeClass('disabled-div');
+    }
 
-    },
-    _importNameChanged : function(event) {
-        let $button = this.$footer.find('.silky-bs-fslist-browser-import-button');
-        let name = this.$footer.find('.silky-bs-fslist-browser-import-name').val().trim();
+    private _nameChanged() {
+        const button = this.header.querySelector<HTMLElement>('.silky-bs-fslist-browser-save-button');
+        const input = this.header.querySelector<HTMLInputElement>('.silky-bs-fslist-browser-save-name');
+        const name = input ? input.value.trim() : '';
         if (name === '')
-            $button.addClass('disabled-div');
+            button.classList.add('disabled-div');
         else
-            $button.removeClass('disabled-div');
+            button.classList.remove('disabled-div');
 
-    },
-    _hasValidExtension : function(name) {
+    }
+
+    private _importNameChanged() {
+        const button = this.footer.querySelector<HTMLElement>('.silky-bs-fslist-browser-import-button');
+        const input = this.footer.querySelector<HTMLInputElement>('.silky-bs-fslist-browser-import-name');
+        const name = input ? input.value.trim() : '';
+        if (name === '')
+            button.classList.add('disabled-div');
+        else
+            button.classList.remove('disabled-div');
+    }
+
+    private _hasValidExtension(name: string) {
         let found = true;
         if (this.filterExtensions) {
             found = false;
@@ -905,12 +1067,14 @@ export const FSEntryBrowserView = SilkyView.extend({
             }
         }
         return found;
-    },
-    _saveClicked : function(event) {
+    }
+
+   private  _saveClicked() {
         let dirInfo = this.model.get('dirInfo');
         let writeOnly = this.model.writeOnly;
         if (dirInfo !== undefined) {
-            let name = this.$header.find('.silky-bs-fslist-browser-save-name').val().trim();
+            const input = this.header.querySelector<HTMLInputElement>('.silky-bs-fslist-browser-save-name');
+            let name = input ? input.value.trim() : '';
             if (name === '')
                 return;
 
@@ -925,35 +1089,40 @@ export const FSEntryBrowserView = SilkyView.extend({
             else if (this.model.clickProcess === 'export')
                 this.model.requestExport(options);
         }
-    },
-    _importClicked : function(event) {
+    }
+
+    private _importClicked() {
         if (this._selectedIndices.length > 0)
             this.model.requestImport({ paths: this._getSelectedPaths() });
         else {
             let dirInfo = this.model.get('dirInfo');
             if (dirInfo !== undefined) {
-                let name = this.$footer.find('.silky-bs-fslist-browser-import-name').val().trim();
+                const input = this.footer.querySelector<HTMLInputElement>('.silky-bs-fslist-browser-import-name');
+                let name = input ? input.value.trim() : '';
                 if (name === '')
                     return;
 
                 this.model.requestImport({ paths: [ dirInfo.path + '/' + name ] });
             }
         }
-    },
-    _backClicked : function(event) {
+    }
+
+    private _backClicked() {
         let dirInfo = this.model.get('dirInfo');
         if (dirInfo !== undefined) {
             let filePath = dirInfo.path;
-            filePath = this._calcBackDirectory(filePath, dirInfo.type);
+            filePath = this._calcBackDirectory(filePath);
             this._goToFolder(filePath);
             this.clearSelection();
         }
         focusLoop.updateShortcuts({ shortcutPath: this.shortcutPath });
-    },
-    _goToFolder: function(dirPath) {
+    }
+
+    private _goToFolder(dirPath: string) {
         this.model.requestOpen({ path: dirPath, type: FSItemType.Folder });
-    },
-    _calcBackDirectory: function(filePath, type) {
+    }
+
+    private _calcBackDirectory(filePath: string) {
         let index = -1;
         if (filePath.length > 0 && filePath !== '/') {
             index = filePath.lastIndexOf("/");
@@ -973,5 +1142,6 @@ export const FSEntryBrowserView = SilkyView.extend({
 
         return filePath.substring(0, index);
     }
-});
+}
 
+customElements.define('jmv-browser', FSEntryBrowserView);

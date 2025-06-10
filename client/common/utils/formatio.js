@@ -1,7 +1,6 @@
 
 'use strict';
 
-const $ = require('jquery');
 const { s6e } = require('../utils');
 
 let _registeredNodeObjs = null;
@@ -212,7 +211,7 @@ function _textify(el) {
 
     let str = '';
 
-    for (let child of $(el).contents())
+    for (let child of el.childNodes)
         str += _textify(child);
 
     return str;
@@ -486,7 +485,7 @@ function _htmlify(el, options) {
 
         let promises = [ ];
         if (includeChildren) {
-            for (let child of $(el).contents())
+            for (let child of el.childNodes)
                 promises.push(_htmlify(child, options));
         }
 
@@ -508,18 +507,17 @@ function _htmlify(el, options) {
 }
 
 function _htmlifyIFrame(el, options) {
-    let str = '';
     let promises = [ ];
-    for (let child of $(el.contentWindow.document).find('body').contents())
+    const body = el.contentWindow.document.body;
+    for (let child of body.childNodes)
         promises.push(_htmlify(child, options));
+
     return Promise.all(promises).then(all => all.join(''));
 }
 
 function _htmlifyDiv(el, options) {
 
-    let $el = $(el);
-
-    if ($el.hasClass('jmv-annotation')) {
+    if (el.classList.contains('jmv-annotation')) {
         let obj = _registeredNodeObjs.get(el);
         if (obj) {
             let note = obj.getHTML();
@@ -530,13 +528,17 @@ function _htmlifyDiv(el, options) {
     }
 
     let str = '';
-    let bgiu = $el.css('background-image');
+
+    const style = window.getComputedStyle(el);
+
+    let bgiu = style.backgroundImage;
 
     if (bgiu === 'none')
         return Promise.resolve('');
 
-    let width = $el.css('width');
-    let height = $el.css('height');
+    let width = style.width;
+    let height = style.height;
+
     let bgi = /(?:\(['"]?)(.*?)(?:['"]?\))/.exec(bgiu)[1]; // remove surrounding uri(...)
 
     if (options.images === 'absolute') {

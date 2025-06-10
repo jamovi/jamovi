@@ -16,7 +16,7 @@ const VariablesView   = require('./variablesview');
 const ResultsView = require('./results');
 const SplitPanel  = require('./splitpanel');
 const Backstage   = require('./backstage').View;
-const BackstageModel = require('./backstage').Model;
+import { BackstageModel } from './backstage';
 const Ribbon      = require('./ribbon').View;
 const RibbonModel = require('./ribbon').Model;
 const Notifications = require('./notifications');
@@ -38,6 +38,7 @@ import lobby, { hasLobby } from './extras/lobby';
 import { InstanceOpenStream } from './instance';
 import { IInstanceOpenOptions } from './instance';
 import { IInstanceOpenResult } from './instance';
+import { IShowDialogOptions } from './host';
 
 
 window._ = I18n._;
@@ -131,16 +132,16 @@ keyboardJS.Keyboard.prototype.resume = function(key) {
     }
 };
 
-const instance = new Instance({ coms : coms });
+const instance = new Instance(coms);
 
 let dataSetModel = instance.dataSetModel();
 let analyses = instance.analyses();
 
-let backstageModel = new BackstageModel({ instance: instance });
+let backstageModel = new BackstageModel(instance);
 let ribbonModel = new RibbonModel({ modules: instance.modules(), settings: instance.settings() });
 
 // this is passing over a context boundary, so can't pass complex objects
-host.setDialogProvider({ showDialog: (op, options) => backstageModel.showDialog(op, options) });
+host.setDialogProvider({ showDialog: (op:string, options: IShowDialogOptions) => backstageModel.showDialog(op, options) });
 
 let infoBox = document.createElement('jmv-infobox');
     infoBox.style.display = 'none';
@@ -374,7 +375,13 @@ $(document).ready(async() => {
     };
 
     let ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
-    let backstage = new Backstage({ el : '#backstage', model : backstageModel });
+    //const backstageElement = document.querySelector('#backstage');
+    let backstage = new Backstage(backstageModel);
+    backstage.setAttribute('id', 'backstage');
+    backstage.setAttribute('role', "menu");
+    backstage.setAttribute('aria-label', "File");
+    backstage.setAttribute('aria-orientation', "vertical");
+    document.body.prepend(backstage);
 
     ribbon.model.on('analysisSelected', async function(analysis) {
         const translate = await instance.modules().getTranslator(analysis.ns);
@@ -416,6 +423,11 @@ $(document).ready(async() => {
             if (splitPanel.mode === 'data')
                 splitPanel.setMode('results', true);
         }
+        else if (tabName === 'plots') {
+            dataSetModel.set('editingVar', null);
+            if (splitPanel.mode === 'data')
+                splitPanel.setMode('results', true);
+        }
         else if (tabName === 'annotation') {
             resultsView.hideWelcome();
             if (splitPanel.mode === 'data')
@@ -435,6 +447,7 @@ $(document).ready(async() => {
         window.$body.attr('data-splitpanel-mode', splitPanel.mode);
         switch (splitPanel.mode) {
             case 'results':
+                //TODO: Needs to accomodate plots
                 let tab = ribbonModel.get('selectedTab');
                 if (tab !== 'annotation')
                     ribbonModel.set('selectedTab', 'analyses');
@@ -459,6 +472,7 @@ $(document).ready(async() => {
                 case 'data':
                     splitPanel.setMode('data');
                     break;
+                case 'plots':
                 case 'analyses':
                 case 'annotation':
                     splitPanel.setMode('results');
@@ -490,6 +504,7 @@ $(document).ready(async() => {
             if (analysis !== null && typeof(analysis) !== 'string') {
                 dataSetModel.set('editingVar', null);
                 if (analysis.hasUserOptions()) {
+                    //TODO: Needs to accomodate plots
                     _annotationReturnTab = 'analyses';
                     splitPanel.setVisibility('main-options', true);
                     optionspanel.setAnalysis(analysis);
@@ -555,6 +570,7 @@ $(document).ready(async() => {
                     case 'data':
                         splitPanel.setMode('data');
                         break;
+                    case 'plots':
                     case 'analyses':
                     case 'annotation':
                         splitPanel.setMode('results');

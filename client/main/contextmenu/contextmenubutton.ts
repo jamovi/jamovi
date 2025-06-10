@@ -1,15 +1,18 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
-const RibbonGroup = require('../ribbon/ribbongroup');
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import RibbonGroup from '../ribbon/ribbongroup';
 const focusLoop = require('../../common/focusloop');
-const Menu = require('../../common/menu');
+import Menu from '../../common/menu';
 
 const ActionHub = require('../actionhub');
+import { EventEmitter } from 'events';
 
-const ContextMenuButton = Backbone.View.extend({
+export class ContextMenuButton extends EventEmitter {
+    el: HTMLElement;
+    eventData: any;
+    menu: Menu
 
     /*
     options
@@ -26,27 +29,28 @@ const ContextMenuButton = Backbone.View.extend({
     }
     */
 
-    initialize(options) {
-
+    constructor(options) {
+        super();
+        
         let title = options.title === undefined ? null : options.title;
         let name = options.name;
         let size = 'medium';
         let right = options.right === undefined ? false : options.right;
         let level = options.level === undefined ? 0 : options.level;
-        let $el = options.$el === undefined ? $('<button></button>') : options.$el;
+        let el = options.el === undefined ? HTML.create('button') : options.el;
 
         this.eventData = options.eventData  === undefined ? null : options.eventData;
         this.useActionHub = options.useActionHub  === undefined ? true : options.useActionHub;
         this._enabled = options.enabled === undefined ? true : options.enabled;
         this._iconId = options.iconId === undefined ? null : options.iconId;
 
-        this.$el = $el;
-        this.$el.addClass('jmv-ribbon-button jmv-context-menu-button');
-        this.$el.addClass('jmv-ribbon-button-size-' + size);
-        this.$el.attr('tabindex', '0');
-        this.$el.attr('role', 'menuitem');
+        this.el = el;
+        this.el.classList.add('jmv-ribbon-button', 'jmv-context-menu-button');
+        this.el.classList.add('jmv-ribbon-button-size-' + size);
+        this.el.setAttribute('tabindex', '0');
+        this.el.setAttribute('role', 'menuitem');
         this.id = focusLoop.getNextAriaElementId('menu-btn');
-        this.$el.attr('id', this.id);
+        this.el.setAttribute('id', this.id);
 
         this.tabName = null;
         this._definedTabName = false;
@@ -61,29 +65,30 @@ const ContextMenuButton = Backbone.View.extend({
         this.level = level;
         this.dock = right ? 'right' : 'left';
 
-        this.$el.attr('data-name', this.name.toLowerCase());
+        this.el.setAttribute('data-name', this.name.toLowerCase());
         if (this._iconId !== null)
-            this.$el.attr('data-icon', this._iconId.toLowerCase());
-        this.$el.attr('aria-disabled');
+            this.el.setAttribute('data-icon', this._iconId.toLowerCase());
+        if (this._enabled === false)
+            this.el.setAttribute('aria-disabled', 'true');
         if (right)
-            this.$el.addClass('right');
+            this.el.classList.add('right');
 
         focusLoop.createHoverItem(this, () => {
             if (this.menu)
                 this.showMenu(true);
             else
-                this.$el[0].focus({preventScroll:true});
+                this.el.focus({preventScroll:true});
         });
 
-        this.$el.on('mousedown', event => {
+        this.el.addEventListener('mousedown', event => {
             if (this.menu)
                 this._clicked(event, event.detail > 0);
         });
-        this.$el.on('mouseup', event => {
+        this.el.addEventListener('mouseup', event => {
             if ( ! this.menu)
                 this._clicked(event, event.detail > 0);
         });
-        this.$el.on('keydown', (event) => {
+        this.el.addEventListener('keydown', (event) => {
             if (event.code === 'Enter' || event.code === 'Space')
                 this._clicked(event, false);
             else if (event.code == 'ArrowRight' && this._menuGroup !== undefined)
@@ -108,34 +113,37 @@ const ContextMenuButton = Backbone.View.extend({
                     this.setEnabled(event.changed.enabled);
             });
         }
-    },
+    }
+
     setParent(parent) {
         this.parent = parent;
 
         if (this._menuGroup !== undefined)
             this._menuGroup.setParent(parent);
-    },
+    }
+
     setTabName(name) {
         if (this._definedTabName === false)
             this.tabName = name;
 
         if (this._menuGroup !== undefined)
             this._menuGroup.setTabName(name);
-    },
+    }
+
     setEnabled(enabled) {
         this._enabled = enabled;
         if (enabled)
-            this.$el.removeAttr('aria-disabled');
+            this.el.removeAttribute('aria-disabled');
         else
-            this.$el.attr('aria-disabled', true);
-    },
+            this.el.setAttribute('aria-disabled', 'true');
+    }
+
     _clicked(event, fromMouse) {
 
-        let $target = $(event.target);
-        if (this.menu && $target.closest(this.menu.$el).length !== 0)
+        if (this.menu && this.menu.contains(event.target))
             return;
 
-        this.$el.trigger('menuClicked', this);
+        this.el.dispatchEvent(new CustomEvent<ContextMenuButton>('menuClicked', { bubbles: true, detail: this }));
 
         let action = null;
         if (this.useActionHub)
@@ -147,23 +155,25 @@ const ContextMenuButton = Backbone.View.extend({
             else {
                 if (action !== null)
                     action.do();
-                this.$el.trigger('menuActioned');
+
+                const event = new CustomEvent('menuActioned', { bubbles: true });
+                this.el.dispatchEvent(event);
             }
         }
 
         event.preventDefault();
-    },
+    }
 
     addItem(item) {
         if (this._menuGroup === undefined) {
-            this.menu = new Menu(this.$el[0], this.level + 1, { exitKeys: ['ArrowLeft'] });
+            this.menu = new Menu(this.el, this.level + 1, { exitKeys: ['ArrowLeft'] });
 
-            $('<div class="jmv-context-menu-arrow"></div>').appendTo(this.$el);
+            this.el.append(HTML.create('div', { class: 'jmv-context-menu-arrow' }));
 
-            let $menugroup = $('<div></div>');
-            this._menuGroup = new RibbonGroup({ orientation: 'vertical', $el: $menugroup });
-            this.menu.$el.append(this._menuGroup.$el);
-            this.menu.$el.attr('aria-labelledby', this.id);
+            let menugroup = HTML.create('div');
+            this._menuGroup = new RibbonGroup({ orientation: 'vertical', el: menugroup });
+            this.menu.append(this._menuGroup.el);
+            this.menu.setAttribute('aria-labelledby', this.id);
         }
 
         this._menuGroup.addItem(item);
@@ -175,38 +185,44 @@ const ContextMenuButton = Backbone.View.extend({
                     subMenu.connect(this.menu);
             }
         }
-    },
+    }
 
     getMenus() {
         if (this.menu)
             return [ this.menu ];
         return [];
-    },
+    }
 
     _refresh() {
         let html = '';
         html += '   <div class="jmv-ribbon-button-icon"></div>';
         html += '   <div class="jmv-ribbon-button-label">' + this.title + '</div>';
 
-        this.$el.html(html);
-    },
+        this.el.innerHTML = html;
+    }
 
     hideMenu(fromMouse) {
         if ( ! this.menu)
             return;
 
         this.menu.hide(fromMouse);
-    },
+    }
 
     showMenu(fromMouse) {
         if ( ! this.menu)
             return;
 
-        let x = this.$el.offset().left + this.$el.outerWidth(true);
-        let y = this.$el.offset().top;
+        const rect = this.el.getBoundingClientRect();
+        const style = getComputedStyle(this.el);
+
+        const x = rect.left + window.scrollX + this.el.offsetWidth + 
+                parseFloat(style.marginLeft) + parseFloat(style.marginRight);
+
+        const y = rect.top + window.scrollY;
 
         this.menu.show(x, y, { withMouse: fromMouse });
-    },
+    }
+
     getEntryButton(openPath, open, fromMouse) {
         if (this.name === openPath[0]) {
             if (open)
@@ -221,13 +237,14 @@ const ContextMenuButton = Backbone.View.extend({
             return this;
         }
         return null;
-    },
+    }
+
     _toggleMenu(fromMouse) {
         if (this.menu.isVisible())
             this.hideMenu(fromMouse);
         else
             this.showMenu(fromMouse);
-    },
-});
+    }
+}
 
-module.exports = ContextMenuButton;
+export default ContextMenuButton;

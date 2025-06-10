@@ -4,11 +4,13 @@
 const RibbonButton = require('./ribbonbutton');
 const RibbonSeparator = require('./ribbonseparator');
 const RibbonGroup = require('./ribbongroup');
-const RibbonTab = require('./ribbontab');
+import RibbonTab from './ribbontab';
 
 class VariablesTab extends RibbonTab {
     constructor() {
         super('variables', 'V', _('Variables'));
+
+        this.populate();
     }
 
     getRibbonItems(ribbon) {

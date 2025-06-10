@@ -1,19 +1,23 @@
 
 'use strict';
 
-const RibbonButton = require('./ribbonbutton');
-const RibbonSeparator = require('./ribbonseparator');
-const RibbonGroup = require('./ribbongroup');
+import RibbonButton from './ribbonbutton';
+import RibbonSeparator from './ribbonseparator';
+import RibbonGroup from './ribbongroup';
 const Quill = require('quill');
 const Icons = Quill.import('ui/icons');
-const RibbonTab = require('./ribbontab');
+import RibbonTab from './ribbontab';
 
-class AnnotationTab extends RibbonTab {
+export class AnnotationTab extends RibbonTab {
+    items: any[];
+
     constructor() {
         super('annotation', 'E', _('Edit'));
+
+        this.populate();
     }
 
-    getItem(name, _items) {
+    getItem(name: string, _items: any[]) {
         if (_items === undefined)
             _items = this.getRibbonItems();
 
@@ -28,7 +32,7 @@ class AnnotationTab extends RibbonTab {
         }
     }
 
-    clearValues(_items) {
+    clearValues(_items: any[]) {
         if (_items === undefined)
             _items = this.getRibbonItems();
 
@@ -40,7 +44,7 @@ class AnnotationTab extends RibbonTab {
         }
     }
 
-    createColorItems(prefix, resetText) {
+    createColorItems(prefix: string, resetText: string): any[] {
         return [
             new RibbonButton({ title: resetText, name: prefix + 'Reset', class: 'reset-color' }),
             new RibbonSeparator(),
@@ -93,7 +97,7 @@ class AnnotationTab extends RibbonTab {
         ];
     }
 
-    getRibbonItems(ribbon) {
+    override getRibbonItems() {
         if (this.items === undefined) {
             this.items = [
                 new RibbonGroup({
@@ -179,4 +183,4 @@ class AnnotationTab extends RibbonTab {
     }
 }
 
-module.exports = AnnotationTab;
+export default AnnotationTab;

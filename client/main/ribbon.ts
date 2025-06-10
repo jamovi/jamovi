@@ -13,6 +13,7 @@ const DataTab = require('./ribbon/datatab');
 const VariablesTab = require('./ribbon/variablestab');
 const AnnotationTab = require('./ribbon/annotationtab');
 const AnalyseTab = require('./ribbon/analysetab');
+import PlotsTab from './ribbon/plotstab';
 const Notifs = require('./ribbon/notifs');
 const focusLoop = require('../common/focusloop');
 const selectionLoop = require('../common/selectionloop');
@@ -26,18 +27,21 @@ const RibbonModel = Backbone.Model.extend({
         this._variablesTab = new VariablesTab();
         this._dataTab = new DataTab();
         this._analysesTab = new AnalyseTab(this._modules, this);
+        this._plotsTab = new PlotsTab(this._modules, this);
         this._editTab = new AnnotationTab();
+        
 
         this.set('tabs', [
             this._variablesTab,
             this._dataTab,
             this._analysesTab,
+            this._plotsTab,
             this._editTab,
         ]);
 
         this._analysesTab.on('analysisSelected', (analysis) => this.trigger('analysisSelected', analysis));
         this._dataTab.on('analysisSelected', (analysis) => this.trigger('analysisSelected', analysis));
-        
+        this._plotsTab.on('analysisSelected', (analysis) => this.trigger('analysisSelected', analysis));
     },
     defaults : {
         tabs : [ ],
@@ -89,9 +93,10 @@ const RibbonView = Backbone.View.extend({
 
         this.model.modules().on('change:modules', () => {
             let modules = this.model.modules();
-            let tab = this.model.getSelectedTab();
-            if (tab.needsRefresh && tab.needsRefresh(modules)) {
-                tab.update();
+            for (let tab of this.model.attributes.tabs) {
+                if (tab.needsRefresh && tab.needsRefresh(modules)) {
+                    tab.update();
+                }
             }
         } , this);
 
@@ -265,8 +270,8 @@ const RibbonView = Backbone.View.extend({
 
         let tab = this.model.getSelectedTab();
 
-        if (tab.$ribbon) {
-            tab.$ribbon.appendTo(this.$body);
+        if (tab.ribbon) {
+            this.$body[0].append(tab.ribbon);
             focusLoop.updateShortcuts({ silent: true});
         }
     },

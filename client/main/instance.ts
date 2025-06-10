@@ -4,10 +4,6 @@
 
 'use strict';
 
-import { $ } from 'jquery';
-
-const Backbone = require('backbone');
-Backbone.$ = $;
 const path = require('path');
 
 const host = require('./host');
@@ -16,7 +12,7 @@ const Notify = require('./notification');
 const Analyses = require('./analyses');
 const DataSetViewModel = require('./dataset');
 const OptionsPB = require('./optionspb');
-const Modules = require('./modules');
+import { Modules } from './modules';
 const I18n = require('../common/i18n');
 
 const Settings = require('./settings');
@@ -26,6 +22,7 @@ const { flatten, unflatten } = require('../common/utils/addresses');
 
 import { UserFacingError } from './errors';
 import { CancelledError } from './errors';
+import { EventMap } from '../common/eventmap';
 
 class FileExistsError extends Error { }
 
@@ -38,6 +35,7 @@ interface CreateAnalysisOptions {
 }
 
 import { parse as parseJsonLines } from './utils/jsonlines';
+import { ISaveOptions } from './backstage/fsentry';
 
 export interface IInstanceOpenOptions {
     path?: string,
@@ -78,10 +76,58 @@ export interface IInstanceOpenProgress {
 
 export type InstanceOpenStream = ProgressStream<IInstanceOpenProgress, IInstanceOpenResult>;
 
+export interface IModuleInteractions {
+    installModule: (name: string) => Promise<void>,
+    uninstallModule: (name: string) => Promise<void>,
+    setModuleVisibility: (name: string, value: boolean) =>  Promise<void>,
+    retrieveAvailableModules: () =>  Promise<void>,
+}
 
-export const Instance = Backbone.Model.extend({
+export interface ISettingsProvider {
+    settings: () => typeof Settings;
+}
 
-    initialize() {
+export interface IInstanceModel {
+    coms : any,
+    selectedAnalysis : any,
+    hasDataSet : boolean,
+    path : string,
+    title : string,
+    blank : boolean,
+    resultsSupplier: any,
+    arbitraryCodePresent: boolean,
+    editState: boolean,
+    saveFormat: string
+}
+
+export interface IBackstageResources {
+    browse: (filePath: string, extensions: string[]) => any,
+    modules: () => Modules,
+    open: (options: IInstanceOpenOptions) => InstanceOpenStream,
+    dataSetModel: () => typeof DataSetViewModel,
+    import: (paths: string[]) => any,
+    save: (options: ISaveOptions) => any
+}
+
+export type IModulesProvider = IModuleInteractions & ISettingsProvider & EventMap<IInstanceModel>;
+
+export type IBackstageSupport = IBackstageResources & ISettingsProvider & EventMap<IInstanceModel>;
+
+export class Instance extends EventMap<IInstanceModel>{
+
+    constructor(coms) {
+        super({
+            coms : coms,
+            selectedAnalysis : null,
+            hasDataSet : false,
+            path : null,
+            title : '',
+            blank : false,
+            resultsSupplier: null,
+            arbitraryCodePresent: false,
+            editState: false,
+            saveFormat: undefined
+        })
 
         this.transId = 0;
         this.command = '';
@@ -104,43 +150,40 @@ export const Instance = Backbone.Model.extend({
         this._onBC = (bc => this._onReceive(bc));
         this.attributes.coms.on('broadcast', this._onBC);
 
-    },
+    }
+
     _onOptionsChanged(analysis, incoming) {
         if ( ! incoming)
             this._runAnalysis(analysis);
-    },
+    }
+
     destroy() {
         this._dataSetModel.off('columnsChanged', this._columnsChanged, this);
         this._analyses.off('analysisOptionsChanged', this._onOptionsChanged, this);
         this.attributes.coms.off('broadcast', this._onBC);
         this._settings.destroy();
-    },
-    defaults : {
-        coms : null,
-        selectedAnalysis : null,
-        hasDataSet : false,
-        path : null,
-        title : '',
-        blank : false,
-        resultsSupplier: null,
-        arbitraryCodePresent: false,
-        editState: false
-    },
+    }
+
     instanceId() {
         return this._instanceId;
-    },
+    }
+
     dataSetModel() {
         return this._dataSetModel;
-    },
+    }
+
     analyses() {
         return this._analyses;
-    },
+    }
+
     settings() {
         return this._settings;
-    },
+    }
+
     modules() {
         return this._modules;
-    },
+    }
+
     connect(instanceId) {
 
         let coms = this.attributes.coms;
@@ -163,7 +206,8 @@ export const Instance = Backbone.Model.extend({
 
         });
 
-    },
+    }
+
     import(paths) {
 
         let coms = this.attributes.coms;
@@ -201,7 +245,8 @@ export const Instance = Backbone.Model.extend({
             this.trigger('notification', progress);
             return prog;
         });
-    },
+    }
+
     open(options: IInstanceOpenOptions): InstanceOpenStream {
 
         if ('url' in options) {
@@ -408,8 +453,9 @@ export const Instance = Backbone.Model.extend({
                 }
             }
         });
-    },
-    async save(options) {
+    }
+
+    async save(options: ISaveOptions) {
 
         options = Object.assign({}, options); // clone so we can modify without side-effects
 
@@ -484,7 +530,8 @@ export const Instance = Backbone.Model.extend({
         while (retrying);
 
         return { };
-    },
+    }
+
     _save(options) {
 
         options = Object.assign({}, options); // clone so we can modify without side-effects
@@ -550,8 +597,9 @@ export const Instance = Backbone.Model.extend({
             }
         });
 
-    },
-    browse(filePath, extensions) {
+    }
+
+    browse(filePath: string, extensions: string[]) {
 
         let coms = this.attributes.coms;
 
@@ -569,7 +617,8 @@ export const Instance = Backbone.Model.extend({
             return coms.Messages.FSResponse.decode(response.payload);
         });
         return promise;
-    },
+    }
+
     restartEngines() {
 
         let coms = this.attributes.coms;
@@ -583,7 +632,8 @@ export const Instance = Backbone.Model.extend({
         request.instanceId = this._instanceId;
 
         return coms.sendP(request);
-    },
+    }
+
     retrieveAvailableModules() {
 
         let coms = this.attributes.coms;
@@ -601,8 +651,9 @@ export const Instance = Backbone.Model.extend({
             }, error => {
                 throw error;
             });
-    },
-    installModule(filePath) {
+    }
+
+    installModule(filePath: string) {
 
         let coms = this.attributes.coms;
 
@@ -616,8 +667,9 @@ export const Instance = Backbone.Model.extend({
         request.instanceId = this._instanceId;
 
         return coms.send(request);
-    },
-    uninstallModule(name) {
+    }
+
+    uninstallModule(name: string) {
 
         let coms = this.attributes.coms;
 
@@ -631,8 +683,9 @@ export const Instance = Backbone.Model.extend({
         request.instanceId = this._instanceId;
 
         return coms.send(request);
-    },
-    setModuleVisibility(name, value) {
+    }
+
+    setModuleVisibility(name: string, value: boolean) {
         let coms = this.attributes.coms;
 
         let moduleRequest = new coms.Messages.ModuleRR();
@@ -649,13 +702,15 @@ export const Instance = Backbone.Model.extend({
         request.instanceId = this._instanceId;
 
         return coms.send(request);
-    },
+    }
+
     trustArbitraryCode() {
         for (let analysis of this.analyses()) {
             if (analysis.arbitraryCode && ! analysis.enabled)
                 analysis.enable();
         }
-    },
+    }
+
     _notify(error) {
         let notification = new Notify({
             title: error.message,
@@ -664,7 +719,8 @@ export const Instance = Backbone.Model.extend({
             type: error.type ? error.type : 'info',
         });
         this.trigger('notification', notification);
-    },
+    }
+
     _beginInstance(instanceId) {
 
         let coms = this.attributes.coms;
@@ -680,7 +736,8 @@ export const Instance = Backbone.Model.extend({
         return coms.send(request).then(response => {
             this._instanceId = response.instanceId;
         });
-    },
+    }
+
     async _readDataset(loadAnalyses=true) {
 
         let coms = this.attributes.coms;
@@ -742,7 +799,8 @@ export const Instance = Backbone.Model.extend({
         }
 
         return response;
-    },
+    }
+
     async createAnalysis(opts: CreateAnalysisOptions) {
 
         let analysis: any;
@@ -767,7 +825,8 @@ export const Instance = Backbone.Model.extend({
             this._sendAnalysis(analysis);
         }
         this.set('selectedAnalysis', analysis);
-    },
+    }
+
     async duplicateAnalysis(dupliceeId) {
 
         let duplicee = this._analyses.get(dupliceeId);
@@ -785,14 +844,16 @@ export const Instance = Backbone.Model.extend({
         this._sendAnalysis(analysis, duplicee);
 
         return analysis;
-    },
+    }
+
     _optionsExtras() {
         let ppi = Math.trunc(72 * (window.devicePixelRatio || 1));
         let theme = this._settings.getSetting('theme', 'default');
         let palette = this._settings.getSetting('palette', 'jmv');
 
         return { '.ppi': ppi, theme: theme, palette: palette };
-    },
+    }
+
     async _constructAnalysisRequest(analysis, options) {
 
         let coms = this.attributes.coms;
@@ -821,7 +882,8 @@ export const Instance = Backbone.Model.extend({
 
         request.setOptions(OptionsPB.toPB(options, extras, coms.Messages));
         return request;
-    },
+    }
+
     _sendAnalysisRequest(request, analysis) {
 
         let coms = this.attributes.coms;
@@ -832,7 +894,8 @@ export const Instance = Backbone.Model.extend({
         message.instanceId = this._instanceId;
 
         return coms.sendP(message);
-    },
+    }
+
     async _runAnalysis(analysis, changed) {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
@@ -845,7 +908,8 @@ export const Instance = Backbone.Model.extend({
             request.changed = changed;
 
         this._sendAnalysisRequest(request, analysis);
-    },
+    }
+
     async _sendAnalysis(analysis, duplicee) {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
@@ -861,14 +925,16 @@ export const Instance = Backbone.Model.extend({
         }
 
         this._sendAnalysisRequest(request, analysis);
-    },
+    }
+
     async deleteAnalysis(analysis) {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
         let request = await this._constructAnalysisRequest(analysis);
         request.perform = 6; // DELETE
         this._sendAnalysisRequest(request, analysis);
-    },
+    }
+
     deleteAll() {
         let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
@@ -876,7 +942,8 @@ export const Instance = Backbone.Model.extend({
         request.analysisId = 0;
         request.perform = 6; // DELETE
         this._sendAnalysisRequest(request);
-    },
+    }
+
     async _onReceive(payloadType, response) {
 
         let coms = this.attributes.coms;
@@ -973,7 +1040,8 @@ export const Instance = Backbone.Model.extend({
         else if (payloadType === 'LogRR') {
             console.log(response.content);
         }
-    },
+    }
+
     _columnsChanged(event) {
 
         this._dataSetModel.set('edited', true);
@@ -1040,7 +1108,8 @@ export const Instance = Backbone.Model.extend({
                     this.trigger("change:selectedAnalysis", { changed: { selectedAnalysis: analysis } });
             }
         }
-    },
+    }
+
     _stringifyMeasureType(measureType) {
         switch (measureType) {
             case 2:
@@ -1052,7 +1121,8 @@ export const Instance = Backbone.Model.extend({
             default:
                 return '';
         }
-    },
+    }
+
     _requestPDF(html) {
         return fetch('../utils/to-pdf', {
                 method: 'POST',
@@ -1065,7 +1135,7 @@ export const Instance = Backbone.Model.extend({
                 else
                     throw response.statusText;
             });
-    },
-});
+    }
+}
 
-module.exports = Instance;
+export default Instance;

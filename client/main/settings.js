@@ -7,7 +7,7 @@ Backbone.$ = $;
 
 const host = require('./host');
 const auth = require('./auth/auth');
-const { Event } = require('./utils/sync');
+import { Event } from'./utils/sync';
 
 
 const Settings = Backbone.Model.extend({

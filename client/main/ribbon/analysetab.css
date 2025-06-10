@@ -5,15 +5,6 @@
     background-color: inherit;
 }
 
-/*.jmv-ribbon-temp-button>.placeholder-icon {
-    width: 45px;
-    height: 20px;
-    padding: 4px;
-    background-position: center;
-    background-size: contain;
-    background-repeat: no-repeat;
-}*/
-
 .jmv-ribbon-button:not(.jmv-context-menu-button) .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-other.svg");
 }

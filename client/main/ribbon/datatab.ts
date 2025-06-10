@@ -1,15 +1,14 @@
 
 'use strict';
 
-const RibbonButton = require('./ribbonbutton');
-const RibbonSeparator = require('./ribbonseparator');
-const RibbonGroup = require('./ribbongroup');
-const RibbonTab = require('./ribbontab');
+import RibbonButton from './ribbonbutton';
+import RibbonSeparator from './ribbonseparator';
+import RibbonGroup from './ribbongroup';
+import RibbonTab from './ribbontab';
 
 import ActionHub from '../actionhub';
 
-
-class DataTab extends RibbonTab {
+export class DataTab extends RibbonTab {
 
     constructor() {
         super('data', 'D', _('Data'));
@@ -17,9 +16,11 @@ class DataTab extends RibbonTab {
         ActionHub.get('weights').on('request', () => {
             this.emit('analysisSelected', { name: 'weights', ns: 'jmv', title: _('Weights'), index: 1, onlyOne: true });
         });
+
+        this.populate();
     }
 
-    getRibbonItems(ribbon) {
+    getRibbonItems() {
         return [
             new RibbonGroup({ title: _('Clipboard'), margin: 'large', items: [
                 new RibbonButton({ title: _('Paste'), name: 'paste', size: 'large', shortcutKey: 'v', shortcutPosition: { x: '50%', y: '90%' } }),
@@ -78,4 +79,4 @@ class DataTab extends RibbonTab {
     }
 }
 
-module.exports = DataTab;
+export default DataTab;

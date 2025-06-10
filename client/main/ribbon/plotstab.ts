@@ -1,31 +1,36 @@
 
 'use strict';
 
-const $ = require('jquery');
-
-const RibbonMenu = require('./ribbonmenu');
-const RibbonTab = require('./ribbontab');
-const Placeholder = require('./placeholder');
+import RibbonMenu from './ribbonmenu';
+import RibbonTab from './ribbontab';
+import Placeholder from './placeholder';
+import RibbonButton from './ribbonbutton';
 const focusLoop = require('../../common/focusloop');
 
-const Store = require('../store');
+//import Store from '../store';
 
-class AnalyseTab extends RibbonTab {
+class PlotsTab extends RibbonTab {
+    buttons = [ ];
+    settings;
+    modules;
+    //store: Store;
+    _moduleCount = 0;
+    _analysesList = { };
+
     constructor(modules, model) {
-        super('analyses', 'A', _('Analyses'));
+        super('plots', 'P', _('Plots'));
         this.modules = modules;
-        this.buttons = [ ];
-        this._analysesList = { };
-        this._moduleCount = 0;
         this.settings = model.settings();
 
         this.modules.on('moduleVisibilityChanged', this._onModuleVisibilityChanged, this);
 
-        this.$store = $(`<div class="jmv-store"></div>`).appendTo(document.body);
-        this.store = new Store({ el : this.$store, model : model });
+        /*let storeElement = document.createElement('div');
+        storeElement.classList.add('jmv-store');
+        document.body.append(storeElement);
+        this.store = new Store({ el : storeElement, model : model });
         this.store.on('notification', note => {
             this.emit('notification', note);
-         });
+         });*/
 
         this.populate();
     }
@@ -74,7 +79,7 @@ class AnalyseTab extends RibbonTab {
         return false;
     }
 
-    async getRibbonItems(ribbon) {
+    async getRibbonItems() {
         this.buttons = [ ];
         if ( ! this.modules)
             return this.buttons;
@@ -82,7 +87,8 @@ class AnalyseTab extends RibbonTab {
         let moduleList = [];
         this._analysesList = { };
         this._moduleCount = 0;
-        for (let module of this.modules) {
+        let modules = this.modules.get('modules');
+        for (let module of modules) {
             let _translate = await module.getTranslator();
             if (module.analyses.length > 0) {
                 if (this._analysesList[module.name] === undefined) {
@@ -95,40 +101,53 @@ class AnalyseTab extends RibbonTab {
                 let re = new RegExp('^' + module.name + '([ :-]{1,3})', 'i');
                 subtitle = subtitle.replace(re, '');
                 let moduleItem = { name : module.name, title : _translate(module.name), subtitle: _translate(subtitle), ns : 'installed', type: 'module', checked: module.visible  };
-                let analyses = { name: 'analyses', title: _('Analyses'), type: 'group', items: [ ] };
+                let analyses = { name: 'plots', title: _('Plots'), type: 'group', items: [ ] };
                 for (let analysis of module.analyses) {
-                    this._analysesList[module.name].analyses.push(analysis.name);
-                    let analysisItem = {
-                        name: analysis.name,
-                        ns: analysis.ns,
-                        title: _translate(analysis.menuTitle),
-                        subtitle: _translate(analysis.menuSubtitle),
-                        moduleName: module.name,
-                        resultsTitle: _translate(analysis.title)
-                    };
-                    analyses.items.push(analysisItem);
+                    if (analysis.category === 'plots') {
+                        this._analysesList[module.name].analyses.push(analysis.name);
+                        let analysisItem = {
+                            name: analysis.name,
+                            ns: analysis.ns,
+                            title: _translate(analysis.menuTitle),
+                            subtitle: _translate(analysis.menuSubtitle),
+                            moduleName: module.name,
+                            resultsTitle: _translate(analysis.title)
+                        };
+                        analyses.items.push(analysisItem);
+                    }
                 }
-                moduleItem.analyses = analyses;
-                moduleList.push(moduleItem);
+                if (analyses.items.length > 0) {
+                    moduleItem.analyses = analyses;
+                    moduleList.push(moduleItem);
+                }
+                else {
+                    delete this._analysesList[module.name];
+                    this._moduleCount -= 1;
+                }
             }
         }
 
-        let buttonId = focusLoop.getNextAriaElementId('button');
-        let $button = $(`<button id="${ buttonId }" class="modules-menu-item"></button>`);
-        let  button = new RibbonMenu($button, _('Modules'), 'modules', 'M', [
+        /*let buttonId = focusLoop.getNextAriaElementId('button');
+        let buttonElement = document.createElement('button');
+        buttonElement.classList.add('modules-menu-item');
+        buttonElement.setAttribute('id', buttonId);
+        let  button = new RibbonMenu(buttonElement, _('Modules'), 'modules', 'M', [
             { name : 'modules', title : _('jamovi library'), ns : 'app' },
             { name : 'manageMods', title : _('Manage installed'), ns : 'app' },
             { name: 'installedList', title: _('Installed Modules'), type: 'group', items: moduleList }
         ], true, false);
-        this.buttons.push(button);
+        this.buttons.push(button);*/
 
         let menus = { };
         let lastSub = null;
 
-        for (let module of this.modules) {
+        for (let module of modules) {
             let _translate = await module.getTranslator();
             let isNew = module.new;
             for (let analysis of module.analyses) {
+                if (analysis.category !== 'plots')
+                    continue;
+
                 let groupName = analysis.menuGroup;
                 let subgroup = analysis.menuSubgroup;
                 let menu = groupName in menus ? menus[groupName] : { _title: _translate(analysis.menuGroup) };
@@ -160,29 +179,55 @@ class AnalyseTab extends RibbonTab {
         let shortcutIndex = 1;
         for (let groupName in menus) {
             let menu = menus[groupName];
-            let flattened = [ ];
-            let containsNew = menu._new;
-            for (let subgroup in menu) {
-                if (subgroup === '_new' || subgroup === '_title' || subgroup === 'ns')
-                    continue;
-                flattened.push({
-                    name: subgroup,
-                    title: menu[subgroup].title,
-                    type: 'group',
-                    items: menu[subgroup].items });
+            let button = null;
+            if (groupName === '.') {
+                //let subgroups = [];
+                let buttons = [];
+                for (let subgroup in menu) {
+                    
+                    if (subgroup === '_new' || subgroup === '_title' || subgroup === 'ns')
+                        continue;
+                    
+                    
+                    for (let item of menu[subgroup].items) {
+                        let name = `${item.ns}-${item.name}`;
+                        let analysisButton = new RibbonButton({ class: 'jmv-analyses-button', title: _(item.title), name: name, size: 'large', /*shortcutKey: 'v', shortcutPosition: { x: '50%', y: '90%' }*/ });
+                        analysisButton.on('menuActioned', () => {
+                            let analysis = { name:item.name, ns:item.ns, title:item.title };
+                            this._analysisSelected(analysis);
+                        });
+                        buttons.push(analysisButton);
+                    }
+                    //subgroups.push(new RibbonGroup({ title: '', margin: 'large', items: buttons }));
+                }
+                button = buttons; //new RibbonGroup({ title: '', margin: 'large', items: buttons });
+            }
+            else {
+                let flattened = [ ];
+                let containsNew = menu._new;
+                for (let subgroup in menu) {
+                    if (subgroup === '_new' || subgroup === '_title' || subgroup === 'ns')
+                        continue;
+                    flattened.push({
+                        name: subgroup,
+                        title: menu[subgroup].title,
+                        type: 'group',
+                        items: menu[subgroup].items });
+                }
+
+                if (flattened.length > 0 && flattened[0].name === '') {
+                    let items = flattened.shift().items;
+                    flattened = items.concat(flattened);
+                }
+
+                let shortcutKey = menu.ns === 'jmv' ?  (shortcutIndex++).toString() : null;
+                let buttonId2 = focusLoop.getNextAriaElementId('button');
+                let buttonElement = document.createElement('button');
+                buttonElement.setAttribute('id', buttonId2);
+                button = new RibbonMenu(buttonElement, menu._title, groupName, shortcutKey, flattened, false, containsNew);
             }
 
-            if (flattened.length > 0 && flattened[0].name === '') {
-                let items = flattened.shift().items;
-                flattened = items.concat(flattened);
-            }
-
-            let shortcutKey = menu.ns === 'jmv' ?  (shortcutIndex++).toString() : null;
-            let buttonId2 = focusLoop.getNextAriaElementId('button');
-            let $button = $(`<button id="${ buttonId2 }"></button>`);
-            let  button = new RibbonMenu($button, menu._title, groupName, shortcutKey, flattened, false, containsNew);
-
-            this.buttons.push(button);
+            this.buttons.push(...button);
         }
 
         if (this.settings.attributes.settingsRecieved === false) {
@@ -198,15 +243,15 @@ class AnalyseTab extends RibbonTab {
     }
 
     _analysisSelected(analysis) {
-        if (analysis.name === 'modules' && analysis.ns === 'app')
+       /* if (analysis.name === 'modules' && analysis.ns === 'app')
             this.store.show(1);
         else if (analysis.name === 'manageMods' && analysis.ns === 'app')
             this.store.show(0);
         else if (analysis.ns === 'installed')
             this.modules.setModuleVisibility(analysis.name, analysis.checked);
-        else
+        else*/
             this.emit('analysisSelected', analysis);
     }
 }
 
-module.exports = AnalyseTab;
+export default PlotsTab;

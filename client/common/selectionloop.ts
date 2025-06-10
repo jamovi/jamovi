@@ -1,11 +1,10 @@
 'use strict';
 
-const $ = require('jquery');
-const EventEmitter = require('events');
+import { EventEmitter } from 'events';
 
 // the SelectionLoop is a class that manages which child control has selection (not focus)
 // and the movement and behaviour of that selection between and within other child controls
-class SelectionLoop extends EventEmitter {
+export class SelectionLoop extends EventEmitter {
 
     constructor(name, element) {
         super();
@@ -40,17 +39,17 @@ class SelectionLoop extends EventEmitter {
     }
 
 
-    highlightElement(element, highlightOnly, applyFocus) {
-        if (applyFocus === undefined)
-            applyFocus = true;
-
+    highlightElement(element, highlightOnly=false, applyFocus=true) {
         if (element && element.classList.contains(this.itemClass) && element != this.focusElement) {
-            $(this.container).find(`.${this.highlightedItemClass}`).removeClass(this.highlightedItemClass);
+            const elements = this.container.querySelectorAll(`.${this.highlightedItemClass}`);
+            elements.forEach(el => el.classList.remove(this.highlightedItemClass));
 
             this.focusElement = element;
             element.classList.add(this.highlightedItemClass);
 
-            $(this.container).find(`.${this.itemClass}[tabindex="0"]`).attr('tabindex', '-1');
+            const items = this.container.querySelectorAll(`.${this.itemClass}[tabindex="0"]`);
+            items.forEach(el => el.setAttribute('tabindex', '-1'));
+
             this.focusElement.setAttribute('tabindex', '0');
         }
 
@@ -65,12 +64,12 @@ class SelectionLoop extends EventEmitter {
     }
 
 
-    selectElement(element, withMouse, silent) {
+    selectElement(element, withMouse=false, silent=false) {
         this.highlightElement(element, true, ! silent);
         this._selectElement(element, withMouse, silent);
     }
 
-    _selectElement(element, withMouse, silent) {
+    _selectElement(element, withMouse=false, silent=false) {
         if (element && element.classList.contains(this.itemClass) && (element != this.selectedElement || element.classList.contains(this.actionClass))) {
             this.selectedElement = element;
             if ( ! silent)
@@ -90,10 +89,10 @@ class SelectionLoop extends EventEmitter {
     }
 
     _handleClick(event) {
-        let element = $(event.target).closest(`.${this.itemClass}`)[0];
+        let element = event.target.closest(`.${this.itemClass}`);
         if (element && ! element.classList.contains(this.autoSelectClass))
             this.selectElement(element, event.detail > 0);
     }
 }
 
-module.exports = SelectionLoop;
+export default SelectionLoop;

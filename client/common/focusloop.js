@@ -1213,14 +1213,15 @@ class FocusLoop extends EventEmitter {
     }
 
     createHoverItem(item, focusAction) {
-        item.$el.on('click', event => {
+        let itemElement = item.$el === undefined ? item.el : item.$el[0];
+        itemElement.addEventListener('click', event => {
             if (item._focusFocusTimer) {
                 clearTimeout(item._focusFocusTimer);
                 item._focusFocusTimer = null;
             }
         });
-        item.$el.on('mousemove', (event) => {
-            if (item.$el[0].contains(document.activeElement))
+        itemElement.addEventListener('mousemove', (event) => {
+            if (itemElement.contains(document.activeElement))
                 return;
 
             if ( ! item._focusFocusTimer) {
@@ -1228,11 +1229,11 @@ class FocusLoop extends EventEmitter {
                     if (focusAction)
                         focusAction();
                     else
-                        item.$el[0].focus({preventScroll:true});
+                    itemElement.focus({preventScroll:true});
                 }, 300);
             }
         });
-        item.$el.on('mouseleave', (event) => {
+        itemElement.addEventListener('mouseleave', (event) => {
             if (item._focusFocusTimer) {
                 clearTimeout(item._focusFocusTimer);
                 item._focusFocusTimer = null;
