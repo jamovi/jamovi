@@ -1,9 +1,9 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
-const RibbonGroup = require('./ribbongroup');
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+
+import RibbonGroup from './ribbongroup';
 
 const ActionHub = require('../actionhub');
 const focusLoop = require('../../common/focusloop');
@@ -11,7 +11,9 @@ const Menu = require('../../common/menu');
 const EventEmitter = require('events');
 const { s6e } = require('../../common/utils');
 
-class RibbonButton extends EventEmitter {
+export class RibbonButton extends EventEmitter {
+    el: HTMLElement;
+    value: any;
 
     /*
     params
@@ -22,7 +24,7 @@ class RibbonButton extends EventEmitter {
         size:       //'small', 'medium', 'large', 'huge' [default: medium]
         right:      //Is the button docked to the right? [default: false]
         icon:       //svg to have as an icon
-        $el:        //jquery element. Will create if not defined.
+        el:        //jquery element. Will create if not defined.
         class:       //define a type so styling can be customised. It will be added as class attribute.
     }
     */
@@ -37,17 +39,17 @@ class RibbonButton extends EventEmitter {
         let right = params.right === undefined ? false : params.right;
         let margin =  params.margin === undefined ? 'normal' : params.margin;
         let classes =  params.class === undefined ? null : params.class;
-        let $el = params.$el === undefined ? $('<button></button>') : params.$el;
+        let el = params.el === undefined ? HTML.create('button') : params.el;
         let level = params.level === undefined ? 0 : params.level;
         let shortcutKey = params.shortcutKey === undefined ? null : params.shortcutKey.toUpperCase();
 
-        this.$el = $el;
-        this.$el.addClass('jmv-ribbon-button');
-        this.$el.addClass('jmv-ribbon-button-size-' + size);
-        this.$el.addClass('jmv-ribbon-button-margin-' + margin);
-        this.$el.attr('tabindex', '0');
+        this.el = el;
+        this.el.classList.add('jmv-ribbon-button');
+        this.el.classList.add('jmv-ribbon-button-size-' + size);
+        this.el.classList.add('jmv-ribbon-button-margin-' + margin);
+        this.el.setAttribute('tabindex', '0');
         if (params.ariaLabel)
-            this.$el.attr('aria-label', params.ariaLabel);
+            this.el.setAttribute('aria-label', params.ariaLabel);
 
         this.labelId = focusLoop.getNextAriaElementId('label');
 
@@ -56,11 +58,11 @@ class RibbonButton extends EventEmitter {
             let stcOptions = { key: this.shortcutKey, action: event => this._clicked(event, false), label: params.ariaLabel || title };
             if (params.shortcutPosition)
                 stcOptions.position = params.shortcutPosition;
-            focusLoop.applyShortcutOptions(this.$el[0], stcOptions);
+            focusLoop.applyShortcutOptions(this.el, stcOptions);
         }
 
         if (classes !== null)
-            this.$el.addClass(classes);
+            this.el.classList.add(...classes.split(' '));
 
         this.tabName = null;
         this._definedTabName = false;
@@ -78,24 +80,24 @@ class RibbonButton extends EventEmitter {
         this.ariaLabel = params.ariaLabel;
 
         if (icon !== null)
-            this.$el.addClass('has-icon');
+            this.el.classList.add('has-icon');
 
-        this.$el.attr('data-name', this.name.toLowerCase());
+        this.el.setAttribute('data-name', this.name.toLowerCase());
         this.focusId = focusLoop.getNextFocusId();
-        this.$el.attr('data-focus-id', this.focusId);
-        this.$el.attr('aria-disabled', true);
+        this.el.setAttribute('data-focus-id', this.focusId);
+        this.el.setAttribute('aria-disabled', 'true');
         if (right)
-            this.$el.addClass('right');
+            this.el.classList.add('right');
 
-        this.$el.on('mousedown', event => {
+        this.el.addEventListener('mousedown', event => {
             if (this.menu)
                 this._clicked(event, event.detail > 0);
         });
-        this.$el.on('mouseup', event => {
+        this.el.addEventListener('mouseup', event => {
             if ( ! this.menu)
                 this._clicked(event, event.detail > 0);
         });
-        this.$el.on('keydown', (event) => {
+        this.el.addEventListener('keydown', (event) => {
             if (event.code === 'Enter' || event.code === 'Space')
                 this._clicked(event, false);
             else if (event.altKey && event.code == 'ArrowDown' && this._menuGroup !== undefined)
@@ -116,7 +118,7 @@ class RibbonButton extends EventEmitter {
         });
 
         if (this.size === 'small' && this.title !== null)
-            this.$el.attr('title', this.title);
+            this.el.setAttribute('title', this.title);
 
         this.value = false;
     }
@@ -132,9 +134,9 @@ class RibbonButton extends EventEmitter {
     setValue(value) {
         this.value = value;
         if (value)
-            this.$el.addClass('checked');
+            this.el.classList.add('checked');
         else
-            this.$el.removeClass('checked');
+            this.el.classList.remove('checked');
     }
 
     setParent(parent, parentShortcutPath, inMenu) {
@@ -142,17 +144,17 @@ class RibbonButton extends EventEmitter {
 
         let shortcutPath = parentShortcutPath;
         if (this.shortcutKey)
-            focusLoop.applyShortcutOptions(this.$el[0], { path: parentShortcutPath });
+            focusLoop.applyShortcutOptions(this.el, { path: parentShortcutPath });
 
         if (inMenu) {
-            this.$el.attr('role', 'menuitem');
+            this.el.setAttribute('role', 'menuitem');
             this.inMenu = inMenu;
 
             focusLoop.createHoverItem(this, () => {
                 if (this.menu)
                     this.showMenu(true);
                 else
-                    this.$el[0].focus({preventScroll:true});
+                    this.el.focus({preventScroll:true});
             });
         }
 
@@ -170,21 +172,20 @@ class RibbonButton extends EventEmitter {
 
     setEnabled(enabled) {
         if (enabled)
-            this.$el.removeAttr('aria-disabled');
+            this.el.removeAttribute('aria-disabled');
         else
-            this.$el.attr('aria-disabled', true);
+            this.el.setAttribute('aria-disabled', 'true');
     }
 
-    _clicked(event, fromMouse) {
-
-        let $target = $(event.target);
-        if (this.menu && $target.closest(this.menu.$el).length !== 0)
+    _clicked(event, fromMouse=false) {
+        if (this.menu && this.menu.contains(event.target))
             return;
 
         let action = ActionHub.get(this.name);
 
-        if ( ! action.attributes.enabled)
-            ; // do nothing
+        if ( ! action.attributes.enabled) {
+
+        } // do nothing
         else if (this._menuGroup !== undefined) {
             this._toggleMenu(fromMouse);
             action.do(this);
@@ -199,15 +200,15 @@ class RibbonButton extends EventEmitter {
 
     addItem(item) {
         if (this._menuGroup === undefined) {
-            this.menu = new Menu(this.$el[0], this.level + 1, { exitKeys: [ 'Alt+ArrowUp'] });
+            this.menu = new Menu(this.el, this.level + 1, { exitKeys: [ 'Alt+ArrowUp'] });
 
-            this.$el.attr('role', 'menu');
-            this.$el.addClass('has-children');
-            let $menugroup = $('<div></div>');
-            this._menuGroup = new RibbonGroup({ orientation: 'vertical', $el: $menugroup });
+            this.el.setAttribute('role', 'menu');
+            this.el.classList.add('has-children');
+            let menugroup = HTML.create('div');
+            this._menuGroup = new RibbonGroup({ orientation: 'vertical', el: menugroup });
 
-            this.menu.$el.append(this._menuGroup.$el);
-            $('<div class="jmv-ribbon-menu-arrow"></div>').appendTo(this.$el);
+            this.menu.append(this._menuGroup.el);
+            this.el.append(HTML.create('div', { class: 'jmv-ribbon-menu-arrow' }));
 
             this._menuGroup.on('menuActioned', (item) => {
                 let action = ActionHub.get(this.name);
@@ -240,12 +241,12 @@ class RibbonButton extends EventEmitter {
         if (this.size === 'medium' || this.size === 'large') {
             html += `   <div id="${this.labelId}" class="jmv-ribbon-button-label">${s6e(this.title)}</div>`;
             if ( ! this.ariaLabel)
-                this.$el.attr('aria-labelledby', this.labelId);
+                this.el.setAttribute('aria-labelledby', this.labelId);
         }
         else
-            this.$el.attr('aria-label', this.ariaLabel || this.title);
+            this.el.setAttribute('aria-label', this.ariaLabel || this.title);
 
-        this.$el.html(html);
+        this.el.innerHTML = html;
     }
 
     hideMenu(fromMouse) {
@@ -266,21 +267,23 @@ class RibbonButton extends EventEmitter {
     _toggleMenu(fromMouse) {
         if (this.menu.isVisible())
             this.hideMenu(fromMouse);
-        else
+        else 
             this.showMenu(fromMouse);
     }
 
-    positionMenu(fromMouse) {
-        let anchor = 'left';
-        let x = this.$el.offset().left + 5;
-        let y = this.$el.offset().top + this.$el.outerHeight(false);
+    positionMenu(fromMouse=false) {
+        let rect = this.el.getBoundingClientRect();
+        let x = rect.left + window.scrollX + 5;
+        let y = rect.top + window.scrollY + this.el.offsetHeight;
         if (this.inMenu) {
-            x += this.menu.$el.outerWidth(true) - 10;
-            y -= this.$el.outerHeight() + 10;
+            const menuStyle = window.getComputedStyle(this.menu);
+            const menuMarginLeft = parseFloat(menuStyle.marginLeft);
+            const menuMarginRight = parseFloat(menuStyle.marginRight);
+            x += this.menu.offsetWidth + menuMarginLeft + menuMarginRight - 10;
+            y -= rect.height + 10;
         }
-
         this.menu.show(x, y, { withMouse: fromMouse });
     }
 }
 
-module.exports = RibbonButton;
+export default RibbonButton;

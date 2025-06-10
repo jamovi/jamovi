@@ -11,7 +11,7 @@ const keyboardJS = require('keyboardjs');
 
 const VariableModel = require('./vareditor/variablemodel');
 const EditorWidget = require('./vareditor/editorwidget');
-const EditorPanel = require('./editorpanel');
+import EditorPanel from './editorpanel';
 const TransformEditor = require('./editors/transformeditor');
 const focusLoop = require('../common/focusloop');
 
@@ -45,7 +45,7 @@ const VariableEditor = Backbone.View.extend({
             this.$el.addClass('sub-editor-open');
         });
 
-        this.editorPanel = new EditorPanel({ el : this.$stageEditor[0], model : this.model });
+        this.editorPanel = new EditorPanel(this.$stageEditor[0]);
         this.editorPanel.on('notification', note => this.trigger('notification', note));
         this.transformEditor = new TransformEditor(this.model);
 
@@ -238,7 +238,7 @@ const VariableEditor = Backbone.View.extend({
     },
     setFocus() {
         if (this.editorPanel.isVisible())
-            focusLoop.enterFocusLoop(this.editorPanel.$el[0], { withMouse: false });
+            focusLoop.enterFocusLoop(this.editorPanel.el, { withMouse: false });
         else
             focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
     },

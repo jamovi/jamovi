@@ -1,39 +1,49 @@
 
 'use strict';
 
-const $ = require('jquery');
-//const tarp = require('../utils/tarp');
-const SuperClass = require('../superclass');
-const Backbone = require('backbone');
+import { HTMLElementCreator as HTML }  from '../htmlelementcreator';
+import { EventEmitter } from 'events';
+import ToolbarButton from './toolbarbutton';
 
-const Toolbar = function(items) {
+export class Toolbar extends EventEmitter {
+    el: HTMLElement;
+    separator: HTMLElement;
 
-    Object.assign(this, Backbone.Events);
+    constructor(items) {
+        super();
 
-    this.items = items;
+        this.items = items;
 
-    this.$el = $('<div></div');
+        this.el = HTML.create('div');
 
-    this.$el.addClass('jmv-toolbar');
-    this.$el.click(this._menuClosed);
-    this._rendered = false;
+        this.el.classList.add('jmv-toolbar');
 
-    this.getLevel = function() {
+        this.el.addEventListener('buttonClicked', (event: CustomEvent<ToolbarButton>) => {
+            this._buttonClicked(event.detail);
+        } );
+
+        this._rendered = false;
+
+        this.render(items);
+    }
+
+    getLevel() {
         return 0;
-    };
+    }
 
-    this.getParent = function(level) {
+    getParent(level) {
         if (level === 0)
             return this;
-    };
+    }
 
-    this.render = function(items) {
+    render(items) {
 
         if (this._rendered)
             return;
 
-        this.$el.empty();
-        this.$separator = $('<div class="jmv-toolbar-button-separator"></div>').appendTo(this.$el);
+        this.el.innerHTML = '';
+        this.separator = HTML.create('div', { class: 'mv-toolbar-button-separator' });
+        this.el.append(this.separator);
 
         for (let i = 0; i < items.length; i++) {
             let button = items[i];
@@ -50,25 +60,26 @@ const Toolbar = function(items) {
                 button.setParent(this, this);
 
             if (button.dock === 'right')
-                button.$el.insertAfter(this.$separator);
+                this.separator.after(button.el);
             else
-                button.$el.insertBefore(this.$separator);
+                this.separator.before(button.el);
         }
 
         this._rendered = true;
-    };
+    }
 
-    this._menuClosed = function() {
-        this.$el.css('z-index', '');
+    _menuClosed() {
+        this.el.style.zIndex = '';
         this._tarpVisible = false;
         for (let button of this.items) {
             if (button.hideMenu)
                 button.hideMenu();
         }
-        this.$el[0].focus();
+        this.el.focus();
     };
 
-    this._buttonClicked = function(action) {
+    _buttonClicked(action) {
+        console.log(action);
         if (action._menuGroup === undefined)
             this._menuClosed();
         else {
@@ -83,12 +94,8 @@ const Toolbar = function(items) {
                 parent = parent.getParent();
             }
         }
-        this.trigger("buttonClicked", action);
-    };
+        this.emit("buttonClicked", action);
+    }
+}
 
-    this.render(items);
-};
-
-SuperClass.create(Toolbar);
-
-module.exports = Toolbar;
+export default Toolbar;

@@ -1,16 +1,25 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
-Backbone.$ = $;
+import { EventMap } from '../common/eventmap';
 
-const Action = Backbone.Model.extend({
-    defaults: {
-        enabled: true,
-        name: '',
-        description: '',
-    },
+interface IActionModel {
+    enabled: boolean;
+    name: string;
+    description: string;
+}
+
+export class Action extends EventMap<IActionModel> {
+    _direct: any;
+
+    constructor() {
+        super({
+                enabled: true,
+                name: '',
+                description: ''
+            });
+    }
+
     do(source) {
         if (this._direct) {
             for (let call of this._direct) {
@@ -18,25 +27,29 @@ const Action = Backbone.Model.extend({
             }
         }
         this.trigger('request', source);
-    },
+    }
+
     isEnabled() {
         return this.attributes.enabled;
-    },
+    }
+
     isDisabled() {
         return ! this.attributes.enabled;
-    },
+    }
+
     direct(call, context) {
         if (this._direct === undefined)
             this._direct = [];
         this._direct.push(call.bind(context));
-    },
+    }
     
-});
+}
 
 class ActionHub {
 
+    _actions = { };
+
     constructor() {
-        this._actions = { };
     }
 
     get(actionName) {
@@ -49,7 +62,7 @@ class ActionHub {
     }
 
     setDetails(actionName, name, description) {
-        let action = get(actionName);
+        let action = this.get(actionName);
         action.attributes.name = name;
         action.attributes.description = description;
     }
@@ -57,4 +70,4 @@ class ActionHub {
 
 
 
-module.exports = new ActionHub();
+export default new ActionHub();

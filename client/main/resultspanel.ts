@@ -9,12 +9,11 @@ const focusLoop = require('../common/focusloop');
 
 const formatIO = require('../common/utils/formatio');
 
-const Menu = require('./menu');
-const ContextMenus = require('./contextmenu/contextmenus');
 const ContextMenu = require('./contextmenu');
 const Notify = require('./notification');
 const host = require('./host');
 const selectionLoop = require('../common/selectionloop');
+import ContextMenuButton from './contextmenu/contextmenubutton';
 
 const { flatten, unflatten } = require('../common/utils/addresses');
 const { contextMenuListener } = require('../common/utils');
@@ -44,9 +43,12 @@ const ResultsPanel = Backbone.View.extend({
         focusLoop.addFocusLoop(this.el);
 
         this._menuId = null;
-        ContextMenu.$el.on('menuClicked', (event, button) => {
-            if (this._menuId !== null)
+        ContextMenu.el.addEventListener('menuClicked', (event, button) => {
+            if (this._menuId !== null) {
+                const menuEvent = event as CustomEvent<ContextMenuButton>;
+                const button = menuEvent.detail;
                 this._menuEvent(button.eventData);
+            }
         });
 
         ContextMenu.on('menu-hidden', (event) => {
@@ -58,7 +60,7 @@ const ResultsPanel = Backbone.View.extend({
 
                 this._menuId = null;
 
-                if (event !== undefined) {
+                if (event) {
                     if (event.button === 2) {
                         let resource = this._tryGetResource(event.pageX, event.pageY);
                         if (resource !== null)

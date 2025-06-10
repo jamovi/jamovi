@@ -14,7 +14,8 @@ const tarp = require('./utils/tarp');
 const pathtools = require('./utils/pathtools');
 const Notify = require('./notification');
 
-const host = require('./host');
+import host from './host';
+import type { IShowDialogOptions, IDialogProviderResult, IDialogProvider } from './host';
 const ActionHub = require('./actionhub');
 const { s6e } = require('../common/utils');
 const focusLoop = require('../common/focusloop');
@@ -32,7 +33,10 @@ import { FSEntryListModel } from './backstage/fsentry';
 import { FSEntryListView } from './backstage/fsentry';
 import { FSItemType } from './backstage/fsentry';
 
+import type { WDType, BackstagePanelView } from './backstage/fsentry';
+
 import { FSEntryBrowserView } from './backstage/fsentrybrowserview';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 
 function isUrl(s) {
@@ -40,32 +44,82 @@ function isUrl(s) {
 }
 
 import { OneDriveView } from './backstage/onedrive';
+import { EventMap, EventDistributor } from '../common/eventmap';
+import { IBackstageSupport } from './instance';
 
+interface IPlace {
+    name: string, 
+    title: string,  
+    shortcutKey: string, 
+    model?: FSEntryListModel, 
+    view?: BackstagePanelView,
+    action?: () => any;
+    separator?: boolean;
+}
 
-const BackstageModel = Backbone.Model.extend({
-    defaults: {
-        activated : false,
-        task : '',
-        taskProgress : 0,
-        operation : '',
-        place : '',
-        lastSelectedPlace : '',
-        settings : null,
-        ops : [ ],
-        dialogMode : false
-    },
-    initialize : function(args) {
+interface IOp {
+    name: string,
+    title: string,
+    shortcutKey: string,
+    places?: IPlace[],
+    action?: () => any
+}
 
-        this.instance = args.instance;
+interface IBackstageModel {
+    activated : boolean,
+    taskProgress : number,
+    operation : string,
+    place : string,
+    lastSelectedPlace : string,
+    ops : IOp[],
+    dialogMode : boolean
+}
 
-        this.instance.settings().on('change:recents',
-            (event) => this._settingsChanged(event));
-        this.instance.settings().on('change:examples',
-            (event) => this._settingsChanged(event));
-        this.instance.settings().on('change:mode',
-            (event) => {
-                this.set('ops', this.createOps());
-            });
+interface IWDOptions {
+    defaultPath: string,
+    permissions: {
+                    write: boolean,
+                    read: boolean
+                },
+    fixed?: boolean
+    models?: FSEntryListModel[ ];
+    path?: string;
+    oswd?: string;
+    initialised?: boolean;
+}
+
+export class BackstageModel extends EventMap<IBackstageModel> {
+    instance: IBackstageSupport;
+
+    _wdData: {[K in WDType]?: IWDOptions}
+    _recentsListModel: FSEntryListModel;
+    _examplesListModel: FSEntryListModel;
+    _pcListModel: FSEntryListModel;
+    _pcImportListModel: FSEntryListModel;
+    _pcSaveListModel: FSEntryListModel;
+    _deviceSaveListModel: FSEntryListModel;
+    _pcExportListModel: FSEntryListModel;
+    _deviceExportListModel: FSEntryListModel;
+    _dialogExportListModel: FSEntryListModel;
+    _oneDriveOpenModel: FSEntryListModel;
+    _oneDriveSaveModel: FSEntryListModel;
+
+    constructor(instance: IBackstageSupport) {
+        super({
+            activated : false,
+            taskProgress : 0,
+            operation : '',
+            place : '',
+            lastSelectedPlace : '',
+            ops : [ ],
+            dialogMode : false
+        });
+
+        this.instance = instance;
+
+        this.instance.settings().on('change:recents', (event) => this._settingsChanged(event));
+        this.instance.settings().on('change:examples', (event) => this._settingsChanged(event));
+        this.instance.settings().on('change:mode', (event) => { this.set('ops', this.createOps()); });
 
         this._wdData = {
             main: {
@@ -275,8 +329,9 @@ const BackstageModel = Backbone.Model.extend({
 
         ];
 
-    },
-    showDialog: async function(type, options) {
+    }
+
+    async showDialog(type: string, options: IShowDialogOptions): Promise<IDialogProviderResult> {
         this.set('dialogMode', true);
         this._dialogPath = null;
         this._dialogExportListModel.fileExtensions = options.filters;
@@ -285,7 +340,7 @@ const BackstageModel = Backbone.Model.extend({
 
         const mode = this.instance.settings().getSetting('mode', 'normal');
 
-        let _ops = [ ];
+        let _ops: IOp[] = [ ];
         if (mode === 'cloud') {
             _ops = [
                 {
@@ -300,7 +355,7 @@ const BackstageModel = Backbone.Model.extend({
                             }
                         },*/
                         {
-                            name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._dialogExportListModel, view: FSEntryBrowserView,
+                            name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._dialogExportListModel, view: new FSEntryBrowserView(this._dialogExportListModel),
                             action: () => {
                                 this._dialogExportListModel.set('suggestedPath', this.instance.get('title'));
                             }
@@ -317,7 +372,7 @@ const BackstageModel = Backbone.Model.extend({
                     shortcutKey: '1',
                     places: [
                         {
-                            name: 'thispc', title: _('This PC'),  shortcutKey: 'd', model: this._dialogExportListModel, view: FSEntryBrowserView,
+                            name: 'thispc', title: _('This PC'),  shortcutKey: 'd', model: this._dialogExportListModel, view: new FSEntryBrowserView(this._dialogExportListModel),
                             action: () => {
                                 let filePath = this._determineSavePath('main');
                                 this._dialogExportListModel.set('suggestedPath', filePath);
@@ -347,8 +402,9 @@ const BackstageModel = Backbone.Model.extend({
         } catch(e) {
             return { cancelled: true };
         }
-    },
-    createOps: function() {
+    }
+
+    createOps(): IOp[] {
         const mode = this.instance.settings().getSetting('mode', 'normal');
 
         if (mode === 'cloud') {
@@ -364,8 +420,8 @@ const BackstageModel = Backbone.Model.extend({
                     title: _('Open'),
                     shortcutKey: 'o',
                     places: [
-                        ...OneDriveView ? [{ name: 'onedrive', title: _('One Drive'), shortcutKey: 'o', model: this._oneDriveOpenModel, view: OneDriveView, }] : [],
-                        { name: 'examples', title: _('Data Library'), shortcutKey: 'l', model: this._examplesListModel, view: FSEntryBrowserView },
+                        ...OneDriveView ? [{ name: 'onedrive', title: _('One Drive'), shortcutKey: 'o', model: this._oneDriveOpenModel, view: new OneDriveView(this._oneDriveOpenModel), }] : [],
+                        { name: 'examples', title: _('Data Library'), shortcutKey: 'l', model: this._examplesListModel, view: new FSEntryBrowserView(this._examplesListModel) },
                         { name: 'thisdevice', title: _('This Device'), shortcutKey: 'd', action: () => { this.tryBrowse({ list: this._pcListModel.fileExtensions, type: 'open' }); } },
                     ]
                 },
@@ -399,13 +455,13 @@ const BackstageModel = Backbone.Model.extend({
                     shortcutKey: 'a',
                     places: [
                         ...OneDriveView ? [{
-                            name: 'onedrive', title: _('One Drive'), shortcutKey: 'o', model: this._oneDriveSaveModel, view: OneDriveView,
+                            name: 'onedrive', title: _('One Drive'), shortcutKey: 'o', model: this._oneDriveSaveModel, view: new OneDriveView(this._oneDriveSaveModel),
                             action: () => {
                                 this._oneDriveSaveModel.set('suggestedTitle', this.instance.get('title') + '.omv');
                             }
                         }] : [],
                         {
-                            name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._deviceSaveListModel, view: FSEntryBrowserView,
+                            name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._deviceSaveListModel, view: new FSEntryBrowserView(this._deviceSaveListModel),
                             action: () => {
                                 this._deviceSaveListModel.set('suggestedPath', this.instance.get('title'));
                             }
@@ -418,7 +474,7 @@ const BackstageModel = Backbone.Model.extend({
                     shortcutKey: 'e',
                     places: [
                         {
-                            name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._deviceExportListModel, view: FSEntryBrowserView,
+                            name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._deviceExportListModel, view: new FSEntryBrowserView(this._deviceExportListModel),
                             action: () => {
                                 this._deviceExportListModel.set('suggestedPath', this.instance.get('title'));
                             }
@@ -451,8 +507,8 @@ const BackstageModel = Backbone.Model.extend({
                             this.attributes.place = place;
                     },
                     places: [
-                        { name: 'thispc', title: _('This PC'), shortcutKey: 'p', model: this._pcListModel, view: FSEntryBrowserView },
-                        { name: 'examples', title: _('Data Library'), shortcutKey: 'l', model: this._examplesListModel, view: FSEntryBrowserView },
+                        { name: 'thispc', title: _('This PC'), shortcutKey: 'p', model: this._pcListModel, view: new FSEntryBrowserView(this._pcListModel) },
+                        { name: 'examples', title: _('Data Library'), shortcutKey: 'l', model: this._examplesListModel, view: new FSEntryBrowserView(this._examplesListModel) },
                     ]
                 },
                 {
@@ -471,7 +527,7 @@ const BackstageModel = Backbone.Model.extend({
                             this.attributes.place = place;
                     },
                     places: [
-                        { name: 'thispc', title: _('This PC'), shortcutKey: 'p', model: this._pcImportListModel, view: FSEntryBrowserView }
+                        { name: 'thispc', title: _('This PC'), shortcutKey: 'p', model: this._pcImportListModel, view: new FSEntryBrowserView(this._pcImportListModel) }
                     ]
                 },
                 {
@@ -500,7 +556,7 @@ const BackstageModel = Backbone.Model.extend({
                         return this.setCurrentDirectory('main', path.dirname(filePath));
                     },
                     places: [
-                        { name: 'thispc', title: _('This PC'), shortcutKey: 'p', separator: true, model: this._pcSaveListModel, view: FSEntryBrowserView },
+                        { name: 'thispc', title: _('This PC'), shortcutKey: 'p', separator: true, model: this._pcSaveListModel, view: new FSEntryBrowserView(this._pcSaveListModel) },
                     ]
                 },
                 {
@@ -509,7 +565,7 @@ const BackstageModel = Backbone.Model.extend({
                     shortcutKey: 'e',
                     places: [
                         {
-                            name: 'thispc', title: _('This PC'), shortcutKey: 'p', separator: true, model: this._pcExportListModel, view: FSEntryBrowserView,
+                            name: 'thispc', title: _('This PC'), shortcutKey: 'p', separator: true, model: this._pcExportListModel, view: new FSEntryBrowserView(this._pcExportListModel),
                             action: () => {
                                 let filePath = this._determineSavePath('main');
                                 this._pcExportListModel.set('suggestedPath', this.instance.get('title'));
@@ -520,9 +576,9 @@ const BackstageModel = Backbone.Model.extend({
                 }
             ];
         }
-    },
+    }
 
-    addToWorkingDirData: function(model) {
+    addToWorkingDirData(model: FSEntryListModel) {
         let wdType = model.attributes.wdType;
         if (this._wdData[wdType].models === undefined) {
             let wdTypeData = this._wdData[wdType];
@@ -536,8 +592,9 @@ const BackstageModel = Backbone.Model.extend({
             }
         }
         this._wdData[wdType].models.push(model);
-    },
-    tryBrowse: async function(options: IBrowseOptions) {
+    }
+
+    async tryBrowse(options: IBrowseOptions) {
 
         const { list, type, filename } = options;
 
@@ -609,19 +666,22 @@ const BackstageModel = Backbone.Model.extend({
                 });
             }
         }
-    },
-    getOp: function(opName) {
+    }
+
+    getOp(opName) {
         return this.attributes.ops.find(o => o.name === opName);
-    },
-    getPlace: function(opName, placeName) {
+    }
+
+    getPlace(opName, placeName) {
         let op = this.getOp(opName);
         if (op) {
             let place = op.places.find(p => p.name === placeName);
             if (place)
                 return { op, place };
         }
-    },
-    getCurrentOp: function() {
+    }
+
+    getCurrentOp() {
         let names = this.attributes.ops.map(o => o.name);
         let index = names.indexOf(this.attributes.operation);
 
@@ -629,8 +689,9 @@ const BackstageModel = Backbone.Model.extend({
             return this.attributes.ops[index];
         else
             return null;
-    },
-    getCurrentPlace: function() {
+    }
+
+    getCurrentPlace() {
 
         let op = this.getCurrentOp();
         if (op === null)
@@ -652,7 +713,8 @@ const BackstageModel = Backbone.Model.extend({
         }
 
         return op.places[index];
-    },
+    }
+
     tryOpen(options: IOpenOptions) {
         if (options.type === FSItemType.File) {
             this.requestOpen(options);
@@ -661,10 +723,12 @@ const BackstageModel = Backbone.Model.extend({
             let wdType = options.wdType === undefined ? 'main' : options.wdType;
             this.setCurrentDirectory(wdType, options.path, options.type);
         }
-    },
+    }
+
     tryImport(options: IImportOptions) {
         this.requestImport(options);
-    },
+    }
+
     async trySave(options: ISaveOptions) {
         try {
             await this.requestSave(options);
@@ -675,7 +739,8 @@ const BackstageModel = Backbone.Model.extend({
                 this.set('operation', 'saveAs');
             }
         }
-    },
+    }
+
     async tryExport(options: ISaveOptions) {
         try {
             options = Object.assign({ }, options, { export: true });
@@ -685,11 +750,13 @@ const BackstageModel = Backbone.Model.extend({
             this.set('activated', true);
             this.set('operation', 'export');
         }
-    },
-    dialogExport: function(options: ISaveOptions) {
+    }
+
+    dialogExport(options: ISaveOptions) {
         this._dialogPath = options.path;  // this may constitute a hack
         this.set('activated', false);
-    },
+    }
+
     async dialogBrowse(options: IBrowseOptions) {
         const { list, type, filename } = options;
         let filters = [];
@@ -741,8 +808,9 @@ const BackstageModel = Backbone.Model.extend({
         }
 
         this.set('activated', false);
-    },
-    async setCurrentDirectory(wdType, dirPath, type, writeOnly=false) {
+    }
+
+    async setCurrentDirectory(wdType: WDType, dirPath: string, type: FSItemType = FSItemType.Folder, writeOnly=false) {
         if (dirPath === '')
             dirPath = this._wdData[wdType].defaultPath;
 
@@ -849,11 +917,13 @@ const BackstageModel = Backbone.Model.extend({
             wdData.initialised = true;
         });
         return promise;
-    },
-    hasCurrentDirectory: function(wdType) {
+    }
+
+    hasCurrentDirectory(wdType: WDType) {
         return this._wdData[wdType].initialised;
-    },
-    _opChanged: function() {
+    }
+
+    _opChanged() {
 
         this._opChanged = true;
 
@@ -906,11 +976,13 @@ const BackstageModel = Backbone.Model.extend({
 
         if (promise.done)  // if Q promise
             promise.done();
-    },
-    _placeChanged : function() {
+    }
+
+    _placeChanged() {
         if (this.attributes.place !== '')
             this.instance.settings().setSetting('openPlace', this.attributes.place);
-    },
+    }
+
     async requestOpen(options: IOpenOptions = { path: '' }) {
 
         let progNotif = new Notify({
@@ -961,8 +1033,9 @@ const BackstageModel = Backbone.Model.extend({
         finally {
             progNotif.dismiss();
         }
-    },
-    requestImport: function(options: IImportOptions) {
+    }
+
+    requestImport(options: IImportOptions) {
         let deactivated = false;
         let deactivate = () => {
             if ( ! deactivated) {
@@ -973,8 +1046,9 @@ const BackstageModel = Backbone.Model.extend({
 
         this.instance.import(options.paths)
             .then(deactivate, undefined, deactivate);
-    },
-    externalRequestSave: function() {
+    }
+
+    externalRequestSave() {
 
         if (this.get('activated'))
             throw 'This method can only be called from outside of backstage.';
@@ -999,8 +1073,9 @@ const BackstageModel = Backbone.Model.extend({
         });
 
         return prom;
-    },
-    setSavingState: function(saving) {
+    }
+
+    setSavingState(saving) {
         let $button = $(document).find('.silky-bs-fslist-browser-save-button');
         if ( ! $button)
             return;
@@ -1016,7 +1091,8 @@ const BackstageModel = Backbone.Model.extend({
             $button.removeClass('disabled-div');
             $saveIcon.removeClass('saving-file');
         }
-    },
+    }
+
     async requestSave(options: ISaveOptions | null = null) {
 
         if (options === null) {
@@ -1060,28 +1136,34 @@ const BackstageModel = Backbone.Model.extend({
             throw e;
         }
 
-    },
-    _determineSavePath: function(wdType) {
+    }
+
+    _determineSavePath(wdType: WDType) {
         let filePath = this.instance.get('path');
         if (filePath && ! isUrl(filePath))
             return filePath;
 
         let root = this.instance.settings().getSetting(wdType + 'WorkingDir', this._wdData[wdType].defaultPath);
         return path.join(root, this.instance.get('title') + '.omv');
-    },
-    _settingsChanged : function(event) {
+    }
+
+    _settingsChanged(event) {
         if ('recents' in event.changed)
             this._recentsListModel.set('items', event.changed.recents);
-    },
-    recentsModel : function() {
+    }
+
+    recentsModel() {
         return this._recentsListModel;
-    },
-    progressHandler : function(evt) {
+    }
+
+    progressHandler(evt) {
         console.log(evt);
-    },
-    completeHandler: function(evt) {
+    }
+
+    completeHandler(evt) {
         console.log('complete');
-    },
+    }
+
     _notify(error) {
         let notification = new Notify({
             title: error.message,
@@ -1090,37 +1172,72 @@ const BackstageModel = Backbone.Model.extend({
             type: 'error',
         });
         this.trigger('notification', notification);
-    },
-});
+    }
+}
 
-const BackstageView = SilkyView.extend({
-    className: 'backstage',
-    initialize: function() {
-        let focusToken = focusLoop.addFocusLoop(this.$el[0], { exitSelector: '.jmv-ribbon-tab[data-tabname="file"]', level: 1, modal: true, allowKeyPaths: true, exitKeys: ['Escape'] } );
+export class BackstageView  extends EventDistributor {
+    //className: 'backstage',
+    model: BackstageModel;
+    //el: HTMLElement;
+    main: BackstageChoices;
+    ops: NodeListOf<HTMLElement>;
+    opPanel: HTMLElement;
+
+    constructor(model: BackstageModel) {
+        super();
+
+        //this.el = el;
+        this.model = model;
+
+        this.addEventListener('preferredWidthChanged', (event: CustomEvent) => {
+            this.style.width = event.detail;
+        });
+
+        this.setEventMap({
+            //'click .silky-bs-back-button' : this.deactivate,
+            'keydown' : this._keypressHandle
+        });
+
+        this.main = new BackstageChoices(this.model, this ); 
+        this.main.classList.add('silky-bs-main');
+
+        let focusToken = focusLoop.addFocusLoop(this, { exitSelector: '.jmv-ribbon-tab[data-tabname="file"]', level: 1, modal: true, allowKeyPaths: true, exitKeys: ['Escape'] } );
         focusToken.on('focusleave', (event) => {
             if (focusLoop.focusMode === 'shortcuts' && focusLoop.shortcutPath.startsWith('F') && focusLoop.shortcutPath.length > 1)
                 event.cancel = true;
             else
                 this.deactivate();
         });
+        
+    }
+
+    connectedCallback() {
         this.model.on("change:activated", this._activationChanged, this);
         this.model.on('change:operation', this._opChanged, this);
         this.model.on('change:place',     this._placeChanged, this);
         this.model.on('change:ops',       this.render, this);
         this.model.on('change:dialogMode', this._dialogModeChanged, this);
-    },
-    _dialogModeChanged: function() {
-        let $recents = this.$el.find('.silky-bs-op-recents-main');
+
+        this.render();
+    }
+
+    disconnectedCallback() {
+        this.model.off("change:activated", this._activationChanged, this);
+        this.model.off('change:operation', this._opChanged, this);
+        this.model.off('change:place',     this._placeChanged, this);
+        this.model.off('change:ops',       this.render, this);
+        this.model.off('change:dialogMode', this._dialogModeChanged, this);
+    }
+
+    _dialogModeChanged() {
+        let recents = this.querySelector<HTMLElement>('.silky-bs-op-recents-main');
         if (this.model.get('dialogMode'))
-            $recents.hide();
+            recents.style.display = 'none';
         else
-            $recents.show();
-    },
-    events: {
-        //'click .silky-bs-back-button' : 'deactivate',
-        'keydown' : '_keypressHandle'
-    },
-    _keypressHandle: function(event) {
+            recents.style.display = '';
+    }
+
+    _keypressHandle(event) {
         if (event.metaKey || event.ctrlKey || event.altKey)
             return;
 
@@ -1129,9 +1246,10 @@ const BackstageView = SilkyView.extend({
                 //this.deactivate(true);
                 break;
         }
-    },
-    setPlace: function(op, place) {
-        this.model.set('op', op.name);
+    }
+
+    setPlace(op, place) {
+        //this.model.set('op', op.name);
 
         if ('action' in place)
             place.action();
@@ -1140,11 +1258,13 @@ const BackstageView = SilkyView.extend({
             this.model.set('lastSelectedPlace', place.name);
             this.model.set('place', place.name);
         }
-    },
-    clickOp: function(event) {
+    }
+
+    clickOp(event) {
         this.model.set('operation', event.target.getAttribute('data-op'));
-    },
-    clickPlace: function(event) {
+    }
+
+    clickPlace(event) {
         let opName = event.target.getAttribute('data-op');
         let placeName = event.target.getAttribute('data-place');
         let placeInfo = this.model.getPlace(opName, placeName);
@@ -1154,18 +1274,20 @@ const BackstageView = SilkyView.extend({
             event.target.focus();
         }, 250);
 
-    },
-    clickRecent: function(event) {
+    }
+
+    clickRecent(event) {
         const filePath = event.target.getAttribute('data-path');
         const fileName = event.target.getAttribute('data-name');
         const recentsModel = this.model.recentsModel();
         const options = { path: filePath, title: fileName, type: FSItemType.File };
         recentsModel.requestOpen(options);
-    },
-    render: function() {
-        this.$el.empty();
+    }
 
-        this.$el.addClass('silky-bs');
+    render() {
+        this.innerHTML = '';
+
+        this.classList.add('silky-bs');
 
         let html = '';
 
@@ -1178,10 +1300,10 @@ const BackstageView = SilkyView.extend({
         html += '    </div>';
         html += '</div>';
 
-        this.$opPanel = $(html);
-        this.$opPanel.appendTo(this.$el);
+        this.opPanel = HTML.parse(html);
+        this.append(this.opPanel);
 
-        this.menuSelection = new selectionLoop('bs-menu', this.$opPanel[0]);
+        this.menuSelection = new selectionLoop('bs-menu', this.opPanel);
         this.menuSelection.on('selected-index-changed', (data) => {
             if (data.target.hasAttribute('data-path'))
                 this.clickRecent(data);
@@ -1193,9 +1315,9 @@ const BackstageView = SilkyView.extend({
                 this.clickOp(data);
         });
 
-        $('<div class="silky-bs-main"></div>').appendTo(this.$el);
+        this.append(this.main);
 
-        let $opList = $(`<div class="silky-bs-op-list" role="group" aria-label="${_('File menu items')}"></div>`);
+        let opList = HTML.parse(`<div class="silky-bs-op-list" role="group" aria-label="${_('File menu items')}"></div>`);
 
         let currentOp = null;
         for (let i = 0; i < this.model.attributes.ops.length; i++) {
@@ -1205,12 +1327,13 @@ const BackstageView = SilkyView.extend({
                 currentOp = op;
 
             let labelId = focusLoop.getNextAriaElementId('label');
-            let $op = $(`<div class="silky-bs-menu-item" data-op="${s6e(op.name)}-item" role="none"></div>`);
-            let $opTitle = $(`<div id="${labelId}" class="silky-bs-op-button bs-menu-list-item" role="menuitem" tabindex="-1" data-op="${s6e(op.name)}">${ s6e(op.title) }</div>`).appendTo($op);
+            let opElement = HTML.parse(`<div class="silky-bs-menu-item" data-op="${s6e(op.name)}-item" role="none"></div>`);
+            let opTitle = HTML.parse(`<div id="${labelId}" class="silky-bs-op-button bs-menu-list-item" role="menuitem" tabindex="-1" data-op="${s6e(op.name)}">${ s6e(op.title) }</div>`);
+            opElement.append(opTitle)
             if (op.action)
-                $opTitle.addClass('bs-menu-action');
+                opTitle.classList.add('bs-menu-action');
             if (op.shortcutKey) {
-                focusLoop.applyShortcutOptions($opTitle[0], {
+                focusLoop.applyShortcutOptions(opTitle, {
                     key: op.shortcutKey.toUpperCase(),
                     path: 'F',
                     action: this.clickOp.bind(this),
@@ -1219,17 +1342,17 @@ const BackstageView = SilkyView.extend({
                 });
             }
             if (i === 0)
-                this.menuSelection.highlightElement($opTitle[0]);
+                this.menuSelection.highlightElement(opTitle);
 
             if ('places' in op) {
-                let $opPlaces = $(`<div class="silky-bs-op-places" role="group" aria-label="${ s6e(op.title) }"></div>`);
+                let opPlaces = HTML.parse(`<div class="silky-bs-op-places" role="group" aria-label="${ s6e(op.title) }"></div>`);
                 for (let place of op.places) {
-                    $opPlaces.append($(`<div class="icon" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }" role="none"></div>`));
-                    let $opPlace = $(`<div class="silky-bs-op-place bs-menu-list-item" tabindex="-1" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }" role="menuitem" aria-label="${ s6e(place.title) }">${ s6e(place.title) }</div>`);
+                    opPlaces.append(HTML.parse(`<div class="icon" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }" role="none"></div>`));
+                    let opPlace = HTML.parse(`<div class="silky-bs-op-place bs-menu-list-item" tabindex="-1" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }" role="menuitem" aria-label="${ s6e(place.title) }">${ s6e(place.title) }</div>`);
                     if (place.action)
-                        $opPlace.addClass('bs-menu-action');
+                        opPlace.classList.add('bs-menu-action');
                     if (place.shortcutKey) {
-                        focusLoop.applyShortcutOptions($opPlace[0], {
+                        focusLoop.applyShortcutOptions(opPlace, {
                             key: place.shortcutKey.toUpperCase(),
                             path: `F${op.shortcutKey.split('-')[0].toUpperCase()}`,
                             action: this.clickPlace.bind(this),
@@ -1237,49 +1360,54 @@ const BackstageView = SilkyView.extend({
                             label: s6e(place.title)
                         });
                     }
-                    $opPlaces.append($opPlace);
+                    opPlaces.append(opPlace);
                 }
-                $opPlaces.appendTo($op);
+                opElement.append(opPlaces);
             }
 
-            op.$el = $op;
-            $opList.append($op);
+            //op.$el = opElement;
+            opList.append(opElement);
         }
-        this.$opPanel.append($opList);
+        this.opPanel.append(opList);
 
         if ( ! OneDriveView) {
-            this.$opPanel.append($('<div class="silky-bs-op-separator"></div>'));
+            this.opPanel.append(HTML.parse('<div class="silky-bs-op-separator"></div>'));
 
             let recentsLabelId = focusLoop.getNextAriaElementId('label');
-            let $op = $(`<div class="silky-bs-op-recents-main" role="group" aria-label="${'Recently opened files'}"></div>`);
+            let opElement = HTML.parse(`<div class="silky-bs-op-recents-main" role="group" aria-label="${'Recently opened files'}"></div>`);
             if (this.model.get('dialogMode'))
-                $op.hide();
+                opElement.style.display = 'none';
             else
-                $op.show();
+                opElement.style.display = '';
 
-            let $opTitle = $(`<label id="${recentsLabelId}" class="silky-bs-op-header" data-op="Recent">${_('Recent')}</label>`).appendTo($op);
-            let $recentsBody = $('<div class="silky-bs-op-recents" role="presentation"></div>').appendTo($op);
-            $op.appendTo(this.$opPanel);
+            opElement.append(HTML.parse(`<label id="${recentsLabelId}" class="silky-bs-op-header" data-op="Recent">${_('Recent')}</label>`));
+            //let $recentsBody = $('<div class="silky-bs-op-recents" role="presentation"></div>').appendTo($op);
+            this.opPanel.append(opElement);
 
             let recentsModel = this.model.recentsModel();
-            new FSEntryListView({el: $recentsBody, model: recentsModel});
+            let recentsList = new FSEntryListView(recentsModel);
+            recentsList.classList.add('silky-bs-op-recents');
+            recentsList.setAttribute('role', 'presentation');
+            opElement.append(recentsList)
 
-            $recentsBody.find('.silky-bs-fslist-entry').on('shortcut-action', this.clickRecent.bind(this));
+            let items = recentsList.querySelectorAll<HTMLElement>('.silky-bs-fslist-entry');
+            for (let item of items) {
+                item.addEventListener('shortcut-action', (event) => {
+                    this.clickRecent(event);
+                });
+            }
+            //$recentsBody.find('.silky-bs-fslist-entry').on('shortcut-action', this.clickRecent.bind(this));
         }
 
-        this.$browseInvoker = this.$el.find('.silky-bs-place-invoker');
-        this.$ops = this.$el.find('.silky-bs-menu-item');
+        //this.browseInvoker = this.el.querySelector('.silky-bs-place-invoker');
+        this.ops = this.querySelectorAll<HTMLElement>('.silky-bs-menu-item');
 
         this._opChanged();
+    }
 
-        if (this.main)
-            this.main.close();
-
-        this.main = new BackstageChoices({ el: '.silky-bs-main', model : this.model, parent: this });
-    },
-    activate : function(fromMouse) {
+    activate(fromMouse=false) {
         this.activeStateChanging = true;
-        this.$el.addClass('activated');
+        this.classList.add('activated');
 
         tarp.show('backstage', true, 0.3).then(
             undefined,
@@ -1291,24 +1419,25 @@ const BackstageView = SilkyView.extend({
         $('#main').attr('aria-hidden', true);
         $('.jmv-ribbon-tab.file-tab').attr('aria-expanded', true);
 
-        this.menuSelection.selectElement(this.$opPanel.find('.silky-bs-back-button')[0], false, true);
+        this.menuSelection.selectElement(this.opPanel.querySelector('.silky-bs-back-button'), false, true);
 
         setTimeout(() => {
-            focusLoop.enterFocusLoop(this.$el[0], { withMouse: fromMouse });
+            focusLoop.enterFocusLoop(this, { withMouse: fromMouse });
             // fix chrome render issue - force redraw
-            this.$opPanel[0].style.zIndex = 1;
+            this.opPanel.style.zIndex = '1';
         }, 200);
         this.activeStateChanging = false;
-    },
-    deactivate : function(fromMouse) {
+    }
+
+    deactivate(fromMouse) {
 
         // fix chrome render issue - reset for future force redraw
-        this.$opPanel[0].style.zIndex = 'auto';
+        this.opPanel.style.zIndex = 'auto';
 
         this.activeStateChanging = true;
         tarp.hide('backstage');
-        this.$el.removeClass('activated');
-        this.$el.removeClass('activated-sub');
+        this.classList.remove('activated');
+        this.classList.remove('activated-sub');
 
         this.model.set('activated', false);
 
@@ -1316,54 +1445,61 @@ const BackstageView = SilkyView.extend({
 
         this.model.set('operation', '');
         this.model.set('place', '');
-        this.$el.css('width', '');
+        this.style.width = '';
 
         $('body').find('.app-dragable').removeClass('ignore');
         $('#main').attr('aria-hidden', false);
         $('.jmv-ribbon-tab.file-tab').attr('aria-expanded', false);
 
-        focusLoop.leaveFocusLoop(this.$el[0], fromMouse);
+        focusLoop.leaveFocusLoop(this, fromMouse);
         this.activeStateChanging = false;
-    },
-    _activationChanged : function() {
+    }
+
+    _activationChanged() {
         if ( ! this.activeStateChanging) {
             if (this.model.get('activated'))
                 this.activate(true);
             else
                 this.deactivate(true);
         }
-    },
-    _hideSubMenus : function() {
-        if (this.$ops) {
-            let $opsButton = this.$ops.find('.silky-bs-op-button').attr('tabindex', '0');//removeClass('bs-menu-item-ignore');
-            let $subOps = this.$ops.find('.silky-bs-op-places');
-            for (let i = 0; i < $subOps.length; i++) {
-                $($subOps[i]).css('height', '');
-                $subOps.css('opacity', '');
-                $subOps.css('visibility', '');
+    }
+
+    _hideSubMenus() {
+        if (this.ops) {
+            for (let op of this.ops) {
+                op.querySelector('.silky-bs-op-button').setAttribute('tabindex', '0');//removeClass('bs-menu-item-ignore');
+                let subOps = op.querySelector<HTMLElement>('.silky-bs-op-places');
+                if (subOps) {
+                    subOps.style.height = '';
+                    subOps.style.opacity = '';
+                    subOps.style.visibility = '';
+                }
             }
         }
-    },
-    _placeChanged : function() {
-        let $places = this.$ops.find('.silky-bs-op-place');
+    }
 
-        let op = this.model.getCurrentOp();
-        let place = this.model.getCurrentPlace();
-        if (place === null)
-            $places.removeClass('selected-place');
-        else if ('view' in place) {
-            $places.removeClass('selected-place');
+    _placeChanged() {
+        let currentOp = this.model.getCurrentOp();
+        let currentPlace = this.model.getCurrentPlace();
+        for (let op of this.ops) {
+            let places = op.querySelectorAll<HTMLElement>('.silky-bs-op-place');
+            for (let place of places) {
+                place.classList.remove('selected-place');
 
-            let $place = this.$ops.find(`[data-place="${ s6e(place.name) }"][data-op="${ s6e(op.name) }"]`);
+                if (currentPlace && 'view' in currentPlace && place.dataset.op === currentOp.name && place.dataset.place === currentPlace.name ) {
+                    place.classList.add('selected-place');
 
-            $place.addClass('selected-place');
-
-            this.menuSelection.selectElement($place[0], 'internal', true);
+                    this.menuSelection.selectElement(place, 'internal', true);
+                }
+            }
         }
-    },
-    _opChanged : function() {
+    }
 
-        this.$ops.removeClass('selected');
+    _opChanged() {
+
+        for (let op of this.ops)
+            op.classList.remove('selected');
+
         this._hideSubMenus();
 
         let operation = this.model.get('operation');
@@ -1380,115 +1516,103 @@ const BackstageView = SilkyView.extend({
 
         if (mode === 'cloud') {
 
-            let $logo = this.$el.find('.silky-bs-logo');
+            let logo = this.querySelector<HTMLElement>('.silky-bs-logo');
             if (op !== null) {
-                $logo.text(op.title);
-                $logo.addClass('ops-title');
+                logo.innerText = op.title;
+                logo.classList.add('ops-title');
             }
             else {
-                $logo.text('');
-                $logo.removeClass('ops-title');
+                logo.innerText = '';
+                logo.classList.remove('ops-title');
             }
         }
 
-        let $op = this.$ops.filter('[data-op="' + operation + '-item"]');
-        let $opsButton = $op.find('.silky-bs-op-button').attr('tabindex', null);//.addClass('bs-menu-item-ignore');
-        let $subOps = $op.find('.silky-bs-op-places');
-        let $contents = $subOps.contents();
-        let height = 0;
-        for(let i = 0; i < $contents.length; i++) {
-            let element = $contents[i];
-            if (element.classList.contains('silky-bs-op-place'))
-                height += $contents[i].offsetHeight;
+        //let $op = this.$ops.filter('[data-op="' + operation + '-item"]');
+        let hasPlaces = false;
+        if (operation) {
+            let opEl = Array.from(this.ops).filter(el => 
+                el.getAttribute('data-op') === `${operation}-item`
+            )[0];
+            opEl.querySelector('.silky-bs-op-button').setAttribute('tabindex', null);//.addClass('bs-menu-item-ignore');
+            let subOps = opEl.querySelector<HTMLElement>('.silky-bs-op-places');
+            if (subOps) {
+                let contents = subOps.querySelectorAll<HTMLElement>('.silky-bs-op-place');
+                let height = 0;
+                for(let place of contents) {
+                    height += place.offsetHeight;
+                }
+                subOps.style.height = `${height}px`;
+                subOps.style.opacity = '1';
+                subOps.style.visibility = 'visible';
+            }
+
+            hasPlaces = op !== null && op.places !== undefined;
+
+            if (hasPlaces)
+                opEl.classList.add('selected');
         }
-        $subOps.css('height', height);
-        $subOps.css('opacity', 1);
-        $subOps.css('visibility', 'visible');
-
-        let hasPlaces = op !== null && op.places !== undefined;
-
-        if (hasPlaces)
-            $op.addClass('selected');
 
         if (operation && this.model.get('activated') && hasPlaces)
-            this.$el.addClass('activated-sub');
+            this.classList.add('activated-sub');
         else
-            this.$el.removeClass('activated-sub');
+            this.classList.remove('activated-sub');
 
         setTimeout(() => {
             focusLoop.updateShortcuts({ silent: true });
         }, 200);
     }
-});
+}
 
-const BackstageChoices = SilkyView.extend({
-    className: 'silky-bs-choices',
+export class BackstageChoices extends EventDistributor {
 
-    close: function() {
-        this.remove();
-        this.unbind();
-        this.model.off('change:place', this._placeChanged);
-    },
+    model: BackstageModel;
+    parent: any;
+    current: BackstagePanelView;
+    initalised = false;
 
-    initialize : function(params) {
+    constructor(model, parent) {
+        super();
 
-        this.parent = params.parent;
+        this.model = model;
+        this.parent = parent;
+    }
+
+    connectedCallback() {
         this.model.on('change:place', this._placeChanged, this);
 
-        let html = '';
-
-        html += '<div class="silky-bs-choices-list"></div>';
-        html += '<div class="silky-bs-choices-list" style="display: none ;"></div>';
-
-        this.$el.html(html);
-
-        this.$choices = this.$el.find('.silky-bs-choices-list');
-        this.$current = $(this.$choices[0]);
-        this.$waiting = $(this.$choices[1]);
-
+        this.innerHTML = '';
+        this.append(HTML.create('div', { class: "silky-bs-choices-list" }));
         this._placeChanged();
-    },
-    _placeChanged : function() {
+    }
+
+    disconnectedCallback() {
+        this.model.off('change:place', this._placeChanged);
+    }
+
+    _placeChanged() {
 
         let place = this.model.getCurrentPlace();
 
-        let  old = this.current;
-        let $old = this.$current;
-
-        if (place === null) {
-            if ($old)
-                $old.removeClass('fade-in');
-            if (old)
-                setTimeout(function() { old.remove(); }, 200);
-            return;
+        let old = this.current;
+        if (old) {
+            old.classList.remove('fade-in');
+            old.remove();
         }
+        if (place === null)
+            return;
 
         if ('action' in place)
             place.action();
 
         if (place.model) {
-            if ($old)
-                $old.removeClass('fade-in');
-            this.$current = $('<div class="silky-bs-choices-list"></div>');
-
-            this.$current.appendTo(this.$el);
-            if (this.current) {
-                this.current.off('preferredWidthChanged');
-                this.current.close();
-            }
-
             place.model.set('title', place.title);
-            this.current = new place.view({ el: this.$current, model: place.model });
+            this.current = place.view;
+            this.append(this.current);
 
-            if (this.current.preferredWidth) {
-                this.parent.$el.css('width', this.current.preferredWidth());
-                this.current.on('preferredWidthChanged', (event) => {
-                    this.parent.$el.css('width', this.current.preferredWidth());
-                });
-            }
-            else {
-                this.parent.$el.css('width', '');
-            }
+            if (this.current.preferredWidth)
+                this.parent.style.width = this.current.preferredWidth();
+            else
+                this.parent.style.width = '';
 
             if (this.current.setShortcutPath) {
                 let op = this.model.getCurrentOp();
@@ -1501,11 +1625,11 @@ const BackstageChoices = SilkyView.extend({
             }
 
             setTimeout(() => {
-                this.$current.addClass('fade-in');
+                this.current.classList.add('fade-in');
             }, 0);
         }
 
-        if (place.view === FSEntryBrowserView) {
+        if (place.view instanceof FSEntryBrowserView) {
             if (this.model.hasCurrentDirectory(place.model.attributes.wdType) === false) {
                 if (place.model.attributes.wdType === 'thispc') {
                     let filePath = this.model._determineSavePath('main');
@@ -1515,16 +1639,13 @@ const BackstageChoices = SilkyView.extend({
                     this.model.setCurrentDirectory(place.model.attributes.wdType, '', null, place.model.writeOnly);  // empty string requests default path
                 }
             }
-            else if (this.$current.attr('wdtype') === place.model.attributes.wdType)
-                this.$current.removeClass('wd-changing');
-        }
-
-        if (old) {
-            setTimeout(function() {
-                old.remove();
-            }, 200);
+            else if (this.current.getAttribute('wdtype') === place.model.attributes.wdType)
+                this.current.classList.remove('wd-changing');
         }
     }
-});
+}
+
+customElements.define('jmv-choices', BackstageChoices);
+customElements.define('jmv-backstage', BackstageView);
 
 module.exports = { View: BackstageView, Model: BackstageModel };

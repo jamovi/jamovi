@@ -9,10 +9,10 @@ const EnumPropertyFilter = require('./enumpropertyfilter');
 const SuperClass = require('../common/superclass');
 const Backbone = require('backbone');
 const ControlContainer = require('./controlcontainer').container;
-const Toolbar = require('../common/toolbar/toolbar');
-const ToolbarButton = require('../common/toolbar/toolbarbutton');
-const ToolbarGroup = require('../common/toolbar/toolbargroup');
-const ToolbarSeparator = require('../common/toolbar/toolbarseparator');
+import Toolbar from '../common/toolbar/toolbar';
+import ToolbarButton from '../common/toolbar/toolbarbutton';
+import ToolbarGroup from '../common/toolbar/toolbargroup';
+import ToolbarSeparator from '../common/toolbar/toolbarseparator';
 const A11y = require('../common/focusloop');
 
 const TargetListSupport = function(supplier) {
@@ -1132,7 +1132,7 @@ const GridTargetContainer = function(params) {
             ]);
 
 
-            this.$buttons = this.toolbar.$el;
+            this.$buttons = $(this.toolbar.el);
             this.$buttons.addClass('arrow-right');
             this.toolbar.on('buttonClicked', (item) => {
                 if (this.gainOnClick && this.targetGrids.length > 0 && !this.targetGrid)

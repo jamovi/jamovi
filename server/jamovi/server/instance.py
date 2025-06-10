@@ -3174,6 +3174,8 @@ class Instance:
             analysis_pb.menuSubgroup = analysis.menuSubgroup
             analysis_pb.menuTitle = analysis.menuTitle
             analysis_pb.menuSubtitle = analysis.menuSubtitle
+            analysis_pb.category = analysis.category
+
 
     def terminate(self, message, cause=''):
         if self._coms is not None:

@@ -26,6 +26,27 @@ export const analysisUIUrl = resolveUrl(window.config.client.roots[1]);
 export const resultsViewUrl = resolveUrl(window.config.client.roots[2]);
 
 
+export interface IExtensionGroup { 
+    description: string, 
+    extensions: string[] 
+}
+
+export interface IShowDialogOptions {
+    title: string,
+    defaultPath: string,
+    filters: IExtensionGroup[]
+}
+
+export interface IDialogProviderResult { 
+    cancelled: boolean, 
+    file?: string 
+}
+
+export interface IDialogProvider {
+    showDialog: (type: string, options: IShowDialogOptions) => Promise<IDialogProviderResult>;
+}
+
+
 let dialogProvider;
 
 const emitter = new events.EventEmitter();
@@ -228,11 +249,11 @@ export async function triggerDownload(url) {
     triggerDownload.iframe.src = url;
 }
 
-export const setDialogProvider = etron.setDialogProvider || (function (provider) {
+export const setDialogProvider = etron.setDialogProvider || (function (provider: IDialogProvider) {
     dialogProvider = provider;
 });
 
-export const showSaveDialog = etron.showSaveDialog || (async function(options) {
+export const showSaveDialog = etron.showSaveDialog || (async function(options: IShowDialogOptions) {
     return await dialogProvider.showDialog('export', options);
 });
 

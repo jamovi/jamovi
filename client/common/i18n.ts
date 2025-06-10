@@ -303,4 +303,4 @@ class I18n {
 
 const _i18n = new I18n();
 
-module.exports = _i18n;
+export default _i18n;

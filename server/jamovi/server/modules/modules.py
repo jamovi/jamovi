@@ -129,6 +129,7 @@ class AnalysisMeta:
         self.name = None
         self.ns = None
         self.title = None
+        self.ribbon = ''
         self.menuGroup = ''
         self.menuSubgroup = ''
         self.menuTitle = ''
@@ -482,7 +483,6 @@ class Modules:
 
         if 'analyses' in defn:
             for analysis_defn in defn['analyses']:
-
                 analysis = AnalysisMeta()
                 analysis.name = analysis_defn['name']
                 analysis.ns = analysis_defn['ns']
@@ -491,6 +491,7 @@ class Modules:
 
                 analysis.menuGroup = analysis_defn['menuGroup']
                 analysis.menuTitle = analysis_defn['menuTitle']
+                analysis.category = analysis_defn.get('category', 'analyses')
 
                 if 'menuSubgroup' in analysis_defn and analysis_defn['menuSubgroup'] is not None:
                     analysis.menuSubgroup = analysis_defn['menuSubgroup']

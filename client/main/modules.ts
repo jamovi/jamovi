@@ -4,53 +4,100 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
-Backbone.$ = $;
+import yaml from 'js-yaml';
 
-const yaml = require('js-yaml');
+import host from './host';
+import Version from './utils/version';
+import I18n from '../common/i18n';
 
-const host = require('./host');
-const Version = require('./utils/version');
-const I18n = require('../common/i18n');
+import { EventMap } from '../common/eventmap';
+
+import type { IModulesProvider } from './instance';
 
 class ModuleError extends Error {}
 class ModuleNotFoundError extends ModuleError {}
 class ModuleCorruptError extends ModuleError {}
 class AnalysisNotFoundError extends ModuleError {}
 
-const ModulesBase = Backbone.Model.extend({
-    defaults : {
-        modules : [ ],
-        progress : [ 0, 1 ],
-        message: '',
-        status : 'none',
-        error: null,
-    },
-    initialize(args) {
+interface IModulesModel {
+    modules: IModuleMeta[],
+    progress: any[],
+    message: string,
+    status: string,
+    error: any
+}
+
+interface IAnalysisMeta {
+    name : string,
+    ns: string,
+    title: string,
+    menuGroup :string,
+    menuSubgroup: string,
+    menuTitle: string,
+    menuSubtitle: string,
+    category: string
+}
+
+type Op =
+  | 'install'
+  | 'update'
+  | 'incompatible'
+  | 'unavailable'
+  | 'old'
+  | 'installed'
+  | 'show'
+  | 'hide'
+  | 'remove';
+
+interface IModuleMeta {
+    name: string,
+    title: string,
+    version: number,
+    authors: string[],
+    description: string,
+    analyses: IAnalysisMeta[],
+    path: string,
+    isSystem: boolean,
+    new: boolean,
+    minAppVersion: number,
+    visible: boolean,
+    incompatible: boolean,
+    getTranslator: () => (value: string) => string,
+    ops: Op[]
+}
+
+export class ModulesBase extends EventMap<IModulesModel> {
+
+    _parent: ModulesBase;
+    _instance: IModulesProvider;
+
+    constructor(args: {instance: any, parent?: ModulesBase}) {
+        super({
+            modules : [ ],
+            progress : [ 0, 1 ],
+            message: '',
+            status : 'none',
+            error: null,
+        });
 
         this._instance = args.instance;
         this._parent = args.parent;
+    }
 
-        this[Symbol.iterator] = () => {
-            let index = 0;
-            return {
-                next: () => {
-                    let ret = { };
-                    if (index < this.attributes.modules.length) {
-                        ret.value = this.attributes.modules[index];
-                        ret.done = false;
-                        index++;
-                    }
-                    else {
-                        ret.done = true;
-                    }
-                    return ret;
-               }
-            };
+    [Symbol.iterator](): Iterator<IModuleMeta> {
+        let index = 0;
+        const modules = this.attributes.modules;
+        return {
+            next() : IteratorResult<IModuleMeta> {
+                if (index < modules.length) 
+                    return { value: modules[index++], done: false };
+                else
+                    return { value: undefined, done: true };
+            }
         };
-    },
-    install(path) {
+    }
+
+    install(path: string) {
         this.set('progress', [ 0, 1 ]);
         this.set('status', 'installing');
         let install = this._instance.installModule(path);
@@ -62,14 +109,17 @@ const ModulesBase = Backbone.Model.extend({
             this.set('progress', progress);
         });
         return install;
-    },
-    uninstall(name) {
+    }
+
+    uninstall(name: string) {
         return this._instance.uninstallModule(name);
-    },
+    }
+
     retrieve() {
 
-    },
-    setModuleVisibility(name, value) {
+    }
+
+    setModuleVisibility(name: string, value: boolean) {
         let modules = this.get('modules');
         for (let module of modules) {
             if (module.name === name && module.visible !== value) {
@@ -77,8 +127,9 @@ const ModulesBase = Backbone.Model.extend({
                 break;
             }
         }
-    },
-    toggleModuleVisibility(name) {
+    }
+
+    toggleModuleVisibility(name: string) {
         let modules = this.get('modules');
         for (let module of modules) {
             if (module.name === name) {
@@ -86,21 +137,23 @@ const ModulesBase = Backbone.Model.extend({
                 break;
             }
         }
-    },
-    _setModVisibility(module, value) {
+    }
+
+    _setModVisibility(module: IModuleMeta, value: boolean) {
         return this._instance.setModuleVisibility(module.name, value).then(() => {
             module.visible = value;
             module.ops = this._determineOps(module);
             this.trigger('moduleVisibilityChanged', module);
         });
-    },
+    }
+
     _setup(message, modulesPB) {
 
-        let modules = [ ];
+        let modules: IModuleMeta[] = [ ];
 
         for (let modulePB of modulesPB) {
 
-            let module = {
+            let module: IModuleMeta = {
                 name:  modulePB.name,
                 title: modulePB.title,
                 version: modulePB.version,
@@ -113,7 +166,8 @@ const ModulesBase = Backbone.Model.extend({
                 minAppVersion: modulePB.minAppVersion,
                 visible: modulePB.visible,
                 incompatible: modulePB.incompatible,
-                getTranslator: () => { return (value) => { return value; }; }
+                getTranslator: () => { return (value) => { return value; }; },
+                ops: []
             };
 
             module.ops = this._determineOps(module);
@@ -126,23 +180,30 @@ const ModulesBase = Backbone.Model.extend({
 
         this.set('message', message);
         this.set('modules', modules);
-    },
-    _determineOps(module) {
+    }
+
+    _determineOps(module: IModuleMeta) : Op[] {
         return [ ];
     }
-});
+}
 
 class Module {
+
+    _ns: string;
+    _version: string;
+    _moduleDefn: any;
+    _analysisDefns = { };
+    _i18nDefns = { };
+    _status: string = 'none';
+    loaded = false;
+    _languages = [];
+    _i18nReady: Promise<void>;
+    _ready: Promise<void>;
+    currentI18nCode: string;
 
     constructor(ns, version) {
         this._ns = ns;
         this._version = version;
-        this._moduleDefn = undefined;
-        this._analysisDefns = { };
-        this._i18nDefns = { };
-        this._status = 'none';
-        this.loaded = false;
-        this._languages = [];
         this._i18nReady = this._loadI18n();
     }
 
@@ -207,7 +268,7 @@ class Module {
             return value[0];
     }
 
-    async getDefn(name) {
+    async getDefn(name: string) {
         if (this.loaded === false)
             this.load();
         await this._ready;
@@ -308,13 +369,18 @@ class Module {
         }
 }
 
-const Available = ModulesBase.extend({
+export class Available extends ModulesBase {
 
-    initialize(args) {
-        ModulesBase.prototype.initialize.apply(this, arguments);
+    version: number;
+
+    constructor(args: {instance: any, parent: any}) {
+        super(args);
+
+        //ModulesBase.prototype.initialize.apply(this, arguments);
         this._parent.on('change:modules', () => this._updateOps());
-    },
-    retrieve() {
+    }
+
+    override retrieve() {
         this.set('error', null);
         this.set('status', 'loading');
 
@@ -330,15 +396,17 @@ const Available = ModulesBase.extend({
             this.set('status', 'error');
             this._setup('', [ ]);
         });
-    },
+    }
+
     _updateOps() {
         let modules = this.attributes.modules;
         for (let module of modules)
             module.ops = this._determineOps(module);
         this.attributes.modules = [ ];
         this.set('modules', modules);
-    },
-    _determineOps(module) {
+    }
+
+    override _determineOps(module: IModuleMeta): Op[] {
         if (module.path === '')
             return [ 'unavailable' ];
         if (module.minAppVersion > this.version)
@@ -359,15 +427,17 @@ const Available = ModulesBase.extend({
         }
         return [ 'install' ];
     }
-});
+}
 
-const Modules = ModulesBase.extend({
-    initialize(args) {
-        ModulesBase.prototype.initialize.apply(this, arguments);
+export class Modules extends ModulesBase {
+    _available: Available;
+    _moduleDefns: { [name: string]: Module } = { };
+    _preloadedJMV = false;
+    
+    constructor(args: {instance: any, parent?: any}) {
+        super(args);
+
         this._available = new Available({ instance: args.instance, parent: this });
-
-        this._moduleDefns = { };
-        this._preloadedJMV = false;
 
         this._instance.settings().on('change:modules', async (modules) => {
             this._setup('', modules.changed.modules);
@@ -382,22 +452,26 @@ const Modules = ModulesBase.extend({
         this._instance.on('moduleInstalled', (module) => {
             this.trigger('moduleInstalled', module);
         });
-    },
+    }
+
     create(info) {
         info.getTranslator = () => {
             return this.getTranslator(info.name);
         };
 
         this._moduleDefns[info.name] = new Module(info.name, Version.stringify(info.version));
-    },
+    }
+
     available() {
         return this._available;
-    },
+    }
+
     purgeCache(ns) {
         let module = this._moduleDefns[ns];
         if (module)
             module.reload();
-    },
+    }
+
     _createModule(ns) {
         let version = '';
         for (let mod of this.attributes.modules) {
@@ -411,14 +485,15 @@ const Modules = ModulesBase.extend({
         this._moduleDefns[ns] = module;
 
         return module;
-    },
+    }
+
     async getDefn(ns, name) {
         let module = this._moduleDefns[ns];
         if ( ! module)
             module = this._createModule(ns);
 
         return await module.getDefn(name);
-    },
+    }
 
     async getTranslator(ns) {
         let module = this._moduleDefns[ns];
@@ -427,7 +502,7 @@ const Modules = ModulesBase.extend({
 
         await module._i18nReady;
         return module.translate.bind(module);
-    },
+    }
 
     async getI18nCodes(ns) {
         let module = this._moduleDefns[ns];
@@ -435,7 +510,7 @@ const Modules = ModulesBase.extend({
             module = this._createModule(ns);
 
         return await module.getI18nCodes();
-    },
+    }
 
     async getCurrentI18nCode(ns) {
         let module = this._moduleDefns[ns];
@@ -443,7 +518,7 @@ const Modules = ModulesBase.extend({
             module = this._createModule(ns);
 
         return await module.getCurrentI18nCode();
-    },
+    }
 
     async getI18nDefn(ns) {
         let module = this._moduleDefns[ns];
@@ -451,31 +526,31 @@ const Modules = ModulesBase.extend({
             module = this._createModule(ns);
 
         return await module.getI18nDefn();
-    },
+    }
 
-    _determineOps(module) {
+    override _determineOps(module: IModuleMeta): Op[] {
 
-        let showHide = [ 'show' ];
+        let showHide: Op[] = [ 'show' ];
         if (module.incompatible)
             showHide = [ ];
         else if (module.visible)
             showHide = [ 'hide' ];
 
-        let remove = [ 'remove' ];
+        let remove: Op[] = [ 'remove' ];
         if (module.isSystem)
             remove = [ ];
 
-        let incompatible = [ ];
+        let incompatible: Op[] = [ ];
         if (module.incompatible)
             incompatible = ['incompatible' ];
 
         return [].concat(showHide, remove, incompatible);
     }
-});
+}
 
-Modules.ModuleError = ModuleError;
+/*Modules.ModuleError = ModuleError;
 Modules.ModuleNotFoundError = ModuleNotFoundError;
 Modules.ModuleCorruptError = ModuleCorruptError;
-Modules.AnalysisNotFoundError = AnalysisNotFoundError;
+Modules.AnalysisNotFoundError = AnalysisNotFoundError;*/
 
-module.exports = Modules;
+//export default Modules;

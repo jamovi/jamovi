@@ -1,12 +1,20 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import { HTMLElementCreator as HTML }  from '../htmlelementcreator';
+import { EventEmitter } from 'events';
 
-const ToolbarGroup = function(params) {
+export class ToolbarGroup extends EventEmitter {
+    el: HTMLElement;
+    separator: HTMLElement;
 
-    Object.assign(this, Backbone.Events);
+    constructor(params) {
+        super();
+
+        this.params = params;
+
+        this._render(params);
+    }
 
     /*
     params
@@ -14,55 +22,53 @@ const ToolbarGroup = function(params) {
         title:          //Title to be displayed by the group. Make '' for not title but leave space or null for no title and no space.
         orientation:    //How are the contents displayed 'vertical' or 'horizontal' (default)
         right:          //Is the button docked to the right? [default: false]
-        $el:            //jquery element. Will create if missing.
+        el:            //jquery element. Will create if missing.
         items:          //Array of menu items. Not needed, can use 'addItem'.
     }
     */
-    this.params = params;
+    
 
-    this._render = function(params) {
+    _render(params) {
 
         let title = params.title === undefined ? null : params.title;
         let orientation = params.orientation === undefined ? 'horizontal' : params.orientation;
         let right = params.right === undefined ? false : params.right;
-        let $el = params.$el === undefined ? $('<div></div>') : params.$el;
+        let el = params.el === undefined ? HTML.create('div') : params.el;
         let classes = params.classes === undefined ? '' : params.classes;
 
-        this.$el = $el;
-        this.$el.addClass('jmv-toolbar-group');
-        this.$el.addClass(classes);
+        this.el = el;
+        this.el.classList.add('jmv-toolbar-group');
+        if (classes.trim() !== '')
+            this.el.classList.add(...classes.split(' '));
         if (title !== null)
-            this.$el.addClass('titled');
+            this.el.classList.add('titled');
 
         this.title = title;
         this.dock = right ? 'right' : 'left';
 
-        this.$el.attr('aria-disabled', true);
+        this.el.setAttribute('aria-disabled', 'true');
         if (right)
-            this.$el.addClass('right');
+            this.el.classList.add('right');
 
         this.items = [];
 
-        let html = '';
-        html += '<div class="jmv-toolbar-group-body jmv-toolbar-group-body-' + orientation + '">';
-        html += '</div>';
-        if (title !== null)
-            html += '<div class="jmv-toolbar-group-label">' + title + '</div>';
+        let body = HTML.create('div', { class: `jmv-toolbar-group-body jmv-toolbar-group-body-${orientation}` });
+        this.el.append(body);
+        if (title !== null) {
+            let label = HTML.create('div', { class: 'jmv-toolbar-group-label' }, title);
+            this.el.append(label);
+        }
 
-        this.$el.append(html);
-
-        this.$label = this.$el.find('.jmv-toolbar-group-label');
-        this.$body   = this.$el.find('.jmv-toolbar-group-body');
-
-        this.$separator = $('<div class="jmv-toolbar-button-separator"></div>').appendTo(this.$body);
+        this.separator = HTML.create('div', { class: 'jmv-toolbar-button-separator' });
+        body.append(this.separator);
 
         if (params.items !== undefined) {
             for (let i = 0; i < params.items.length; i++)
                 this.addItem(params.items[i]);
         }
-    };
+    }
 
-    this.setParent = function(root, parent) {
+    setParent(root, parent) {
         for (let i = 0; i < this.items.length; i++) {
             let item = this.items[i];
             if (item.setParent)
@@ -70,36 +76,34 @@ const ToolbarGroup = function(params) {
         }
     };
 
-    this.addItem = function(item) {
+    addItem(item) {
         this.items.push(item);
 
         if (item.dock === 'right')
-            item.$el.insertAfter(this.$separator);
+            this.separator.after(item.el);
         else
-            item.$el.insertBefore(this.$separator);
-    };
+            this.separator.before(item.el);
+    }
 
-    this.hideMenu = function() {
+    hideMenu() {
         for (let item of this.items) {
             if (item.hideMenu)
                 item.hideMenu();
         }
-    };
+    }
 
-    this.setEnabled = function(enabled) {
-        this.$el.attr('aria-disabled', ! enabled);
-    };
+    setEnabled(enabled) {
+        this.el.setAttribute('aria-disabled', (! enabled).toString());
+    }
 
-    this.getMenus = function() {
+    getMenus() {
         let menus = [];
         for (let item of this.items) {
             if (item.getMenus)
                 menus = menus.concat(item.getMenus());
         }
         return menus;
-    };
+    }
+}
 
-    this._render(params);
-};
-
-module.exports = ToolbarGroup;
+export default ToolbarGroup;

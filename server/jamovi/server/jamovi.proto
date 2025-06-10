@@ -386,6 +386,7 @@ message AnalysisMeta {
     string menuSubgroup = 5;
     string menuTitle = 6;
     string menuSubtitle = 7;
+    string category = 8;
 }
 
 message ModuleMeta {

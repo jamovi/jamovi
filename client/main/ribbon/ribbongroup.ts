@@ -1,13 +1,16 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 const ActionHub = require('../actionhub');
 const focusLoop = require('../../common/focusloop');
-const EventEmitter = require('events');
+import { EventEmitter } from 'events';
 
-class RibbonGroup extends EventEmitter {
+export class RibbonGroup extends EventEmitter {
+    el: HTMLElement;
+    name: string;
+    title: string;
+    dock: 'right' | 'left';
 
     /*
     params
@@ -17,7 +20,7 @@ class RibbonGroup extends EventEmitter {
         titlePosition:  //Title at the 'top' or 'bottom' (default)
         right:          //Is the button docked to the right? [default: false]
         margin:         //defines the size of the left right magins [default: normal]
-        $el:            //jquery element. Will create if missing.
+        el:            //HTML element. Will create if missing.
         items:          //Array of menu items. Not needed, can use 'addItem'.
         align-contents: // [default: stretch]
     }
@@ -28,7 +31,7 @@ class RibbonGroup extends EventEmitter {
         let title = params.title === undefined ? null : params.title;
         let orientation = params.orientation === undefined ? 'horizontal' : params.orientation;
         let right = params.right === undefined ? false : params.right;
-        let $el = params.$el === undefined ? $('<div></div>') : params.$el;
+        let el = params.el === undefined ? HTML.create('div') : params.el;
         let titlePosition =  params.titlePosition === undefined ? 'bottom' : params.titlePosition;
         let margin =  params.margin === undefined ? 'normal' : params.margin;
         let align = params.alignContents === undefined ? (orientation === 'horizontal' ? 'center' : 'stretch') : params.alignContents;
@@ -36,41 +39,35 @@ class RibbonGroup extends EventEmitter {
 
         let labelId = focusLoop.getNextAriaElementId('label');
 
-        this.$el = $el;
-        this.$el.addClass('jmv-ribbon-group');
-        this.$el.addClass('jmv-ribbon-group-margin-' + margin);
+        this.el = el;
+        this.el.classList.add('jmv-ribbon-group');
+        this.el.classList.add('jmv-ribbon-group-margin-' + margin);
         if (title !== null) {
-            this.$el.attr('data-position', titlePosition);
-            this.$el.attr('aria-labelledby', labelId);
-            this.$el.attr('role', 'group');
+            this.el.setAttribute('data-position', titlePosition);
+            this.el.setAttribute('aria-labelledby', labelId);
+            this.el.setAttribute('role', 'group');
         }
         else
-            this.$el.attr('role', 'group');
-        this.$el.attr('aria-orientation', orientation);
+            this.el.setAttribute('role', 'group');
+        this.el.setAttribute('aria-orientation', orientation);
 
         if (name !== null)
-            this.$el.attr('data-name', this.name.toLowerCase());
+            this.el.setAttribute('data-name', this.name.toLowerCase());
 
         this.name = name;
         this.title = title;
         this.dock = right ? 'right' : 'left';
 
-        //this.$el.attr('aria-disabled', true);
+        //this.el.setAttribute('aria-disabled', true);
         if (right)
-            this.$el.addClass('right');
+            this.el.classList.add('right');
 
         this.items = [];
 
-        let html = '';
-        html += '<div class="jmv-ribbon-group-body jmv-ribbon-group-body-' + orientation + '" style="align-items: ' + align + '" role="none">';
-        html += '</div>';
+        this.body = HTML.create('div', { class: `jmv-ribbon-group-body jmv-ribbon-group-body-${orientation}`, style: `style="align-items:${align};"`, role: 'none'});
+        this.el.append(this.body);
         if (title !== null)
-            html += `<div id="${labelId}" class="jmv-ribbon-group-label">${title}</div>`;
-
-        this.$el.append(html);
-
-        this.$label = this.$el.find('.jmv-ribbon-group-label');
-        this.$body   = this.$el.find('.jmv-ribbon-group-body');
+            this.el.append(HTML.create('div', { class: 'jmv-ribbon-group-label', id: labelId }, title));
 
         if (params.items !== undefined) {
             for (let i = 0; i < params.items.length; i++)
@@ -110,16 +107,18 @@ class RibbonGroup extends EventEmitter {
     addItem(item) {
         this.items.push(item);
 
-        if (this.$separator === undefined && item.dock === 'right')
-            this.$separator = $('<div class="jmv-ribbon-button-separator"></div>').appendTo(this.$body);
+        if (this.separator === undefined && item.dock === 'right') {
+            this.separator = HTML.create('div', { class: 'jmv-ribbon-button-separator' });
+            this.body.append(this.separator)
+        }
 
         if (item.dock === 'right')
-            item.$el.insertAfter(this.$separator);
+            this.separator.after(item.el);
         else {
-            if (this.$separator === undefined)
-                item.$el.appendTo(this.$body);
+            if (this.separator === undefined)
+                this.body.append(item.el);
             else
-                item.$el.insertBefore(this.$separator);
+                this.separator.before(item.el);
         }
 
         item.on('menuActioned', (item) => {
@@ -139,7 +138,7 @@ class RibbonGroup extends EventEmitter {
     }
 
     setEnabled(enabled) {
-        this.$el.prop('aria-disabled', ! enabled);
+        this.el.setAttribute('aria-disabled', (! enabled).toString());
     }
 
     getMenus() {
@@ -152,4 +151,4 @@ class RibbonGroup extends EventEmitter {
     }
 }
 
-module.exports = RibbonGroup;
+export default RibbonGroup;

@@ -1,9 +1,11 @@
 'use strict';
 
-class Event {
+export class Event {
+    _set = true;
+    _resolve: () => void;
+    _prom: Promise<void>;
 
     constructor() {
-        this._set = true;
         this.clear();
     }
 
@@ -28,4 +30,3 @@ class Event {
     }
 }
 
-module.exports = { Event };

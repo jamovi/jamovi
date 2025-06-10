@@ -1,9 +1,8 @@
 
 'use strict';
 
-const $ = require('jquery');
 const ProtoBuf = require('protobufjs');
-const Q = require('q');
+import Q from 'q';
 
 const host = require('./host');
 const auth = require('./auth/auth');
