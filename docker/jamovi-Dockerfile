@@ -169,8 +169,8 @@ FROM compiler AS extras
 
 ARG JAMOVI_ROOT=.
 
-COPY $JAMOVI_ROOT/scatr/ /tmp/source/scatr
-WORKDIR /tmp/source/scatr
+COPY $JAMOVI_ROOT/plots/ /tmp/source/plots
+WORKDIR /tmp/source/plots
 RUN jmc --install . --to /usr/lib/jamovi/modules --rhome $R_HOME --rlibs /usr/lib/jamovi/modules/base/R
 
 WORKDIR /tmp/source
