@@ -1,21 +1,21 @@
 
-.jmv-ribbon-button[data-name="jmvplot-box"] .jmv-ribbon-button-icon {
-    background-image: url("../../assets/analysis-jmvplot-box.svg");
+.jmv-ribbon-button[data-name="scatr-jmvbox"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-scatr-jmvbox.svg");
 }
 
-.jmv-ribbon-button[data-name="jmvplot-line"] .jmv-ribbon-button-icon {
-    background-image: url("../../assets/analysis-jmvplot-line.svg");
+.jmv-ribbon-button[data-name="scatr-jmvline"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-scatr-jmvline.svg");
 }
 
-.jmv-ribbon-button[data-name="jmvplot-hist"] .jmv-ribbon-button-icon {
-    background-image: url("../../assets/analysis-jmvplot-hist.svg");
+.jmv-ribbon-button[data-name="scatr-jmvhist"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-scatr-jmvhist.svg");
 }
 
-.jmv-ribbon-button[data-name="jmvplot-bar"] .jmv-ribbon-button-icon {
-    background-image: url("../../assets/analysis-jmvplot-bar.svg");
+.jmv-ribbon-button[data-name="scatr-jmvbar"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-scatr-jmvbar.svg");
 }
 
-.jmv-ribbon-button[data-name="jmvplot-scatter"] .jmv-ribbon-button-icon {
-    background-image: url("../../assets/analysis-jmvplot-scatter.svg");
+.jmv-ribbon-button[data-name="scatr-jmvscatter"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-scatr-jmvscatter.svg");
 }
 

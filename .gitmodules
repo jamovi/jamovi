@@ -10,10 +10,10 @@
 [submodule "jamovi-readstat"]
 	path = readstat
 	url = https://github.com/jamovi/jamovi-readstat.git
-[submodule "scatr"]
-	path = scatr
-	url = https://github.com/jamovi/scatr.git
 [submodule "i18n"]
 	path = i18n
 	url = https://github.com/jamovi/jamovi-i18n.git
 	branch = main
+[submodule "plots"]
+	path = plots
+	url = https://github.com/jamovi/jmvplots.git
