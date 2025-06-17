@@ -1,19 +1,19 @@
 
 'use strict';
 
-const RibbonButton = require('./ribbonbutton');
-const RibbonSeparator = require('./ribbonseparator');
-const RibbonGroup = require('./ribbongroup');
+import RibbonButton from './ribbonbutton';
+import RibbonSeparator from './ribbonseparator';
+import RibbonGroup from './ribbongroup';
 import RibbonTab from './ribbontab';
 
-class VariablesTab extends RibbonTab {
+export class VariablesTab extends RibbonTab {
     constructor() {
         super('variables', 'V', _('Variables'));
 
         this.populate();
     }
 
-    getRibbonItems(ribbon) {
+    override getRibbonItems() {
         return [
             new RibbonGroup({ title: _('Edit'), margin: 'large', alignContents: 'center', items: [
                 new RibbonButton({ title: _('Undo Edit'), name: 'undo', size: 'small', shortcutKey: 'z', shortcutPosition: { x: '25%', y: '75%' } }),
@@ -52,4 +52,4 @@ class VariablesTab extends RibbonTab {
     }
 }
 
-module.exports = VariablesTab;
+export default VariablesTab;

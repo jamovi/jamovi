@@ -17,7 +17,7 @@ export class AnnotationTab extends RibbonTab {
         this.populate();
     }
 
-    getItem(name: string, _items: any[]) {
+    getItem(name: string, _items?: any[]) {
         if (_items === undefined)
             _items = this.getRibbonItems();
 
@@ -32,7 +32,7 @@ export class AnnotationTab extends RibbonTab {
         }
     }
 
-    clearValues(_items: any[]) {
+    clearValues(_items?: any[]) {
         if (_items === undefined)
             _items = this.getRibbonItems();
 

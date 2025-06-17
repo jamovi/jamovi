@@ -4,7 +4,7 @@ import { LayoutGridItem } from './layoutgrid';
 import GridControl from './gridcontrol';
 import OptionControl from './optioncontrol';
 const EnumPropertyFilter = require('./enumpropertyfilter');
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import type MultiContainer from './multicontainer';
 

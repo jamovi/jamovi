@@ -3,7 +3,7 @@
 
 const $ = require('jquery');
 const MeasureListItem = require('./measurelistitem');
-const focusLoop = require('../../common/focusloop');
+import focusLoop from '../../common/focusloop';
 
 const MeasureList = function(includeAuto) {
     this.includeAuto = includeAuto === undefined ? true : false;

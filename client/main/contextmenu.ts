@@ -2,7 +2,7 @@
 'use strict';
 
 import ContextMenus from './contextmenu/contextmenus';
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 import Menu from '../common/menu';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { EventEmitter } from 'events';

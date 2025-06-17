@@ -2,7 +2,7 @@
 'use strict';
 
 const $ = require('jquery');
-const focusLoop = require('../../common/focusloop');
+import focusLoop from '../../common/focusloop';
 
 const VariableListItem = function(variable) {
     this.variable = variable;

@@ -10,7 +10,7 @@ const dropdown = require('./dropdown');
 const MissingValueEditor = require('../editors/missingvalueeditor');
 const MeasureList = require('./measurelist');
 const dialogs = require('dialogs')({cancel:false});
-const focusLoop = require('../../common/focusloop');
+import focusLoop from '../../common/focusloop';
 const { s6e } = require('../../common/utils');
 
 const DataVarWidget = Backbone.View.extend({
@@ -88,7 +88,7 @@ const DataVarWidget = Backbone.View.extend({
                     focusLoop.speakMessage(msg);
                     dialogs.prompt(msg, '', (result) => {
                         let widget = document.body.querySelector('.dialog-widget.prompt');
-                        focusLoop.leaveFocusLoop(widget, false);
+                        focusLoop.leaveFocusLoop(widget);
                         if (result === undefined)
                             reject('');
                         else {
@@ -143,7 +143,7 @@ const DataVarWidget = Backbone.View.extend({
                     });
                     let widget = document.body.querySelector('.dialog-widget.prompt');
                     focusLoop.addFocusLoop(widget, { level: 2, modal: true });
-                    focusLoop.enterFocusLoop(widget, { withMouse: false });
+                    focusLoop.enterFocusLoop(widget);
                 });
 
                 let level = { label:  response.label, importValue: response.label, value: response.value, pinned: true, others: [] };

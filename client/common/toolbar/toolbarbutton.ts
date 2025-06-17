@@ -2,7 +2,6 @@
 'use strict';
 
 import RibbonGroup from './toolbargroup';
-const focusLoop = require('../focusloop');
 import Menu from '../menu';
 import { HTMLElementCreator as HTML }  from '../htmlelementcreator';
 import { EventEmitter } from 'events';

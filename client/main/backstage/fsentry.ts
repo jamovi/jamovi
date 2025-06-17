@@ -19,6 +19,7 @@ export interface IOpenOptions {
     title?: string;
     type?: FSItemType;
     wdType?: WDType;
+    username?: string;
 }
 
 export interface ISaveOptions {
@@ -28,6 +29,8 @@ export interface ISaveOptions {
     name?: string;
     part?: string;
     format?: string;
+    username?: string;
+    filename?: string;
 }
 
 export interface IImportOptions {

@@ -86,7 +86,7 @@ class ContextableEventEmittier extends EventEmitter {
     public once(eventName: string | symbol, callback: (...args: any[]) => void, context?: any) : this {
         let self = this;
         const bound : (...args: any[]) => void = (...args: any[]) => {
-            bound.call(context ? context : this, ...args);
+            callback.call(context ? context : this, ...args);
             self.off(eventName, callback, context);
         };
 

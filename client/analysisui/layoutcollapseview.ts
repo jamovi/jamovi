@@ -5,7 +5,7 @@
 import { LayoutGridItem } from './layoutgrid';
 import GridControl from './gridcontrol';
 import MultiContainer from './multicontainer';
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 export class LayoutCollapseView extends LayoutGridItem(GridControl) {

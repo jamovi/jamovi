@@ -3,7 +3,7 @@
 
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 import RibbonGroup from '../ribbon/ribbongroup';
-const focusLoop = require('../../common/focusloop');
+import focusLoop from '../../common/focusloop';
 import Menu from '../../common/menu';
 
 const ActionHub = require('../actionhub');

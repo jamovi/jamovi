@@ -2,8 +2,8 @@
 'use strict';
 
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
-const ActionHub = require('../actionhub');
-const focusLoop = require('../../common/focusloop');
+import ActionHub from '../actionhub';
+import focusLoop from '../../common/focusloop';
 import { EventEmitter } from 'events';
 
 export class RibbonGroup extends EventEmitter {

@@ -4,7 +4,7 @@ import LayoutGrid from './layoutgrid';
 import { TitledOptionControl } from './optioncontrol';
 import { FormatDef } from './formatdef';
 const EnumPropertyFilter = require('./enumpropertyfilter');
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { VerticalAlignment } from './layoutcell';
 

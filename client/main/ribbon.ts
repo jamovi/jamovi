@@ -1,28 +1,54 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
-Backbone.$ = $;
-
 const RibbonMenu = require('./ribbon/ribbonmenu');
-const AppMenu = require('./ribbon/appmenu');
+import AppMenu from './ribbon/appmenu';
 const Modules = require('./modules');
 const tarp = require('./utils/tarp');
-const DataTab = require('./ribbon/datatab');
-const VariablesTab = require('./ribbon/variablestab');
-const AnnotationTab = require('./ribbon/annotationtab');
-const AnalyseTab = require('./ribbon/analysetab');
+import DataTab from './ribbon/datatab';
+import VariablesTab from './ribbon/variablestab';
+import AnnotationTab from './ribbon/annotationtab';
+import AnalyseTab from './ribbon/analysetab';
+import { EventDistributor, EventMap } from '../common/eventmap';
 import PlotsTab from './ribbon/plotstab';
+import RibbonTab from './ribbon/ribbontab';
+import SelectionLoop from '../common/selectionloop';
 const Notifs = require('./ribbon/notifs');
-const focusLoop = require('../common/focusloop');
-const selectionLoop = require('../common/selectionloop');
+import focusLoop from '../common/focusloop';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+ 
 
-const RibbonModel = Backbone.Model.extend({
+type AnyTab = DataTab | VariablesTab | AnnotationTab | AnalyseTab | PlotsTab;
+export type TabTypes = {
+  analyses: AnalyseTab;
+  annotation: AnnotationTab;
+  data: DataTab;
+  plots: PlotsTab;
+  variables: VariablesTab;
+  file: null;
+};
 
-    initialize(args) {
-        this._modules = args.modules;
-        this._settings = args.settings;
+interface IRibbonModelData {
+    tabs : AnyTab[ ];
+    selectedTab: keyof TabTypes;
+}
+
+export class RibbonModel extends EventMap<IRibbonModelData>{
+
+    _variablesTab: VariablesTab;
+    _dataTab: DataTab;
+    _analysesTab: AnalyseTab;
+    _plotsTab: PlotsTab;
+    _editTab: AnnotationTab;
+    appMenu: AppMenu;
+
+    constructor(modules, settings) {
+        super({
+            tabs: [],
+            selectedTab: 'analyses'
+        });
+        this._modules = modules;
+        this._settings = settings;
 
         this._variablesTab = new VariablesTab();
         this._dataTab = new DataTab();
@@ -39,29 +65,38 @@ const RibbonModel = Backbone.Model.extend({
             this._editTab,
         ]);
 
-        this._analysesTab.on('analysisSelected', (analysis) => this.trigger('analysisSelected', analysis));
-        this._dataTab.on('analysisSelected', (analysis) => this.trigger('analysisSelected', analysis));
-        this._plotsTab.on('analysisSelected', (analysis) => this.trigger('analysisSelected', analysis));
-    },
-    defaults : {
-        tabs : [ ],
-        selectedTab : 'analyses'
-    },
+        this.onAnalysisSelected = this.onAnalysisSelected.bind(this);
+
+        this._analysesTab.on('analysisSelected', this.onAnalysisSelected);
+        this._dataTab.on('analysisSelected', this.onAnalysisSelected);
+        this._plotsTab.on('analysisSelected', this.onAnalysisSelected);
+    };
+
+    onAnalysisSelected(analysis) {
+        this.trigger('analysisSelected', analysis);
+    }
+
     modules() {
         return this._modules;
-    },
+    }
+
     settings() {
         return this._settings;
-    },
-    getTabName(index) {
+    }
+
+    getTabName(index: number): string {
         let tabs = this.get('tabs');
         return tabs[index].name;
-    },
+    }
+
     getSelectedTab() {
         let currentTabName = this.get('selectedTab');
         return this.getTab(currentTabName);
-    },
-    getTab(index) {
+    }
+
+    getTab<T extends keyof TabTypes>(key: T): TabTypes[T];
+    getTab(index: number): AnyTab;
+    getTab(index: number | string): RibbonTab | null {
         let tabs = this.get('tabs');
         if (typeof index === 'number')
             return tabs[index];
@@ -73,28 +108,44 @@ const RibbonModel = Backbone.Model.extend({
         }
 
         return null;
-    },
-});
+    }
+}
 
-const RibbonView = Backbone.View.extend({
-    initialize() {
-        if (this.model === undefined)
-            this.model = new RibbonModel();
+export class RibbonView extends EventDistributor {
+    model: RibbonModel;
+    selectedTab: RibbonTab;
+
+    $header: HTMLElement;
+    $ribbonTabs: HTMLElement;
+    $body: HTMLElement;
+    $fileButton: HTMLElement;
+    $fullScreen: HTMLElement;
+    tabSelection: SelectionLoop;
+    $tabs: NodeListOf<HTMLElement>;
+    appMenu: AppMenu;
+
+    constructor(model: RibbonModel) {
+        super();
+
+        this.model = model;
 
         this.model.settings().on('change:mode', (events) => {
             let mode = this.model.settings().getSetting('mode', 'normal');
-            this.$el.attr('mode', mode);
-            let $checkboxes = this.$el.find('.display-in-menu > input');
-            if (mode === 'cloud')
-                $checkboxes.attr("disabled", true);
-            else
-                $checkboxes.removeAttr("disabled");
+            this.setAttribute('mode', mode);
+            let $checkboxes = this.querySelectorAll<HTMLElement>('.display-in-menu > input');
+            $checkboxes.forEach(el => {
+                if (mode === 'cloud')
+                    el.setAttribute("disabled", 'true');
+                else
+                    el.removeAttribute("disabled");
+            });
+            
         });
 
         this.model.modules().on('change:modules', () => {
-            let modules = this.model.modules();
+            //let modules = this.model.modules();
             for (let tab of this.model.attributes.tabs) {
-                if (tab.needsRefresh && tab.needsRefresh(modules)) {
+                if (tab.needsRefresh && tab.needsRefresh()) {
                     tab.update();
                 }
             }
@@ -103,103 +154,117 @@ const RibbonView = Backbone.View.extend({
         this.model.on('change:selectedTab', async () => {
             await this._refresh();
             if (this.selectedTab) {
-                this.selectedTab.$el.removeClass('selected');
-                this.selectedTab.$el.attr('aria-selected', false);
+                this.selectedTab.el.classList.remove('selected');
+                this.selectedTab.el.setAttribute('aria-selected', 'false');
             }
 
             let tab = this.model.getSelectedTab();
             let changed = tab !== this.selectedTab;
             this.selectedTab = tab;
 
-            if (this.tabSelection.selectedElement != this.selectedTab.$el[0])
-                this.tabSelection.selectElement(this.selectedTab.$el[0], false, true);
+            if (this.tabSelection.selectedElement != this.selectedTab.el)
+                this.tabSelection.selectElement(this.selectedTab.el, false, true);
 
             if (this.selectedTab) {
-                this.selectedTab.$el.addClass('selected');
-                this.selectedTab.$el.attr('aria-selected', true);
-                this.$fullScreen.attr('data-tabname', this.selectedTab.name);
+                this.selectedTab.el.classList.add('selected');
+                this.selectedTab.el.setAttribute('aria-selected', 'true');
+                this.$fullScreen.setAttribute('data-tabname', this.selectedTab.name);
             }
 
-            if (changed)
-                this.trigger('tabSelected', tab.name, true);
+            if (changed) {
+                let newEvent = new CustomEvent<{tabName: keyof TabTypes, withMouse: boolean}>('tabSelected', { detail: { tabName: tab.name, withMouse: true }});
+                this.dispatchEvent(newEvent);
+            }
         }, this);
 
-        this.$el.addClass('jmv-ribbon app-dragable');
+        this.classList.add('jmv-ribbon', 'app-dragable');
+        this.appMenu = new AppMenu(this.model);
 
-        this.$el.append(`
+        this.append(HTML.parse(`
             <div class="jmv-ribbon-header" role="group" aria-orientation="horizontal">
                 <button class="jmv-ribbon-tab file-tab" data-tabname="file" role="toolbaritem"  aria-label="${_('File')}" aria-haspopup="true" aria-expanded="false"><span style="font-size: 150%; pointer-events: none;" class="mif-menu"></span></button>
                 <div class="ribbon-tabs" role="tablist"></div>
                 <div id="jmv-user-button"></div>
                 <button class="jmv-ribbon-fullscreen" aria-label="${_('Enable/disable full screen mode')}"></button>
-                <button class="jmv-ribbon-appmenu" aria-label="${_('Preferences')}"></button>
-            </div>
-            <div id="ribbon-body" class="
+            </div>`));
+        this.append(HTML.parse(`<div id="ribbon-body" class="
                 jmv-ribbon-body
                 jmv-ribbon-group-body-horizontal" hloop="true" role="tabpanel" aria-roledescription="">
-            </div>
-            <div id="jmv-ribbon-notifs"></div>
-        `);
+            </div>`));
+        this.append(HTML.parse(`<div id="jmv-ribbon-notifs"></div>`));
 
+        focusLoop.addFocusLoop(this);
 
-        focusLoop.addFocusLoop(this.$el[0]);
+        this.$header = this.querySelector<HTMLElement>('.jmv-ribbon-header');
+        this.$header.append(this.appMenu);
+        this.$ribbonTabs = this.querySelector<HTMLElement>('.ribbon-tabs');
+        this.tabSelection = new SelectionLoop('ribbon-tabs', this.$ribbonTabs);
+        this.$ribbonTabs.classList.add('block-focus-left', 'block-focus-right');
 
-        this.$header = this.$el.find('.jmv-ribbon-header');
-        this.$ribbonTabs = this.$el.find('.ribbon-tabs');
-        this.tabSelection = new selectionLoop('ribbon-tabs', this.$ribbonTabs[0], true);
-        this.$ribbonTabs.addClass('block-focus-left block-focus-right');
+        this.$body   = this.querySelector<HTMLElement>('.jmv-ribbon-body');
+        this.$fileButton = this.querySelector<HTMLElement>('.jmv-ribbon-tab[data-tabname="file"]');
+        this.$fullScreen = this.querySelector<HTMLElement>('.jmv-ribbon-fullscreen');
 
-        this.$body   = this.$el.find('.jmv-ribbon-body');
-        this.$fileButton = this.$el.find('.jmv-ribbon-tab[data-tabname="file"]');
-        this.$appMenu = this.$el.find('.jmv-ribbon-appmenu');
-        this.$fullScreen = this.$el.find('.jmv-ribbon-fullscreen');
+        let $notifs = this.querySelector<HTMLElement>('#jmv-ribbon-notifs');
 
-        let $notifs = this.$el.find('#jmv-ribbon-notifs');
-
-        this.$fileButton.on('click', (event) => {
-            this.trigger('tabSelected', 'file', event.detail > 0);
+        this.$fileButton.addEventListener('click', (event) => {
+            let newEvent = new CustomEvent<{tabName: keyof TabTypes, withMouse: boolean}>('tabSelected', { detail: { tabName: 'file', withMouse: event.detail > 0 }});
+            this.dispatchEvent(newEvent);
+            //this.trigger('tabSelected', 'file', event.detail > 0);
         });
 
-        this.$fileButton.on('keydown', (event) => {
+        this.$fileButton.addEventListener('keydown', (event) => {
             switch (event.code) {
                 case "ArrowDown":
-                    this.trigger('tabSelected', 'file', false);
+                    let newEvent = new CustomEvent<{tabName: keyof TabTypes, withMouse: boolean}>('tabSelected', { detail: { tabName: 'file', withMouse: false }});
+                    this.dispatchEvent(newEvent);
+                    //this.trigger('tabSelected', 'file', false);
                     event.stopPropagation();
                     event.preventDefault();
                     break;
             }
         });
 
-        focusLoop.applyShortcutOptions(this.$fileButton[0], {
+        focusLoop.applyShortcutOptions(this.$fileButton, {
                 key: 'F',
                 position: { x: '50%', y: '75%' },
                 action: (event) => {
-                        this.trigger('tabSelected', 'file', false);
+                    let newEvent = new CustomEvent<{tabName: keyof TabTypes, withMouse: boolean}>('tabSelected', { detail: { tabName: 'file', withMouse: false }});
+                    this.dispatchEvent(newEvent);
+                    //this.trigger('tabSelected', 'file', false);
                 },
                 label: _('File menu')
             } 
         );
 
         this.tabSelection.on('selected-index-changed', (data) => {
-            let index = this.$tabs.index(data.target);
+            let tabs = Array.from(this.$tabs); // Convert NodeList or jQuery object to array
+            let index = tabs.indexOf(data.target);
+            //let index = this.$tabs.index(data.target);
             let tab = this.model.getTab(index);
 
-            this.$body.attr('aria-labeledby', `tab-${tab.name.toLowerCase()}`);
+            this.$body.setAttribute('aria-labeledby', `tab-${tab.name.toLowerCase()}`);
 
             if (tab.getRibbonItems)
                 this.model.set('selectedTab', tab.name);
-            else
-                this.trigger('tabSelected', tab.name, data.withMouse);
+            else {
+                let newEvent = new CustomEvent<{tabName: keyof TabTypes, withMouse: boolean}>('tabSelected', { detail: { tabName: tab.name, withMouse: data.withMouse }});
+                this.dispatchEvent(newEvent);
+            }
         });
 
-        this.$fullScreen.on('click', () => {
-            this.trigger('toggle-screen-state');
+        this.$fullScreen.addEventListener('click', () => {
+            let event = new CustomEvent('toggle-screen-state');
+            this.dispatchEvent(event);
+            //this.trigger('toggle-screen-state');
         });
-        focusLoop.applyShortcutOptions(this.$fullScreen[0], {
+        focusLoop.applyShortcutOptions(this.$fullScreen, {
                 key: 'S',
                 position: { x: '50%', y: '75%' },
                 action: (event) => {
-                        this.trigger('toggle-screen-state');
+                    let newEvent = new CustomEvent('toggle-screen-state');
+                    this.dispatchEvent(newEvent);
+                        //this.trigger('toggle-screen-state');
                 },
                 label: _('Toggle screen state')
             }
@@ -216,20 +281,22 @@ const RibbonView = Backbone.View.extend({
         for (let i = 0; i < tabs.length; i++) {
             let tab = tabs[i];
             tab.on('notification', note => {
-                this.trigger('notification', note);
+                let newEvent = new CustomEvent('notification', {detail: note });
+                this.dispatchEvent(newEvent);
+                //this.trigger('notification', note);
             });
             let isSelected = tab.name === currentTabName;
             let classes = 'jmv-ribbon-tab focus-loop-ignore ribbon-tabs-list-item ribbon-tabs-auto-select';
             if (isSelected) {
                 classes += ' selected';
                 this.selectedTab = tab;
-                this.$body.attr('aria-labeledby', `tab-${tab.name.toLowerCase()}`);
+                this.$body.setAttribute('aria-labeledby', `tab-${tab.name.toLowerCase()}`);
             }
 
-            let $tab = $(`<div class="${ classes }" data-tabname="${ tab.name.toLowerCase() }" tabindex="${ isSelected ? 0 : -1 }" role="tab" aria-selected="${ isSelected ? true : false }" aria-controls="ribbon-body" id="tab-${tab.name.toLowerCase()}">${ tab.title }</div>`);
+            let $tab = HTML.parse(`<div class="${ classes }" data-tabname="${ tab.name.toLowerCase() }" tabindex="${ isSelected ? 0 : -1 }" role="tab" aria-selected="${ isSelected ? true : false }" aria-controls="ribbon-body" id="tab-${tab.name.toLowerCase()}">${ tab.title }</div>`);
 
             if (tab.shortcutPath) {
-                focusLoop.applyShortcutOptions($tab[0], {
+                focusLoop.applyShortcutOptions($tab, {
                     key: tab.shortcutPath.toUpperCase(),
                     position: { x: '50%', y: '75%' },
                     action: tabShortcutAction,
@@ -239,12 +306,12 @@ const RibbonView = Backbone.View.extend({
             }
 
             this.$ribbonTabs.append($tab);
-            tab.$el = $tab;
+            tab.el = $tab;
         }
 
-        this.$tabs = this.$header.find('.jmv-ribbon-tab:not(.file-tab)');
+        this.$tabs = this.$header.querySelectorAll<HTMLElement>('.jmv-ribbon-tab:not(.file-tab)');
 
-        focusLoop.applyShortcutOptions(this.$appMenu[0], {
+        focusLoop.applyShortcutOptions(this.appMenu, {
             key: 'M',
             position: { x: '50%', y: '75%' },
             action: (event) => {
@@ -253,16 +320,21 @@ const RibbonView = Backbone.View.extend({
             }
         );
 
-        this.appMenu = new AppMenu({ el: this.$appMenu, model: this.model });
+        
 
         this._refresh();
-    },
+    }
+
     openFileMenu(usingMouse) {
-        this.trigger('tabSelected', 'file', usingMouse);
-    },
+        let newEvent = new CustomEvent<{tabName: keyof TabTypes, withMouse: boolean}>('tabSelected', { detail: { tabName: 'file', withMouse: usingMouse }});
+        this.dispatchEvent(newEvent);
+        //this.trigger('tabSelected', 'file', usingMouse);
+    }
+
     notify(options) {
         return this.notifs.notify(options);
-    },
+    }
+
     async _refresh() {
 
         if (this.selectedTab)
@@ -271,22 +343,23 @@ const RibbonView = Backbone.View.extend({
         let tab = this.model.getSelectedTab();
 
         if (tab.ribbon) {
-            this.$body[0].append(tab.ribbon);
+            this.$body.append(tab.ribbon);
             focusLoop.updateShortcuts({ silent: true});
         }
-    },
+    }
 
     _menuClosed() {
-        this.$el.css('z-index', '');
+        this.style.zIndex = '';
 
         this.appMenu.hide();
 
-        this.$el[0].focus();
-    },
-    _buttonClicked : function(action) {
+        this.focus();
+    }
+
+    _buttonClicked(action) {
         this._menuClosed();
         this.model._actionRequest(action);
     }
-});
+}
 
-module.exports = { View : RibbonView, Model : RibbonModel };
+customElements.define('jmv-ribbon', RibbonView);

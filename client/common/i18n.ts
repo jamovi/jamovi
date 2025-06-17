@@ -11,7 +11,7 @@ function s6e(x) {
     .replace(/_(.*?)_/g, "<i>$1</i>");  // markdown to html
 }
 
-class I18n {
+export class I18n {
     _availableLanguages: Array<string>;
     language: string;
     jed: typeof Jed;
@@ -49,10 +49,10 @@ class I18n {
         else
             value = this.jed.dcnpgettext(undefined, undefined, key);
 
+        value = s6e(value);
+
         if (formats)
             value = this.format(value, formats, options);
-
-        value = s6e(value);
 
         return value;
     }
@@ -301,6 +301,6 @@ class I18n {
     }
 }
 
-const _i18n = new I18n();
+const _i18n: I18n = new I18n();
 
 export default _i18n;

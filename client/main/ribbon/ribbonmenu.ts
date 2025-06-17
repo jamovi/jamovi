@@ -1,6 +1,6 @@
 'use strict';
 
-import focusLoop from '../../common/focusloop';
+import focusLoop, { IShortcutTokenOptions } from '../../common/focusloop';
 import Menu from '../../common/menu';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
@@ -40,7 +40,7 @@ class RibbonMenu {
 
         if (shortcutKey) {
             let keySplit = shortcutKey.split('-');
-            let stcOptions = { key: keySplit[0].toUpperCase(), action: event => this._clicked(event, false) };
+            let stcOptions: IShortcutTokenOptions = { key: keySplit[0].toUpperCase(), action: event => this._clicked(event, false) };
             if (keySplit.length > 1)
                 stcOptions.position = keySplit[1].toUpperCase();
             focusLoop.applyShortcutOptions(this.el, stcOptions);

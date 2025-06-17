@@ -1,7 +1,7 @@
 
 'use strict';
 
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 import LayoutGrid from './layoutgrid';
 
 export interface ICellData { 

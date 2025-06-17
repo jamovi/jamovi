@@ -79,7 +79,6 @@ export class Toolbar extends EventEmitter {
     };
 
     _buttonClicked(action) {
-        console.log(action);
         if (action._menuGroup === undefined)
             this._menuClosed();
         else {

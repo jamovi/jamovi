@@ -3,7 +3,7 @@
 import { TitledOptionControl } from './optioncontrol';
 const RequestDataSupport = require('./requestdatasupport');
 import { FormatDef } from './formatdef';
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 

@@ -14,7 +14,7 @@ const SilkyView = require('./view');
 const Notify = require('./notification');
 const ContextMenu = require('./contextmenu');
 const Statusbar = require('./statusbar/statusbar');
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 
 const { s6e, contextMenuListener } = require('../common/utils');
 const { timeout } = require('q');

@@ -12,7 +12,7 @@ Backbone.$ = $;
 const Notify = require('../notification');
 const Version = require('../utils/version');
 const ProgressStream = require('../utils/progressstream');
-const _focusLoop = require('../../common/focusloop');
+import _focusLoop from '../../common/focusloop';
 const selectionLoop = require('../../common/selectionloop');
 
 

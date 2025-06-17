@@ -12,7 +12,7 @@ const host = require('./host');
 const I18n = require('../common/i18n');
 
 const SilkyView = require('./view');
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 
 
 const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {

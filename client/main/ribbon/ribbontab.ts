@@ -2,15 +2,19 @@
 'use strict';
 
 import { EventEmitter } from 'events';
+import { TabTypes } from '../ribbon';
 
 export abstract class RibbonTab extends EventEmitter {
-    _name: string;
+    _name: keyof TabTypes;
     _shortcutPath: string;
     _title: string;
     _ribbon: HTMLElement;
     _separator: HTMLElement;
+    el: HTMLElement; 
 
-    constructor(name: string, shortcutPath: string, title: string) {
+
+
+    constructor(name: keyof TabTypes, shortcutPath: string, title: string) {
         super();
 
         this._name = name;
@@ -27,6 +31,8 @@ export abstract class RibbonTab extends EventEmitter {
 
         //this.populate();
     }
+
+    public needsRefresh?():void;
 
     public get name() {
         return this._name;

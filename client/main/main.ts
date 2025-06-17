@@ -15,10 +15,8 @@ const TableView   = require('./tableview');
 const VariablesView   = require('./variablesview');
 const ResultsView = require('./results');
 const SplitPanel  = require('./splitpanel');
-const Backstage   = require('./backstage').View;
-import { BackstageModel } from './backstage';
-const Ribbon      = require('./ribbon').View;
-const RibbonModel = require('./ribbon').Model;
+import { BackstageModel, BackstageView as Backstage} from './backstage';
+import { RibbonModel, RibbonView as Ribbon, TabTypes } from './ribbon';
 const Notifications = require('./notifications');
 const SplitPanelSection = require('./splitpanelsection');
 const OptionsPanel = require('./optionspanel');
@@ -30,7 +28,7 @@ const Instance = require('./instance');
 const Notify = require('./notification');
 import _focusLoop from '../common/focusloop';
 import { UserFacingError } from './errors';
-const Keyboard = require('../common/focusloop');
+import Keyboard from '../common/focusloop';
 
 require('./utils/headeralert');
 
@@ -138,7 +136,7 @@ let dataSetModel = instance.dataSetModel();
 let analyses = instance.analyses();
 
 let backstageModel = new BackstageModel(instance);
-let ribbonModel = new RibbonModel({ modules: instance.modules(), settings: instance.settings() });
+let ribbonModel = new RibbonModel(instance.modules(), instance.settings());
 
 // this is passing over a context boundary, so can't pass complex objects
 host.setDialogProvider({ showDialog: (op:string, options: IShowDialogOptions) => backstageModel.showDialog(op, options) });
@@ -217,16 +215,16 @@ window.addEventListener('popstate', function () {
 
 
 $(document).ready(async() => {
-    window.$body = $('body');
+    //window.$body = $('body');
     if (navigator.platform === 'Win32')
-        window.$body.addClass('windows');
+        document.body.classList.add('windows');
     else if (navigator.platform == 'MacIntel')
-        window.$body.addClass('mac');
+        document.body.classList.add('mac');
     else
-        window.$body.addClass('other');
+        document.body.classList.add('other');
 
     if (host.isElectron)
-        window.$body.addClass('electron');
+        document.body.classList.add('electron');
 
 
     Keyboard.addKeyboardListener('F10', () => host.toggleDevTools(), 'Toggle Developer Tools', false);
@@ -252,7 +250,7 @@ $(document).ready(async() => {
         optionspanel.hideOptions();
         ribbon.openFileMenu(false);
     }, _('Open the main menu'));
-    Keyboard.addKeyboardListener('F3', (event) => { // toggle variable setup
+    Keyboard.addKeyboardListener('F3', () => { // toggle variable setup
         viewController._toggleVariableEditor();
     }, _('Toggle variable setup'));
     Keyboard.addKeyboardListener('Alt+KeyE', () => { // navigate to variable setup
@@ -291,7 +289,7 @@ $(document).ready(async() => {
         resultsView.selectedView.setFocus();
     }, _('Returns to the previously selected analysis and shifts focus to the results output.'));
     Keyboard.addKeyboardListener('Alt+ArrowDown', () => { // navigate to analysis content
-        let iframe = document.querySelector(`.results-loop-highlighted-item > iframe`);
+        let iframe = document.querySelector<HTMLIFrameElement>(`.results-loop-highlighted-item > iframe`);
         if (iframe) {
             resultsView.hideWelcome();
             Keyboard.setFocusMode('keyboard');
@@ -312,10 +310,14 @@ $(document).ready(async() => {
         Keyboard.addKeyboardListener('Ctrl+F4', () => host.closeWindow(), _('Close jamovi window'));
 
     Keyboard.on('focus', (event) => {
-        if (Keyboard.inAccessibilityMode())
-            ribbonModel.getSelectedTab().$el[0].focus();
-        else
-            Keyboard.setFocusMode('default');
+        setTimeout(() => {
+            if (document.activeElement === null || document.activeElement === document.body || document.activeElement === document.documentElement) { // has no focus
+                if (Keyboard.inAccessibilityMode())
+                    ribbonModel.getSelectedTab().el.focus();
+                else 
+                    Keyboard.setFocusMode('default');
+            }
+        }, 0);
     });
 
     Keyboard.on('focusModeChanged', (options) => {
@@ -325,26 +327,26 @@ $(document).ready(async() => {
                 if (backstageModel.get('activated')) {
                     Keyboard.updateShortcuts({ shortcutPath: 'F' });
                     setTimeout(() => {
-                        Keyboard.enterFocusLoop(backstage.el, { withMouse: true });
+                        Keyboard.enterFocusLoop(backstage, { withMouse: true });
                     }, 100);
                 }
                 else
-                    ribbonModel.getSelectedTab().$el[0].focus();
+                    ribbonModel.getSelectedTab().el.focus();
             }
         }
         else if (Keyboard.focusMode === 'default') {
 
             if (backstageModel.get('activated')) {
                 setTimeout(() => {
-                    Keyboard.enterFocusLoop(backstage.el, { withMouse: false });
+                    Keyboard.enterFocusLoop(backstage);
                 }, 100);
 
             }
             else {
                 keyboardJS.resume('accessibility');
-                let element = document.getElementsByClassName('temp-focus-cell');
-                if (element && element.length > 0)
-                    element[0].focus();
+                let element = document.querySelector<HTMLElement>('temp-focus-cell');
+                if (element)
+                    element.focus();
             }
         }
         else if (Keyboard.focusMode === 'keyboard' || Keyboard.focusMode === 'hover')
@@ -374,7 +376,8 @@ $(document).ready(async() => {
         event.preventDefault();
     };
 
-    let ribbon = new Ribbon({ el : '.silky-ribbon', model : ribbonModel });
+    let ribbon = new Ribbon(ribbonModel);
+    document.querySelector<HTMLElement>('.silky-ribbon').append(ribbon);
     //const backstageElement = document.querySelector('#backstage');
     let backstage = new Backstage(backstageModel);
     backstage.setAttribute('id', 'backstage');
@@ -398,12 +401,13 @@ $(document).ready(async() => {
     let mainTableMode = 'spreadsheet';
 
     let setMainTableMode = function(mode) {
-        window.$body.attr('data-table-mode', mode);
+        document.body.setAttribute('data-table-mode', mode);
         mainTableMode = mode;
         viewController.focusView(mode);
     };
 
-    ribbon.on('tabSelected', function(tabName, withMouse) {
+    ribbon.addEventListener('tabSelected', function(event: CustomEvent<{tabName: keyof TabTypes, withMouse: boolean}>) {
+        let {tabName, withMouse} = event.detail
         if (tabName === 'file')
             backstage.activate(withMouse);
         else if (tabName === 'data') {
@@ -444,7 +448,7 @@ $(document).ready(async() => {
     let splitPanel  = new SplitPanel({el : '#main-view'});
 
     splitPanel.$el.on('mode-changed', () => {
-        window.$body.attr('data-splitpanel-mode', splitPanel.mode);
+        document.body.setAttribute('data-splitpanel-mode', splitPanel.mode);
         switch (splitPanel.mode) {
             case 'results':
                 //TODO: Needs to accomodate plots
@@ -461,7 +465,7 @@ $(document).ready(async() => {
         }
     });
 
-    ribbon.on('toggle-screen-state', () => {
+    ribbon.addEventListener('toggle-screen-state', () => {
         if (forcedFullScreen)
             return;
 
@@ -619,7 +623,7 @@ $(document).ready(async() => {
             mainTable.setActive( ! event.changed.activated);
             if (! event.changed.activated) {
                 if (Keyboard.inAccessibilityMode())
-                    ribbonModel.getSelectedTab().$el[0].focus();
+                    ribbonModel.getSelectedTab().el.focus();
             }
         }
     });
@@ -799,7 +803,7 @@ $(document).ready(async() => {
     instance.on( 'notification', note => notifications.notify(note));
     viewController.on('notification', note => notifications.notify(note));
     mainTable.on('notification', note => notifications.notify(note));
-    ribbon.on('notification', note => notifications.notify(note));
+    ribbon.addEventListener('notification', (event: CustomEvent) => notifications.notify(event.detail));
     editor.on('notification', note => notifications.notify(note));
     backstageModel.on('notification', note => notifications.notify(note));
 

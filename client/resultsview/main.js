@@ -13,7 +13,7 @@ const b64 = require('../common/utils/b64');
 const Annotations = require('./annotations');
 const Tracker = require('./itemtracker');
 const I18n = require("../common/i18n");
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 const { contextMenuListener } = require('../common/utils');
 
 window._ = I18n._;
@@ -81,11 +81,11 @@ class Main {  // this is constructed at the bottom
 
         focusLoop.addFocusLoop(document.body);
         focusLoop.on('focus', (event) => {
-            focusLoop.enterFocusLoop(document.body, { withMouse: false });
+            focusLoop.enterFocusLoop(document.body);
         });
 
         focusLoop.on('blur', (event) => {
-            focusLoop.leaveFocusLoop(document.body, false);
+            focusLoop.leaveFocusLoop(document.body);
         });
 
         $(document).mousedown(this, (event) => this._mouseDown(event));

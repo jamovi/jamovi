@@ -4,7 +4,7 @@ const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
 const Tracker = require('./itemtracker');
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 
 const b64 = require('../common/utils/b64');
 const { contextMenuListener } = require('../common/utils');
