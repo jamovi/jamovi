@@ -12,7 +12,7 @@ const { csvifyCells, htmlifyCells } = require('../common/utils/formatio');
 
 import ActionHub from './actionhub';
 
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 
 class ViewController {
     constructor(model, selection) {
@@ -272,7 +272,7 @@ class ViewController {
 
                     let cb = (result) => {
                         let widget = document.body.querySelector('.dialog-widget.confirm');
-                        focusLoop.leaveFocusLoop(widget, false);
+                        focusLoop.leaveFocusLoop(widget);
                         if (result)
                             resolve();
                         else
@@ -285,7 +285,7 @@ class ViewController {
                     dialogs.confirm(msg, cb);
                     let widget = document.body.querySelector('.dialog-widget.confirm');
                     focusLoop.addFocusLoop(widget, { level: 2, modal: true });
-                    focusLoop.enterFocusLoop(widget, { withMouse: false });
+                    focusLoop.enterFocusLoop(widget);
                 });
 
             let ids = columns.map(column => column.id);
@@ -327,7 +327,7 @@ class ViewController {
 
                 let cb = (result) => {
                     let widget = document.body.querySelector('.dialog-widget.confirm');
-                    focusLoop.leaveFocusLoop(widget, false);
+                    focusLoop.leaveFocusLoop(widget);
                     if (result)
                         resolve();
                     else
@@ -339,7 +339,7 @@ class ViewController {
                 dialogs.confirm(msg, cb);
                 let widget = document.body.querySelector('.dialog-widget.confirm');
                 focusLoop.addFocusLoop(widget, { level: 2, modal: true });
-                focusLoop.enterFocusLoop(widget, { withMouse: false });
+                focusLoop.enterFocusLoop(widget);
             });
             await this.model.deleteRows(rowRanges);
             focusLoop.speakMessage(n_('row {index} deleted.', '{n} rows deleted.', rowCount, { index: selections[0].top+1, n: rowCount }));
@@ -614,7 +614,7 @@ class ViewController {
                     focusLoop.speakMessage(msg);
                     dialogs.prompt(msg, this.selection.bottom - this.selection.top + 1, (result) => {
                         let widget = document.body.querySelector('.dialog-widget.prompt');
-                        focusLoop.leaveFocusLoop(widget, false);
+                        focusLoop.leaveFocusLoop(widget);
                         if (result === undefined)
                             reject('cancelled by user');
                         let n = parseInt(result);
@@ -625,7 +625,7 @@ class ViewController {
                     });
                     let widget = document.body.querySelector('.dialog-widget.prompt');
                     focusLoop.addFocusLoop(widget, { level: 2, modal: true });
-                    focusLoop.enterFocusLoop(widget, { withMouse: false });
+                    focusLoop.enterFocusLoop(widget);
                 }
             });
 
@@ -658,7 +658,7 @@ class ViewController {
                 focusLoop.speakMessage(msg);
                 dialogs.prompt(msg, '1', (result) => {
                     let widget = document.body.querySelector('.dialog-widget.prompt');
-                    focusLoop.leaveFocusLoop(widget, false);
+                    focusLoop.leaveFocusLoop(widget);
                     if (result === undefined)
                         reject('cancelled by user');
                     let n = parseInt(result);
@@ -670,7 +670,7 @@ class ViewController {
                 });
                 let widget = document.body.querySelector('.dialog-widget.prompt');
                 focusLoop.addFocusLoop(widget, { level: 2, modal: true });
-                focusLoop.enterFocusLoop(widget, { withMouse: false });
+                focusLoop.enterFocusLoop(widget);
             });
 
             let rowStart = this.model.visibleRowCount();

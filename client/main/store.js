@@ -12,7 +12,7 @@ const util = require('util');
 const PageModules = require('./store/pagemodules');
 const PageSideload  = require('./store/pagesideload');
 const tarp = require('./utils/tarp');
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 const selectionLoop = require('../common/selectionloop');
 
 const Store = Backbone.View.extend({
@@ -149,10 +149,10 @@ const Store = Backbone.View.extend({
         tarp.show('store', false, 0.3);
         let modules = this.model.modules();
         modules.available().retrieve();
-        focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
+        focusLoop.enterFocusLoop(this.$el[0]);
     },
     hide: function() {
-        focusLoop.leaveFocusLoop(this.$el[0], false);
+        focusLoop.leaveFocusLoop(this.$el[0]);
         this.$el.removeClass('visible');
         tarp.hide('store');
     }

@@ -1,6 +1,6 @@
 'use strict';
 
-const focusLoop = require('./focusloop');
+import focusLoop from './focusloop';
 
 export class Menu extends HTMLElement {
     owner: HTMLElement;

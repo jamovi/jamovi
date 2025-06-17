@@ -3,7 +3,7 @@
 import type LayoutGrid from './layoutgrid';
 import { TitledOptionControl } from './optioncontrol';
 import { FormatDef } from './formatdef';
-const _focusLoop = require('../common/focusloop');
+import _focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { VerticalAlignment } from './layoutcell';
 

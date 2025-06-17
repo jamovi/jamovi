@@ -22,7 +22,7 @@ class References extends HTMLElement {
 
         this._root.host.addEventListener('keydown', (event) => {
             if (event.altKey && event.code === 'ArrowDown') {
-                focusLoop.enterFocusLoop(this._body, { withMouse: false });
+                focusLoop.enterFocusLoop(this._body);
             }
         });
 

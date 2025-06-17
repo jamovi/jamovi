@@ -5,7 +5,7 @@ const Backbone = require('backbone');
 Backbone.$ = $;
 const determFormat = require('../common/formatting').determFormat;
 const format = require('../common/formatting').format;
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 
 const Elem = require('./element');
 

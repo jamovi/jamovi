@@ -6,7 +6,7 @@ Backbone.$ = $;
 const Annotations = require('./annotations');
 
 const Elem = require('./element');
-const _focusLoop = require('../common/focusloop');
+import _focusLoop from '../common/focusloop';
 
 const GroupModel = Elem.Model.extend({
     defaults : {

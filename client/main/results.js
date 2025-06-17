@@ -7,7 +7,7 @@ Backbone.$ = $;
 
 const host = require('./host');
 const ResultsPanel = require('./resultspanel');
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 const jamoviIcon = require('../common/icon');
 
 const ResultsView = Backbone.View.extend({

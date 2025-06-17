@@ -3,7 +3,7 @@
 
 const $ = require('jquery');
 const VariableListItem = require('./variablelistitem');
-const focusLoop = require('../../common/focusloop');
+import focusLoop from '../../common/focusloop';
 
 const VariableList = function() {
     this.isScrollTarget = function(target) {

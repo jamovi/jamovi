@@ -6,7 +6,7 @@ import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 import RibbonGroup from './ribbongroup';
 
 const ActionHub = require('../actionhub');
-const focusLoop = require('../../common/focusloop');
+import focusLoop, { IShortcutTokenOptions } from '../../common/focusloop';
 const Menu = require('../../common/menu');
 const EventEmitter = require('events');
 const { s6e } = require('../../common/utils');
@@ -55,7 +55,7 @@ export class RibbonButton extends EventEmitter {
 
         if (shortcutKey) {
             this.shortcutKey = shortcutKey.toUpperCase();
-            let stcOptions = { key: this.shortcutKey, action: event => this._clicked(event, false), label: params.ariaLabel || title };
+            let stcOptions: IShortcutTokenOptions = { key: this.shortcutKey, action: event => this._clicked(event, false), label: params.ariaLabel || title };
             if (params.shortcutPosition)
                 stcOptions.position = params.shortcutPosition;
             focusLoop.applyShortcutOptions(this.el, stcOptions);

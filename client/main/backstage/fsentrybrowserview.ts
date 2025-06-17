@@ -240,7 +240,7 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
                 if ((direction === 0 && item1[orderby] > item2[orderby]) || (direction === 1 && item1[orderby] < item2[orderby])) {
                     items[i] = item2;
                     items[i+1] = item1;
-                    if (i > 1)
+                    if (i >= 1)
                         i -= 2;
                 }
             }
@@ -334,7 +334,7 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
             this.append(HTML.parse(searchHtml));
 
             //let $search = this.$el.find('.searchbox > .search');
-            let search = this.querySelector('.searchbox > .search');
+            let search = this.querySelector<HTMLElement>('.searchbox > .search');
             if (search)
                 focusLoop.applyShortcutOptions(search, { key: 'S', position: { x: '5%', y: '50%' } });
         }

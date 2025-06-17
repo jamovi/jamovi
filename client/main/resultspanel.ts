@@ -5,7 +5,7 @@ const underscore = require('underscore');
 const Backbone = require('backbone');
 Backbone.$ = $;
 const I18n = require('../common/i18n');
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 
 const formatIO = require('../common/utils/formatio');
 
@@ -923,7 +923,7 @@ const ResultsPanel = Backbone.View.extend({
         }
     },
     setFocus() {
-        focusLoop.enterFocusLoop(this.el, { withMouse: false });
+        focusLoop.enterFocusLoop(this.el);
     },
     _selectedChanged(event) {
         let oldSelected = this.model.previous('selectedAnalysis');

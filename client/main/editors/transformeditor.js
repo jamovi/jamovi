@@ -10,7 +10,7 @@ const MeasureList = require('../vareditor/measurelist');
 const ColourPalette = require('./colourpalette');
 const Notify = require('../notification');
 const Backbone = require('backbone');
-const focusLoop = require('../../common/focusloop');
+import focusLoop from '../../common/focusloop';
 
 const TransformEditor = function(dataset) {
 

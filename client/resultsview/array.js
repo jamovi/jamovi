@@ -8,7 +8,7 @@ const Annotations = require('./annotations');
 
 const Elem = require('./element');
 const b64 = require('../common/utils/b64');
-const _focusLoop = require('../common/focusloop');
+import _focusLoop from '../common/focusloop';
 
 const ArrayModel = Elem.Model.extend({
     defaults : {

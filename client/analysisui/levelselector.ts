@@ -2,7 +2,7 @@
 
 const RequestDataSupport = require('./requestdatasupport');
 import { FormatDef } from './formatdef';
-const _focusLoop = require('../common/focusloop');
+import _focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import type LayoutGrid from './layoutgrid';
 import { VerticalAlignment } from './layoutcell';

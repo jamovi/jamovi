@@ -205,7 +205,7 @@ class InfoBox extends HTMLElement {
         this._processEnterKey = false;
 
         if (this._focusLoopElement) {
-            focusLoop.leaveFocusLoop(this._focusLoopElement, { withMouse: false });
+            focusLoop.leaveFocusLoop(this._focusLoopElement);
             this._focusLoopElement = null;
         }
     }

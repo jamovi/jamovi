@@ -4,11 +4,7 @@
 
 'use strict';
 
-const SilkyView = require('./view');
-const $ = require('jquery');
-const Backbone = require('backbone');
 const path = require('path');
-Backbone.$ = $;
 
 const tarp = require('./utils/tarp');
 const pathtools = require('./utils/pathtools');
@@ -18,7 +14,7 @@ import host from './host';
 import type { IShowDialogOptions, IDialogProviderResult, IDialogProvider } from './host';
 const ActionHub = require('./actionhub');
 const { s6e } = require('../common/utils');
-const focusLoop = require('../common/focusloop');
+import focusLoop, { IShortcutTokenOptions } from '../common/focusloop';
 const selectionLoop = require('../common/selectionloop');
 
 import { UserFacingError } from './errors';
@@ -46,6 +42,7 @@ function isUrl(s) {
 import { OneDriveView } from './backstage/onedrive';
 import { EventMap, EventDistributor } from '../common/eventmap';
 import { IBackstageSupport } from './instance';
+import SelectionLoop from '../common/selectionloop';
 
 interface IPlace {
     name: string, 
@@ -1076,20 +1073,20 @@ export class BackstageModel extends EventMap<IBackstageModel> {
     }
 
     setSavingState(saving) {
-        let $button = $(document).find('.silky-bs-fslist-browser-save-button');
+        let $button = document.querySelector<HTMLElement>('.silky-bs-fslist-browser-save-button');
         if ( ! $button)
             return;
 
-        let $saveIcon = $button.find('.silky-bs-flist-save-icon');
+        let $saveIcon = $button.querySelector<HTMLElement>('.silky-bs-flist-save-icon');
         if (saving) {
             tarp.show('saving', false, 0, 299);
-            $button.addClass('disabled-div');
-            $saveIcon.addClass('saving-file');
+            $button.classList.add('disabled-div');
+            $saveIcon.classList.add('saving-file');
         }
         else {
             tarp.hide('saving');
-            $button.removeClass('disabled-div');
-            $saveIcon.removeClass('saving-file');
+            $button.classList.remove('disabled-div');
+            $saveIcon.classList.remove('saving-file');
         }
     }
 
@@ -1182,6 +1179,7 @@ export class BackstageView  extends EventDistributor {
     main: BackstageChoices;
     ops: NodeListOf<HTMLElement>;
     opPanel: HTMLElement;
+    menuSelection: SelectionLoop;
 
     constructor(model: BackstageModel) {
         super();
@@ -1189,7 +1187,7 @@ export class BackstageView  extends EventDistributor {
         //this.el = el;
         this.model = model;
 
-        this.addEventListener('preferredWidthChanged', (event: CustomEvent) => {
+        this.addEventListener('preferredWidthChanged', (event: CustomEvent<string>) => {
             this.style.width = event.detail;
         });
 
@@ -1294,13 +1292,20 @@ export class BackstageView  extends EventDistributor {
         html += '<div class="silky-bs-op silky-bs-op-panel" role="presentation">';
         html += '    <div class="silky-bs-header">';
         html += '        <div class="silky-bs-back">';
-        html += '            <div  role="menuitem" aria-label="Close file menu" class="silky-bs-back-button bs-menu-list-item bs-menu-action" tabindex="-1"><div></div></div>';
+        html += `            <div  role="menuitem" aria-label="${_('Close file menu')}" class="silky-bs-back-button bs-menu-list-item bs-menu-action" tabindex="-1" shortcut-key="B"><div></div></div>`;
         html += '        </div>';
         html += '        <div class="silky-bs-logo"></div>';
         html += '    </div>';
         html += '</div>';
 
         this.opPanel = HTML.parse(html);
+
+        let backButton = this.opPanel.querySelector<HTMLElement>('.silky-bs-back-button');
+        let stcOptions: IShortcutTokenOptions = { key: 'Escape', path: 'F', action: event => this.deactivate(), label: backButton.getAttribute('aria-label') };
+        //if (params.shortcutPosition)
+        //    stcOptions.position = params.shortcutPosition;
+        focusLoop.applyShortcutOptions(backButton, stcOptions);
+
         this.append(this.opPanel);
 
         this.menuSelection = new selectionLoop('bs-menu', this.opPanel);
@@ -1348,7 +1353,7 @@ export class BackstageView  extends EventDistributor {
                 let opPlaces = HTML.parse(`<div class="silky-bs-op-places" role="group" aria-label="${ s6e(op.title) }"></div>`);
                 for (let place of op.places) {
                     opPlaces.append(HTML.parse(`<div class="icon" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }" role="none"></div>`));
-                    let opPlace = HTML.parse(`<div class="silky-bs-op-place bs-menu-list-item" tabindex="-1" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }" role="menuitem" aria-label="${ s6e(place.title) }">${ s6e(place.title) }</div>`);
+                    let opPlace = HTML.parse(`<div class="silky-bs-op-place bs-menu-list-item" ignore-focus-size tabindex="-1" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }" role="menuitem" aria-label="${ s6e(place.title) }">${ s6e(place.title) }</div>`);
                     if (place.action)
                         opPlace.classList.add('bs-menu-action');
                     if (place.shortcutKey) {
@@ -1381,7 +1386,7 @@ export class BackstageView  extends EventDistributor {
                 opElement.style.display = '';
 
             opElement.append(HTML.parse(`<label id="${recentsLabelId}" class="silky-bs-op-header" data-op="Recent">${_('Recent')}</label>`));
-            //let $recentsBody = $('<div class="silky-bs-op-recents" role="presentation"></div>').appendTo($op);
+
             this.opPanel.append(opElement);
 
             let recentsModel = this.model.recentsModel();
@@ -1396,7 +1401,6 @@ export class BackstageView  extends EventDistributor {
                     this.clickRecent(event);
                 });
             }
-            //$recentsBody.find('.silky-bs-fslist-entry').on('shortcut-action', this.clickRecent.bind(this));
         }
 
         //this.browseInvoker = this.el.querySelector('.silky-bs-place-invoker');
@@ -1415,9 +1419,9 @@ export class BackstageView  extends EventDistributor {
 
         this.model.set('activated', true);
 
-        $('body').find('.app-dragable').addClass('ignore');
-        $('#main').attr('aria-hidden', true);
-        $('.jmv-ribbon-tab.file-tab').attr('aria-expanded', true);
+        document.body.querySelector('.app-dragable').classList.add('ignore');
+        document.getElementById('main').setAttribute('aria-hidden', 'true');
+        document.querySelector('.jmv-ribbon-tab.file-tab').setAttribute('aria-expanded', 'true');
 
         this.menuSelection.selectElement(this.opPanel.querySelector('.silky-bs-back-button'), false, true);
 
@@ -1429,12 +1433,14 @@ export class BackstageView  extends EventDistributor {
         this.activeStateChanging = false;
     }
 
-    deactivate(fromMouse) {
-
+    deactivate(fromMouse=false) {
+        if (this.deactivating)
+            return;
         // fix chrome render issue - reset for future force redraw
         this.opPanel.style.zIndex = 'auto';
-
+        this.deactivating = true;
         this.activeStateChanging = true;
+
         tarp.hide('backstage');
         this.classList.remove('activated');
         this.classList.remove('activated-sub');
@@ -1447,11 +1453,16 @@ export class BackstageView  extends EventDistributor {
         this.model.set('place', '');
         this.style.width = '';
 
-        $('body').find('.app-dragable').removeClass('ignore');
-        $('#main').attr('aria-hidden', false);
-        $('.jmv-ribbon-tab.file-tab').attr('aria-expanded', false);
+        document.body.querySelector('.app-dragable').classList.remove('ignore');
+        document.getElementById('main').setAttribute('aria-hidden', 'false');
+        document.querySelector('.jmv-ribbon-tab.file-tab').setAttribute('aria-expanded', 'false');
 
+        
         focusLoop.leaveFocusLoop(this, fromMouse);
+        if (fromMouse)
+            focusLoop.setFocusMode('default');
+
+        this.deactivating = false;
         this.activeStateChanging = false;
     }
 
@@ -1467,7 +1478,7 @@ export class BackstageView  extends EventDistributor {
     _hideSubMenus() {
         if (this.ops) {
             for (let op of this.ops) {
-                op.querySelector('.silky-bs-op-button').setAttribute('tabindex', '0');//removeClass('bs-menu-item-ignore');
+                //op.querySelector('.silky-bs-op-button').setAttribute('tabindex', '0');
                 let subOps = op.querySelector<HTMLElement>('.silky-bs-op-places');
                 if (subOps) {
                     subOps.style.height = '';
@@ -1488,8 +1499,8 @@ export class BackstageView  extends EventDistributor {
 
                 if (currentPlace && 'view' in currentPlace && place.dataset.op === currentOp.name && place.dataset.place === currentPlace.name ) {
                     place.classList.add('selected-place');
-
-                    this.menuSelection.selectElement(place, 'internal', true);
+                    this.menuSelection.selectElement(place, false, false);
+                    op.querySelector('.silky-bs-op-button').setAttribute('tabindex', '0');
                 }
             }
         }
@@ -1533,7 +1544,7 @@ export class BackstageView  extends EventDistributor {
             let opEl = Array.from(this.ops).filter(el => 
                 el.getAttribute('data-op') === `${operation}-item`
             )[0];
-            opEl.querySelector('.silky-bs-op-button').setAttribute('tabindex', null);//.addClass('bs-menu-item-ignore');
+            opEl.querySelector('.silky-bs-op-button').removeAttribute('tabindex');//.addClass('bs-menu-item-ignore');
             let subOps = opEl.querySelector<HTMLElement>('.silky-bs-op-places');
             if (subOps) {
                 let contents = subOps.querySelectorAll<HTMLElement>('.silky-bs-op-place');
@@ -1648,4 +1659,3 @@ export class BackstageChoices extends EventDistributor {
 customElements.define('jmv-choices', BackstageChoices);
 customElements.define('jmv-backstage', BackstageView);
 
-module.exports = { View: BackstageView, Model: BackstageModel };

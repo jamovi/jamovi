@@ -5,7 +5,7 @@ import RibbonMenu from './ribbonmenu';
 import RibbonTab from './ribbontab';
 import Placeholder from './placeholder';
 import RibbonButton from './ribbonbutton';
-const focusLoop = require('../../common/focusloop');
+import focusLoop from '../../common/focusloop';
 
 //import Store from '../store';
 

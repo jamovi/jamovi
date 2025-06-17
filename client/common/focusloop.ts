@@ -2,47 +2,203 @@
 
 import { EventEmitter } from 'tsee';
 
-class Token extends EventEmitter {
-    constructor(options) {
+export interface IShortcutUpdateOptions { 
+    shortcutPath?: string;
+    silent?: boolean; 
+    retries?: number;
+    keyCount?: number;
+    lastActionableToken?: ShortcutToken;
+    append?: string;
+}
+
+export interface IShortcutActionEvent {
+    target: HTMLElement;
+    currentTarget: HTMLElement;
+    _defaultPrevented: boolean;
+    preventDefault: () => boolean;
+}
+
+export interface IShortcutTokenOptions {
+    key: string;
+    action?: (event?: IShortcutActionEvent) => void;
+    path?: string;
+    label?: string;
+    blocking?: boolean;
+    position?: { x: string, y: string, internal?: boolean };
+    maintainAccessibility?: boolean;
+}
+
+class ShortcutToken extends EventEmitter implements IShortcutTokenOptions {
+    key: string;
+    action?: (event?: IShortcutActionEvent) => void;
+    fullPath?: string;
+    path?: string;
+    label?: string;
+    blocking?: boolean;
+    position?: { x: string, y: string, internal: boolean };
+    maintainAccessibility?: boolean;
+    constructor(options: IShortcutTokenOptions) {
         super();
         Object.assign(this, options);
     }
 }
 
-class FocusLoopToken extends Token {
-    constructor(element, options, modalId, base) {
-        super(options);
+export interface IFocusLoopEnterOptions {
+     withMouse?: boolean;
+     direction?: 'up' | 'down' | 'left' | 'right';
+     exitSelector?: string | WeakRef<HTMLElement> | HTMLElement;
+     closeFocusMode?: FocusMode;
+}
+
+export interface IFocusLoopTokenOptions {
+    level?: number;
+    hoverFocus?: boolean;
+    exitSelector?: string | WeakRef<HTMLElement> | HTMLElement;
+    closeHandler?: () => void;
+    keyToEnter?: boolean;
+    modal?: boolean;
+    exitKeys?: string[];
+    allowKeyPaths?: boolean;
+    needsLeave?: boolean;
+};
+
+class FocusLoopToken extends EventEmitter implements IFocusLoopTokenOptions {
+    el: HTMLElement;
+    _base: FocusLoop;
+    modalId: number;
+    level?: number;
+    hoverFocus?: boolean;
+    exitSelector?: string | WeakRef<HTMLElement> | HTMLElement;
+    closeHandler?: () => void;
+    keyToEnter?: boolean;
+    modal?: boolean;
+    exitKeys?: string[];
+    closeFocusMode?: FocusMode;
+    initalFocusMode?: FocusMode;
+    allowKeyPaths?: boolean;
+    needsLeave?: boolean;
+
+    _leavingLoop: boolean;
+
+    isActive: boolean;
+
+    constructor(element: HTMLElement, options: IFocusLoopTokenOptions, modalId: number, base: FocusLoop) {
+        super();
+        this.isActive = false;
         this.modalId = modalId;
         this._base = base;
         this.el = element;
+        Object.assign(this, options);
     }
 
     addKeyboardListener(keyPath, handle, description, modalSpecific = true) {
         this._base.addKeyboardListener(keyPath, handle, description, modalSpecific, this.modalId);
     }
+
+    requiresLeave() {
+        return this.exitSelector || this.modal || this.closeHandler || this.closeFocusMode || this.needsLeave;
+    }
+};
+
+type FocusMode = 'default' | 'shortcuts' | 'accessible' | 'hover' | 'keyboard';
+
+type KeyPressInfo = { 
+    handle: () => void, 
+    description: string, 
+    modalId: Number, 
+    modalSpecific: boolean
+};
+
+type KeyPressType = {
+    ctrlKey: boolean;
+    altKey: boolean;
+    shiftKey: boolean;
+    key: string;
+}
+
+interface IElementFocusDetails {
+    shortcutKey: string;
+    usesKeyboard: boolean;
+    isFocusController: boolean;
+    requires: string[] | null;
+    containsShortcutKeys: boolean;
 }
 
 // the FocusLoop is a static class that manages which control has focus (not selection/highlight)
 // and the movement and behaviour of that focus between and within controls
 class FocusLoop extends EventEmitter {
 
-    constructor(desktopMode) {
+    _isMainWindow: boolean;
+    _mainWindow: Window;
+    _availableModalId = 1;
+    _availableFocusId = 0;
+    shortcutTree = new WeakMap<HTMLElement, ShortcutToken>();
+    loopOptions = new WeakMap<HTMLElement, FocusLoopToken>();
+    focusMode: FocusMode = 'default';
+    inFocusLoop = 0;
+    isBluring = false;
+    focusDefault: FocusMode = 'default';
+    isBlured: boolean;
+    _speechBox: HTMLElement;
+    _fromBroadcast: boolean;
+    defaultFocusControl: HTMLElement;
+    shortcutPath: string = '';
+    _inDefaultMode: boolean;
+    _mouseClicked: boolean;
+    _keyPaths: {[key: string]: string};
+    _baseKeyPaths: {[key: string]: string};
+    list: { 
+        Ctrl?:  {
+            Alt?: { 
+                Shift?: { [key:string]: KeyPressInfo },
+                '-'?: {[key:string]: KeyPressInfo }
+            },
+            '-'?: { 
+                Shift?: { [key:string]: KeyPressInfo },
+                '-'?: {[key:string]: KeyPressInfo }
+            },
+        },
+        '-'?: {
+            Alt?: { 
+                Shift?: { [key:string]: KeyPressInfo },
+                '-'?: {[key:string]: KeyPressInfo }
+            },
+            '-'?: { 
+                Shift?: { [key:string]: KeyPressInfo },
+                '-'?: {[key:string]: KeyPressInfo }
+            }
+        }
+    };
+    _focusPassing: boolean;
+    _passedFocus: HTMLElement;
+    _bluringTimeout: NodeJS.Timeout;
+    _broadcastTimeout: NodeJS.Timeout;
+    _focusControlPaused: HTMLElement;
+
+    _activeModalToken: FocusLoopToken;
+    focusedLoop: FocusLoopToken;
+
+    _keyProcessing: {
+        ctrlDown: boolean;
+        altDown: boolean;
+        altTimer: NodeJS.Timeout;
+        turnedOn: boolean;
+    } = {
+        ctrlDown: false,
+        altDown: false,
+        altTimer: null,
+        turnedOn: false,
+    }
+    _starting: boolean;
+
+    constructor(desktopMode: boolean) {
         super();
 
         const mainBody = window.document.querySelector('body#main-window');
         this._isMainWindow = (mainBody !== null);
         this._mainWindow = (this._isMainWindow ? window : window.parent);
 
-        this._availableModalId = 1;
-        this._availableFocusId = 0;
-        this.shortcutTree = new WeakMap();
-        this.loopOptions = new WeakMap();
-        this.focusMode = 'default';
-        this.inFocusLoop = 0;
-        this.isBluring = false;
         this.isBlured = document.hasFocus() === false;
-        this.shortcutPath = '';
-        this.focusDefault = 'default';
 
         this._handleKeyPress = this._handleKeyPress.bind(this);
         this._handleMouseMove = this._handleMouseMove.bind(this);
@@ -55,8 +211,8 @@ class FocusLoop extends EventEmitter {
             this._speechBox.setAttribute('id', 'jmv-speech-box');
             this._speechBox.setAttribute('role', 'region');
             this._speechBox.setAttribute('aria-live', 'polite');
-            this._speechBox.setAttribute('aria-atomic', false);
-            this._speechBox.setAttribute('aria-hidden', false);
+            this._speechBox.setAttribute('aria-atomic', 'false');
+            this._speechBox.setAttribute('aria-hidden', 'false');
             this._speechBox.setAttribute('style', 'position: absolute; left: 0px; top: -1px; z-index: -2; opacity: 0;')
             document.body.appendChild(this._speechBox);
         }
@@ -97,10 +253,9 @@ class FocusLoop extends EventEmitter {
         });
 
         if (desktopMode) {
-
             window.addEventListener('keydown', (event) => {
                 let keyObj = this.eventToKeyObj(event);
-                let isEditableTextbox = (document.activeElement?.tagName === 'INPUT' && document.activeElement?.type === 'text' || document.activeElement?.isContentEditable);
+                let isEditableTextbox = (document.activeElement instanceof HTMLInputElement && document.activeElement?.type === 'text') || (document.activeElement instanceof HTMLElement && document.activeElement?.isContentEditable);
                 if (isEditableTextbox && document.activeElement.classList.contains('has-editing-mode'))
                     isEditableTextbox = this.defaultFocusControl.classList.contains('editing');
                 if (isEditableTextbox === false) {
@@ -121,7 +276,7 @@ class FocusLoop extends EventEmitter {
                     return;
 
                 if (event.ctrlKey) {
-                    this.ctrlDown = true;
+                    this._keyProcessing.ctrlDown = true;
                     return;
                 }
 
@@ -130,15 +285,15 @@ class FocusLoop extends EventEmitter {
 
                 if (event.altKey) {
                     if (this.focusMode !== 'shortcuts') {
-                        this.altDown = true;
-                        if ( ! this.altTimer) {
+                        this._keyProcessing.altDown = true;
+                        if ( ! this._keyProcessing.altTimer) {
                             this.shortcutPath = '';
-                            this.altTimer = setTimeout(() => {
-                                if (this.ctrlDown === false) {
+                            this._keyProcessing.altTimer = setTimeout(() => {
+                                if (this._keyProcessing.ctrlDown === false) {
                                     this.setFocusMode('shortcuts');
-                                    this.turnedOn = true;
+                                    this._keyProcessing.turnedOn = true;
                                 }
-                                this.altTimer = null;
+                                this._keyProcessing.altTimer = null;
                             }, 1000);
                         }
 
@@ -153,18 +308,18 @@ class FocusLoop extends EventEmitter {
 
             window.addEventListener('keyup', (event) => {
                 if (event.ctrlKey)
-                    this.ctrlDown = true;
+                    this._keyProcessing.ctrlDown = true;
 
                 if (event.keyCode === 18) {  //to surpress the defualt browser behaviour for an alt key press
-                    this.altDown = false;
-                    if (this.altTimer) {
-                        clearTimeout(this.altTimer);
-                        this.altTimer = null;
+                    this._keyProcessing.altDown = false;
+                    if (this._keyProcessing.altTimer) {
+                        clearTimeout(this._keyProcessing.altTimer);
+                        this._keyProcessing.altTimer = null;
                     }
 
-                    if (this.ctrlDown === false) {
+                    if (this._keyProcessing.ctrlDown === false) {
 
-                        if (!this.turnedOn) {
+                        if (!this._keyProcessing.turnedOn) {
                             if (this.focusMode === 'shortcuts' /*this.inAccessibilityMode()*/) {
                                 this.shortcutPath = '';
                                 this.setFocusMode('default');
@@ -172,13 +327,13 @@ class FocusLoop extends EventEmitter {
                             else
                                 this.setFocusMode('shortcuts');
                         }
-                        this.turnedOn = false;
+                        this._keyProcessing.turnedOn = false;
 
                         event.preventDefault();
                         event.stopPropagation();
                     }
 
-                    this.ctrlDown = false;
+                    this._keyProcessing.ctrlDown = false;
                 }
             });
         }
@@ -186,7 +341,7 @@ class FocusLoop extends EventEmitter {
             window.addEventListener('keydown', (event) => {
                 let keyObj = this.eventToKeyObj(event);
 
-                let isEditableTextbox = (document.activeElement?.tagName === 'INPUT' && document.activeElement?.type === 'text' || document.activeElement?.isContentEditable);
+                let isEditableTextbox = (document.activeElement instanceof HTMLInputElement && document.activeElement?.type === 'text') || (document.activeElement instanceof HTMLElement && document.activeElement?.isContentEditable);
                 if (isEditableTextbox && document.activeElement.classList.contains('has-editing-mode'))
                     isEditableTextbox = this.defaultFocusControl.classList.contains('editing');
                 if (isEditableTextbox === false) {
@@ -223,7 +378,7 @@ class FocusLoop extends EventEmitter {
                             this.shortcutPath = '';
                             this.setFocusMode('default');
                         }
-                        else if (this.focusMode !== 'shortcuts') {
+                        else {
                             this.shortcutPath = '';
                             this.setFocusMode('shortcuts');
                         }
@@ -253,7 +408,7 @@ class FocusLoop extends EventEmitter {
             this._mouseClicked = true;
             if (this.inAccessibilityMode()) {
                 setTimeout(() => {
-                    let info = this.elementFocusDetails(event.target);
+                    let info = this.elementFocusDetails(event.target as Element);
                     if (info.usesKeyboard)
                         this.setFocusMode('hover');
                     else
@@ -297,7 +452,7 @@ class FocusLoop extends EventEmitter {
 
             //If default focus control looses focus for some reason it gives it back.
             if (event.target === this.defaultFocusControl && event.relatedTarget === null  && this._inDefaultMode) {
-                event.target.focus();
+                this.defaultFocusControl.focus();
             }
 
             if (event.relatedTarget === null && this.focusMode !== 'shortcuts') {
@@ -316,7 +471,7 @@ class FocusLoop extends EventEmitter {
                 return;
             }
 
-            let element = event.target;
+            let element = event.target as HTMLElement;
             if (this._activeModalToken && this._activeModalToken.el.contains(element) === false) {
                 this.findFocusableElement(this._activeModalToken.el);
                 return;
@@ -331,9 +486,9 @@ class FocusLoop extends EventEmitter {
                 else if (! this.inAccessibilityMode()) {
                     let details = this.elementFocusDetails(element);
                     if (details.usesKeyboard || this.containsFocusableMenuLevel(event.composedPath()) || (this.inKeyboardMode() && ! this._mouseClicked)) {
-                        let keyboardMode = 'hover';
-                        if ( ! element.classList.contains('menu-level'))
-                            keyboardMode = (/*this.focusMode === 'keyboard' &&*/ !this._mouseClicked) ? 'keyboard' : 'hover';
+                        let keyboardMode: FocusMode = 'hover';
+                        if ( ! element.classList.contains('menu-level') && !this._mouseClicked)
+                            keyboardMode = 'keyboard';
                         this.setFocusMode(keyboardMode);
                     }
                     else
@@ -355,7 +510,7 @@ class FocusLoop extends EventEmitter {
             this.updateBaseKeyPaths();
     }
 
-    findFocusableElement(element) {
+    findFocusableElement(element: HTMLElement): void {
         let parent = element.closest('.menu-level');
         if (parent) {
             let level = parent.getAttribute('data-level');
@@ -367,15 +522,15 @@ class FocusLoop extends EventEmitter {
             element.focus();
     }
 
-    pauseFocusControl(element) {
+    pauseFocusControl(element:HTMLElement): void {
         this._focusControlPaused = element;
     }
 
-    resumeFocusControl() {
+    resumeFocusControl(): void {
         this._focusControlPaused = null;
     }
 
-    speakMessage(message) {
+    speakMessage(message: string): void {
         if (this._isMainWindow) {
             let msg = document.createElement('div');
             msg.innerHTML = message;
@@ -391,30 +546,33 @@ class FocusLoop extends EventEmitter {
         }
     }
 
-    setDefaultFocusControl(defaultFocusControl) {
+    setDefaultFocusControl(defaultFocusControl: HTMLElement): void {
         this.defaultFocusControl = defaultFocusControl;
         if (this.defaultFocusControl && this._inDefaultMode)
             this.defaultFocusControl.focus();
     }
 
-    getNextAriaElementId(prefix) {
+    getNextAriaElementId(prefix: string): string {
         return `${prefix}-${this.getNextFocusId()}`;
     }
 
-    inAccessibilityMode() {
+    inAccessibilityMode(): boolean {
         return this.focusMode === 'accessible' || this.focusMode === 'shortcuts';
     }
 
-    inKeyboardMode() {
+    inKeyboardMode(): boolean {
         return this.focusMode === 'accessible' || this.focusMode === 'shortcuts' || this.focusMode === 'keyboard';
     }
 
-    elementFocusDetails(element) {
+    elementFocusDetails(element:Element): IElementFocusDetails {
         let value = {
             shortcutKey: element.getAttribute('shortcut-key'),
-            usesKeyboard: element.closest('[aria-haspopup="true"]') !== null
+            usesKeyboard: element.closest('[aria-haspopup="true"]') !== null,
+            isFocusController: false,
+            requires: null,
+            containsShortcutKeys: false
         };
-        value.containsShortcutKeys = element.querySelectorAll('[shortcut-key]') || value.shortcutKey;
+        value.containsShortcutKeys = element.querySelectorAll('[shortcut-key]').length > 0 || !!value.shortcutKey;
         if (element.tagName === 'INPUT') {
             let elementType = element.getAttribute('type');
             if ( elementType === null || elementType === '' || elementType === 'text' || elementType === 'search') {
@@ -448,7 +606,7 @@ class FocusLoop extends EventEmitter {
             value.requires = { ArrowLeft: false, ArrowRight: false, ArrowUp: true, ArrowDown: true, Escape: false, Tab: false };
             value.usesKeyboard = true;
         }
-        else if (element.isContentEditable) {
+        else if (element instanceof HTMLElement && element.isContentEditable) {
             value.isFocusController = true;
             value.requires = { ArrowLeft: true, ArrowRight: true, ArrowUp: true, ArrowDown: true, Escape: false, Tab: false, Enter: true, Space: true };
             value.usesKeyboard = true;
@@ -457,11 +615,11 @@ class FocusLoop extends EventEmitter {
         return value;
     }
 
-    transferFocus(otherWindow) {
+    transferFocus(otherWindow: Window | HTMLIFrameElement) {
         this.isBluring = true;
         otherWindow.focus();
         if (otherWindow !== this._mainWindow) {
-            if (otherWindow.contentWindow) {
+            if (otherWindow instanceof HTMLIFrameElement && otherWindow.contentWindow) {
                 setTimeout(() => { // needed for firefox cross iframe focus
                     otherWindow.contentWindow.focus();
                 }, 100);
@@ -502,7 +660,7 @@ class FocusLoop extends EventEmitter {
         this._activeModalToken = null;
     }
 
-    beginModalMode(token) {
+    beginModalMode(token: FocusLoopToken) {
         this._activeModalToken = token;
         this.setFocusDefault('hover', { });
     }
@@ -511,7 +669,7 @@ class FocusLoop extends EventEmitter {
         return value === 'shortcuts' || value === 'accessible' || value === 'keyboard' || value === 'hover' || value === 'default';
     }
 
-    setFocusMode(value, options) {
+    setFocusMode(value: FocusMode, options?: { silent: boolean, noTransfer: boolean }) {
 
         if (this._bluringTimeout) {
             clearTimeout(this._bluringTimeout);
@@ -528,6 +686,8 @@ class FocusLoop extends EventEmitter {
         let silent = options ? options.silent : false;
         let fromBroadcast = this._fromBroadcast;
         if (this.focusMode !== value) {
+            if (this._isMainWindow && this.focusMode !== 'default' && value === 'default')
+                console.log(value)
             let prevMode = this.focusMode;
 
             this.focusMode = value;
@@ -551,17 +711,17 @@ class FocusLoop extends EventEmitter {
 
     updateBodyAttributes() {
         if (this.inAccessibilityMode())
-            document.body.setAttribute('accessible', true);
+            document.body.setAttribute('accessible', 'true');
         else
-            document.body.setAttribute('accessible', false);
+            document.body.setAttribute('accessible', 'false');
         if (this.inKeyboardMode())
-            document.body.setAttribute('keyboardfocus', true);
+            document.body.setAttribute('keyboardfocus', 'true');
         else
-            document.body.setAttribute('keyboardfocus', false);
+            document.body.setAttribute('keyboardfocus', 'false');
         document.body.setAttribute('focusMode', this.focusMode);
     }
 
-    broadcastFocusMode(focusMode, options) {
+    broadcastFocusMode(focusMode: FocusMode, options?: { silent: boolean, noTransfer: boolean }) {
         if (this._broadcastTimeout) {
             clearTimeout(this._broadcastTimeout);
             this._broadcastTimeout = null;
@@ -572,7 +732,7 @@ class FocusLoop extends EventEmitter {
         this.broadcast('setFocusMode', [focusMode, options], ! noTransfer && (focusMode !== 'keyboard' && focusMode !== 'hover'));
     }
 
-    invoke(invokeWindow, id, args, transferFocus) {
+    invoke(invokeWindow: Window, id: string, args: any[], transferFocus:boolean): void {
         let data = { id, args, type: 'focusLoop' };
         if (invokeWindow !== window) {
             if (transferFocus)
@@ -583,7 +743,7 @@ class FocusLoop extends EventEmitter {
             throw "Cannot invoke in the same window that was called from";
     }
 
-    broadcast(id, args, transferFocus) {
+    broadcast(id: string, args: any[], transferFocus: boolean): void {
         let data = { id, args, type: 'focusLoop' };
         if (this._isMainWindow === false) {
             if (transferFocus)
@@ -597,19 +757,19 @@ class FocusLoop extends EventEmitter {
         }
     }
 
-    getNextFocusId() {
+    getNextFocusId(): number {
         return this._availableFocusId++;
     }
 
-    changeLevel(element, level) {
+    changeLevel(element: HTMLElement, level: number): void {
         let token = this.loopOptions.get(element);
         if (token) {
             token.level = level;
-            element.setAttribute('data-level', token.level);
+            element.setAttribute('data-level', token.level.toString());
         }
     }
 
-    removeFocusLoop(element) {
+    removeFocusLoop(element: HTMLElement): void {
         let token = this.loopOptions.get(element);
 
         element.setAttribute('data-level', '');
@@ -626,9 +786,7 @@ class FocusLoop extends EventEmitter {
         this.loopOptions.delete(element);
     }
 
-    addFocusLoop(element, options) {
-
-        // options = { level, closeHandler, exit Selector, hoverFocus, keyToEnter, modal, exitKeys }
+    addFocusLoop(element: HTMLElement, options?: IFocusLoopTokenOptions): FocusLoopToken {
 
         if (options === undefined)
             options = { };
@@ -642,7 +800,7 @@ class FocusLoop extends EventEmitter {
         let modalId = -1;
         if (options.modal) {
             modalId = this._availableModalId++;
-            element.setAttribute('aria-modal', true);
+            element.setAttribute('aria-modal', 'true');
             if (element.hasAttribute('tabindex') === false)
                 element.setAttribute('tabindex', '-1');
 
@@ -657,10 +815,10 @@ class FocusLoop extends EventEmitter {
 
         this.loopOptions.set(element, token);
 
-        if (token.exitSelector && typeof token.exitSelector !== 'string' && token.exitSelector.deref === undefined)
+        if (token.exitSelector && token.exitSelector instanceof HTMLElement)
             token.exitSelector = new WeakRef(token.exitSelector);
 
-        element.setAttribute('data-level', token.level);
+        element.setAttribute('data-level', token.level.toString());
         element.classList.add('menu-level');
         if (token.hoverFocus)
             element.classList.add('hover-focus');
@@ -672,26 +830,34 @@ class FocusLoop extends EventEmitter {
                 element.addEventListener('mousemove', this._handleMouseMove);
             element.classList.add('focus-listener');
         }
+        /*element.addEventListener('focusin', (event: FocusEvent) => {
+            let target = event.target as HTMLElement;
+            if (element.contains(target) && this.focusedLoop != token) {
+                this.enterFocusLoop(token.el, token);
+            }
+
+        });*/
 
         return token;
     }
 
-    downgradeShortcuts() {
+    downgradeShortcuts(): void {
         if (this.focusMode === 'shortcuts')
             this.setFocusMode('accessible');
     }
 
-    async timeout(ms) {
+    async timeout(ms: number): Promise<void> {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    applyShortcutOptions(element, options) {
+    applyShortcutOptions(element: HTMLElement, options: Partial<IShortcutTokenOptions>) : ShortcutToken;
+    applyShortcutOptions(element: HTMLElement, options: IShortcutTokenOptions): ShortcutToken {
 
         // { key, path, action, position, blocking, maintainAccessibility }
 
         let token = this.shortcutTree.get(element);
         if ( ! token) {
-            token = new Token(options);
+            token = new ShortcutToken(options);
             this.shortcutTree.set(element, token);
         }
         else {
@@ -732,15 +898,14 @@ class FocusLoop extends EventEmitter {
         return token;
     }
 
-    nullishCheck(option1, option2) {
+    nullishCheck<T>(option1:T, option2:T) : T {
         return (option1 == null || option1 == undefined) ? option2 : option1;
     }
 
-    async updateShortcuts(options) {
-        options = this.nullishCheck(options, { });
+    async updateShortcuts(options: IShortcutUpdateOptions = { }): Promise<boolean> {
         let retries = this.nullishCheck(options.retries, 0);
         let shortcutPath = this.nullishCheck(options.shortcutPath, this.shortcutPath);
-        let silent = this.nullishCheck(options.silent, this.silent);
+        let silent = this.nullishCheck(options.silent, false);
         if (options.append)
             shortcutPath += options.append;
 
@@ -751,8 +916,8 @@ class FocusLoop extends EventEmitter {
                 filter = `[shortcut-path^="${shortcutPath}"], [shortcut-key|="${shortcutPath}"]:not([shortcut-path])`;
 
             let actionableElement = null;
-            let actionableToken = null;
-            let elements = [...baseElement.querySelectorAll(filter)].filter(el => {
+            let actionableToken: ShortcutToken = null;
+            let elements = [...baseElement.querySelectorAll<HTMLElement>(filter)].filter(el => {
 
                 if (el.offsetWidth <= 0 || el.offsetHeight <= 0 || el.getAttribute('aria-hidden') || window.getComputedStyle(el).visibility === "hidden")
                     return false;
@@ -780,10 +945,11 @@ class FocusLoop extends EventEmitter {
             if (actionableElement) {
                 if ( ! silent) {
                     if (actionableToken) {
-                        let event = {
+                        let event: IShortcutActionEvent = {
                             target: actionableElement,
                             currentTarget: actionableElement,
-                            _defaultPrevented: false
+                            _defaultPrevented: false,
+                            preventDefault: undefined
                         };
                         event.preventDefault = () => event._defaultPrevented = true;
 
@@ -859,7 +1025,7 @@ class FocusLoop extends EventEmitter {
                 //let $shortcutElement = $(`<div id="sct-${display}" class="shortcut-key-tag" aria-hidden="true">${display}</div>`);
                 const shortcutElement = document.createElement("div");
                 shortcutElement.classList.add('shortcut-key-tag');
-                shortcutElement.setAttribute('aria-hidden', true);
+                shortcutElement.setAttribute('aria-hidden', 'true');
                 shortcutElement.textContent = display;
 
                 let rect = element.getBoundingClientRect();
@@ -873,36 +1039,38 @@ class FocusLoop extends EventEmitter {
                 }
 
                 let posY = position.y;
+                let y: number;
                 if (posY.endsWith('%'))
-                    posY = parseFloat(posY) / 100;
+                    y = parseFloat(posY) / 100;
                 else if (posY.endsWith('px'))
-                    posY = parseFloat(posY) / rect.height;
+                    y = parseFloat(posY) / rect.height;
                 else
                     throw 'Must specify units for position';
 
-                if ( ! position.internal && posY > 0.5)
+                if ( ! position.internal && y > 0.5)
                     offset.y = 0;
-                else if (position.internal && posY < 0.5)
+                else if (position.internal && y < 0.5)
                     offset.y = 0;
-                else if (posY === 0.5)
+                else if (y === 0.5)
                     offset.y = offset.y / 2;
 
                 let posX = position.x;
+                let x: number;
                 if (posX.endsWith('%'))
-                    posX = parseFloat(posX) / 100;
+                    x = parseFloat(posX) / 100;
                 else if (posX.endsWith('px'))
-                    posX = parseFloat(posX) / rect.width;
+                    x = parseFloat(posX) / rect.width;
                 else
                     throw 'Must specify units for position';
 
-                if ( ! position.internal && posX > 0.5)
+                if ( ! position.internal && x > 0.5)
                     offset.x = 0;
-                else if (position.internal && posX < 0.5)
+                else if (position.internal && x < 0.5)
                     offset.x = 0;
-                else if (posX === 0.5)
+                else if (x === 0.5)
                     offset.x = offset.x / 2;
 
-                let css = { top: `${rectY + (rect.height * posY) - offset.y}px`, left: `${rectX + (rect.width * posX) - offset.x}px` };
+                let css = { top: `${rectY + (rect.height * y) - offset.y}px`, left: `${rectX + (rect.width * x) - offset.x}px` };
 
                 //$shortcutElement.css(css);
                 Object.keys(css).forEach (function (s) {
@@ -926,13 +1094,13 @@ class FocusLoop extends EventEmitter {
         return false;
     }
 
-    keyboardfocusableElements(element, level, onlyTabbable) {
+    keyboardfocusableElements(element: Element | DocumentFragment, level: string, onlyTabbable=false): HTMLElement[] {
 
-        if (element.shadowRoot)
+        if (element instanceof Element && element.shadowRoot)
             element = element.shadowRoot;
 
         let tabbable = onlyTabbable ? ':not([tabindex="-1"])' : '';
-        let list = [...element.querySelectorAll(`
+        let list = [...element.querySelectorAll<HTMLElement>(`
         a[href]${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *):not(.not-focusable *),
         button${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *):not(.not-focusable *),
         input${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *):not(.not-focusable *),
@@ -940,15 +1108,15 @@ class FocusLoop extends EventEmitter {
         select${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *):not(.not-focusable *),
         details${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *):not(.not-focusable *),
         [tabindex]${tabbable}:not(.menu-level[data-level="${ parseInt(level) + 1 }"] *):not(.not-focusable *)`)]
-                .filter(el => el.offsetWidth > 0 && el.offsetHeight > 0 && !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden') && window.getComputedStyle(el).visibility !== "hidden");
+                .filter(el => (el.hasAttribute('ignore-focus-size') || (el.offsetWidth > 0 && el.offsetHeight > 0)) && !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden') && window.getComputedStyle(el).visibility !== "hidden");
 
         if (onlyTabbable) {
            list.sort((a,b) => {
-                let a_index = a.getAttribute('tabindex');
-                let b_index = b.getAttribute('tabindex');
+                let a_index_value = a.getAttribute('tabindex');
+                let b_index_value = b.getAttribute('tabindex');
 
-                a_index = a_index === null ? 0 : parseInt(a_index);
-                b_index = b_index === null ? 0 : parseInt(b_index);
+                let a_index = a_index_value === null ? 0 : parseInt(a_index_value);
+                let b_index = b_index_value === null ? 0 : parseInt(b_index_value);
 
                 if (a_index === b_index)
                     return 0;
@@ -964,11 +1132,20 @@ class FocusLoop extends EventEmitter {
         return list;
     }
 
-    enterFocusLoop(loopElement, options) {
+    enterFocusLoop(loopElement: HTMLElement, options: IFocusLoopEnterOptions = { withMouse: false }): void {
         // { withMouse, direction, exitSelector, closeFocusMode }
 
         this._mouseClicked = options.withMouse;
         let token = this.loopOptions.get(loopElement);
+        if (this.focusedLoop && this.focusedLoop !== token) {
+            if (this.focusedLoop.requiresLeave())
+                this.leaveFocusLoop(this.focusedLoop.el);
+            else
+                this.focusedLoop.isActive = false;
+            this.focusedLoop = null;
+        }
+        this.focusedLoop = token;
+        this.focusedLoop.isActive = true;
         token.initalFocusMode = this.focusMode;
         if (token.modal)
             this.beginModalMode(token);
@@ -977,7 +1154,7 @@ class FocusLoop extends EventEmitter {
             token.closeFocusMode = options.closeFocusMode;
         if (options.exitSelector)
             token.exitSelector = options.exitSelector;
-        if (token.exitSelector && typeof token.exitSelector !== 'string' && token.exitSelector.deref === undefined)
+        if (token.exitSelector && token.exitSelector instanceof HTMLElement)
             token.exitSelector = new WeakRef(token.exitSelector);
 
         if ( ! options.withMouse) {
@@ -997,14 +1174,31 @@ class FocusLoop extends EventEmitter {
             loopElement.focus();
     }
 
-    leaveFocusLoop(loopElement, withMouse) {
+
+    leaveFocusLoop(loopElement: HTMLElement, withMouse=false) : boolean | (() => void) {
 
         let token = this.loopOptions.get(loopElement);
         if ( ! token)
             return false;
 
+        if (token.isActive === false)
+            return false;
+
         if (token._leavingLoop)
             return false;
+
+        if (this.focusedLoop) { 
+            if (this.focusedLoop === token) {
+                if (this.focusedLoop.isActive === false) {
+                    this.focusedLoop = null;
+                    return false;
+                }
+            }
+            else if (this.focusedLoop.requiresLeave())
+                throw 'Hasnt been closed yet';
+        }
+        else
+            throw 'Leaving something thats not open';
 
         token._leavingLoop = true;
 
@@ -1016,16 +1210,24 @@ class FocusLoop extends EventEmitter {
             return false;
         }
 
+        token.isActive = false;
+        this.focusedLoop = null;
+        if (token.requiresLeave() === false)
+            return false;
+
         if (token.modal)
             this.endModalMode();
 
         let validExitElement = false;
         if (token.exitSelector && ! withMouse) {
-            let element = token.exitSelector;
-            if (typeof element === 'string')
-                element = document.querySelector(element);
+            let selector = token.exitSelector;
+            let element: HTMLElement;
+            if (typeof selector === 'string')
+                element = document.querySelector(selector);
+            else if (selector instanceof WeakRef)
+                element = selector.deref();
             else
-                element = element.deref();
+                element = element;
 
             if (element) {
                 validExitElement = true;
@@ -1037,7 +1239,7 @@ class FocusLoop extends EventEmitter {
         }
 
         if (token.closeHandler)
-            token.closeHandler(event);
+            token.closeHandler();
 
         if (this._passedFocus)
             this._passedFocus.focus();
@@ -1046,7 +1248,7 @@ class FocusLoop extends EventEmitter {
 
         if (token.closeFocusMode)
             this.setFocusMode(token.closeFocusMode);
-        else if (token.modal && !this._passedFocus && !token.closeHandler)
+        else if (token.modal && !this._passedFocus && !token.closeHandler && token.initalFocusMode !== 'shortcuts')
             this.setFocusMode(token.initalFocusMode);
 
         return token.closeHandler || validExitElement;
@@ -1077,8 +1279,14 @@ class FocusLoop extends EventEmitter {
 
             let brect = this.findBoundingRectangle(el);
 
-            let aLocation = { cx: arect.left + ((arect.right - arect.left) / 2), cy: arect.top + ((arect.bottom - arect.top) / 2), ratio: arect.height / arect.width };
-            let bLocation = { };
+            let aLocation = { 
+                cx: arect.left + ((arect.right - arect.left) / 2), 
+                cy: arect.top + ((arect.bottom - arect.top) / 2), 
+                ratio: arect.height / arect.width,
+                x: 0,
+                y: 0
+            };
+            let bLocation = { x: 0, y: 0 };
 
             if (brect.left <= aLocation.cx && brect.right >= aLocation.cx) {
                 aLocation.x = aLocation.cx;
@@ -1241,7 +1449,7 @@ class FocusLoop extends EventEmitter {
         });
     }
 
-    addKeyboardListener(keyPath, handle, description, modalSpecific = true, modalId = -1) {
+    addKeyboardListener(keyPath: string, handle: () => void, description: string, modalSpecific = true, modalId = -1) {
 
         let keyObj = this.keyPathToKeyObj(keyPath);
 
@@ -1257,19 +1465,25 @@ class FocusLoop extends EventEmitter {
         if ( ! this.list)
             this.list = { };
 
-        let handles = this.list[ctrlKey ? 'Ctrl' : '-'];
-        if ( ! handles) {
-            handles = { };
-            this.list[ctrlKey ? 'Ctrl' : '-'] = handles;
+        let ctrlHandles = this.list[ctrlKey ? 'Ctrl' : '-'];
+        if ( ! ctrlHandles) {
+            ctrlHandles = { };
+            this.list[ctrlKey ? 'Ctrl' : '-'] = ctrlHandles;
         }
 
-        if ( ! handles[altKey ? 'Alt' : '-'])
-            handles[altKey ? 'Alt' : '-'] = { };
-        handles = handles[altKey ? 'Alt' : '-'];
+        let altHandles = ctrlHandles[altKey ? 'Alt' : '-']
+        if ( ! altHandles) {
+            altHandles = { };
+            ctrlHandles[altKey ? 'Alt' : '-'] = altHandles;
+        }
 
-        if ( ! handles[shiftKey ? 'Shift' : '-'])
-            handles[shiftKey ? 'Shift' : '-'] = { };
-        handles = handles[shiftKey ? 'Shift' : '-'];
+        let shilftHandles = altHandles[shiftKey ? 'Shift' : '-']
+        if ( ! shilftHandles) {
+            shilftHandles = { };
+            altHandles[shiftKey ? 'Shift' : '-'] = shilftHandles;
+        }
+
+        let handles = shilftHandles;
 
         let key = keyObj.key;
 
@@ -1286,7 +1500,7 @@ class FocusLoop extends EventEmitter {
             this.broadcast('updateBaseKeyPaths', [], false);
     }
 
-    setBaseKeyPaths(keyPaths) {
+    setBaseKeyPaths(keyPaths: {[key:string]: string}) {
         if (this._isMainWindow)
             return;
 
@@ -1302,7 +1516,7 @@ class FocusLoop extends EventEmitter {
         return {ctrlKey, altKey, shiftKey, key};
     }
 
-    keyPathToKeyObj(keyPath) {
+    keyPathToKeyObj(keyPath): KeyPressType {
         let keys = keyPath.split('+');
 
         let ctrlKey = keys.includes('Ctrl');
@@ -1313,8 +1527,8 @@ class FocusLoop extends EventEmitter {
         return {ctrlKey, altKey, shiftKey, key};
     }
 
-    keyObjToKeyPath(keyObj) {
-        let list = [];
+    keyObjToKeyPath(keyObj: KeyPressType): string {
+        let list:string[] = [];
         if (keyObj.ctrlKey)
             list.push('Ctrl');
         if (keyObj.altKey)
@@ -1327,7 +1541,7 @@ class FocusLoop extends EventEmitter {
         return list.join('+');
     }
 
-    processKeyObj(keyObj) {
+    processKeyObj(keyObj: KeyPressType) {
         if (this._fromBroadcast && this._isMainWindow === false)
             return false;
 
@@ -1338,17 +1552,19 @@ class FocusLoop extends EventEmitter {
         if ( ! this.list)
             return false;
 
-        let handles = this.list[ctrlKey ? 'Ctrl' : '-'];
-        if ( ! handles)
+        let ctrlHandles = this.list[ctrlKey ? 'Ctrl' : '-'];
+        if ( ! ctrlHandles)
             return false;
 
-        handles = handles[altKey ? 'Alt' : '-'];
-        if ( ! handles)
+        let altHandles = ctrlHandles[altKey ? 'Alt' : '-'];
+        if ( ! altHandles)
             return false;
 
-        handles = handles[shiftKey ? 'Shift' : '-'];
-        if ( ! handles)
+        let shiftHandles = altHandles[shiftKey ? 'Shift' : '-'];
+        if ( ! shiftHandles)
             return false;
+
+        let handles = shiftHandles;
 
         let key = keyObj.key;
 
@@ -1362,7 +1578,7 @@ class FocusLoop extends EventEmitter {
             modalId = this._activeModalToken.modalId;
 
         if ( ! handleInfo.modalSpecific || handleInfo.modalId === modalId)
-            return handleInfo.handle.call() !== false;
+            return handleInfo.handle.call(this) !== false;
 
         return false;
     }
@@ -1371,22 +1587,22 @@ class FocusLoop extends EventEmitter {
         return this.loopOptions.get(element);
     }
 
-    async _handleKeyPress(event) {
+    async _handleKeyPress(event: KeyboardEvent) {
         this._mouseClicked = false;
 
         if (this.focusMode === 'default')
             return;
 
-        let target = event.target;
+        let target = event.target as HTMLElement;
         if (target.shadowRoot && target.shadowRoot.activeElement)
-            target = target.shadowRoot.activeElement;
+            target = target.shadowRoot.activeElement as HTMLElement;
 
         let details = this.elementFocusDetails(target);
         let reservedKeys = details.requires;
 
-        let parent = target.closest('.menu-level');
-        if (parent === null && event.target.shadowRoot)
-            parent = event.target;
+        let parent = target.closest('.menu-level') as HTMLElement;
+        if (parent === null && event.target instanceof HTMLElement && event.target.shadowRoot)
+            parent = event.target as HTMLElement;
 
         if (parent.classList.contains('focus-listener') && parent.parentElement) {
             let upperListener = parent.parentElement.closest('.focus-listener');
@@ -1396,7 +1612,6 @@ class FocusLoop extends EventEmitter {
                 return;
             }
         }
-
         let exitKeys = [];
         let token = this.loopOptions.get(parent);
         let leftFocusLoop = false;
@@ -1471,7 +1686,7 @@ class FocusLoop extends EventEmitter {
                     this.setFocusMode('accessible', { noTransfer: true, silent: false });
 
                 if (target === parent)
-                    this.enterFocusLoop(parent, { withMouse: false });
+                    this.enterFocusLoop(parent);
                 else {
                     let loopContainer = this.nullishCheck(target.closest('[hloop="true"]'), parent);
                     //if (loopContainer.getAttribute('hloop') === 'true') {
@@ -1488,7 +1703,7 @@ class FocusLoop extends EventEmitter {
                     this.setFocusMode('accessible', { noTransfer: true, silent: false });
 
                 if (target === parent)
-                    this.enterFocusLoop(parent, { withMouse: false });
+                    this.enterFocusLoop(parent);
                 else {
                     let loopContainer = this.nullishCheck(target.closest('[hloop="true"]'), parent);
                     list = this.keyboardfocusableElements(loopContainer, level);
@@ -1541,7 +1756,7 @@ class FocusLoop extends EventEmitter {
                 break;
             case 'Enter':
                 if (keyToEnter) {
-                    this.enterFocusLoop(target, { withMouse: false });
+                    this.enterFocusLoop(target);
                     event.preventDefault();
                 }
                 break;

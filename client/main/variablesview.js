@@ -13,7 +13,7 @@ const SilkyView = require('./view');
 const ContextMenu = require('./contextmenu');
 const Statusbar = require('./statusbar/statusbar');
 const { contextMenuListener } = require('../common/utils');
-const _focusLoop = require('../common/focusloop');
+import _focusLoop from '../common/focusloop';
 
 
 const VariablesView = SilkyView.extend({

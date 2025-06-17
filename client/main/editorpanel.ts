@@ -56,7 +56,7 @@ export class EditorPanel extends EventEmitter {
         ok.addEventListener('click', this.close.bind(this));
     }
 
-    close(event) {
+    close() {
         let backCall = this.onBack;
         this.attach(null);
         if (backCall)
@@ -115,7 +115,7 @@ export class EditorPanel extends EventEmitter {
                 this.el.dispatchEvent(event);
                 //this.$el.trigger('editor:visible');
                 setTimeout(() => {
-                    focusLoop.enterFocusLoop(this.el, { withMouse: false });
+                    focusLoop.enterFocusLoop(this.el);
                 }, 200);
                 this.visible = true;
             }

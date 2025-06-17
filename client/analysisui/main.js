@@ -20,7 +20,7 @@ const OptionControl = require('./optioncontrol');
 const LayoutActionManager = require('./layoutactionmanager');
 const RequestDataSupport = require('./requestdatasupport');
 const ApplyMagicEvents = require('./applymagicevents').applyMagicEvents;
-const Keyboard = require('../common/focusloop');
+import Keyboard from '../common/focusloop';
 
 const I18n = require("../common/i18n");
 
@@ -237,17 +237,17 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
     let focusToken = Keyboard.addFocusLoop(optionsBlock);
     //focusToken.on('focusleave', closeOptions);
     Keyboard.on('focus', (event) => {
-        Keyboard.enterFocusLoop(optionsBlock, { withMouse: false });
+        Keyboard.enterFocusLoop(optionsBlock);
     });
     Keyboard.on('blur', (event) => {
-        Keyboard.leaveFocusLoop(optionsBlock, false);
+        Keyboard.leaveFocusLoop(optionsBlock);
     });
     optionsBlock.addEventListener('focus', (event) => {
-        Keyboard.enterFocusLoop(optionsBlock, { withMouse: false });
+        Keyboard.enterFocusLoop(optionsBlock);
     });
     Keyboard.setFocusMode(focusMode);
     
-    Keyboard.enterFocusLoop(optionsBlock, { withMouse: false });
+    Keyboard.enterFocusLoop(optionsBlock);
 
     let $optionsBlock = $('.jmv-options-block');
     let $title = $('.silky-options-title');

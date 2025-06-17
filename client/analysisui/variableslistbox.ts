@@ -2,7 +2,7 @@
 
 import { FormatDef } from './formatdef';
 const RequestDataSupport = require('./requestdatasupport');
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 import { SelectableOptionListControl } from './optionlistcontrol';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 

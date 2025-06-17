@@ -9,7 +9,7 @@ import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
 import Store from '../store';
 
-class AnalyseTab extends RibbonTab {
+export class AnalyseTab extends RibbonTab {
     buttons = [ ];
     settings;
     modules;
@@ -228,4 +228,4 @@ class AnalyseTab extends RibbonTab {
     }
 }
 
-module.exports = AnalyseTab;
+export default AnalyseTab;

@@ -13,7 +13,7 @@ const VariableModel = require('./vareditor/variablemodel');
 const EditorWidget = require('./vareditor/editorwidget');
 import EditorPanel from './editorpanel';
 const TransformEditor = require('./editors/transformeditor');
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 
 
 const VariableEditor = Backbone.View.extend({
@@ -238,9 +238,9 @@ const VariableEditor = Backbone.View.extend({
     },
     setFocus() {
         if (this.editorPanel.isVisible())
-            focusLoop.enterFocusLoop(this.editorPanel.el, { withMouse: false });
+            focusLoop.enterFocusLoop(this.editorPanel.el);
         else
-            focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
+            focusLoop.enterFocusLoop(this.$el[0]);
     },
     _editingVarChanged(event) {
 
@@ -286,7 +286,7 @@ const VariableEditor = Backbone.View.extend({
             if (this.$el.hasClass('hidden')) {
                 this.$el.removeClass('hidden');
                 setTimeout(() => {
-                    focusLoop.enterFocusLoop(this.$el[0], { withMouse: false });
+                    focusLoop.enterFocusLoop(this.$el[0]);
                 }, 100);
             }
 

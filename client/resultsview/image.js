@@ -3,7 +3,7 @@
 const $ = require('jquery');
 const Backbone = require('backbone');
 Backbone.$ = $;
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 
 const Elem = require('./element');
 

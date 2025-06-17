@@ -9,7 +9,7 @@ import  { ControlContainerItem } from './controlcontainer';
 import LayoutGrid from './layoutgrid';
 const EnumPropertyFilter = require('./enumpropertyfilter');
 const RequestDataSupport = require('./requestdatasupport');
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 import type { SupplierTargetList } from './gridtargetcontrol';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import LayoutCell from './layoutcell';

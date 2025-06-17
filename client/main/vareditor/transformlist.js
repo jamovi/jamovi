@@ -3,7 +3,7 @@
 
 const $ = require('jquery');
 const TransformListItem = require('./transformlistitem');
-const focusLoop = require('../../common/focusloop');
+import focusLoop from '../../common/focusloop';
 
 const TransformList = function() {
     this.isScrollTarget = function(target) {

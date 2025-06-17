@@ -7,7 +7,7 @@ import createChildLayoutSupport from './childlayoutsupport';
 import EnumPropertyFilter from './enumpropertyfilter';
 import { FormatDef } from './formatdef';
 const Icons = require('./iconsupport');
-const focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 export class LayoutGroupView extends TitledGridControl {
