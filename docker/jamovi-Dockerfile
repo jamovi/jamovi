@@ -1,6 +1,7 @@
 
 FROM ubuntu:noble as base
 FROM jamovi/jamovi-deps:2.7.1 as r-base
+ENV R_VERSION 4.5.0-x64
 
 
 ##### NODE #####
@@ -56,6 +57,13 @@ COPY $JAMOVI_ROOT/server/ $MODS_ROOT/server/ /tmp/source/server/
 RUN SETUP_SERVER_ONLY=1 python3 setup.py install --install-lib=/usr/lib/jamovi/server --single-version-externally-managed --record=/dev/null
 
 COPY $JAMOVI_ROOT/platform/env.conf /usr/lib/jamovi/bin/
+
+RUN echo [ENV]>/usr/lib/jamovi/bin/env.conf && \
+    echo JAMOVI_HOME=/usr/lib/jamovi>>/usr/lib/jamovi/bin/env.conf && \
+    echo JAMOVI_MODULES_PATH=/usr/lib/jamovi/modules>>/usr/lib/jamovi/bin/env.conf && \
+    echo JAMOVI_CLIENT_PATH=/usr/lib/jamovi/client>>/usr/lib/jamovi/bin/env.conf && \
+    echo JAMOVI_VERSION_PATH=/usr/lib/jamovi/version>>/usr/lib/jamovi/bin/env.conf && \
+    echo JAMOVI_R_VERSION=$R_VERSION>>/usr/lib/jamovi/bin/env.conf
 
 
 ####### CLIENT #######
@@ -236,7 +244,6 @@ ENV PYTHONPATH /usr/lib/jamovi/server
 ENV R_LIBS $R_HOME/library
 ENV JAMOVI_SESSION_EXPIRES 0
 ENV JAMOVI_ALLOW_ARBITRARY_CODE false
-ENV JAMOVI_R_VERSION 4.5.0-x64
 
 EXPOSE 41337
 ENTRYPOINT ["/bin/sh", "-c"]
