@@ -421,8 +421,11 @@ export class Instance extends EventMap<IInstanceModel>{
                 }
 
                 if (message && message['set-cookies']) {
-                    for (let cookie of message['set-cookies'])
-                        document.cookie = cookie;
+                    for (let cookie of message['set-cookies']) {
+                        // if the cookie has a domain, we need to rewrite it to the current domain
+                        // this let's us run the client and server on different domains (i.e. when testing).
+                        document.cookie = cookie.replace(/Domain=[^;]+/, `Domain=${ window.location.hostname }`);
+                    }
                 }
 
                 if ( ! message) {
