@@ -1,7 +1,7 @@
 
 'use strict';
 
-const $ = require('jquery');
+import $ from 'jquery';
 
 const DataVarLevelWidget = function(level, model, i, readOnly) {
 
@@ -123,4 +123,4 @@ const DataVarLevelWidget = function(level, model, i, readOnly) {
     this.updateLevel(level);
 };
 
-module.exports = DataVarLevelWidget;
+export default DataVarLevelWidget;

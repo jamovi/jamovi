@@ -1,10 +1,10 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
-const DataVarLevelWidget = require('./datavarlevelwidget');
+import DataVarLevelWidget from './datavarlevelwidget';
 
 const OutputVarWidget = Backbone.View.extend({
     className: 'OutputVarWidget',
@@ -111,4 +111,4 @@ const OutputVarWidget = Backbone.View.extend({
     }
 });
 
-module.exports = OutputVarWidget;
+export default OutputVarWidget;

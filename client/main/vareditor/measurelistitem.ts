@@ -1,7 +1,7 @@
 
 'use strict';
 
-const $ = require('jquery');
+import $ from 'jquery';
 import focusLoop from '../../common/focusloop';
 
 const MeasureListItem = function(measureType, text) {
@@ -26,4 +26,4 @@ const MeasureListItem = function(measureType, text) {
 
 
 
-module.exports = MeasureListItem;
+export default MeasureListItem;

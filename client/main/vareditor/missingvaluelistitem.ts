@@ -1,9 +1,9 @@
 
 'use strict';
 
-const $ = require('jquery');
-const dropdown = require('./dropdown');
-const opsToolbar = require('../editors/operatordropdown');
+import $ from 'jquery';
+import dropdown from './dropdown';
+import opsToolbar from '../editors/operatordropdown';
 
 const MissingValueListItem = function(value) {
     this.value = value;
@@ -341,4 +341,4 @@ const MissingValueListItem = function(value) {
 
 
 
-module.exports = MissingValueListItem;
+export default MissingValueListItem;

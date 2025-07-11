@@ -1,8 +1,8 @@
 
 'use strict';
 
-const $ = require('jquery');
-const VariableListItem = require('./variablelistitem');
+import $ from 'jquery';
+import VariableListItem from './variablelistitem';
 import focusLoop from '../../common/focusloop';
 
 const VariableList = function() {
@@ -74,4 +74,4 @@ const VariableList = function() {
 
 
 
-module.exports = VariableList;
+export default VariableList;

@@ -1,7 +1,7 @@
 
 'use strict';
 
-const $ = require('jquery');
+import $ from 'jquery';
 
 function insertText(el, newText) {
 
@@ -116,4 +116,4 @@ const dropdown = function() {
     };
 };
 
-module.exports = dropdown;
+export default dropdown;

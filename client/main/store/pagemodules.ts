@@ -4,16 +4,16 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Markjs = require('mark.js');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Markjs from 'mark.js';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
-const Notify = require('../notification');
-const Version = require('../utils/version');
-const ProgressStream = require('../utils/progressstream');
+import Notify from '../notification';
+import Version from '../utils/version';
+import ProgressStream from '../utils/progressstream';
 import _focusLoop from '../../common/focusloop';
-const selectionLoop = require('../../common/selectionloop');
+import selectionLoop from '../../common/selectionloop';
 
 
 const PageModules = Backbone.View.extend({
@@ -413,4 +413,4 @@ const PageModules = Backbone.View.extend({
     }
 });
 
-module.exports = PageModules;
+export default PageModules;

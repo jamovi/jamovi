@@ -1,17 +1,17 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
-const NewVarWidget = require('./newvarwidget');
-const DataVarWidget = require('./datavarwidget');
-const OutputVarWidget = require('./outputvarwidget');
-const ComputedVarWidget = require('./computedvarwidget');
-const RecodedVarWidget = require('./recodedvarwidget');
-const FilterWidget = require('./filterwidget');
-const VariableListItem = require('./variablelistitem');
+import NewVarWidget from './newvarwidget';
+import DataVarWidget from './datavarwidget';
+import OutputVarWidget from './outputvarwidget';
+import ComputedVarWidget from './computedvarwidget';
+import RecodedVarWidget from './recodedvarwidget';
+import FilterWidget from './filterwidget';
+import VariableListItem from './variablelistitem';
 
 window.clearTextSelection = function() {
     if (window.getSelection) {
@@ -353,4 +353,4 @@ const EditorWidget = Backbone.View.extend({
     }
 });
 
-module.exports = EditorWidget;
+export default EditorWidget;

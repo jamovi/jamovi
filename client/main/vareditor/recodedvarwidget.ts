@@ -1,14 +1,14 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
-const dropdown = require('./dropdown');
-const TransformList = require('./transformlist');
-const VariableList = require('./variablelist');
-const ColourPalette = require('../editors/colourpalette');
-const Notify = require('../notification');
+import dropdown from './dropdown';
+import TransformList from './transformlist';
+import VariableList from './variablelist';
+import ColourPalette from '../editors/colourpalette';
+import Notify from '../notification';
 
 let instanceID = 0;
 
@@ -362,4 +362,4 @@ const RecodedVarWidget = Backbone.View.extend({
 
 });
 
-module.exports = RecodedVarWidget;
+export default RecodedVarWidget;
