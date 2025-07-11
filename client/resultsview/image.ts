@@ -1,15 +1,15 @@
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
 import focusLoop from '../common/focusloop';
 
-const Elem = require('./element');
+import Elem from './element';
 
-const flatten = require('../common/utils/addresses').flatten;
+import { flatten } from '../common/utils/addresses';
 
-const ImageModel = Elem.Model.extend({
+export const Model = Elem.Model.extend({
     defaults : {
         name: 'name',
         title: '(no title)',
@@ -26,7 +26,7 @@ const ImageModel = Elem.Model.extend({
     }
 });
 
-const ImageView = Elem.View.extend({
+export const View = Elem.View.extend({
     initialize: function(data) {
 
         Elem.View.prototype.initialize.call(this, data);
@@ -100,4 +100,4 @@ const ImageView = Elem.View.extend({
     }
 });
 
-module.exports = { Model: ImageModel, View: ImageView };
+module.exports = { Model, View };

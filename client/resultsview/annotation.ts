@@ -1,11 +1,13 @@
 
 'use strict';
 
-window.katex = require('katex');
-const Quill = require('quill');
-const hljs = require('highlight.js');
+import katex from 'katex';
+window.katex = katex;
 
-const $ = require('jquery');
+import Quill from 'quill';
+import hljs from 'highlight.js';
+
+import $ from 'jquery';
 const Parchment = Quill.import('parchment');
 const TextBlot = Quill.import('blots/text');
 
@@ -502,4 +504,4 @@ const Annotation = function(address, suffix, title) {
     this.initialise(address, suffix);
 };
 
-module.exports = Annotation;
+export default Annotation;

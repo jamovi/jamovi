@@ -1,12 +1,16 @@
 
 'use strict';
 
-const $ = require('jquery');
-const formatIO = require('../common/utils/formatio');
+import $ from 'jquery';
 
-const Heading = function(address, text) {
+export class Heading {
+    constructor(address, text) {
 
-    this.initialise = function(address, text) {
+        this._keyDownEvent.bind(this);
+        this.initialise(address, text);
+    }
+
+    initialise(address, text) {
         this.suffix = 'heading';
         this.path = `${ address.join('/') }:heading`;
         this.address = address;
@@ -35,19 +39,19 @@ const Heading = function(address, text) {
         this._pointerDownEvent = this._pointerDown.bind(this);
 
         this.attach();
-    };
+    }
 
-    this._pointerDown = function(event) {
+    _pointerDown(event) {
         if (event.button !== 0)
             event.preventDefault();
-    };
+    }
 
-    this.compareAddress = function(address, isTop) {
+    compareAddress(address, isTop) {
         let path = address.join('/') + ':' + isTop;
         return this.path === path;
-    };
+    }
 
-    this._keyDownEvent = function(event) {
+    _keyDownEvent(event) {
         if (event.keyCode === 13 && event.shiftKey === false) {    //enter
             event.preventDefault();
             event.stopPropagation();
@@ -58,10 +62,9 @@ const Heading = function(address, text) {
             event.preventDefault();
             event.stopPropagation();
         }
-    };
-    this._keyDownEvent.bind(this);
-
-    this.attach = function() {
+    }
+    
+    attach() {
         if (this.attached)
             return;
 
@@ -72,9 +75,9 @@ const Heading = function(address, text) {
         this.$heading[0].addEventListener('keydown', this._keyDownEvent);
 
         this.attached = true;
-    };
+    }
 
-    this.detach = function() {
+    detach() {
         if ( ! this.attached)
             return;
 
@@ -97,19 +100,19 @@ const Heading = function(address, text) {
         this.$el.detach();
         this.setup(0);
         this.attached = false;
-    };
+    }
 
-    this.setup = function(level) {
+    setup(level) {
         this.$el.attr('level', level);
 
         this.level = level;
-    };
+    }
 
-    this.getContents = function() {
+    getContents() {
         return this.editor.getContents();
-    };
+    }
 
-    this.setContents = function(contents) {
+    setContents(contents) {
 
         let newText = null;
         if (contents === null)
@@ -126,30 +129,30 @@ const Heading = function(address, text) {
 
             this._headingChanged();
         }
-    };
+    }
 
-    this.update = function() {
+    update() {
         let delta = window.getParam(this.address, this.suffix);
         if (delta)
             this.setContents(delta);
         else
             this.setContents(null);
-    };
+    }
 
-    this.isEdited = function() {
+    isEdited() {
         let text = this.$heading.text();
         return text !== this.originalHeading;
-    };
+    }
 
-    this._textChanged = function(event) {
+    _textChanged(event) {
         if (this.isEdited())
             this._host.classList.add('edited');
         else
             this._host.classList.remove('edited');
         this._fireEvent('annotation-changed');
-    };
+    }
 
-    this._getSelection = function() {
+    _getSelection() {
         var el = this.$heading[0];
         var range = document.createRange();
         var sel = window.getSelection();
@@ -157,18 +160,18 @@ const Heading = function(address, text) {
         range.collapse(true);
         sel.removeAllRanges();
         sel.addRange(range);
-    };
+    }
 
-    this._headingChanged = function() {
+    _headingChanged() {
 
         this.$el.attr('aria-label', _('Analysis Heading - {title}', {title: this.$heading.text()}));
         if (this.isEdited())
             this._host.classList.add('edited');
         else
             this._host.classList.remove('edited');
-    };
+    }
 
-    this._blurred = function(e) {
+    _blurred(e) {
         if (this.isFocused === false || this.finaliseBlur)
             return;
 
@@ -187,9 +190,9 @@ const Heading = function(address, text) {
             this._host.classList.remove('focused');
             this._fireEvent('annotation-lost-focus');
         }, 300);
-    };
+    }
 
-    this.storeContents = function() {
+    storeContents() {
         let contents = null;
         if (this.isEdited())
             contents = this.$heading.text();
@@ -197,9 +200,9 @@ const Heading = function(address, text) {
         window.setParam(this.address, { 'heading': contents });
 
         this._fireEvent('heading-changed', { text: contents });
-    };
+    }
 
-    this._focused = function(e) {
+    _focused(e) {
         this.cancelBlur();
         this._fireFormatEvent();
 
@@ -214,9 +217,9 @@ const Heading = function(address, text) {
         this._host.classList.add('focused');
 
         this._fireEvent('annotation-editing');
-    };
+    }
 
-    this.focus = function(text) {
+    focus(text) {
 
         this.$heading.focus();
 
@@ -226,49 +229,49 @@ const Heading = function(address, text) {
                 this._host.classList.add('edited');
             }
         }
-    };
+    }
 
-    this.refocus = function() {
+    refocus() {
         if (this.hasFocus() === false)
             this.focus();
-    };
+    }
 
-    this.blur = function() {
+    blur() {
         this.$heading.blur();
-    };
+    }
 
-    this.hasFocus = function() {
+    hasFocus() {
         return document.activeElement === this.$heading[0] || (this.isFocused === true && this.finaliseBlur === null);
-    };
+    }
 
-    this._fireEvent = function(name, data) {
+    _fireEvent(name, data) {
         let event = new CustomEvent(name, {
           bubbles: true,
           detail: { headingData: data }
         });
         this._host.dispatchEvent(event);
-    };
+    }
 
-    this._fireFormatEvent = function() {
+    _fireFormatEvent() {
         let event = new CustomEvent('annotation-format-changed', {
           bubbles: true,
           detail: { annotationId: this.id, annotationType: 'heading', isEditable: false, annotationData: null }
         });
         this._host.dispatchEvent(event);
-    };
+    }
 
-    this.cancelBlur = function() {
+    cancelBlur() {
         if (this.finaliseBlur) {
             clearTimeout(this.finaliseBlur);
             this.finaliseBlur = null;
         }
-    };
+    }
 
-    this.getHTML = function() {
+    getHTML() {
         return `<h1>${ this.$el.text() }</h1>`;
-    };
+    }
 
-    this.processToolbarAction = function(action) {
+    processToolbarAction(action) {
         this.refocus();
         this.cancelBlur();
 
@@ -289,9 +292,7 @@ const Heading = function(address, text) {
                 document.execCommand("redo");
             break;
         }
-    };
+    }
+}
 
-    this.initialise(address, text);
-};
-
-module.exports = Heading;
+export default Heading;

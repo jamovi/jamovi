@@ -1,20 +1,20 @@
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
-const ERDM = require("element-resize-detector");
-const RefTable = require('./refs');
+import ERDM from "element-resize-detector";
+import RefTable from './refs';
 
-const createItem = require('./create').createItem;
-const formatIO = require('../common/utils/formatio');
-const b64 = require('../common/utils/b64');
-const Annotations = require('./annotations');
-const Tracker = require('./itemtracker');
-const I18n = require("../common/i18n");
+import { createItem } from './create';
+import formatIO from '../common/utils/formatio';
+import b64 from '../common/utils/b64';
+import Annotations from './annotations';
+import Tracker from './itemtracker';
+import I18n from '../common/i18n';
 import focusLoop from '../common/focusloop';
-const { contextMenuListener } = require('../common/utils');
+import { contextMenuListener } from '../common/utils';
 
 window._ = I18n._;
 

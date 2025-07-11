@@ -101,4 +101,4 @@ class ReferenceNumbers extends HTMLElement {
 
 customElements.define('jmv-reference-numbers', ReferenceNumbers);
 
-module.exports = RefTable;
+export default RefTable;

@@ -1,25 +1,16 @@
 'use strict';
 
-const $ = require('jquery');
+import { Model as TableModel, View as TableView } from './table';
+import { Model as GroupModel, View as GroupView } from './group';
+import { Model as ImageModel, View as ImageView } from './image';
+import { Model as ArrayModel, View as ArrayView } from './array';
+import { Model as SyntaxModel, View as SyntaxView } from './syntax';
+import { Model as HtmlModel, View as HtmlView } from './html';
 
-const TableModel = require('./table').Model;
-const TableView  = require('./table').View;
-const GroupModel = require('./group').Model;
-const GroupView  = require('./group').View;
-const ImageModel = require('./image').Model;
-const ImageView  = require('./image').View;
-const ArrayModel = require('./array').Model;
-const ArrayView  = require('./array').View;
-const SyntaxModel = require('./syntax').Model;
-const SyntaxView  = require('./syntax').View;
-const HtmlModel = require('./html').Model;
-const HtmlView  = require('./html').View;
-
-import { NoticeModel } from './notice';
-import { NoticeView } from './notice';
+import { NoticeModel, NoticeView } from './notice';
 
 
-const createItem = function(element, options, $el, level, parent, mode, devMode, fmt, refTable ) {
+export const createItem = function(element, options, $el, level, parent, mode, devMode, fmt, refTable ) {
 
     if (level === undefined)
         level = 1;
@@ -366,4 +357,4 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
 };
 
 
-module.exports = { createItem: createItem };
+export default createItem;

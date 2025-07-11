@@ -1,14 +1,14 @@
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
-const Annotations = require('./annotations');
+import Annotations from './annotations';
 
-const Elem = require('./element');
+import Elem from './element';
 import _focusLoop from '../common/focusloop';
 
-const GroupModel = Elem.Model.extend({
+export const Model = Elem.Model.extend({
     defaults : {
         name: "name",
         title: "(no title)",
@@ -23,7 +23,7 @@ const GroupModel = Elem.Model.extend({
     }
 });
 
-const GroupView = Elem.View.extend({
+export const View = Elem.View.extend({
     initialize: function(data) {
 
         Elem.View.prototype.initialize.call(this, data);
@@ -239,4 +239,4 @@ const GroupView = Elem.View.extend({
     }
 });
 
-module.exports = { Model: GroupModel, View: GroupView };
+export default { Model, View };

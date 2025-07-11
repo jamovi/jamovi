@@ -1,11 +1,10 @@
 'use strict';
 
-var expect = require('chai').expect;
-var mocha = require('mocha');
+import { expect } from 'chai';
+import mocha from 'mocha';
 
 
-var determFormat = require('../formatting.js').determFormat;
-var format = require('../formatting.js').format;
+import { determFormat, format } from '../../common/formatting';
 
 var tests = [
     { v : [100, 200, 100], r : { dp : 0, expw: NaN } },

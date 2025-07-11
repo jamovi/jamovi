@@ -1,12 +1,12 @@
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
-const Elem = require('./element');
+import Elem from './element';
 
-var SyntaxModel = Elem.Model.extend({
+export const Model = Elem.Model.extend({
     defaults : {
         name:    'name',
         title:   '(no title)',
@@ -18,7 +18,7 @@ var SyntaxModel = Elem.Model.extend({
     }
 });
 
-var SyntaxView = Elem.View.extend({
+export const View = Elem.View.extend({
     initialize: function(data) {
 
         Elem.View.prototype.initialize.call(this, data);
@@ -62,5 +62,3 @@ var SyntaxView = Elem.View.extend({
         return true;
     }
 });
-
-module.exports = { Model: SyntaxModel, View: SyntaxView };

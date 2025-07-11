@@ -15,7 +15,7 @@ const host = require('./host');
 const selectionLoop = require('../common/selectionloop');
 import ContextMenuButton from './contextmenu/contextmenubutton';
 
-const { flatten, unflatten } = require('../common/utils/addresses');
+import { flatten, unflatten } from '../common/utils/addresses';
 const { contextMenuListener } = require('../common/utils');
 
 require('./references');
