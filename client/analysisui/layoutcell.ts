@@ -262,7 +262,7 @@ export class LayoutCell extends HTMLElement {
         this.setAttribute('data-collapsed', 'false');
     }
 
-    setVisibility(visible, immediately=false) {
+    setVisibility(visible: boolean, immediately=false) {
         if (this._visible !== visible) {
             this._visible = visible;
 

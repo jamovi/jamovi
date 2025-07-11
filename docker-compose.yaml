@@ -9,7 +9,7 @@ services:
       - donotstart
 
   # vite:
-  #   image: jonathonlove/vite:1.0
+  #   image: jonathonlove/vite:latest
   #   container_name: vite
   #   privileged: true
   #   command: [ 'mkdir -p /source/merged && unionfs-fuse -o cow /source/server:/source/client=RW /source/merged && cd /source/merged && echo installing npm deps && npm install && echo starting vite server && vite --host' ]

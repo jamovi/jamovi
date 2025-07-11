@@ -1,11 +1,9 @@
 
-'use strict';
-
-const applyMagicEvents = function (layout, template) {
+export const applyMagicEvents = function (layout, template) {
     findMagicEvents(layout, 'view', template);
 };
 
-const applyMagicEventsForCtrl = function (ctrl, template, name) {
+export const applyMagicEventsForCtrl = function (ctrl, template, name?: string) {
     if (name === undefined)
         name = ctrl.name;
 
@@ -135,5 +133,3 @@ const checkForSetupErrors = function(ctrl, template) {
     if ((ctrl.typeName === 'Supplier' || (ctrl.typeName === 'VariableSupplier' && ctrl.populate === 'manual')) && checkForEventHandle('update', ctrl) === false)
         template.errors.push(`The use of a ${ ctrl.typeName === 'Supplier' ? ("'" + ctrl.typeName + "' control") : ("'" + ctrl.typeName + "' control, with the property > populate: 'manual',") } requires an 'updated' event handler to be assigned. Option: ${ctrl.name === undefined ? ctrl.typeName : ctrl.name}`);
 };
-
-module.exports = { applyMagicEvents, applyMagicEventsForCtrl };

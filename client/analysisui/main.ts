@@ -2,25 +2,33 @@
 
 'use strict';
 
-const $ = require('jquery');
+import $ from 'jquery';
 
 import Framesg from 'framesg';
 
 import Options from './options';
 import OptionsView from './optionsview';
-const ui = require('./layoutdef');
-import Format from './format';
-import { FormatDef } from './formatdef';
-const DefaultControls = require('./defaultcontrols');
-const LayoutUpdateCheck = require('./layoutupdatecheck');
-const View = require('./actions');
-const GridTargetControl = require('./gridtargetcontrol');
-const GridControl = require('./gridcontrol');
-const OptionControl = require('./optioncontrol');
-const LayoutActionManager = require('./layoutactionmanager');
-const RequestDataSupport = require('./requestdatasupport');
-const ApplyMagicEvents = require('./applymagicevents').applyMagicEvents;
+import ui from './layoutdef';
+import _Format from './format';
+import { FormatDef as _FormatDef } from './formatdef';
+import _DefaultControls from './defaultcontrols';
+import LayoutUpdateCheck from './layoutupdatecheck';
+import _View from './actions';
+import GridTargetControl from './gridtargetcontrol';
+import GridControl from './gridcontrol';
+import OptionControl from './optioncontrol';
+import LayoutActionManager from './layoutactionmanager';
+import GetRequestDataSupport from './requestdatasupport';
+import { applyMagicEvents as ApplyMagicEvents } from './applymagicevents';
 import Keyboard from '../common/focusloop';
+
+// Making backwards compatible variables that modules use.
+// The underscore in '_LibraryName' ensures the libraries are loaded even though they are not used in this file, however are used in modules.
+const DefaultControls = _DefaultControls;
+const FormatDef = _FormatDef;
+const Format = _Format;
+const View = _View;
+/////////////////
 
 const I18n = require("../common/i18n");
 
@@ -109,7 +117,7 @@ const Analysis = function(def, i18nDef, jamoviVersion, id) {
     this.id = id;
 
     this.i18n = i18nDef;
-    this.translate = (key) => {
+    this.translate = (key: string): string => {
         if (key === null || key === undefined || key.trim() === '' || ! this.i18n)
             return key;
 

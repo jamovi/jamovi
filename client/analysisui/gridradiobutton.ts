@@ -1,31 +1,44 @@
 'use strict';
 
-import { TitledOptionControl } from './optioncontrol';
+import $ from 'jquery';  // for backwards compatibility
+
+import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import createChildLayoutSupport from './childlayoutsupport';
 import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { GridComboboxProperties } from './gridcombobox';
 
-export class GridRadioButton extends TitledOptionControl {
-    checkedValue: boolean;
+export class GridRadioButton extends OptionControl<GridOptionControlProperties<string>, boolean> {
+    checkedValue: string;
     otherValue: any;
     //_subel: HTMLElement;
     input: HTMLInputElement;
     label: HTMLElement;
 
-    static create(params) {
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.label: HTMLElement`.
+     */
+    $label: any;
+
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.input: HTMLElement`.
+     */
+    $input: any
+
+    static create(params: GridComboboxProperties) {
         let classes = createChildLayoutSupport(params, GridRadioButton);
         return new classes(params);
     }
 
-    constructor(params) {
+    constructor(params: GridComboboxProperties) {
         super(params);
     
         this._subel = HTML.parse('<div role="presentation" class="silky-option-radio silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"><label></label></div>');
         if (this.el === undefined)
-            this.el = this._subel;
+            this.setRootElement(this._subel);
     }
 
-    onPropertyChanged(name) {
+    override onPropertyChanged(name) {
         super.onPropertyChanged(name);
         if (name === 'enable') {
             let disabled = this.getPropertyValue(name) === false;
@@ -38,12 +51,12 @@ export class GridRadioButton extends TitledOptionControl {
         }
     }
 
-    getValue(keys=null) {
-        return super.getValue(keys) === this.checkedValue;
+    override getValue(keys=null) {
+        return super.getSourceValue(keys) === this.checkedValue;
     }
 
-    setValue(value, keys=[]) {
-        return super.setValue(value ? this.checkedValue : this.otherValue, keys);
+    override setValue(value: boolean, keys=[]) {
+        return super.setSourceValue(value ? this.checkedValue : this.otherValue, keys);
     }
 
     createItem() {
@@ -76,7 +89,9 @@ export class GridRadioButton extends TitledOptionControl {
         this.labelId = focusLoop.getNextAriaElementId('label');
         let radioButton = HTML.parse(`<label id="${this.labelId}" style="white-space: nowrap;"></label>`);
         this.input = HTML.parse('<input id="' + name + '" class="silky-option-input" type="radio" name="' + name + '" value="value" ' +  ((this.checkedValue === optionValue) ? 'checked' : '') + ' >');
+        this.$input = $(this.input);
         this.label = HTML.parse('<span>' + label + '</span>');
+        this.$label = $(this.label);
         radioButton.append(this.input);
         radioButton.append(this.label);
         this._subel.append(radioButton);
@@ -88,7 +103,7 @@ export class GridRadioButton extends TitledOptionControl {
         });
     }
 
-    onOptionValueChanged(key, data) {
+    override onOptionValueChanged(key, data) {
         super.onOptionValueChanged(key, data);
         if (this.input)
             this.input.checked = this.getValue();

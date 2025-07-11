@@ -1,16 +1,16 @@
 'use strict';
 
-import GridControl from './gridcontrol';
+import GridControl, { GridControlProperties } from './gridcontrol';
 
-export class TitledGridControl extends GridControl {
+export class TitledGridControl<P extends GridControlProperties> extends GridControl<P> {
     labelId: string;
     _subel: HTMLElement;
 
-    constructor(params) {
-        super(params);
+    constructor(...args: any[]) {
+        super(args[0]);
     }
 
-    getSpans() {
+    override getSpans() {
         let useSingleCell = this.getPropertyValue("useSingleCell");
         if (useSingleCell)
             return super.getSpans();
@@ -26,6 +26,5 @@ export class TitledGridControl extends GridControl {
         return null;
     }
 }
-
 
 export default TitledGridControl;

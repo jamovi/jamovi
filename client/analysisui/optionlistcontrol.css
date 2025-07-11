@@ -24,6 +24,12 @@
     margin: 5px;
 }
 
+.disabled-list {
+    -webkit-filter: grayscale(100%) opacity(50%);
+    filter: grayscale(100%) opacity(50%);
+    pointer-events: none;
+}
+
 .hidden-ghost-label {
     display: none;
 }

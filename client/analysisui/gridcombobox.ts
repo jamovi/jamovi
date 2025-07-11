@@ -1,30 +1,47 @@
 'use strict';
+import $ from 'jquery';  // for backwards compatibility
 
 import type LayoutGrid from './layoutgrid';
-import { TitledOptionControl } from './optioncontrol';
-import { FormatDef } from './formatdef';
+import OptionControl, { GridOptionControlProperties } from './optioncontrol';
+import { FormatDef, StringFormat } from './formatdef';
 import _focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { VerticalAlignment } from './layoutcell';
 
-export class GridCombobox extends TitledOptionControl {
-    $label: HTMLElement;
-    $input: HTMLSelectElement;
+export type GridComboboxProperties = GridOptionControlProperties<string> & {
+    format: StringFormat;
+    options: any;
+}
+
+export class GridCombobox extends OptionControl<GridComboboxProperties> {
+    label: HTMLElement;
+    input: HTMLSelectElement;
+
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.label: HTMLElement`.
+     */
+    $label: any;
+
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.input: HTMLElement`.
+     */
+    $input: any
     
-    constructor(params) {
+    constructor(params: GridComboboxProperties) {
         super(params);
 
+        this.label = null;
         this.$label = null;
     }
 
-    protected registerProperties(properties) {
+    protected override registerProperties(properties) {
         super.registerProperties(properties);
 
         this.registerOptionProperty('options');
         this.registerSimpleProperty('format', FormatDef.string);
     }
 
-    onPropertyChanged(name) {
+    override onPropertyChanged(name) {
         super.onPropertyChanged(name);
 
         if (name === 'options') {
@@ -32,12 +49,12 @@ export class GridCombobox extends TitledOptionControl {
         }
         else if (name === 'enable') {
             let enabled = this.getPropertyValue(name);
-            this.$input.disabled = enabled === false;
-            if (this.$label !== null) {
+            this.input.disabled = enabled === false;
+            if (this.label !== null) {
                 if (enabled)
-                    this.$label.classList.remove('disabled-text');
+                    this.label.classList.remove('disabled-text');
                 else
-                    this.$label.classList.add('disabled-text');
+                    this.label.classList.add('disabled-text');
             }
         }
     }
@@ -72,8 +89,9 @@ export class GridCombobox extends TitledOptionControl {
         let columnUsed = 0;
         let cell = null;
         if (label !== "") {
-            this.$label = HTML.parse(`<label for="${id}" class="silky-option-combo-label silky-control-margin-${this.getPropertyValue("margin")}" style="display: inline; white-space: nowrap;" >${label}</label>`);
-            cell = grid.addCell(column, row, this.$label);
+            this.label = HTML.parse(`<label for="${id}" class="silky-option-combo-label silky-control-margin-${this.getPropertyValue("margin")}" style="display: inline; white-space: nowrap;" >${label}</label>`);
+            this.$label = $(this.label);
+            cell = grid.addCell(column, row, this.label);
             cell.setAlignment("left", "center");
             columnUsed += 1;
         }
@@ -85,11 +103,12 @@ export class GridCombobox extends TitledOptionControl {
             t += '<option>' + this.translate(options[i].title) + '</option>';
         t += '</select>';
 
-        this.$input = HTML.parse(t);
+        this.input = HTML.parse(t);
+        this.$input = $(this.input);
         this.updateDisplayValue();
-        this.$input.addEventListener('change', (event) => {
+        this.input.addEventListener('change', (event) => {
             let opts = this.getOptionsProperty();
-            let select = this.$input;
+            let select = this.input;
             let option = opts[select.selectedIndex];
             let value = option.name;
             this.setValue(value);
@@ -102,7 +121,7 @@ export class GridCombobox extends TitledOptionControl {
             vAlign = 'center';
         }
         
-        cell = grid.addCell(column + columnUsed, row, this.$input, { spans, vAlign });
+        cell = grid.addCell(column + columnUsed, row, this.input, { spans, vAlign });
         cell.setAlignment("left", "center");
 
         columnUsed += 1;
@@ -110,14 +129,14 @@ export class GridCombobox extends TitledOptionControl {
         return { height: 1, width: columnUsed };
     }
 
-    onOptionValueChanged(key, data) {
+    override onOptionValueChanged(key, data) {
         super.onOptionValueChanged(key, data);
-        if (this.$input)
+        if (this.input)
             this.updateDisplayValue();
     }
 
     updateDisplayValue() {
-        let select = this.$input;
+        let select = this.input;
         let value = this.getSourceValue();
         let options = this.getOptionsProperty();
         let index = -1;
@@ -132,7 +151,7 @@ export class GridCombobox extends TitledOptionControl {
     }
 
     updateOptionsList() {
-        if ( ! this.$input) 
+        if ( ! this.input) 
             return;
 
         let options = this.getOptionsProperty();
@@ -141,7 +160,7 @@ export class GridCombobox extends TitledOptionControl {
         for (let i = 0; i < options.length; i++)
             html += '<option>' + this.translate(options[i].title) + '</option>';
 
-        this.$input.innerHTML = html;
+        this.input.innerHTML = html;
 
         this.updateDisplayValue();
     }

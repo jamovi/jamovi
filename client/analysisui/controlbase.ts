@@ -1,13 +1,29 @@
 'use strict';
 
-import { PropertySupplier } from './propertysupplier';
 import EnumPropertyFilter from './enumpropertyfilter';
 import I18nSupport from './i18nsupport';
+import { CtrlDef, Control } from './optionsview';
 
-export class ControlBase extends I18nSupport(PropertySupplier) {
+export enum Margin {
+    Small = "small",
+    Normal = "normal",
+    Large = "large",
+    None = "none"
+}
+
+export type ControlBaseProperties = CtrlDef & {
+    stage: 0 | 1 | 2;  //0 - release, 1 - development, 2 - proposed
+    margin: Margin;
+}
+
+export type StringKeys<T> = {
+  [K in keyof T]: T[K] extends string ? K : never;
+}[keyof T];
+
+export class ControlBase<P extends ControlBaseProperties> extends I18nSupport<P> implements Control<P> {
     isDisposed: boolean;
 
-    constructor(params) {
+    constructor(params: P) {
         super(params);
 
         if (params._parentControl === undefined)
@@ -16,11 +32,11 @@ export class ControlBase extends I18nSupport(PropertySupplier) {
         this.isDisposed = false;
     }
 
-    protected registerProperties(properties) {
+    protected override registerProperties(properties: P) {
         super.registerProperties(properties);
 
         this.registerSimpleProperty("stage", 0); //0 - release, 1 - development, 2 - proposed
-        this.registerSimpleProperty("margin", "normal", new EnumPropertyFilter(["small", "normal", "large", "none"], "normal"));
+        this.registerSimpleProperty("margin", Margin.Normal, new EnumPropertyFilter(Margin, Margin.Normal));
     }
 
     getTemplateInfo() {
@@ -56,14 +72,14 @@ export class ControlBase extends I18nSupport(PropertySupplier) {
         this.emit('disposing');
     }
 
-    getTranslatedProperty(property: string): string {
+    getTranslatedProperty<K extends StringKeys<P>>(property: K): string {
         let value = this.getPropertyValue(property);
         if (value !== null && value !== undefined && typeof value != 'string') {
             throw 'Not a valid property to translate';
         }
-        value = this.translate(value);
-        return value;
+        return this.translate(value);
     }
 }
+
 
 export default ControlBase;

@@ -1,30 +1,239 @@
 'use strict';
 
-import { createOptionControlBase } from './optioncontrolbase';
+import OptionControlBase, { OptionControlBaseProperties } from './optioncontrolbase';
 import { ControlContainer } from './controlcontainer';
-const DefaultControls = require('./defaultcontrols');
+import DefaultControls from './defaultcontrols';
 import Opt from './option';
-const ApplyMagicEventsForCtrl = require('./applymagicevents').applyMagicEventsForCtrl;
+import { applyMagicEventsForCtrl as ApplyMagicEventsForCtrl } from './applymagicevents';
 import { EventEmitter } from 'events';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import Options from './options';
+import PropertySupplier from './propertysupplier';
 
-export class OptionsView extends EventEmitter {
+export class ControlOption<T> {
+    options: Options;
+    source: Opt<T>;
+    isVirtual: boolean;
+
+    constructor(_option: Opt<T>, _options: Options, _isVirtual: boolean) {
+        this.options = _options;
+        this.source = _option;
+        this.isVirtual = _isVirtual;
+    }
+
+    getProperties(key, fragmentName) {
+        if (key === undefined)
+            key = [];
+
+        let properties = this.source.params;
+        for (let i = 0; i < key.length; i ++) {
+            let keyItem = key[i];
+            if (typeof keyItem === 'string') {
+                let list = null;
+                if (properties.elements !== undefined)
+                    list = properties.elements;
+                else
+                    return { }; //throw "This option requires an 'elements' property to be considered an object.";
+
+                let found = false;
+                for (let e = 0; e < list.length; e++) {
+                    let item = list[e];
+                    if (item.name === keyItem) {
+                        properties = item;
+                        found = true;
+                        break;
+                    }
+                }
+                if (found === false)
+                    throw "This option does not contain this key.";
+            }
+            else if (typeof keyItem === 'number'){
+                if (properties.template === undefined)
+                    return { }; //throw "This option requires a 'template' property to be considered an array.";
+                properties = properties.template;
+            }
+            else
+                throw "This type is not supported as a key item.";
+        }
+
+        if (fragmentName) {
+            let list = null;
+            if (properties.options !== undefined)
+                list = properties.options;
+            else
+                throw "This option requires an 'options' property to be considered an fragmentable option.";
+
+            let found = false;
+            for (let e = 0; e < list.length; e++) {
+                let item = list[e];
+                if ((typeof item === 'string' && item === fragmentName) || (typeof item === 'object' && item.name === fragmentName)) {
+                    properties = item;
+                    found = true;
+                    break;
+                }
+            }
+            if (found === false)
+                throw "This option does not contain this fragment.";
+        }
+
+        return properties;
+    }
+
+    setProperty(propertyName, value, key, fragmentName) {
+        if (key === undefined)
+            key = [];
+
+        this.options.setPropertyValue(this.getName(), propertyName, value, key, fragmentName);
+    }
+
+    beginEdit() {
+        if (this.isVirtual === false)
+            this.options.beginEdit();
+    }
+
+    endEdit() {
+        if (this.isVirtual === false)
+            this.options.endEdit();
+    }
+
+    insertValueAt(value, key, eventParams) {
+        if (this.isVirtual)
+            this.source.insertValueAt(value, key);
+        else
+            this.options.insertOptionValue(this.source, value, key, eventParams);
+    }
+
+    removeAt(key, eventParams?) {
+        if (this.isVirtual)
+            this.source.removeAt(key);
+        else
+            this.options.removeOptionValue(this.source, key, eventParams);
+    }
+
+    setValue(value, key, eventParams) {
+        if (this.isVirtual)
+            this.source.setValue(value, key);
+        else
+            this.options.setOptionValue(this.source, value, key, eventParams);
+    }
+
+    isValueInitialized() {
+        return this.source.isValueInitialized();
+    }
+
+    getLength(key) {
+        return this.source.getLength(key);
+    }
+
+    getValue(): T;
+    getValue(key: any): any;
+    getValue(key?: any): any {
+        return this.source.getValue(key);
+    }
+
+    getFormattedValue(key, format) {
+        return this.source.getFormattedValue(key, format);
+    }
+
+    getValueAsString() {
+        return this.source.toString();
+    }
+
+    getName() {
+        return this.source.name;
+    }
+
+    valueInited() {
+        return this.source.valueInited();
+    }
+
+    isValidKey(key) {
+        return this.source.isValidKey(key);
+    }
+}
+
+export interface IControlProvider {
+    createControl: <P extends CtrlDef>(uiDef: P, parent) => Control<P>;
+}
+
+interface ControlFactory<P extends CtrlDef> {
+    new (params: P): Control<P>;
+    create: (def: P) => Control<P>;
+}
+
+interface ControlClass<P extends CtrlDef> {
+    new (params: P): Control<P>;
+    create?: (params: P) => Control<P>;
+} 
+
+interface IControl {
+    onLoaded?: () => void;
+    isDisposed: boolean;
+    onDataChanged?: (data: any) => void;
+    update?: () => void;
+    //getPropertyValue: (name: string) => any;
+    setRequestedDataSource?: (dataSource: any) => void;
+    setControlManager?: (constext: IControlProvider) => void;
+    //hasProperty: (name: string) => boolean;
+    setOption?: (option: ControlOption<any>, valueKey?) => void;
+    setI18nSource?: (source: { translate: (key: string) => string }) => void;
+    //params: any;
+} 
+
+export interface ISingleCellControl {
     el: HTMLElement;
-    _i18nSource: { translate: (key: string) => string };
+}
+
+export type Control<P extends CtrlDef> = IControl & EventEmitter & PropertySupplier<P>;
+
+export type ControlType<P extends CtrlDef> = ControlClass<P> | ControlFactory<P>;
+
+interface CtrlDefBase {
+    name?: string;
+    [key: string]: any;
+    DefaultControls?: {[key: string]: ControlType<CtrlDef>};
+};
+
+interface TypeCtrlDef extends CtrlDefBase {
+    type: ControlClass<CtrlDef>;
+    controls?: any[];
+};
+
+interface ParentCtrlDef extends CtrlDefBase {
+    controls: any[];
+    type?: ControlClass<CtrlDef>;
+};
+
+export type CtrlDef = (TypeCtrlDef | ParentCtrlDef) & {
+    isVirtual: boolean;
+    stage: 0 | 1 | 2;
+    optionName?: string;
+};
+
+export interface IOptionsViewModel { 
+    options: Options, 
+    ui: any, 
+    actionManager: any, 
+    currentStage: number; 
+}
+
+export class OptionsView extends EventEmitter implements IControlProvider {
+    el: HTMLElement;
+    _i18nSource: { translate: (key: string) => string } = null;
+    _nextControlID = 0;
+    _loaded = false;
+    _allCtrls: { ctrl: Control<any>, resourceId: number }[] = [];
+    _initializingData = 0;
+    _ctrlListValid = true;
+    _requestedDataSource = null;
+    model: IOptionsViewModel;
+    _ctrlOptions: {[key:string]: ControlOption<any>};
+    layoutActionManager: any;
     
-    constructor(uiModel) {
+    constructor(uiModel: IOptionsViewModel) {
         super();
         this.el = HTML.parse('<div class="silky-options-content" role="presentation"></div>');
         this.model = uiModel;
-        this._allCtrls = [];
-        this._loaded = false;
-        this._initializingData = 0;
-        this._requestedDataSource = null;
-        this._i18nSource = null;
-        this._ctrlListValid = true;
-        this.q = 0;
-        this._nextControlID = 0;
-        this._templateCtrlNameCount = { };
     }
 
     render() {
@@ -48,7 +257,7 @@ export class OptionsView extends EventEmitter {
                 if (this.layoutActionManager.exists(name) === false) {
                     let ctrlDef = { name: name, typeName: '_hiddenOption', _parentControl: null };
                     ApplyMagicEventsForCtrl(ctrlDef, this.layoutActionManager._view);
-                    let backgroundOption = createOptionControlBase(ctrlDef);
+                    let backgroundOption = new OptionControlBase(ctrlDef);
                     backgroundOption.setOption(this._getOption(name));
                     this.layoutActionManager.addResource(name, backgroundOption);
                 }
@@ -88,7 +297,7 @@ export class OptionsView extends EventEmitter {
         this.emit("remote-data-changed", data);
     }
 
-    _getOption(id) {
+    _getOption(id: string | number): ControlOption<any> {
         let option = this.model.options.getOption(id);
         if (option === null)
             return null;
@@ -96,11 +305,11 @@ export class OptionsView extends EventEmitter {
         return this._wrapOption(option, false);
     }
 
-    _getVirtualOption() {
+    _getVirtualOption(): ControlOption<any> {
         return this._wrapOption(new Opt(null, { }), true);
     }
 
-    _wrapOption(option, isVirtual) {
+    _wrapOption<T>(option: Opt<T>, isVirtual): ControlOption<T> {
         if (option === null)
             return null;
 
@@ -109,145 +318,12 @@ export class OptionsView extends EventEmitter {
 
         let options = this.model.options;
 
-        let ctrlOption = null;
+        let ctrlOption: ControlOption<T> = null;
         if (option.name)
             ctrlOption =this._ctrlOptions[option.name];
 
         if ( ! ctrlOption) {
-            ctrlOption = {
-
-                source: option,
-
-                getProperties: function(key, fragmentName) {
-                    if (key === undefined)
-                        key = [];
-
-                    let properties = option.params;
-                    for (let i = 0; i < key.length; i ++) {
-                        let keyItem = key[i];
-                        if (typeof keyItem === 'string') {
-                            let list = null;
-                            if (properties.elements !== undefined)
-                                list = properties.elements;
-                            else
-                                return { }; //throw "This option requires an 'elements' property to be considered an object.";
-
-                            let found = false;
-                            for (let e = 0; e < list.length; e++) {
-                                let item = list[e];
-                                if (item.name === keyItem) {
-                                    properties = item;
-                                    found = true;
-                                    break;
-                                }
-                            }
-                            if (found === false)
-                                throw "This option does not contain this key.";
-                        }
-                        else if (typeof keyItem === 'number'){
-                            if (properties.template === undefined)
-                                return { }; //throw "This option requires a 'template' property to be considered an array.";
-                            properties = properties.template;
-                        }
-                        else
-                            throw "This type is not supported as a key item.";
-                    }
-
-                    if (fragmentName) {
-                        let list = null;
-                        if (properties.options !== undefined)
-                            list = properties.options;
-                        else
-                            throw "This option requires an 'options' property to be considered an fragmentable option.";
-
-                        let found = false;
-                        for (let e = 0; e < list.length; e++) {
-                            let item = list[e];
-                            if ((typeof item === 'string' && item === fragmentName) || (typeof item === 'object' && item.name === fragmentName)) {
-                                properties = item;
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (found === false)
-                            throw "This option does not contain this fragment.";
-                    }
-
-                    return properties;
-                },
-
-                setProperty: function(propertyName, value, key, fragmentName) {
-                    if (key === undefined)
-                        key = [];
-
-                    options.setPropertyValue(this.getName(), propertyName, value, key, fragmentName);
-                },
-
-                isVirtual: isVirtual,
-
-                beginEdit: function() {
-                    if (isVirtual === false)
-                        options.beginEdit();
-                },
-
-                endEdit: function() {
-                    if (isVirtual === false)
-                        options.endEdit();
-                },
-
-                insertValueAt: function(value, key, eventParams) {
-                    if (isVirtual)
-                        option.insertValueAt(value, key);
-                    else
-                        options.insertOptionValue(option, value, key, eventParams);
-                },
-
-                removeAt: function(key, eventParams) {
-                    if (isVirtual)
-                        option.removeAt(key);
-                    else
-                        options.removeOptionValue(option, key, eventParams);
-                },
-
-                setValue: function(value, key, eventParams) {
-                    if (isVirtual)
-                        option.setValue(value, key);
-                    else
-                        options.setOptionValue(option, value, key, eventParams);
-                },
-
-                isValueInitialized: function() {
-                    return option.isValueInitialized();
-                },
-
-                getLength: function(key) {
-                    return option.getLength(key);
-                },
-
-                getValue: function(key) {
-                    return option.getValue(key);
-                },
-
-                getFormattedValue: function(key, format) {
-                    return option.getFormattedValue(key, format);
-                },
-
-                getValueAsString: function() {
-                    return option.toString();
-                },
-
-                getName: function() {
-                    return option.name;
-                },
-
-                valueInited: function() {
-                    return option.valueInited();
-                },
-
-                isValidKey: function(key) {
-                    return option.isValidKey(key);
-                }
-            };
+            ctrlOption = new ControlOption<T>(option, options, isVirtual);
 
             if (option.name)
                 this._ctrlOptions[option.name] = ctrlOption;
@@ -281,7 +357,7 @@ export class OptionsView extends EventEmitter {
         }
     }
 
-    createControl(uiDef, parent) {
+    createControl<P extends CtrlDef>(uiDef: P, parent: any): Control<P> {
         if (uiDef.type === undefined) {
             if (uiDef.controls !== undefined)
                 uiDef.type = DefaultControls.LayoutBox;
@@ -307,11 +383,11 @@ export class OptionsView extends EventEmitter {
             throw 'This control definition has already been assigned a control id. It has already been used by a control';
 
         uiDef.controlID = this._nextControlID++;
-        let ctrl = null;
+        let ctrl: Control<P> = null;
         if (uiDef.type.create)
-            ctrl = uiDef.type.create(uiDef);
+            ctrl = uiDef.type.create(uiDef) as Control<P>;
         else
-            ctrl = new uiDef.type(uiDef);
+            ctrl = new uiDef.type(uiDef) as Control<P>;
 
         if (ctrl === null)
             throw "shouldn't get here";
@@ -333,7 +409,7 @@ export class OptionsView extends EventEmitter {
                     id = name;
                     isVirtual = ctrl.getPropertyValue("isVirtual");
                 }
-                let option = null;
+                let option: ControlOption<any> = null;
                 if (isVirtual)
                     option = this._getVirtualOption();
                 else if (templateInfo !== null)

@@ -1,39 +1,44 @@
 'use strict';
 
 import createChildLayoutSupport from './childlayoutsupport';
-import { FormatDef } from './formatdef';
+import { FormatDef, OutputFormat } from './formatdef';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
-import { TitledOptionControl } from './optioncontrol';
+import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 
-export class Output extends TitledOptionControl {
+export type OutputControlProperties = GridOptionControlProperties<{value:boolean, vars: string[]}> & {
+    format: OutputFormat;
+}
+
+export class OutputControl extends OptionControl<OutputControlProperties> {
 
     input: HTMLInputElement;
     label: HTMLElement;
+    data: {value:boolean, vars: string[]};
 
     static create(params) {
-        let classes = createChildLayoutSupport(params, Output);
+        let classes = createChildLayoutSupport(params, OutputControl);
         return new classes(params);
     }
 
-    constructor(params) {
+    constructor(params: OutputControlProperties) {
         super(params);
 
         this._subel = HTML.parse('<div class="silky-option-checkbox silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"></div>');
 
         if (this.el === undefined)
-            this.el = this._subel;
+            this.setRootElement(this._subel);
 
         let horizontalAlign = this.getPropertyValue("horizontalAlignment");
         this._subel.setAttribute('data-horizontal-align', horizontalAlign);
     }
 
-    protected registerProperties(properties) {
+    protected override registerProperties(properties) {
         super.registerProperties(properties);
 
         this.registerSimpleProperty('format', FormatDef.output);
     }
 
-    onPropertyChanged(name) {
+    override onPropertyChanged<K extends keyof OutputControlProperties>(name: K) {
         super.onPropertyChanged(name);
         if (name === 'enable') {
             let enabled = this.getPropertyValue(name);
@@ -80,7 +85,7 @@ export class Output extends TitledOptionControl {
         });
     }
 
-    onOptionValueChanged(key, data) {
+    override onOptionValueChanged(key, data) {
         super.onOptionValueChanged(key, data);
 
         this.data = this.getValue();
@@ -91,4 +96,4 @@ export class Output extends TitledOptionControl {
     }
 }
 
-export default Output;
+export default OutputControl;

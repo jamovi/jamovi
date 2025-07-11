@@ -2,7 +2,7 @@
 
 import Format from './format.js';
 
-export class Variables extends Format<string[]> {
+export class VariablesFormat extends Format<string[]> {
     
     name = 'variables';
     
@@ -66,7 +66,7 @@ export class Variables extends Format<string[]> {
     }
 }
 
-export class Variable extends Format<string> {
+export class VariableFormat extends Format<string> {
 
     name = 'variable';
 
@@ -156,7 +156,7 @@ export class Variable extends Format<string> {
     }
 }
 
-export class Term extends Format<string[]> {
+export class TermFormat extends Format<string[]> {
 
     name = 'term';
 
@@ -347,7 +347,7 @@ export class Term extends Format<string[]> {
     }
 }
 
-export class Number extends Format<number> {
+export class NumberFormat extends Format<number> {
 
     name = 'number';
 
@@ -374,7 +374,7 @@ export class Number extends Format<number> {
     }
 }
 
-export class Boolean extends Format<boolean> {
+export class BooleanFormat extends Format<boolean> {
 
     name = 'bool';
 
@@ -401,7 +401,7 @@ export class Boolean extends Format<boolean> {
     }
 }
 
-export class String extends Format<string> {
+export class StringFormat extends Format<string> {
 
     name = 'string';
 
@@ -429,7 +429,7 @@ export class String extends Format<string> {
 }
 
 type OutputType = {value: boolean, vars: string[]};
-export class Output extends Format<OutputType> {
+export class OutputFormat extends Format<OutputType> {
 
     static name: 'output'
 
@@ -472,19 +472,19 @@ export class Output extends Format<OutputType> {
 }
 
 export const FormatDef = {
-    variables: new Variables(),
+    variables: new VariablesFormat(),
 
-    variable: new Variable(),
+    variable: new VariableFormat(),
 
-    term: new Term(),
+    term: new TermFormat(),
 
-    number: new Number(),
+    number: new NumberFormat(),
 
-    bool: new Boolean(),
+    bool: new BooleanFormat(),
 
-    string: new String(),
+    string: new StringFormat(),
 
-    output: new Output()
+    output: new OutputFormat()
 }
 
 export function inferFormat(raw: any) : Format<any> {

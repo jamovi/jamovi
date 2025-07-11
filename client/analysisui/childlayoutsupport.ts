@@ -1,24 +1,25 @@
 
 'use strict';
 
-import LayoutGrid, { LayoutGridItem } from './layoutgrid';
+import LayoutGrid, { LayoutControl } from './layoutgrid';
 import { BorderLayoutGrid } from './layoutgridbordersupport';
 import TitledGridControl from './titledgridcontrol';
 import type { MultiContainer } from './multicontainer';
+import { GridControlProperties } from './gridcontrol';
 
 type Constructor<T = {}> = new (...params: any[]) => T;
 
-export function createChildLayoutSupport<T extends Constructor<TitledGridControl>>(params, TBase: T) {
+export function createChildLayoutSupport<T extends Constructor<InstanceType<typeof TitledGridControl>>>(params: GridControlProperties, TBase: T) {
     if (params && params.controls)
-        return ChildLayoutSupport(LayoutGridItem(TBase, BorderLayoutGrid));  
+        return ChildLayoutSupport(LayoutControl(TBase, BorderLayoutGrid));  
     else
         return TBase;
 }
 
-const TitledLayoutGrid = LayoutGridItem(TitledGridControl, BorderLayoutGrid);
-type TitledLayoutGridType = typeof TitledLayoutGrid;
+const TitledLayoutGrid = LayoutControl(TitledGridControl, BorderLayoutGrid);
+type TitledLayoutGridType = Constructor<InstanceType<typeof TitledLayoutGrid>>;
 
-export function ChildLayoutSupport<TBase extends Constructor<InstanceType<TitledLayoutGridType>>>(Base: TBase) {
+export function ChildLayoutSupport<TBase extends TitledLayoutGridType>(Base: TBase) {
     return class extends Base {
         _body: MultiContainer;
 
