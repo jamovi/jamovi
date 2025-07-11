@@ -1,8 +1,8 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
 const NotificationView = Backbone.View.extend({
@@ -116,4 +116,4 @@ Notifications.prototype.notify = function(notification) {
     }
 };
 
-module.exports = Notifications;
+export default Notifications;

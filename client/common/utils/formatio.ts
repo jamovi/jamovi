@@ -5,14 +5,14 @@ import { s6e } from '../utils';
 
 let _registeredNodeObjs = null;
 
-function registerNodeObject(node, object) {
+export function registerNodeObject(node, object) {
     if (_registeredNodeObjs === null)
         _registeredNodeObjs = new WeakMap();
 
     _registeredNodeObjs.set(node, object);
 }
 
-function csvifyCells(cells) {
+export function csvifyCells(cells) {
     if (cells.length === 0)
         return '';
 
@@ -37,7 +37,7 @@ function csvifyCells(cells) {
     return rows.join('\n');
 }
 
-function htmlifyCells(cells, options={}) {
+export function htmlifyCells(cells, options={}) {
     if (cells.length === 0)
         return '';
 
@@ -67,7 +67,7 @@ function htmlifyCells(cells, options={}) {
     return '<!DOCTYPE html>\n<html><head><meta charset="utf-8">' + generator + '</head><body><table>' + rows.join('\n') + '</table></body></html>';
 }
 
-function exportElem(el, format, options={ images:'absolute', margin: '24', docType: true }) {
+export function exportElem(el, format, options={ images:'absolute', margin: '24', docType: true }) {
     if (format === 'text/plain') {
         return Promise.resolve(_textify(el).trim());
     }
@@ -587,4 +587,3 @@ function _htmlifyDiv(el, options) {
     });
 }
 
-export default { exportElem, csvifyCells, htmlifyCells, registerNodeObject };

@@ -4,30 +4,23 @@
 
 'use strict';
 
-const path = require('path');
+import path from 'path';
 
-const tarp = require('./utils/tarp');
-const pathtools = require('./utils/pathtools');
-const Notify = require('./notification');
+import tarp from './utils/tarp';
+import Notify from './notification';
 
 import host from './host';
-import type { IShowDialogOptions, IDialogProviderResult, IDialogProvider } from './host';
-const ActionHub = require('./actionhub');
-const { s6e } = require('../common/utils');
+import type { IShowDialogOptions, IDialogProviderResult } from './host';
+import ActionHub from './actionhub';
+import { s6e } from '../common/utils';
 import focusLoop, { IShortcutTokenOptions } from '../common/focusloop';
-const selectionLoop = require('../common/selectionloop');
+import selectionLoop from '../common/selectionloop';
 
-import { UserFacingError } from './errors';
-import { CancelledError } from './errors';
+import { UserFacingError, CancelledError } from './errors';
 
-import { IOpenOptions } from './backstage/fsentry';
-import { ISaveOptions } from './backstage/fsentry';
-import { IImportOptions } from './backstage/fsentry';
-import { IBrowseOptions } from './backstage/fsentry';
+import { IOpenOptions, ISaveOptions, IImportOptions, IBrowseOptions } from './backstage/fsentry';
 
-import { FSEntryListModel } from './backstage/fsentry';
-import { FSEntryListView } from './backstage/fsentry';
-import { FSItemType } from './backstage/fsentry';
+import { FSEntryListModel, FSEntryListView, FSItemType } from './backstage/fsentry';
 
 import type { WDType, BackstagePanelView } from './backstage/fsentry';
 

@@ -4,15 +4,15 @@
 
 'use strict';
 
-const $ = require('jquery');
-const ColourPalette = require('./editors/colourpalette');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import ColourPalette from './editors/colourpalette';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
-const SilkyView = require('./view');
-const ContextMenu = require('./contextmenu');
-const Statusbar = require('./statusbar/statusbar');
-const { contextMenuListener } = require('../common/utils');
+import SilkyView from './view';
+import ContextMenu from './contextmenu';
+import Statusbar from './statusbar/statusbar';
+import { contextMenuListener } from '../common/utils';
 import _focusLoop from '../common/focusloop';
 
 
@@ -799,4 +799,4 @@ const VariablesView = SilkyView.extend({
     }
 });
 
-module.exports = VariablesView;
+export default VariablesView;

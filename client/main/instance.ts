@@ -9,16 +9,14 @@ import path from 'path';
 import host from './host';
 import Notify from './notification';
 
-const Analyses = require('./analyses');
-const DataSetViewModel = require('./dataset');
-const OptionsPB = require('./optionspb');
+import Analyses from './analyses';
+import DataSetViewModel from './dataset';
+import OptionsPB from './optionspb';
 import { Modules } from './modules';
-const I18n = require('../common/i18n');
+import I18n from '../common/i18n';
 
-const Settings = require('./settings');
+import Settings from './settings';
 import ProgressStream from './utils/progressstream';
-
-import { flatten, unflatten } from '../common/utils/addresses';
 
 import { UserFacingError } from './errors';
 import { CancelledError } from './errors';

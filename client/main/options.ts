@@ -2,7 +2,7 @@
 
 'use strict';
 
-const SuperClass = require('../common/superclass');
+import SuperClass from '../common/superclass';
 
 const OptionTypes = {
 
@@ -693,4 +693,4 @@ const Options = function(def=[]) {
     };
 };
 
-module.exports = Options;
+export default Options;

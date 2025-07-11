@@ -1,7 +1,7 @@
 
 'use strict';
 
-let focusLoop = require('../common/focusloop');
+import focusLoop from '../common/focusloop';
 
 class References extends HTMLElement {
     constructor() {
@@ -399,4 +399,4 @@ class Reference extends HTMLElement {
 customElements.define('jmv-references', References);
 customElements.define('jmv-reference', Reference);
 
-module.exports = {  };
+export default {  };

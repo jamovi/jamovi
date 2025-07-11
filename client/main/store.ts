@@ -4,16 +4,16 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
-const util = require('util');
+import util from 'util';
 
-const PageModules = require('./store/pagemodules');
-const PageSideload  = require('./store/pagesideload');
-const tarp = require('./utils/tarp');
+import PageModules from './store/pagemodules';
+import PageSideload  from './store/pagesideload';
+import tarp from './utils/tarp';
 import focusLoop from '../common/focusloop';
-const selectionLoop = require('../common/selectionloop');
+import selectionLoop from '../common/selectionloop';
 
 const Store = Backbone.View.extend({
     className: 'Store',
@@ -158,4 +158,4 @@ const Store = Backbone.View.extend({
     }
 });
 
-module.exports = Store;
+export default Store;

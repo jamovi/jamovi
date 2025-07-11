@@ -3,7 +3,7 @@
 
 import Annotation from './annotation';
 import Heading from './heading';
-import formatIO from '../common/utils/formatio';
+import {registerNodeObject} from '../common/utils/formatio';
 
 const Annotations = { };
 
@@ -70,7 +70,7 @@ Annotations.activate = function(annotation, levelIndex) {
     annotation.setup(levelIndex);
     annotation.attach();
 
-    formatIO.registerNodeObject(annotation.$el[0], annotation);
+    registerNodeObject(annotation.$el[0], annotation);
 };
 
 export default Annotations;

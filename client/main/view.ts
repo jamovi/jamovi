@@ -1,11 +1,11 @@
 
 'use strict';
 
-var $ = require('jquery');
-var Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
-var View = Backbone.View.extend({
+const View = Backbone.View.extend({
 
     _isClosed: false,
 
@@ -22,4 +22,4 @@ var View = Backbone.View.extend({
     }
 });
 
-module.exports = View;
+export default View;

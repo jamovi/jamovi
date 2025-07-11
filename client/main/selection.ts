@@ -1,7 +1,7 @@
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
 class Selection {
@@ -1270,4 +1270,4 @@ class Selection {
     }
 }
 
-module.exports = Selection;
+export default Selection;

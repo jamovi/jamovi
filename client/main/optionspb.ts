@@ -181,4 +181,4 @@ const _fromPB = function(option, Messages) {
     return value;
 };
 
-module.exports = optionPB;
+export default optionPB;

@@ -4,11 +4,9 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
-
-const ByteBuffer = require('bytebuffer');
 
 const DataSetModel = Backbone.Model.extend({
     initialize() {
@@ -1901,4 +1899,4 @@ const genColName = function(index) {
     return value;
 };
 
-module.exports = DataSetViewModel;
+export default DataSetViewModel;

@@ -1,14 +1,14 @@
 'use strict';
 
-const $ = require('jquery');
-const ActionHub = require('./actionhub');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import ActionHub from './actionhub';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
-const host = require('./host');
-const ResultsPanel = require('./resultspanel');
+import host from './host';
+import ResultsPanel from './resultspanel';
 import focusLoop from '../common/focusloop';
-const jamoviIcon = require('../common/icon');
+import jamoviIcon from '../common/icon';
 
 const ResultsView = Backbone.View.extend({
     className: 'ResultsView',
@@ -137,4 +137,4 @@ const ResultsView = Backbone.View.extend({
     },
 });
 
-module.exports = ResultsView;
+export default ResultsView;

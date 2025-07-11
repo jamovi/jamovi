@@ -8,7 +8,7 @@ import ERDM from "element-resize-detector";
 import RefTable from './refs';
 
 import { createItem } from './create';
-import formatIO from '../common/utils/formatio';
+import { exportElem } from '../common/utils/formatio';
 import b64 from '../common/utils/b64';
 import Annotations from './annotations';
 import Tracker from './itemtracker';
@@ -292,7 +292,7 @@ class Main {  // this is constructed at the bottom
             Promise.resolve().then(() => {
 
                 if (incText)
-                    return formatIO.exportElem(node, 'text/plain', options);
+                    return exportElem(node, 'text/plain', options);
 
             }).then((text) => {
 
@@ -300,7 +300,7 @@ class Main {  // this is constructed at the bottom
                     content.text = text;
 
                 if (incImage)
-                    return formatIO.exportElem(node, 'image/png', options);
+                    return exportElem(node, 'image/png', options);
 
             }).then((image) => {
 
@@ -308,7 +308,7 @@ class Main {  // this is constructed at the bottom
                     content.image = image;
 
                 if (incHtml)
-                    return formatIO.exportElem(node, 'text/html', options);
+                    return exportElem(node, 'text/html', options);
 
             }).then((html) => {
 
