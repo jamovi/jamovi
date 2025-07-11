@@ -1,7 +1,7 @@
 
 'use strict';
 
-const { s6e } = require('../utils');
+import { s6e } from '../utils';
 
 let _registeredNodeObjs = null;
 
@@ -587,4 +587,4 @@ function _htmlifyDiv(el, options) {
     });
 }
 
-module.exports = { exportElem, csvifyCells, htmlifyCells, registerNodeObject };
+export default { exportElem, csvifyCells, htmlifyCells, registerNodeObject };

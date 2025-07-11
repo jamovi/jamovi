@@ -1,7 +1,7 @@
 
 'use strict';
 
-module.exports = {
+export default {
 
     flatten: function(arr) {
         return arr.join('/');
