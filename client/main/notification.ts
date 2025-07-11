@@ -1,7 +1,7 @@
 
 'use strict';
 
-const Backbone = require('backbone');
+import Backbone from 'backbone';
 
 const Notify = Backbone.Model.extend({
 
@@ -93,4 +93,4 @@ Notify.createFromPB = function(pb) {
     return new Notify({ id, title, message, duration, dismissed });
 };
 
-module.exports = Notify;
+export default Notify;

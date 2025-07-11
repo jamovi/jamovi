@@ -1,10 +1,7 @@
 
 'use strict';
 
-const RibbonMenu = require('./ribbon/ribbonmenu');
 import AppMenu from './ribbon/appmenu';
-const Modules = require('./modules');
-const tarp = require('./utils/tarp');
 import DataTab from './ribbon/datatab';
 import VariablesTab from './ribbon/variablestab';
 import AnnotationTab from './ribbon/annotationtab';

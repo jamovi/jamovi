@@ -4,7 +4,10 @@
 
 import $ from 'jquery';
 
-import Framesg from 'framesg';
+import _Framesg from 'framesg';
+let Framesg = _Framesg;
+if ('default' in Framesg) // this import is handled differently between browserify and vite
+    Framesg = Framesg.default;
 
 import Options from './options';
 import OptionsView from './optionsview';

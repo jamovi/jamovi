@@ -1,11 +1,10 @@
 
 'use strict';
 
-const ProtoBuf = require('protobufjs');
+import ProtoBuf from 'protobufjs';
 import Q from 'q';
 
-const host = require('./host');
-const auth = require('./auth/auth');
+import auth from './auth/auth';
 
 import PROTO_DEFN from '../assets/coms.proto?raw';
 
@@ -173,4 +172,4 @@ class Coms {
 
 }
 
-module.exports = Coms;
+export default Coms;

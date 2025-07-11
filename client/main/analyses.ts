@@ -1,13 +1,12 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Delta = require('quill-delta');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Delta from 'quill-delta';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
-const host = require('./host');
-const Options = require('./options');
+import Options from './options';
 
 const Analysis = function(id, name, ns, modules) {
 
@@ -432,4 +431,4 @@ const Analyses = Backbone.Model.extend({
     }
 });
 
-module.exports = Analyses;
+export default Analyses;

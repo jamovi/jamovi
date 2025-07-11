@@ -1,42 +1,46 @@
 'use strict';
 
-const $ = require('jquery');
+import $ from 'jquery';
 
-const host = require('./host');
+import host from './host';
 
 import * as auth from './auth/auth';
 
-let Coms = require('./coms');
+import Coms from './coms';
 let coms = new Coms();
 
-const Selection = require('./selection');
-const ViewController = require('./viewcontroller');
-const TableView   = require('./tableview');
-const VariablesView   = require('./variablesview');
-const ResultsView = require('./results');
-const SplitPanel  = require('./splitpanel');
+import Selection from './selection';
+import ViewController from './viewcontroller';
+import TableView from './tableview';
+import VariablesView from './variablesview';
+import ResultsView from './results';
+import SplitPanel from './splitpanel';
 import { BackstageModel, BackstageView as Backstage} from './backstage';
 import { RibbonModel, RibbonView as Ribbon, TabTypes } from './ribbon';
-const Notifications = require('./notifications');
-const SplitPanelSection = require('./splitpanelsection');
-const OptionsPanel = require('./optionspanel');
-const VariableEditor = require('./variableeditor');
-const ActionHub = require('./actionhub');
-const I18n = require('../common/i18n');
+import Notifications from './notifications';
+import SplitPanelSection from './splitpanelsection';
+import OptionsPanel from './optionspanel';
+import VariableEditor from './variableeditor';
+import ActionHub from './actionhub';
+import I18n from '../common/i18n';
 
-const Instance = require('./instance');
-const Notify = require('./notification');
+import Instance from './instance';
+import Notify from './notification';
 import _focusLoop from '../common/focusloop';
 import { UserFacingError } from './errors';
 import Keyboard from '../common/focusloop';
 
-require('./utils/headeralert');
+import './utils/headeralert';
 
 import lobby, { hasLobby } from './extras/lobby';
 import { InstanceOpenStream } from './instance';
 import { IInstanceOpenOptions } from './instance';
 import { IInstanceOpenResult } from './instance';
 import { IShowDialogOptions } from './host';
+
+import './infobox';
+
+import keyboardJS  from 'keyboardjs';
 
 
 window._ = I18n._;
@@ -85,9 +89,7 @@ catch (e) {
 }
 
 
-require('./infobox');
 
-const keyboardJS = require('keyboardjs');
 
 keyboardJS.Keyboard.prototype.pause = function(key) {
     if (this._pausedCounts === undefined)

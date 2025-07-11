@@ -1,7 +1,7 @@
 
 'use strict';
 
-const host = require('./host');
+import host from './host';
 import focusLoop from '../common/focusloop';
 
 class InfoBox extends HTMLElement {
@@ -488,4 +488,4 @@ class InfoBox extends HTMLElement {
 }
 
 customElements.define('jmv-infobox', InfoBox);
-module.exports = InfoBox;
+export default InfoBox;

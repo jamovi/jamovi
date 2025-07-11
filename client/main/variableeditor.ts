@@ -4,15 +4,15 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
-const keyboardJS = require('keyboardjs');
+import keyboardJS from 'keyboardjs';
 
-const VariableModel = require('./vareditor/variablemodel');
-const EditorWidget = require('./vareditor/editorwidget');
+import VariableModel from './vareditor/variablemodel';
+import EditorWidget from './vareditor/editorwidget';
 import EditorPanel from './editorpanel';
-const TransformEditor = require('./editors/transformeditor');
+import TransformEditor from './editors/transformeditor';
 import focusLoop from '../common/focusloop';
 
 
@@ -368,4 +368,4 @@ const VariableEditor = Backbone.View.extend({
     }
 });
 
-module.exports = VariableEditor;
+export default VariableEditor;

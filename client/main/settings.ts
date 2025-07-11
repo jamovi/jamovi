@@ -1,12 +1,11 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
-const host = require('./host');
-const auth = require('./auth/auth');
+import host from './host';
 import { Event } from'./utils/sync';
 
 
@@ -189,4 +188,4 @@ const Settings = Backbone.Model.extend({
 
 });
 
-module.exports = Settings;
+export default Settings;

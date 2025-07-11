@@ -1,10 +1,10 @@
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
-const SilkyView = require('./view');
-const SplitPanelSection = require('./splitpanelsection');
+import SilkyView from './view';
+import SplitPanelSection from './splitpanelsection';
 
 const SplitPanel = SilkyView.extend({
     className: "splitpanel",
@@ -614,4 +614,4 @@ const SplitPanel = SilkyView.extend({
     }
 });
 
-module.exports = SplitPanel;
+export default SplitPanel;

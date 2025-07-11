@@ -1,7 +1,7 @@
 
 'use strict';
 
-const $ = require('jquery');
+import $ from 'jquery';
 
 const SplitPanelSection = function(index, $panel, initData, parent) {
 
@@ -91,4 +91,4 @@ const SplitPanelSection = function(index, $panel, initData, parent) {
 
 SplitPanelSection.sepWidth = 12;
 
-module.exports = SplitPanelSection;
+export default SplitPanelSection;

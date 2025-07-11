@@ -6,8 +6,9 @@
 
 import { Future } from './utils/common';
 
-const events = require('events');
-const $ = require('jquery');
+import events from 'events';
+import $ from 'jquery';
+
 
 const etron = window.electronAPI || {};
 
@@ -124,7 +125,7 @@ export const zoom    = etron.zoom || function() {};
 export const zoomIn  = etron.zoomIn  || function() {};
 export const zoomOut = etron.zoomOut || function() {};
 
-const clipboardprompt = require('./utils/clipboardprompt');
+import './utils/clipboardprompt';
 let clipboardPromptBox;
 let clipboardPrompt;
 
