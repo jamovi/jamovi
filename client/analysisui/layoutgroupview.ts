@@ -2,23 +2,44 @@
 'use strict';
 
 import TitledGridControl from './titledgridcontrol';
-import OptionControl from './optioncontrol';
+import OptionControl, { OptionControlProperties } from './optioncontrol';
 import createChildLayoutSupport from './childlayoutsupport';
 import EnumPropertyFilter from './enumpropertyfilter';
-import { FormatDef } from './formatdef';
-const Icons = require('./iconsupport');
+import { FormatDef, StringFormat } from './formatdef';
+import Icons from './iconsupport';
 import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { GridControlProperties, VerticalAlignment } from './gridcontrol';
+import { Margin } from './controlbase';
+import { Control, CtrlDef } from './optionsview';
 
-export class LayoutGroupView extends TitledGridControl {
-    static create(params) {
-        let isOptionControl = params.label === undefined;
-        if (isOptionControl) {
-            const LabelClass = createChildLayoutSupport(params, OptionedLabel);
+export enum ComplexLayoutStyle {
+    List = "list",
+    Inline= "inline",
+    ListInline = "list-inline",
+    InlineList = "inline-list"
+}
+
+export type LabelControlProperties = GridControlProperties & {
+    style: ComplexLayoutStyle;
+    margin: Margin;
+    format: StringFormat;
+    heading: boolean;
+    label: string;
+}
+
+const isOptionedLabelParams = function(params: LabelControlProperties | OptionedLabelControlProperties): params is OptionedLabelControlProperties {
+    return params.label === undefined;
+}
+
+export class LabelControl extends TitledGridControl<LabelControlProperties> {
+    static create(params: (LabelControlProperties | OptionedLabelControlProperties)): Control<CtrlDef> {
+        if (isOptionedLabelParams(params)) {
+            const LabelClass = createChildLayoutSupport(params, OptionLabelControl);
             return new LabelClass(params);
         }
         else {
-            const LabelClass = createChildLayoutSupport(params, Label);
+            const LabelClass = createChildLayoutSupport(params, LabelControl);
             return new LabelClass(params);
         }
     }
@@ -26,19 +47,16 @@ export class LayoutGroupView extends TitledGridControl {
     icons: HTMLElement;
     style: string;
 
-    constructor(params, isOptionControl) {
+    constructor(params: LabelControlProperties) {
         super(params);
 
-        if (isOptionControl === false)
-            this.registerSimpleProperty("label", "");
+        this.registerSimpleProperty("label", "");
 
         Icons.addSupport(this);
 
         this.style = this.getPropertyValue('style');
 
-        let groupText = "";
-        if (isOptionControl === false)
-            groupText = this.getPropertyValue('label');
+        let groupText = this.getPropertyValue('label');
 
         if (groupText === null)
             groupText = "";
@@ -51,7 +69,7 @@ export class LayoutGroupView extends TitledGridControl {
 
         if (hasChildren === false) {
             if (params.cell && params.verticalAlignment === undefined) {
-                this.setPropertyValue('verticalAlignment', 'center');
+                this.setPropertyValue('verticalAlignment', VerticalAlignment.Center);
             }
         }
         
@@ -65,7 +83,7 @@ export class LayoutGroupView extends TitledGridControl {
         this.labelId = focusLoop.getNextAriaElementId('label');
         this._subel = HTML.parse(`<div id="${ this.labelId }" role="heading" aria-level="3" class="silky-control-label silky-control-margin-${ this.getPropertyValue("margin") } ${ classes }" style="white-space: nowrap;"><span>${ groupText }</span></div>`);
         if (this.el === undefined)
-            this.el = this._subel;
+            this.setRootElement(this._subel);
 
         if (Icons.exists(this)) {
             this.icons = Icons.get(this);
@@ -77,16 +95,16 @@ export class LayoutGroupView extends TitledGridControl {
         }
     }
 
-    protected registerProperties(properties) {
+    protected override registerProperties(properties: LabelControlProperties) {
         super.registerProperties(properties);
 
-        this.registerSimpleProperty('style', 'list', new EnumPropertyFilter(["list", "inline", "list-inline", "inline-list"], "list"));
-        this.registerSimpleProperty('margin', 'large', new EnumPropertyFilter(["small", "normal", "large", "none"], "large"));
+        this.registerSimpleProperty('style', ComplexLayoutStyle.List, new EnumPropertyFilter(ComplexLayoutStyle, ComplexLayoutStyle.List));
+        this.registerSimpleProperty('margin', Margin.Large, new EnumPropertyFilter(Margin, Margin.Large));
         this.registerSimpleProperty('format', FormatDef.string);
         this.registerSimpleProperty('heading', false);
     }
     
-    setLabel(value) {
+    setLabel(value: string): void {
         if (value === null)
             value = '';
 
@@ -101,14 +119,8 @@ export class LayoutGroupView extends TitledGridControl {
         else
             this._subel.classList.remove("silky-control-label-empty");
     }
-}
 
-export class Label extends LayoutGroupView {
-    constructor(params) {
-        super(params, false);
-    }
-
-    onPropertyChanged(name: string) {
+    override onPropertyChanged(name) {
         super.onPropertyChanged(name);
 
         if (name === 'label')
@@ -125,16 +137,83 @@ export class Label extends LayoutGroupView {
     }
 }
 
-export class OptionedLabel extends OptionControl(LayoutGroupView) {
-    constructor(params) {
-        super(params, true);
+export type OptionedLabelControlProperties = Omit<LabelControlProperties, 'label'> & OptionControlProperties<string>;
+
+export class OptionLabelControl extends OptionControl<OptionedLabelControlProperties> {
+
+    icons: HTMLElement;
+    style: string;
+
+    constructor(params: OptionedLabelControlProperties) {
+        super(params);
+
+
+        Icons.addSupport(this);
+
+        this.style = this.getPropertyValue('style');
+
+        let classes = "silky-control-label-empty";
+
+        let hasChildren = this.hasProperty('controls');
+
+        if (hasChildren === false) {
+            if (params.cell && params.verticalAlignment === undefined) {
+                this.setPropertyValue('verticalAlignment', VerticalAlignment.Center);
+            }
+        }
+        
+        let isHeading = true;
+        if (hasChildren === false)
+            isHeading = this.getPropertyValue('heading');
+            
+        classes += hasChildren === false ? ' no-children' : '';
+        classes += isHeading ? ' heading-formating' : '';
+
+        this.labelId = focusLoop.getNextAriaElementId('label');
+        this._subel = HTML.parse(`<div id="${ this.labelId }" role="heading" aria-level="3" class="silky-control-label silky-control-margin-${ this.getPropertyValue("margin") } ${ classes }" style="white-space: nowrap;"><span></span></div>`);
+        if (this.el === undefined)
+            this.setRootElement(this._subel);
+
+        if (Icons.exists(this)) {
+            this.icons = Icons.get(this);
+            let iconPosition = Icons.position(this);
+            if (iconPosition === 'right')
+                this._subel.append(this.icons);
+            else
+                this._subel.prepend(this.icons);
+        }
     }
 
-    onPropertyChanged(name) {
+    protected override registerProperties(properties: OptionedLabelControlProperties) {
+        super.registerProperties(properties);
+
+        this.registerSimpleProperty('style', ComplexLayoutStyle.List, new EnumPropertyFilter(ComplexLayoutStyle, ComplexLayoutStyle.List));
+        this.registerSimpleProperty('margin', Margin.Large, new EnumPropertyFilter(Margin, Margin.Large));
+        this.registerSimpleProperty('format', FormatDef.string);
+        this.registerSimpleProperty('heading', false);
+    }
+    
+    setLabel(value: string): void {
+        if (value === null)
+            value = '';
+
+        value = this.translate(value);
+
+        this._subel.innerHTML = '<span>' + value + '</span>';
+        let event = new CustomEvent('contentchanged');
+        this._subel.dispatchEvent(event);
+
+        if (value === "")
+            this._subel.classList.add("silky-control-label-empty");
+        else
+            this._subel.classList.remove("silky-control-label-empty");
+    }
+    
+    override onPropertyChanged(name) {
         super.onPropertyChanged(name);
 
         if (name === 'enable') {
-            let disabled = this.getPropertyValue(name) === false;
+            let disabled = this.getPropertyValue('enable') === false;
             if (disabled)
                 this._subel.classList.add('disabled-text');
             else
@@ -142,7 +221,7 @@ export class OptionedLabel extends OptionControl(LayoutGroupView) {
         }
     }
 
-    onOptionValueChanged(key, data) {
+    override onOptionValueChanged(key, data) {
         super.onOptionValueChanged(key, data);
         let format = this.getPropertyValue('format');
         this.setLabel(format.toString(this.getValue()));
@@ -155,4 +234,4 @@ export class OptionedLabel extends OptionControl(LayoutGroupView) {
     }
 }
 
-export default LayoutGroupView;
+export default LabelControl;

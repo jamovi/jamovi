@@ -686,8 +686,6 @@ class FocusLoop extends EventEmitter {
         let silent = options ? options.silent : false;
         let fromBroadcast = this._fromBroadcast;
         if (this.focusMode !== value) {
-            if (this._isMainWindow && this.focusMode !== 'default' && value === 'default')
-                console.log(value)
             let prevMode = this.focusMode;
 
             this.focusMode = value;

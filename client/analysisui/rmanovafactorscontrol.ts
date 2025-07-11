@@ -1,9 +1,10 @@
 'use strict';
 
-import { TitledOptionControl } from './optioncontrol';
-import LayoutGrid, { LayoutGridItem } from './layoutgrid';
-const HiddenScrollBarSupport = require('./hiddenscrollbarsupport');
+import OptionControl, { OptionControlProperties } from './optioncontrol';
+import LayoutGrid from './layoutgrid';
+import HiddenScrollBarSupport from './hiddenscrollbarsupport';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { GridControlProperties } from './gridcontrol';
 
 class rmafcItem extends LayoutGrid {
 
@@ -332,22 +333,39 @@ class rmafcItem extends LayoutGrid {
 
 customElements.define('jmv-rmafcitem', rmafcItem);
 
-export class RMAnovaFactorsControl extends LayoutGridItem(TitledOptionControl) {
-    constructor(params) {
+type RMAnovaFactorsControlDataType = {
+    label: string; 
+    levels: string[] 
+} [];
+
+type RMAnovaFactorsControlProperties = GridControlProperties & OptionControlProperties<RMAnovaFactorsControlDataType>;
+
+export class RMAnovaFactorsControl extends OptionControl<RMAnovaFactorsControlProperties> {
+    
+    static create(params: RMAnovaFactorsControlProperties) {
+        if (navigator.platform === 'MacIntel') {
+            const Base = HiddenScrollBarSupport(RMAnovaFactorsControl);
+            return new Base(params);
+        }
+        else
+            return new RMAnovaFactorsControl(params);
+    }
+    
+    data: RMAnovaFactorsControlDataType = [];
+    declare _el: LayoutGrid;
+    _animateCells = true;
+    items: rmafcItem[] = [];
+
+    constructor(params: RMAnovaFactorsControlProperties) {
         super(params);
 
-        //LayoutGrid.extendTo(this);
+        this.setRootElement(new LayoutGrid());
 
         this.el.classList.add('rmanova-factors-control');
-    
-        if (navigator.platform === 'MacIntel')
-            HiddenScrollBarSupport.extendTo(this);
-    
-        this._animateCells = true;
-    
-        this.items = [];
+    }
 
-        this.data = [];
+    override get el() {
+        return this._el;
     }
 
     createFactorsObject(data, index, isVirtual) {
@@ -449,7 +467,7 @@ export class RMAnovaFactorsControl extends LayoutGridItem(TitledOptionControl) {
         this.setValue(this.data);
     }
 
-    onOptionValueInserted(key, data) {
+    override onOptionValueInserted(key, data) {
         let index = key[0];
         this.el.insertRow(index, 1);
         let optionData = this.clone(this.getValue(key));
@@ -462,14 +480,14 @@ export class RMAnovaFactorsControl extends LayoutGridItem(TitledOptionControl) {
         super.onOptionValueInserted(key, data);
     }
 
-    onOptionValueRemoved(key, data) {
+    override onOptionValueRemoved(key, data) {
         let index = key[0];
         this.items.splice(index, 1);
         this.el.removeRow(index);
         super.onOptionValueRemoved(key, data);
     }
 
-    onOptionValueChanged(key, data) {
+    override onOptionValueChanged(key, data) {
         super.onOptionValueChanged(key, data);
         this.data = this.clone(this.getValue());
         this.updateData();
@@ -477,7 +495,7 @@ export class RMAnovaFactorsControl extends LayoutGridItem(TitledOptionControl) {
 
     updateData() {
         if ((this.data === null || this.data.length === 0) && this.getOption().isValueInitialized())
-            this.setValue([ {label: this.translate('RM Factor {0}').replace('{0}', 1), levels: [s_('Level {0}').replace('{0}', 1), s_('Level {0}').replace('{0}', 2)] } ]);
+            this.setValue([ {label: this.translate('RM Factor {0}').replace('{0}', '1'), levels: [s_('Level {0}').replace('{0}', 1), s_('Level {0}').replace('{0}', 2)] } ]);
         else {
             if (this.data === null)
                 this.data = [];

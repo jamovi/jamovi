@@ -1,26 +1,20 @@
 'use strict';
 
-import $ from 'jquery';
-import { GridControl } from './gridcontrol';
-const RequestDataSupport = require('./requestdatasupport');
+
+import { GridControl, GridControlProperties } from './gridcontrol';
+import GetRequestDataSupport from './requestdatasupport';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
-export class CustomControl extends GridControl {
+export class CustomControl extends GridControl<GridControlProperties> {
     observer: MutationObserver;
     timeoutId: NodeJS.Timeout;
 
-    /**
-     * @deprecated Should not be used. Rather use `(property) CustomControl.el: HTMLElement`.
-     */
-    $el: any;
-
-    constructor(params) {
+    constructor(params: GridControlProperties) {
         super(params);
 
-        RequestDataSupport.extendTo(this);
+        GetRequestDataSupport(this);
 
-        this.el = HTML.parse('<div class="silky-custom-control silky-control-margin-' + this.getPropertyValue("margin") + '"></div>');
-        this.$el = $(this.el);
+        this.setRootElement(HTML.parse('<div class="silky-custom-control silky-control-margin-' + this.getPropertyValue("margin") + '"></div>'));
 
         this.timeoutId = null;
     }

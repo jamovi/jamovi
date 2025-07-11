@@ -1,48 +1,63 @@
 'use strict';
 
-import { ICellInfo, SelectableOptionListControl } from './optionlistcontrol';
-import GridControl from './gridcontrol';
+import $ from 'jquery';  // for backwards compatibility
+
+import OptionListControl, { ICellInfo, SelectableOptionListControl, SelectableOptionListControlProperties, SelectableOptionListControlType } from './optionlistcontrol';
+import GridControl, { GridControlProperties } from './gridcontrol';
 import { FormatDef, FormattedValue } from './formatdef';
 import DragNDrop from './dragndrop';
-const EnumPropertyFilter = require('./enumpropertyfilter');
-import { ControlContainer } from './controlcontainer';
+import EnumPropertyFilter from './enumpropertyfilter';
+import { ControlContainer, ControlContainerProperties, LayoutStyle } from './controlcontainer';
 
 import Toolbar from '../common/toolbar/toolbar';
 import ToolbarButton from '../common/toolbar/toolbarbutton';
 import ToolbarGroup from '../common/toolbar/toolbargroup';
-import { LayoutSupplierView, SupplierLayoutGrid } from './layoutsupplierview';
-import type { SupplierTarget } from './layoutsupplierview';
+import { LayoutSupplierView, SupplierViewProperties } from './layoutsupplierview';
+import type { SupplierTarget, TransferAction } from './layoutsupplierview';
 import type { IPickupItem, IDragDropTarget, IItem } from './dragndrop'
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import type LayoutGrid from './layoutgrid';
+import { Margin } from './controlbase';
+import { IControlProvider } from './optionsview';
 
 const A11y = require('../common/focusloop');
 
+type OptionListControlType<U> = InstanceType<typeof OptionListControl<U>>;
 
-export type SupplierTargetList = SelectableOptionListControl & SupplierTarget;
+export type SupplierTargetList<U> = SelectableOptionListControlType<U> & SupplierTarget<U>;
 
-const TargetListSupport = function<T extends SelectableOptionListControl>(list: T, parent: GridTargetContainer) : SupplierTarget & T {
+enum ItemDropBehaviour {
+    Overwrite = 'overwrite',
+    Insert = 'insert',
+    Emptyspace = 'emptyspace'
+}
+
+type TargetListControlProperties<U> = SelectableOptionListControlProperties<U> & {
+    itemDropBehaviour: ItemDropBehaviour
+}
+
+const TargetListSupport = function<U>(list: SelectableOptionListControlType<U>, parent: GridTargetContainer<U>) : SupplierTargetList<U> {
 
     let checkDropBehaviour = () => {
         let dropBehaviour = list.getPropertyValue('itemDropBehaviour');
 
         let hasMaxItemCount = list.maxItemCount >= 0;
         if (hasMaxItemCount && list.getOption().getLength(list.getValueKey()) >= list.maxItemCount)
-            dropBehaviour = 'overwrite';
+            dropBehaviour = ItemDropBehaviour.Overwrite;
 
         return dropBehaviour;
     };
 
     let _$hoverCell: HTMLElement = null;
 
-    list.registerSimpleProperty('itemDropBehaviour', 'insert', new EnumPropertyFilter(['overwrite', 'insert', 'emptyspace'], 'insert'));
+    list.registerSimpleProperty('itemDropBehaviour', ItemDropBehaviour.Insert, new EnumPropertyFilter(ItemDropBehaviour, ItemDropBehaviour.Insert));
 
-    let dragDropTarget : SupplierTarget = {
+    let dragDropTarget : SupplierTarget<U> = {
 
         dragDropManager: undefined,
 
-        getPickupItems: () : IPickupItem[] => {
-            let items: IPickupItem[] = [];
+        getPickupItems: () : IPickupItem<U>[] => {
+            let items: IPickupItem<U>[] = [];
             for (let i = 0; i < list.el.selectedCellCount(); i++) {
                 let cell = list.el.getSelectedCell(i);
                 if (cell.item && cell.item instanceof GridTargetContainer)
@@ -50,7 +65,7 @@ const TargetListSupport = function<T extends SelectableOptionListControl>(list: 
                 let cellInfo = list.getCellInfo(cell);
                 if (cellInfo.value !== null && cellInfo.value !== undefined) {
                     let formattedValue = new FormattedValue(cellInfo.value, cellInfo.format);
-                    let pickupItem = { value: formattedValue, cellInfo: cellInfo, el: cell, properties: undefined };
+                    let pickupItem: IPickupItem<U> = { value: formattedValue, cellInfo: cellInfo, el: cell, properties: undefined };
                     let item = parent._supplier.getItemFromValue(formattedValue);
                     if (item !== null)
                         pickupItem.properties = item.properties;
@@ -70,8 +85,8 @@ const TargetListSupport = function<T extends SelectableOptionListControl>(list: 
             list.getOption().endEdit();
         },
 
-        onItemsDropping: (items: IPickupItem[], intoSelf) => {
-            let copy: IPickupItem[] = [];
+        onItemsDropping: (items: IPickupItem<U>[], intoSelf) => {
+            let copy: IPickupItem<U>[] = [];
             while (items.length > 0)
                 copy.push(items.shift());
 
@@ -108,20 +123,20 @@ const TargetListSupport = function<T extends SelectableOptionListControl>(list: 
         },
 
         // Catching methods
-        catchDroppedItems: (source: any, items: IPickupItem[], xpos: number, ypos: number) => {
+        catchDroppedItems: (source: any, items: IPickupItem<U>[], xpos: number, ypos: number) => {
             let dropBehaviour = checkDropBehaviour();
 
             let cell = list.el.cellFromPosition(xpos, ypos);
             let pos = null;
             let destFormat = null;
             let onCell = false;
-            if (dropBehaviour !== 'emptyspace' && cell !== null) {
+            if (dropBehaviour !== ItemDropBehaviour.Emptyspace && cell !== null) {
                 let cellInfo = list.getCellInfo(cell);
                 pos = list.getRelativeKey(cellInfo.valueIndex);
                 destFormat = cellInfo.format;
                 onCell = cellInfo.isValueCell;
             }
-            let insert = dropBehaviour === 'insert';
+            let insert = dropBehaviour === ItemDropBehaviour.Insert;
 
             let itemsList = items;
             let overflowStartIndex = -1;
@@ -174,7 +189,7 @@ const TargetListSupport = function<T extends SelectableOptionListControl>(list: 
             }
         },
 
-        hasSubDropTarget: (xpos: number, ypos: number) : IDragDropTarget => {
+        hasSubDropTarget: (xpos: number, ypos: number) : IDragDropTarget<U> => {
             let cell =  list.el.cellFromPosition(xpos, ypos);
             let subDroppable = null;
             if (cell !== null && cell.item !== null && cell.item.dragDropManager !== undefined)
@@ -193,7 +208,7 @@ const TargetListSupport = function<T extends SelectableOptionListControl>(list: 
             }
 
             let cell =  list.el.cellFromPosition(xpos, ypos);
-            let cellInfo: ICellInfo = null;
+            let cellInfo: ICellInfo<U> = null;
             if (cell !== null)
                 cellInfo = list.getCellInfo(cell);
 
@@ -204,7 +219,7 @@ const TargetListSupport = function<T extends SelectableOptionListControl>(list: 
                     return;
 
                 if (cellInfo.isValueCell === false)
-                    dropBehaviour = 'insert';
+                    dropBehaviour = ItemDropBehaviour.Insert;
 
                 _$hoverCell = cell.content;
                 _$hoverCell.classList.add('item-hovering');
@@ -212,7 +227,7 @@ const TargetListSupport = function<T extends SelectableOptionListControl>(list: 
             }
         },
 
-        inspectDraggedItems: (source, items: IPickupItem[]) => {
+        inspectDraggedItems: (source, items: IPickupItem<U>[]) => {
 
         },
 
@@ -233,7 +248,7 @@ const TargetListSupport = function<T extends SelectableOptionListControl>(list: 
 
         preprocessItems: undefined,  // defined below;
 
-        itemCount: (item: IItem) : number => {
+        itemCount: (item: IItem<U>) : number => {
             let count = 0;
             for (let i = 0; i < list.el._cells.length; i++) {
                 let cellInfo = list.getCellInfo(list.el._cells[i]);
@@ -254,13 +269,21 @@ const TargetListSupport = function<T extends SelectableOptionListControl>(list: 
 
         unblockActionButtons: () => {
             return parent.unblockActionButtons();
+        },
+
+        getDefaultTransferAction: (): TransferAction<U> => {
+            throw 'this function has not been attached';
+        },
+
+        applyTransferActionToItems: <I extends IItem<U>>(items: I[], action: TransferAction<U>): I[] => {
+            throw 'this function has not been attached';
         }
     }
 
     let supplierTarget = Object.assign(list, dragDropTarget);
 
     supplierTarget.dragDropManager = new DragNDrop(supplierTarget);
-    supplierTarget.preprocessItems = <IPickupItem>(items: IPickupItem[], from: IDragDropTarget, action=undefined, silent=false) => {
+    supplierTarget.preprocessItems = <I extends IItem<U>>(items: I[], from: IDragDropTarget<U>, action=undefined, silent=false): I[] => {
 
             let intoSelf = from === supplierTarget;
             if (from === parent._supplier) {
@@ -273,7 +296,7 @@ const TargetListSupport = function<T extends SelectableOptionListControl>(list: 
             let data = { items: items, intoSelf: intoSelf, action: action };
             supplierTarget.emit('preprocess', data);
 
-            let testedItems: IPickupItem[] = [];
+            let testedItems: I[] = [];
             for (let i = 0; i < data.items.length; i++) {
                 let permitted = data.items[i].properties === undefined || data.items[i].properties.permitted === undefined || data.items[i].properties.permitted === true;
                 if (intoSelf || (supplierTarget.testValue(data.items[i], silent) && permitted)) {
@@ -282,38 +305,71 @@ const TargetListSupport = function<T extends SelectableOptionListControl>(list: 
             }
             return testedItems;
     };
-    supplierTarget.filterItemsForDrop = (items: IPickupItem[], from: IDragDropTarget, xpos: number, ypos: number): IPickupItem[] => {
+    supplierTarget.filterItemsForDrop = (items: IPickupItem<U>[], from: IDragDropTarget<U>, xpos: number, ypos: number): IPickupItem<U>[] => {
         return supplierTarget.preprocessItems(items, from);
     };
 
     return supplierTarget;
 }
 
-function isSupplierTargetList(obj: any): obj is SupplierTargetList {
+function isSupplierTargetList<U>(obj: any): obj is SupplierTargetList<U> {
     return obj && obj.dragDropManager && obj.dragDropManager instanceof DragNDrop;
 }
 
-export class GridTargetContainer extends GridControl {
+enum DropOverflow {
+    Discard = 'discard',
+    TryNext = 'tryNext'
+}
 
-    targetGrids: SupplierTargetList[] = [];
-    targetGrid: SupplierTargetList;
-    _supplier: LayoutSupplierView = null;
+enum TransferActionType {
+    None = 'none',
+    Interactions = 'interactions',
+    Maineffects = 'maineffects',
+    All2way = 'all2way',
+    All3way = 'all3way',
+    All4way = 'all4way',
+    All5way = 'all5way',
+    Interaction = 'interaction'
+}
+
+export type GridTargetContainerProperties = GridControlProperties & {
+    label: string;
+    margin: Margin;
+    style: LayoutStyle;
+    dropOverflow: DropOverflow;
+    transferAction: TransferActionType;
+}
+
+type LayoutSupplierViewType<U> = InstanceType<typeof LayoutSupplierView<SupplierViewProperties<U>>>;
+
+export class GridTargetContainer<U> extends GridControl<GridTargetContainerProperties> {
+
+    targetGrids: SupplierTargetList<U>[] = [];
+    targetGrid: SupplierTargetList<U>;
+    _supplier: LayoutSupplierViewType<U> = null;
     gainOnClick: boolean = true;
     _actionsBlocked = false;
     _actionStarted = 0;
     container: InstanceType<typeof ControlContainer>;
     controls: any[] = [];
-    $label: HTMLElement;
+    label: HTMLElement;
+    buttons: HTMLElement;
     $buttons: HTMLElement;
     toolbar : Toolbar;
     _targetDoubleClickDetect = 0;
     _targetDoubleClickDetectObj = null;
     _supplierDoubleClickDetect = 0;
+    _normalAction: TransferAction<U>;
 
-    constructor(params) {
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.label: HTMLElement`.
+     */
+    $label: any;
+
+    constructor(params: GridTargetContainerProperties) {
         super(params);
 
-        let containerParams = {
+        let containerParams: ControlContainerProperties = {
             _parentControl: this,
             controls: this.getPropertyValue('controls'),
             style: this.getPropertyValue('style'),
@@ -330,27 +386,29 @@ export class GridTargetContainer extends GridControl {
         this._doubleClickDetect = this._doubleClickDetect.bind(this);
     }
 
-    protected registerProperties(properties) {
+
+
+    protected override registerProperties(properties) {
         super.registerProperties(properties);
 
         this.registerSimpleProperty('label', null);
-        this.registerSimpleProperty('margin', 'normal', new EnumPropertyFilter(['small', 'normal', 'large', 'none'], 'normal'));
-        this.registerSimpleProperty('style', 'list', new EnumPropertyFilter(['list', 'inline'], 'list'));
-        this.registerSimpleProperty('dropOverflow', 'tryNext', new EnumPropertyFilter(['discard', 'tryNext'], 'tryNext'));
-        this.registerSimpleProperty('transferAction', 'none', new EnumPropertyFilter(['none', 'interactions'], 'none'));
+        this.registerSimpleProperty('margin', Margin.Normal, new EnumPropertyFilter(Margin, Margin.Normal));
+        this.registerSimpleProperty('style', LayoutStyle.List, new EnumPropertyFilter(LayoutStyle, LayoutStyle.List));
+        this.registerSimpleProperty('dropOverflow', DropOverflow.TryNext, new EnumPropertyFilter(DropOverflow, DropOverflow.TryNext));
+        this.registerSimpleProperty('transferAction', TransferActionType.None, new EnumPropertyFilter(TransferActionType, TransferActionType.None));
     }
 
-    onPropertyChanged(name) {
+    override onPropertyChanged(name) {
 
         super.onPropertyChanged(name);
 
-        if (name === 'label' && this.$label) {
+        if (name === 'label' && this.label) {
             let label = this.getTranslatedProperty('label');
-            this.$label.innerText = label;
+            this.label.innerText = label;
         }
     }
 
-    setTargetGrid(targetGrid: SupplierTargetList) {
+    setTargetGrid(targetGrid: SupplierTargetList<U>) {
         if (this.targetGrid)
             this.targetGrid.el.removeEventListener('layoutgrid.selectionChanged', this.targetGridSelectionChanged);
 
@@ -370,8 +428,8 @@ export class GridTargetContainer extends GridControl {
             this.setButtonsMode(this.gainOnClick); // update aria tags
     }
 
-    removeListBox(listbox: OptionListControl) {
-        if (isSupplierTargetList(listbox)) {
+    removeListBox(listbox: SelectableOptionListControlType<U>) {
+        if (isSupplierTargetList<U>(listbox)) {
             for (let i = 0; i < this.targetGrids.length; i++) {
                 if (this.targetGrids[i] === listbox) {
                     this.targetGrids.splice(i, 1);
@@ -404,7 +462,8 @@ export class GridTargetContainer extends GridControl {
 
     findTargetListControl(container) {
         if (container instanceof SelectableOptionListControl) {
-            let isTarget = container.hasProperty('isTarget') && container.getPropertyValue('isTarget');
+            let selectableContainer = container; //container as SelectableOptionListControlType<U>;
+            let isTarget = selectableContainer.hasProperty('isTarget') && selectableContainer.getPropertyValue('isTarget');
             if (isTarget)
                 return container;
         }
@@ -421,8 +480,9 @@ export class GridTargetContainer extends GridControl {
         return null;
     }
 
-    addListBox(listbox: OptionListControl) {
-        listbox.el.setCellBorders(listbox._columnInfo._list.length > 1 ? 'columns' : null);
+    addListBox(listbox: SelectableOptionListControlType<U>) {
+        
+        listbox.el.setCellBorders(listbox._columnInfoList.length > 1 ? 'columns' : null);
 
         listbox.on('listItemAdded', (data) => {
             let {item, index} = data;
@@ -439,13 +499,13 @@ export class GridTargetContainer extends GridControl {
         });
 
         let isTarget = listbox.hasProperty('isTarget') && listbox.getPropertyValue('isTarget');
-        if (isTarget === false && listbox instanceof SelectableOptionListControl) {
+        if (isTarget === false) {
             if (this.targetGrid === null) {
                 listbox.setFocus();
             }
 
             listbox.el.addEventListener('layoutgrid.selectionChanged', () => {
-                if (listbox.hasFocus) {
+                if (listbox.el.hasFocus) {
                     let cell = listbox.el.getSelectedCell(0);
                     if (cell && cell.item) {
                         this.setTargetGrid(this.findTargetListControl(cell.item));
@@ -463,9 +523,9 @@ export class GridTargetContainer extends GridControl {
         }
         else {
 
-            TargetListSupport(listbox, this);
+            TargetListSupport<U>(listbox, this);
 
-            if (isSupplierTargetList(listbox)) {
+            if (isSupplierTargetList<U>(listbox)) {
 
                 if (this.targetGrid === null)
                     this.setTargetGrid(listbox);
@@ -479,7 +539,7 @@ export class GridTargetContainer extends GridControl {
                     return this.getDefaultTransferAction();
                 };
 
-                listbox.applyTransferActionToItems = (items, action) => {
+                listbox.applyTransferActionToItems = (items, action: TransferAction<U>) => {
                     return this.applyTransferActionToItems(items, action);
                 };
 
@@ -508,13 +568,13 @@ export class GridTargetContainer extends GridControl {
                 });
 
                 listbox.el.addEventListener('layoutgrid.gotFocus', () => {
-                    if (listbox.hasFocus) {
+                    if (listbox.el.hasFocus) {
                         this.setTargetGrid(listbox);
                     }
                     this.onSelectionChanged(listbox);
                 });
                 listbox.el.addEventListener('layoutgrid.lostFocus', () => {
-                    if (listbox.hasFocus) {
+                    if (listbox.el.hasFocus) {
                         this.setTargetGrid(listbox);
                     }
                     this.onSelectionChanged(listbox);
@@ -596,7 +656,7 @@ export class GridTargetContainer extends GridControl {
         }
     }
 
-    setSupplier(supplier: LayoutSupplierView) {
+    setSupplier(supplier: LayoutSupplierViewType<U>) {
         if (this._supplier !== null) {
             this._supplier.supplier.removeEventListener('layoutgrid.selectionChanged', this._onSupplierSelectionChanged);
             this._supplier.supplier.removeEventListener('layoutgrid.gotFocus', this._onGridGotFocus);
@@ -604,7 +664,6 @@ export class GridTargetContainer extends GridControl {
 
             for (let i = 0; i < this.targetGrids.length; i++) {
                 let targetGrid = this.targetGrids[i];
-                targetGrid._supplier = null;
                 this._supplier.removeTarget(targetGrid);
                 this.pushRowsBackToSupplier(targetGrid, 0, targetGrid._localData.length);
             }
@@ -620,14 +679,13 @@ export class GridTargetContainer extends GridControl {
 
             for (let i = 0; i < this.targetGrids.length; i++) {
                 let targetGrid = this.targetGrids[i];
-                targetGrid._supplier = supplier;
                 this._supplier.addTarget(targetGrid);
                 this.updateSupplierItems(targetGrid);
             }
         }
     }
 
-    onDisposed() {
+    override onDisposed() {
         super.onDisposed();
 
         this.setSupplier(null);
@@ -637,9 +695,9 @@ export class GridTargetContainer extends GridControl {
         this.container.dispose();
     }
 
-    onSelectionChanged(listbox: OptionListControl) {
-        if (this.$buttons && listbox === this.targetGrid) {
-            let gainOnClick = this.targetGrid.hasFocus === false;
+    onSelectionChanged(listbox: OptionListControlType<U>) {
+        if (this.buttons && listbox === this.targetGrid) {
+            let gainOnClick = this.targetGrid.el.hasFocus === false;
             this.setButtonsMode(gainOnClick);
         }
     }
@@ -660,29 +718,29 @@ export class GridTargetContainer extends GridControl {
 
     setButtonsMode(gainOnClick) {
         this.gainOnClick = gainOnClick;
-        this.$buttons.classList.add(gainOnClick ? 'arrow-right' : 'arrow-left');
-        this.$buttons.classList.remove(gainOnClick ? 'arrow-left' : 'arrow-right');
+        this.buttons.classList.add(gainOnClick ? 'arrow-right' : 'arrow-left');
+        this.buttons.classList.remove(gainOnClick ? 'arrow-left' : 'arrow-right');
         let label = this.getTranslatedProperty('label');
         if (this.gainOnClick) {
             let action = this.getDefaultTransferAction();
             let selectedItems = this.getSupplierItems(action, true);
             if (selectedItems.length === 0)
-                this.$buttons.querySelector<HTMLElement>('.jmv-variable-transfer').setAttribute('aria-label', s_('Add items to {0}', [label])); 
+                this.buttons.querySelector<HTMLElement>('.jmv-variable-transfer').setAttribute('aria-label', s_('Add items to {0}', [label])); 
             else if (selectedItems.length === 1) 
-                this.$buttons.querySelector<HTMLElement>('.jmv-variable-transfer').setAttribute('aria-label', s_('Add item {1} to {0}', [label, selectedItems[0].value.toAriaLabel()]));
+                this.buttons.querySelector<HTMLElement>('.jmv-variable-transfer').setAttribute('aria-label', s_('Add item {1} to {0}', [label, selectedItems[0].value.toAriaLabel()]));
             else 
-                this.$buttons.querySelector<HTMLElement>('.jmv-variable-transfer').setAttribute('aria-label', s_('Add {1} items to {0}', [label, selectedItems.length]));            
+                this.buttons.querySelector<HTMLElement>('.jmv-variable-transfer').setAttribute('aria-label', s_('Add {1} items to {0}', [label, selectedItems.length]));            
         }
         else {
             let count = this.targetGrid.el.selectedCellCount();
             if (count === 0)
-                this.$buttons.querySelector<HTMLElement>('.jmv-variable-transfer').setAttribute('aria-label', s_('Remove items from {0}', [label]));
+                this.buttons.querySelector<HTMLElement>('.jmv-variable-transfer').setAttribute('aria-label', s_('Remove items from {0}', [label]));
             else if (count === 1) {
                 let cell = this.targetGrid.el.getSelectedCell(0);
-                this.$buttons.querySelector<HTMLElement>('.jmv-variable-transfer').setAttribute('aria-label', s_('Remove {1} from {0}', [label, cell.item.getAriaLabel()]));
+                this.buttons.querySelector<HTMLElement>('.jmv-variable-transfer').setAttribute('aria-label', s_('Remove {1} from {0}', [label, cell.item.getAriaLabel()]));
             }
             else
-                this.$buttons.querySelector<HTMLElement>('.jmv-variable-transfer').setAttribute('aria-label', s_('Remove {1} items from {0}', [label, count]));
+                this.buttons.querySelector<HTMLElement>('.jmv-variable-transfer').setAttribute('aria-label', s_('Remove {1} items from {0}', [label, count]));
         }
     }
 
@@ -695,9 +753,9 @@ export class GridTargetContainer extends GridControl {
         this.unblockActionButtons();
     }
 
-    valueTransferConversion?(action, values): any[]
+    valueTransferConversion?(action: TransferAction<U>, values): any[]
 
-    applyTransferActionToItems(items, action) {
+    applyTransferActionToItems(items, action: TransferAction<U>) {
         if (action === undefined || action.resultFormat === null)
             return items;
 
@@ -849,7 +907,7 @@ export class GridTargetContainer extends GridControl {
         return this.targetGrid.addRawToOption(item.value.raw, key, insert, item.value.format);
     }
 
-    updateSupplierItems(list: OptionListControl) {
+    updateSupplierItems(list: OptionListControlType<U>) {
         if (this._supplier !== null) {
             for (let i = 0; i < list.el._cells.length; i++) {
                 let cellInfo = list.getCellInfo(list.el._cells[i]);
@@ -1014,7 +1072,7 @@ export class GridTargetContainer extends GridControl {
 
     blockActionButtons($except, target) {
 
-        let fullBlock = $except !== this.$buttons;
+        let fullBlock = $except !== this.buttons;
 
         this._enableButtons(this.toolbar, fullBlock === false, this.containsTarget(target) === false || target !== this._supplier);
         this._actionsBlocked = fullBlock;
@@ -1030,16 +1088,16 @@ export class GridTargetContainer extends GridControl {
         if (this.toolbar)
             this._enableButtons(this.toolbar, true);
         this._actionsBlocked = false;
-        return this.$buttons;
+        return this.buttons;
     }
 
-    pushRowsBackToSupplier(list: OptionListControl, rowIndex, count) {
+    pushRowsBackToSupplier(list: OptionListControlType<U>, rowIndex, count) {
         count = count === undefined ? 1 : count;
         for (let row = rowIndex; row < rowIndex + count; row++) {
             let rowCells = list.el.getRow(list.rowIndexToDisplayIndex(row));
             for (let c = 0; c < rowCells.length; c++) {
                 let rowCell = rowCells[c];
-                let columnInfo = list._columnInfo._list[rowCell.data.column];
+                let columnInfo = list._columnInfoList[rowCell.data.column];
                 let cellInfo = list.getCellInfo(rowCell);
                 if (cellInfo.value !== null && cellInfo.value !== undefined) {
                     let subFormatInfo = cellInfo.format.allFormats();
@@ -1076,7 +1134,7 @@ export class GridTargetContainer extends GridControl {
         return value;
     }
 
-    renderContainer(context) {
+    renderContainer(context: IControlProvider) {
         this.container.renderContainer(context);
         this.controls = this.container.controls;
         this.searchForListControls(this.container);
@@ -1096,10 +1154,11 @@ export class GridTargetContainer extends GridControl {
 
     searchForListControls(container, removing=false) {
         if (container instanceof SelectableOptionListControl) {
+            let selectableContainer = container as SelectableOptionListControlType<U>;
             if (removing)
-                this.removeListBox(container);
+                this.removeListBox(selectableContainer);
             else
-                this.addListBox(container);
+                this.addListBox(selectableContainer);
         }
 
         if (container.getControls) {
@@ -1131,8 +1190,9 @@ export class GridTargetContainer extends GridControl {
         if (label !== null) {
             label = this.translate(label);
             this.labelId = A11y.getNextAriaElementId('label');
-            this.$label = HTML.parse(`<div id="${this.labelId}" style="white-space: nowrap;" class="silky-target-list-header silky-control-margin-${this.getPropertyValue('margin')}">${label}</div>`);
-            grid.addCell(column, row, this.$label);
+            this.label = HTML.parse(`<div id="${this.labelId}" style="white-space: nowrap;" class="silky-target-list-header silky-control-margin-${this.getPropertyValue('margin')}">${label}</div>`);
+            this.$label = $(this.label);
+            grid.addCell(column, row, this.label);
             this.container.controls[0].el.setAttribute('aria-labelledby', this.labelId);
         }
 
@@ -1172,8 +1232,9 @@ export class GridTargetContainer extends GridControl {
             ]);
 
 
-            this.$buttons = this.toolbar.el;
-            this.$buttons.classList.add('arrow-right');
+            this.buttons = this.toolbar.el;
+            this.$buttons = $(this.buttons);
+            this.buttons.classList.add('arrow-right');
             this.toolbar.on('buttonClicked', (item) => {
                 if (this.gainOnClick && this.targetGrids.length > 0 && !this.targetGrid)
                     this.setTargetGrid(this.targetGrids[0]);
@@ -1193,7 +1254,7 @@ export class GridTargetContainer extends GridControl {
                 }
             });
 
-            let buttonsCell = grid.addCell('aux', row + 1, this.$buttons);
+            let buttonsCell = grid.addCell('aux', row + 1, this.buttons);
             buttonsCell.setVerticalAlign('top');
 
             this.setSupplier(owner);

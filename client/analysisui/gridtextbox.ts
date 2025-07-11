@@ -1,14 +1,31 @@
 'use strict';
 
 import LayoutGrid from './layoutgrid';
-import { TitledOptionControl } from './optioncontrol';
-import { FormatDef } from './formatdef';
-const EnumPropertyFilter = require('./enumpropertyfilter');
+import OptionControl, { GridOptionControlProperties } from './optioncontrol';
+import { FormatDef, StringFormat } from './formatdef';
+import EnumPropertyFilter from './enumpropertyfilter';
 import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { VerticalAlignment } from './layoutcell';
+import { HorizontalAlignment } from './gridcontrol';
 
-export class GridTextbox extends TitledOptionControl {
+enum Size {
+    Small = 'small',
+    Normal = 'normal',
+    Large = 'large',
+    Largest = 'largest'
+}
+
+export type GridTextboxProperties = GridOptionControlProperties<any> & {
+    format: StringFormat;
+    suffix: string;
+    borderless: boolean;
+    alignText: HorizontalAlignment;
+    width: Size;
+    suggestedValues: any;
+}
+
+export class GridTextbox extends OptionControl<GridTextboxProperties> {
 
     $label: HTMLElement;
     $input: HTMLInputElement;
@@ -17,25 +34,25 @@ export class GridTextbox extends TitledOptionControl {
     $fullCtrl: HTMLElement;
     valueId: string;
 
-    constructor(params) {
+    constructor(params: GridTextboxProperties) {
         super(params);
 
         this.$suffix = null;
         this.$label = null;
     }
 
-    protected registerProperties(properties) {
+    protected override registerProperties(properties) {
         super.registerProperties(properties);
 
         this.registerSimpleProperty('format', FormatDef.string);
         this.registerSimpleProperty('suffix', null);
         this.registerSimpleProperty('borderless', false);
-        this.registerSimpleProperty('alignText', 'left', new EnumPropertyFilter(['left', 'center', 'right'], 'left'));
-        this.registerSimpleProperty('width', 'normal', new EnumPropertyFilter(['small', 'normal', 'large', 'largest'], 'normal'));
+        this.registerSimpleProperty('alignText', HorizontalAlignment.Left, new EnumPropertyFilter(HorizontalAlignment, HorizontalAlignment.Left));
+        this.registerSimpleProperty('width', Size.Normal, new EnumPropertyFilter(Size, Size.Normal));
         this.registerSimpleProperty('suggestedValues', null);
     }
 
-    onPropertyChanged(name) {
+    override onPropertyChanged<K extends keyof GridTextboxProperties>(name: K) {
         super.onPropertyChanged(name);
         if (name === 'enable') {
             let disabled = this.getPropertyValue(name) === false;
@@ -234,7 +251,7 @@ export class GridTextbox extends TitledOptionControl {
         return this.getPropertyValue('format').toString(value);
     }
 
-    onOptionValueChanged(key, data) {
+    override onOptionValueChanged(key, data) {
         super.onOptionValueChanged(key, data);
         if (this.$input)
             this.$input.value = this.getValueAsString();

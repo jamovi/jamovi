@@ -1,33 +1,50 @@
 'use strict';
 
-import { LayoutGridItem } from './layoutgrid';
-import GridControl from './gridcontrol';
-import OptionControl from './optioncontrol';
-const EnumPropertyFilter = require('./enumpropertyfilter');
+import OptionControl, { GridOptionControlProperties } from './optioncontrol';
+import EnumPropertyFilter from './enumpropertyfilter';
 import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import type MultiContainer from './multicontainer';
+import LayoutGrid from './layoutgrid';
 
-export class ContentSelector extends LayoutGridItem(OptionControl(GridControl)) {
+export enum ContentSelectorForm {
+    Listbox = "listbox",
+    Radio = "radio",
+    Tabs = "tabs"
+}
+
+export type ContentSelectorProperties = GridOptionControlProperties<string> & {
+    label: string;
+    options: any;
+    form: "listbox" | "radio" | "tabs";
+}
+
+export class ContentSelector extends OptionControl<ContentSelectorProperties> {
     _body: MultiContainer;
     header: HTMLElement;
     tablist: HTMLElement;
+    declare _el: LayoutGrid;
 
-    constructor(params) {
+    constructor(params: ContentSelectorProperties) {
         super(params);
 
         this._body = null;
+        this.setRootElement(new LayoutGrid());
     }
 
-    protected registerProperties(properties) {
+    override get el() {
+        return this._el;
+    }
+
+    protected override registerProperties(properties) {
         super.registerProperties(properties);
 
         this.registerSimpleProperty("label", null);
         this.registerOptionProperty("options");
-        this.registerSimpleProperty("form", "tabs", new EnumPropertyFilter(["listbox", "radio", "tabs"], "listbox"));
+        this.registerSimpleProperty("form", ContentSelectorForm.Tabs, new EnumPropertyFilter(ContentSelectorForm, ContentSelectorForm.Listbox));
     }
 
-    onPropertyChanged(name) {
+    override onPropertyChanged(name) {
         super.onPropertyChanged(name);
 
         /*if (name === 'enable') {
@@ -70,8 +87,8 @@ export class ContentSelector extends LayoutGridItem(OptionControl(GridControl)) 
         }
         this.header.append(this.tablist);
 
-        this._headerCell = this.el.addCell(0, 0, this.header);
-        this._headerCell.setStretchFactor(1);
+        let _headerCell = this.el.addCell(0, 0, this.header);
+        _headerCell.setStretchFactor(1);
 
         this.populateTabs();
         this.updateDisplayValue();
@@ -91,12 +108,12 @@ export class ContentSelector extends LayoutGridItem(OptionControl(GridControl)) 
         this._body = body;
         body.el.classList.add("silky-control-body");
         let data = body.renderToGrid(this.el, 1, 0, this);
-        this._bodyCell = data.cell;
-        this._bodyCell.setVisibility(true);
+        let _bodyCell = data.cell;
+        _bodyCell.setVisibility(true);
         return data.cell;
     }
 
-    onOptionValueChanged(key, data) {
+    override onOptionValueChanged(key, data) {
         super.onOptionValueChanged(key, data);
         this.updateDisplayValue();
     }
@@ -149,7 +166,8 @@ export class ContentSelector extends LayoutGridItem(OptionControl(GridControl)) 
             switch (form) {
                 case 'radio':
                     let element = this.tablist.querySelector<HTMLInputElement>(`[value=${value}]`);
-                    element.checked = true;
+                    if (element)
+                        element.checked = true;
                     break;
                 case 'tabs':
 
@@ -158,7 +176,8 @@ export class ContentSelector extends LayoutGridItem(OptionControl(GridControl)) 
                         el.classList.remove('selected-tab');
                     });
                     let tab = this.tablist.querySelector<HTMLInputElement>(`[value=${value}]`);
-                    tab.classList.add('selected-tab');
+                    if (tab)
+                        tab.classList.add('selected-tab');
                     break;
                 default:
                     if (this.tablist instanceof HTMLInputElement)

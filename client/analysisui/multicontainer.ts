@@ -1,12 +1,17 @@
 'use strict';
 
 
-import GridControl from './gridcontrol';
+import GridControl, { GridControlProperties } from './gridcontrol';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { ControlContainer } from './controlcontainer';
 
-export class MultiContainer extends GridControl {
+export class MultiContainer extends GridControl<GridControlProperties> {
  
-    constructor(params, containers) {
+    _containers: ControlContainer[];
+    _namedContainers: { [name: string ]: ControlContainer };
+    _visibleContainer: ControlContainer;
+
+    constructor(params: GridControlProperties, containers: ControlContainer[]) {
         super(params);
 
         this._containers = containers;
@@ -23,7 +28,7 @@ export class MultiContainer extends GridControl {
 
         this._visibleContainer = null;
 
-        this.el = HTML.parse('<div class="jmv-multi-container"></div>');
+        this.setRootElement(HTML.parse('<div class="jmv-multi-container"></div>'));
     }
 
     createItem() {

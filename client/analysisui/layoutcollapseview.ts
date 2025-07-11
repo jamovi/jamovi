@@ -2,25 +2,50 @@
 'use strict';
 
 
-import { LayoutGridItem } from './layoutgrid';
-import GridControl from './gridcontrol';
+import LayoutGrid from './layoutgrid';
+import GridControl, { GridControlProperties } from './gridcontrol';
 import MultiContainer from './multicontainer';
 import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import LayoutCell from './layoutcell';
 
-export class LayoutCollapseView extends LayoutGridItem(GridControl) {
+export type CollapseViewProperties = GridControlProperties & {
+    collapsed: boolean;
+    label: string;
+    stretchFactor: number;
+}
+
+export class LayoutCollapseView<P extends CollapseViewProperties> extends GridControl<P> {
     header: HTMLElement;
     _body: MultiContainer;
+    _collapsed: boolean;
+    labelId: string;
+    _bodyCell: LayoutCell;
+    declare _el: LayoutGrid;
 
-    constructor(params) {
+    constructor(params: P) {
         super(params);
 
         this._collapsed = this.getPropertyValue('collapsed');
 
         this._body = null;
+
+        this.setRootElement(new LayoutGrid());
     }
 
-    protected registerProperties(properties) {
+    override get el() {
+        return this._el;
+    }
+
+    getLabelId() {
+        let labelId = this.labelId;
+        if (labelId)
+            return labelId;
+
+        return null;
+    }
+
+    protected override registerProperties(properties: P) {
         super.registerProperties(properties);
         this.registerSimpleProperty("collapsed", false);
         this.registerSimpleProperty("label", null);
@@ -43,8 +68,8 @@ export class LayoutCollapseView extends LayoutGridItem(GridControl) {
             this.header.classList.add('silky-gridlayout-collapsed');
         }
 
-        this._headerCell = this.el.addCell(0, 0, this.header);
-        this._headerCell.setStretchFactor(1);
+        let _headerCell = this.el.addCell(0, 0, this.header);
+        _headerCell.setStretchFactor(1);
 
         this.header.addEventListener('click', (event) => {
             this.toggleColapsedState();
@@ -67,7 +92,7 @@ export class LayoutCollapseView extends LayoutGridItem(GridControl) {
         let data = body.renderToGrid(this.el, 1, 0, this);
         this._bodyCell = data.cell;
         this._bodyCell.setVisibility(this._collapsed === false, true);
-        body.el.setAttribute('aria-hidden', this._collapsed);
+        body.el.setAttribute('aria-hidden', this._collapsed.toString());
         return data.cell;
     }
 
@@ -85,7 +110,7 @@ export class LayoutCollapseView extends LayoutGridItem(GridControl) {
         this.header.setAttribute('aria-expanded', 'false');
     }
 
-    setContentVisibility(visible) {
+    setContentVisibility(visible: boolean) {
         this._bodyCell.setVisibility(visible);
     }
 

@@ -1,25 +1,37 @@
-'use strict';
 
-const underscore = require('underscore');
-const backbone = require('backbone');
-const LayoutAction = require('./layoutaction');
-const SuperClass = require('../common/superclass');
+import LayoutAction from './layoutaction';
 
-const LayoutActionManager = function(view) {
+export class LayoutActionManager {
+    constructor(view) {
 
-    this._view = view;
-    this._actions = [];
-    this._directActions = { };
-    this._resources = { };
-    this._executingActions = 0;
-    this._initializingData = 0;
-    this._initialised = false;
+        this._view = view;
+        this._actions = [];
+        this._directActions = { };
+        this._resources = { };
+        this._executingActions = 0;
+        this._initializingData = 0;
+        this._initialised = false;
 
-    this.beginInitializingData = function() {
+        this._bindingActions = {};
+        if (Array.isArray(this._view.events)) {
+            for (let i = 0; i < this._view.events.length; i++) {
+                let action = this._view.events[i];
+                if ((typeof action.execute === 'function') === false)
+                    throw "An action must contain an execute function.";
+
+                if (action.onChange === undefined && action.onEvent === undefined)
+                    throw "An action must contain an onChange or onEvent property.";
+
+                this.addAction(action);
+            }
+        }
+    }
+
+    beginInitializingData() {
         this._initializingData += 1;
-    };
+    }
 
-    this.endInitializingData = function() {
+    endInitializingData() {
         if (this._initializingData === 0)
             return;
 
@@ -34,27 +46,29 @@ const LayoutActionManager = function(view) {
         //Hence the executeBindingActions function is called when data initialising has ended to update their post initializing state.
         if (this._initializingData === 0)
             this.executeBindingActions();
-    };
+    }
 
-    this.initializingData = function() {
+    initializingData() {
         return this._initializingData !== 0;
-    };
+    }
 
-    this._executeStarted = function(action) {
+    _executeStarted(action) {
         this._executingActions += 1;
         if (this._executingActions === 1) {
             this.onExecutingStateChanged(true);
         }
-    };
+    }
 
-    this._executeEnded = function(action) {
+    _executeEnded(action) {
         this._executingActions -= 1;
         if (this._executingActions === 0) {
             this.onExecutingStateChanged(false);
         }
-    };
+    }
 
-    this.bindActionParams = function(target, targetProperty, bindData) {
+    onExecutingStateChanged?(state: boolean): void;
+
+    bindActionParams(target, targetProperty, bindData) {
         return {
             onChange: bindData.sourceNames,
             execute: (ui) => {
@@ -64,9 +78,9 @@ const LayoutActionManager = function(view) {
                 target.setPropertyValue(targetProperty, value);
             }
         };
-    };
+    }
 
-    this._resolveBindCode = function(syntax, startIndex) {
+    _resolveBindCode(syntax, startIndex) {
         let start = startIndex+1;
         let open = 1;
         let end = -1;
@@ -98,9 +112,9 @@ const LayoutActionManager = function(view) {
             endIndex: end === -1 ? syntax.length - 1 : end,
             sourceNames: sourceNames
         };
-    };
+    }
 
-    this._resolveBindPart = function(syntax, startIndex) {
+    _resolveBindPart(syntax, startIndex) {
 
         let sourceName = null;
         let compareValue = null;
@@ -186,9 +200,9 @@ const LayoutActionManager = function(view) {
             endIndex: endIndex,
             sourceNames: sourceNames
         };
-    };
+    }
 
-    this._arrayUnique = function(array) {
+    _arrayUnique(array) {
         let a = array.concat();
         for(let i=0; i< a.length; ++i) {
             for(let j=i+1; j< a.length; ++j) {
@@ -198,17 +212,17 @@ const LayoutActionManager = function(view) {
         }
 
         return a;
-    };
+    }
 
-    this._nextNonWhiteChar = function(syntax, index) {
+    _nextNonWhiteChar(syntax, index) {
         for (let i = index; i < syntax.length; i++) {
             if (/\s/.test(syntax[i]) === false)
                 return i;
         }
         return -1;
-    };
+    }
 
-    this._resolveBinding = function(syntax, startIndex) {
+    _resolveBinding(syntax, startIndex) {
 
         let parts = [];
 
@@ -298,10 +312,9 @@ const LayoutActionManager = function(view) {
         };
 
         return { startIndex: startIndex, endIndex: endIndex, bindFunction: logicFunction, sourceNames: sourceNames, inverted: inverted };
-    };
+    }
 
-    this._bindingActions = {};
-    this.bindingsToActions = function() {
+    bindingsToActions() {
         for (let resourceId in this._resources) {
             let res = this._resources[resourceId];
             if (res.properties !== undefined) {
@@ -316,9 +329,9 @@ const LayoutActionManager = function(view) {
                 }
             }
         }
-    };
+    }
 
-    this.executeBindingActions = function() {
+    executeBindingActions() {
         for (let resourceId in this._bindingActions) {
             let list = this._bindingActions[resourceId];
             for (let i = 0; i < list.length; i++) {
@@ -326,16 +339,16 @@ const LayoutActionManager = function(view) {
                 action.execute(this._resources);
             }
         }
-    };
+    }
 
-    this.addAction = function(params) {
+    addAction(params) {
         let action = new LayoutAction(this, params);
         this._actions.push(action);
         if (this._initialised)
             action.initialize();
-    };
+    }
 
-    this.addDirectAction = function(resourceId, params, isBinding) {
+    addDirectAction(resourceId, params, isBinding) {
         if (this._directActions[resourceId] === undefined)
             this._directActions[resourceId] = [];
 
@@ -350,9 +363,9 @@ const LayoutActionManager = function(view) {
 
         if (this._initialised)
             action.initialize();
-    };
+    }
 
-    this.removeDirectActions = function(resourceId) {
+    removeDirectActions(resourceId) {
         let actions = this._directActions[resourceId];
         if (actions === undefined)
             return;
@@ -365,9 +378,9 @@ const LayoutActionManager = function(view) {
         delete this._directActions[resourceId];
         if (this._bindingActions[resourceId] !== undefined)
             delete this._bindingActions[resourceId];
-    };
+    }
 
-    this.addResource = function(name, resource) {
+    addResource(name, resource) {
         let resId = null;
         if (name === null && resource.hasProperty && resource.hasProperty('controlID'))
             resId = resource.getPropertyValue('controlID');
@@ -410,7 +423,7 @@ const LayoutActionManager = function(view) {
                 let params = JSON.parse(JSON.stringify(events[i]));
                 params.execute = execute;
 
-                if (underscore.isFunction(params.execute) === false)
+                if ((typeof params.execute === 'function') === false)
                     throw "An action must contain an execute function.";
 
                 if (params.onChange === undefined && params.onEvent === undefined)
@@ -464,9 +477,9 @@ const LayoutActionManager = function(view) {
         }
 
         return useId;
-    };
+    }
 
-    this.removeResource = function(resourceId) {
+    removeResource(resourceId) {
         this.removeDirectActions(resourceId);
         delete this._resources[resourceId];
 
@@ -482,22 +495,21 @@ const LayoutActionManager = function(view) {
                 }
             }
         }
-    };
+    }
 
-
-    this.exists = function(resourceId) {
+    exists(resourceId) {
         return this._resources[resourceId] !== undefined;
-    };
+    }
 
-    this.getObject = function(resourceId) {
+    getObject(resourceId) {
         let obj = this._resources[resourceId];
         if (obj === undefined)
             throw "UI Object '" + resourceId + "' does not exist and cannot be accessed.";
 
         return obj;
-    };
+    }
 
-    this.fireCreateEvents = function(panel) {
+    fireCreateEvents(panel) {
         for (let action of this._actions) {
             if (action.hasEventName('creating'))
                 action.execute();
@@ -514,9 +526,9 @@ const LayoutActionManager = function(view) {
 
         if (this._view.creating)
             this._view.creating.call(this._view.getContext(), this._resources, { sender: panel, eventName: 'creating' });
-    };
+    }
 
-    this.initializeAll = function() {
+    initializeAll() {
         this.bindingsToActions();
 
         for (let action of this._actions)
@@ -531,9 +543,9 @@ const LayoutActionManager = function(view) {
         }
 
         this._initialised = true;
-    };
+    }
 
-    this.close = function() {
+    close() {
         for (let action of this._actions)
             action.close();
 
@@ -548,25 +560,7 @@ const LayoutActionManager = function(view) {
         this._directActions = { };
 
         this._resources = { };
-    };
-
-
-    if (Array.isArray(this._view.events)) {
-        for (let i = 0; i < this._view.events.length; i++) {
-            let action = this._view.events[i];
-            if (underscore.isFunction(action.execute) === false)
-                throw "An action must contain an execute function.";
-
-            if (action.onChange === undefined && action.onEvent === undefined)
-                throw "An action must contain an onChange or onEvent property.";
-
-            this.addAction(action);
-        }
     }
+}
 
-
-};
-
-SuperClass.create(LayoutActionManager);
-
-module.exports = LayoutActionManager;
+export default LayoutActionManager;

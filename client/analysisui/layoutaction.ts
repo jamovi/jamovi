@@ -1,32 +1,58 @@
 'use strict';
 
-const LayoutActionResource = require('./layoutactionresource');
-const SuperClass = require('../common/superclass');
+import LayoutActionManager from './layoutactionmanager';
+import LayoutActionResource from './layoutactionresource';
 
-const LayoutAction = function(manager, params) {
+interface EventObj {
+    name: string;
+    property: string;
+    eventName: string;
+    supplier: any;
+    connected: boolean;
+    execute?: (...args: any[]) => void;
+}
 
-    this._callback = params.execute;
+export class LayoutAction {
+    _manager: LayoutActionManager;
+    _callback: (a: any, b: any, ...args: any[]) => void;
+    _propertyListeners: EventObj[];
+    _listeners: EventObj[];
+    _resources: { [name: string]: LayoutActionResource };
 
-    this._manager = manager;
-    this.data = { };
+    constructor(manager: LayoutActionManager, params) {
 
-    this._resources = { };
-    this._listeners = [];
-    this._propertyListeners = [];
+        this._callback = params.execute;
 
-    this.execute = (param1, param2, param3, param4, param5, param6, param7) => {
+        this._manager = manager;
+
+        this._resources = { };
+        this._listeners = [];
+        this._propertyListeners = [];
+
+        let eventListeners = params.onEvent;
+        if (params.onEvent !== undefined && Array.isArray(eventListeners) === false)
+            eventListeners = [ eventListeners ];
+
+        let propertyListeners = params.onChange;
+        if (params.onChange !== undefined && Array.isArray(propertyListeners) === false)
+            propertyListeners = [ propertyListeners ];
+
+        this._connectToListeners(eventListeners, propertyListeners);
+    }
+
+    execute(...args: any[]) {
         if (this._manager.initializingData())
             return;
 
         this._manager._executeStarted(this);
-        this._callback.call(this._manager._view.getContext(), this._manager._resources, param1, param2, param3, param4, param5, param6, param7);
+        this._callback.call(this._manager._view.getContext(), this._manager._resources, ...args);
         this._manager._executeEnded(this);
-    };
+    }
 
-    this._connectToListeners = function(eventListeners, propertyListeners) {
+    _connectToListeners(eventListeners, propertyListeners) {
         let q = null;
         let name = null;
-        let eventObj = null;
+        let eventObj: EventObj = null;
         if (propertyListeners !== undefined) {
             for (let i = 0; i < propertyListeners.length; i++) {
                 q = propertyListeners[i].split(".");
@@ -69,18 +95,18 @@ const LayoutAction = function(manager, params) {
                 this._listeners.push(eventObj);
             }
         }
-    };
+    }
 
-    this.hasEventName = function(eventName) {
+    hasEventName(eventName: string): boolean {
         for (let obj of this._listeners) {
             if (obj.eventName === eventName) {
                 return true;
             }
         }
         return false;
-    };
+    }
 
-    this.initialize = function() {
+    initialize() {
         for (let eventObj of this._listeners) {
             if (eventObj.connected === false) {
                 let supplier = this._manager.getObject(eventObj.name);
@@ -92,20 +118,23 @@ const LayoutAction = function(manager, params) {
                 eventObj.supplier.on(eventObj.eventName, eventObj.execute);
             }
         }
-    };
+    }
 
-    this._createExecute = function(sender, eventName) {
-        return (param1, param2, param3, param4, param5, param6, param7) => {
-            if (param1 !== undefined)
-                Object.assign(param1, { sender: sender, eventName: eventName });
+    _createExecute(sender, eventName) {
+        return (...args: any[]) => {
+            if (args === undefined)
+                args = [];
+
+            if (args[0] !== undefined)
+                Object.assign(args[0], { sender: sender, eventName: eventName });
             else
-                param1 = { sender: sender, eventName: eventName };
+                args[0] = { sender: sender, eventName: eventName };
 
-            this.execute(param1, param2, param3, param4, param5, param6, param7);
+            this.execute(...args);
         };
-    };
+    }
 
-    this.tryConnectTo = function(name, supplier) {
+    tryConnectTo(name, supplier) {
         let found = false;
         for (let eventObj of this._listeners) {
             if (eventObj.name === name && eventObj.connected === false) {
@@ -119,9 +148,9 @@ const LayoutAction = function(manager, params) {
             }
         }
         return found;
-    };
+    }
 
-    this.disconnectFrom = function(supplier) {
+    disconnectFrom(supplier) {
         for (let eventObj of this._listeners) {
             if (eventObj.supplier === supplier) {
                 if (eventObj.connected) {
@@ -133,9 +162,9 @@ const LayoutAction = function(manager, params) {
                 }
             }
         }
-    };
+    }
 
-    this.close = function() {
+    close() {
         for (let eventObj of this._listeners) {
             if (eventObj.connected) {
                 eventObj.supplier.off(eventObj.eventName, eventObj.execute);
@@ -145,9 +174,9 @@ const LayoutAction = function(manager, params) {
                 eventObj.connected = false;
             }
         }
-    };
+    }
 
-    this.get = function(name, property) {
+    get(name: string, property?: string): LayoutActionResource {
         let actionResource = this._resources[name];
         if (actionResource === undefined) {
             let supplier = this._manager.getObject(name);
@@ -159,33 +188,21 @@ const LayoutAction = function(manager, params) {
             return actionResource.get(property);
 
         return actionResource;
-    };
+    }
 
-    this.set = function(name, property, value) {
+    set(name: string, property: string, value) {
         let obj = this.get(name);
         obj.set(property, value);
-    };
+    }
 
-    this.setValue = function(name, value) {
+    setValue(name: string, value) {
         this.set(name, "value", value);
-    };
+    }
 
-    this.getValue = function(name) {
+    getValue(name: string) {
         return this.get(name, "value");
-    };
+    }
 
-    let eventListeners = params.onEvent;
-    if (params.onEvent !== undefined && Array.isArray(eventListeners) === false)
-        eventListeners = [ eventListeners ];
+}
 
-    let propertyListeners = params.onChange;
-    if (params.onChange !== undefined && Array.isArray(propertyListeners) === false)
-        propertyListeners = [ propertyListeners ];
-
-    this._connectToListeners(eventListeners, propertyListeners);
-
-};
-
-SuperClass.create(LayoutAction);
-
-module.exports = LayoutAction;
+export default LayoutAction;

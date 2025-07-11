@@ -1175,7 +1175,6 @@ export class BackstageModel extends EventMap<IBackstageModel> {
 export class BackstageView  extends EventDistributor {
     //className: 'backstage',
     model: BackstageModel;
-    //el: HTMLElement;
     main: BackstageChoices;
     ops: NodeListOf<HTMLElement>;
     opPanel: HTMLElement;

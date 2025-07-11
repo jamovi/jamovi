@@ -1,33 +1,31 @@
 'use strict';
 
+import { CtrlDef } from './optionsview';
 import { PropertySupplier } from './propertysupplier';
 
-type Constructor<T = {}> = new (...params: any[]) => T;
-export function I18nSupport<TBase extends Constructor<PropertySupplier>>(Base: TBase) {
-    return class extends Base {
+export class I18nSupport<P extends CtrlDef> extends PropertySupplier<P> {
         
-        _i18nSource: { translate: (key: string) => string };
-        
-        constructor(...args: any[]) {
-            super(args[0])
+    _i18nSource: { translate: (key: string) => string };
+    
+    constructor(params: P) {
+        super(params)
 
-            this._i18nSource = null;
-        }
+        this._i18nSource = null;
+    }
 
-        onI18nChanged?(): void;
+    onI18nChanged?(): void;
 
-        setI18nSource(supplier: { translate: (key: string) => string }) {
-            this._i18nSource = supplier;
-            if (this.onI18nChanged)
-                this.onI18nChanged();
-        }
+    setI18nSource(supplier: { translate: (key: string) => string }) {
+        this._i18nSource = supplier;
+        if (this.onI18nChanged)
+            this.onI18nChanged();
+    }
 
-        translate(key: string) : string {
-            if (this._i18nSource === null)
-                return key;
+    translate(key: string) : string {
+        if (this._i18nSource === null)
+            return key;
 
-            return this._i18nSource.translate(key);
-        }
+        return this._i18nSource.translate(key);
     }
 }
 

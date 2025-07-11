@@ -1,7 +1,7 @@
 
 'use strict';
 
-const EnumPropertyFilter = require('./enumpropertyfilter');
+import EnumPropertyFilter from './enumpropertyfilter';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 const get = function(parent) {
@@ -17,9 +17,16 @@ const get = function(parent) {
     return el;
 };
 
+enum Position {
+    Left = "left",
+    Right = "right",
+    Above = "above",
+    Below = "below"
+}
+
 const addSupport = function(parent) {
     parent.registerSimpleProperty("icons", null);
-    parent.registerSimpleProperty("iconPosition", "right", new EnumPropertyFilter(["left", "right", "above", "below"], "right"));
+    parent.registerSimpleProperty("iconPosition", Position.Right, new EnumPropertyFilter(Position, Position.Right));
 };
 
 const exists = function(parent) {
@@ -30,4 +37,4 @@ const position = function(parent) {
     return parent.getPropertyValue('iconPosition');
 };
 
-module.exports = { get, exists, position, addSupport };
+export default { get, exists, position, addSupport };

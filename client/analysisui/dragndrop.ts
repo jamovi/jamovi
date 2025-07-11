@@ -1,44 +1,45 @@
 'use strict';
 
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { FormattedValue } from './formatdef';
 
-type TargetInfo =  {
-    target: IDragDropTarget, 
-    subTargetInfo: TargetInfo,
-    endTarget: TargetInfo,
+type TargetInfo<T> =  {
+    target: IDragDropTarget<T>, 
+    subTargetInfo: TargetInfo<T>,
+    endTarget: TargetInfo<T>,
     x: { min: number, max: number },
     y: { min: number, max: number }
 };
 
-export interface IItem {
-    value: any;
+export interface IItem<T> {
+    value: FormattedValue<T>;
     properties: any;
     el: HTMLElement;
 }
 
-export interface IPickupItem extends IItem { 
+export interface IPickupItem<T> extends IItem<T> { 
     cellInfo: any 
 }
 
-export interface IDragDropTarget { 
-    dragDropManager: DragNDrop;
+export interface IDragDropTarget<T> { 
+    dragDropManager: DragNDrop<T>;
     onDraggingLeave?: () => void;
     onDragDropStart?: () => void;
     onDragDropEnd?: () => void;
     onDraggingOver?: (posX: number, posY: number) => void;
-    onItemsDropping?: (items: IPickupItem[], intoSelf: boolean) => void;
-    hasSubDropTarget?: (xpos: number, ypos: number) => IDragDropTarget;
+    onItemsDropping?: (items: IPickupItem<T>[], intoSelf: boolean) => void;
+    hasSubDropTarget?: (xpos: number, ypos: number) => IDragDropTarget<T>;
 
     dropTargetElement: () => HTMLElement;
-    catchDroppedItems: (source: any, items: IPickupItem[], xpos?: number, ypos?: number) => void;
-    filterItemsForDrop: (items: IPickupItem[], from: IDragDropTarget, xpos?: number, ypos?: number) => any[]
-    getPickupItems: () => IItem[];
+    catchDroppedItems: (source: any, items: IPickupItem<T>[], xpos?: number, ypos?: number) => void;
+    filterItemsForDrop: (items: IPickupItem<T>[], from: IDragDropTarget<T>, xpos?: number, ypos?: number) => any[]
+    getPickupItems: () => IItem<T>[];
     isValidDropZone?: (posX: number, posY: number) => boolean;
-    inspectDraggedItems: (source: any, items: IPickupItem[]) => void;
-    itemCount?: (item: IItem) => number;
+    inspectDraggedItems: (source: any, items: IPickupItem<T>[]) => void;
+    itemCount?: (item: IItem<T>) => number;
 };
 
-export class DragNDrop {
+export class DragNDrop<T> {
     static _dropId = 0;
 
     _el: HTMLElement = null;
@@ -47,7 +48,7 @@ export class DragNDrop {
     //_ddParent: any = null;
     _itemsBeingDragged: any = null;
     _isDragging = false;
-    _currentTarget: TargetInfo = { 
+    _currentTarget: TargetInfo<T> = { 
         target: null, 
         subTargetInfo: null,
         endTarget: null,
@@ -57,11 +58,11 @@ export class DragNDrop {
     _dropId: any;
     _draggingLocked = false;
     _draggingOffset = { x: 0, y: 0 };
-    _dropTargets: IDragDropTarget[] = [];
+    _dropTargets: IDragDropTarget<T>[] = [];
 
-    _owner: IDragDropTarget = null;
+    _owner: IDragDropTarget<T> = null;
 
-    constructor(owner: IDragDropTarget) {
+    constructor(owner: IDragDropTarget<T>) {
 
         this._owner = owner;
 
@@ -88,7 +89,7 @@ export class DragNDrop {
         $source.removeEventListener('touchstart', this._ddTouchStart);
     }
 
-    public dropIntoTarget(target: IDragDropTarget, items, pageX, pageY) {
+    public dropIntoTarget(target: IDragDropTarget<T>, items, pageX, pageY) {
         let itemsToDrop = target.filterItemsForDrop(items, this._owner, pageX - this._currentTarget.endTarget.x.min, pageY - this._currentTarget.endTarget.y.min);
         if (itemsToDrop !== null && itemsToDrop.length !== 0) {
             if (target.onDragDropStart)
@@ -110,7 +111,7 @@ export class DragNDrop {
         }
     }
 
-    public registerDropTargets(target: IDragDropTarget) {
+    public registerDropTargets(target: IDragDropTarget<T>) {
         this._dropTargets.push(target);
 
         let callBack = (event) => { this._mouseEnterDropTarget(event, target); };
@@ -120,7 +121,7 @@ export class DragNDrop {
         target.dropTargetElement().addEventListener('mouseleave', this._mouseLeaveDropTarget);
     }
 
-    public unregisterDropTargets(target: IDragDropTarget) {
+    public unregisterDropTargets(target: IDragDropTarget<T>) {
         const index = this._dropTargets.indexOf(target);
         if (index > -1)
             this._dropTargets.splice(index, 1);
@@ -282,7 +283,7 @@ export class DragNDrop {
 
     private fireDragging(pageX, pageY) {
         let targetInfo = this._currentTarget;
-        let target: IDragDropTarget = null;
+        let target: IDragDropTarget<T> = null;
         while (targetInfo !== null) {
             if (this._stillOverTarget(targetInfo, pageX, pageY)) {
                 target = targetInfo.target;
@@ -297,7 +298,7 @@ export class DragNDrop {
         return target;
     }
 
-    private getTarget(target: IDragDropTarget, pageX, pageY) {
+    private getTarget(target: IDragDropTarget<T>, pageX, pageY) {
 
         let finalTarget = target;
         if (target !== null && target.hasSubDropTarget) {
@@ -338,7 +339,7 @@ export class DragNDrop {
         this._itemsBeingDragged = null;
     }
 
-    private _stillOverTarget(targetInfo: TargetInfo, pageX, pageY) {
+    private _stillOverTarget(targetInfo: TargetInfo<T>, pageX, pageY) {
         if (targetInfo.target === null)
             return false;
 
@@ -349,7 +350,7 @@ export class DragNDrop {
         return isOver && (!targetInfo.target.isValidDropZone || targetInfo.target.isValidDropZone(pageX, pageY));
     }
 
-    private _mouseEnterDropTarget(event, target: IDragDropTarget) {
+    private _mouseEnterDropTarget(event, target: IDragDropTarget<T>) {
         this.setOverTarget(target, event.pageX, event.pageY);
     }
 
@@ -362,7 +363,7 @@ export class DragNDrop {
         }
     }
 
-    private setOverTarget(target: IDragDropTarget, pageX=0, pageY=0) {
+    private setOverTarget(target: IDragDropTarget<T>, pageX=0, pageY=0) {
 
         if (this._isDragging)
             target.inspectDraggedItems(this, this._itemsBeingDragged);

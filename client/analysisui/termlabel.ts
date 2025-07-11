@@ -1,25 +1,32 @@
 'use strict';
 
-import { TitledOptionControl } from './optioncontrol';
-const RequestDataSupport = require('./requestdatasupport');
-import { FormatDef } from './formatdef';
+import OptionControl, { GridOptionControlProperties } from './optioncontrol';
+import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
+import { FormatDef, TermFormat } from './formatdef';
 import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
-export class TermLabel extends TitledOptionControl {
-    label: HTMLElement;
+export type TermLabelProperties = GridOptionControlProperties<string[]> & {
+    format: TermFormat;
+}
 
-    constructor(params) {
+export class TermLabel extends OptionControl<TermLabelProperties> {
+    label: HTMLElement;
+    _format: TermFormat;
+    dataSupport: RequestDataSupport;
+    _updateCount: number;
+
+    constructor(params: TermLabelProperties) {
         super(params);
 
-        RequestDataSupport.extendTo(this);
+        this.dataSupport = GetRequestDataSupport(this);
 
-        this.el = HTML.parse('<div style="white-space: nowrap;" class="silky-list-item silky-format-term"></div>');
+        this.setRootElement(HTML.parse('<div style="white-space: nowrap;" class="silky-list-item silky-format-term"></div>'));
 
         this._format = this.getPropertyValue('format');
     }
 
-    protected registerProperties(properties) {
+    protected override registerProperties(properties) {
         super.registerProperties(properties);
 
         this.registerSimpleProperty('format', FormatDef.term);
@@ -45,7 +52,7 @@ export class TermLabel extends TitledOptionControl {
         this._updateCount = 0;
     }
 
-    onOptionValueChanged(key, data) {
+    override onOptionValueChanged(key, data) {
         super.onOptionValueChanged(key, data);
         if (this.label) {
             let value = this.getValue();
@@ -68,7 +75,7 @@ export class TermLabel extends TitledOptionControl {
         }
     }
 
-    updateView(columnNames) {
+    updateView(columnNames: string[]) {
         let promises = [];
         let count = 0;
         let columnFound = true;
@@ -90,7 +97,7 @@ export class TermLabel extends TitledOptionControl {
         };
         for (let i = 0; i < columnNames.length; i++) {
             let columnName = columnNames[i];
-            let promise = this.requestData('column', { columnName: columnName, properties: [ 'measureType' ], requestId: this._updateCount });
+            let promise = this.dataSupport.requestData('column', { columnName: columnName, properties: [ 'measureType' ], requestId: this._updateCount });
             promise.then(process);
         }
     }

@@ -2,14 +2,14 @@
 'use strict';
 
 import Format from './format';
-import { FormatDef, FormattedValue, Variable } from './formatdef';
-const SuperClass = require('../common/superclass');
-const RequestDataSupport = require('./requestdatasupport');
-const EventEmitter = require('events');
+import { FormatDef, FormattedValue, VariableFormat } from './formatdef';
+import SuperClass from '../common/superclass';
+import GetRequestDataSupport from './requestdatasupport';
+import { EventEmitter } from 'events';
 
 function View() {
 
-    RequestDataSupport.extendTo(this);
+    GetRequestDataSupport(this);
     EventEmitter.call(this);
     Object.assign(this, EventEmitter.prototype);
 
@@ -427,7 +427,7 @@ function View() {
         let list = [];
         for (let i = 0; i < values.length; i++) {
             let value = values[i];
-            if (format instanceof Variable && Array.isArray(value))
+            if (format instanceof VariableFormat && Array.isArray(value))
                 list.push({ value: new FormattedValue<string>(value[0], format), properties: { power: value.length } });
             else
                 list.push({ value: new FormattedValue<T>(value, format) });
@@ -545,4 +545,4 @@ View.extend = function(params) {
     };
 };
 
-module.exports = View;
+export default View;

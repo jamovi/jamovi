@@ -1,19 +1,24 @@
 
 'use strict';
 
+import GridControl, { GridControlProperties } from './gridcontrol';
 import LayoutCell, { ICellProperties, ICellContentsItem } from './layoutcell';
 
+type Constructor<T = {}> = new (...params: any[]) => T;
 
-type Constructor = new (...args: any[]) => any;
-const BaseClass = class {};
-export function LayoutGridItem<TBase extends Constructor = typeof BaseClass, TGrid extends new () => any = typeof LayoutGrid>(Base: TBase = BaseClass as TBase, Grid: TGrid = LayoutGrid as TGrid) {
+export function LayoutControl<P extends GridControlProperties, TBase extends Constructor<InstanceType<typeof GridControl<P>>>, TGrid extends new () => LayoutGrid = typeof LayoutGrid>(Base: TBase, Grid: TGrid = LayoutGrid as TGrid) {
     return class extends Base {
-        el: InstanceType<TGrid>;
+
+        declare _el: InstanceType<TGrid>;
 
         constructor(...args: any[]) {
             super(args[0]);
 
-            this.el = new Grid();
+            this.setRootElement(new Grid());
+        }
+
+        override get el() {
+            return this._el;
         }
     }
 }

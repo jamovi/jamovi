@@ -2,26 +2,21 @@
 
 import { IPropertyFilter } from "./propertysupplier";
 
-export class EnumArrayPropertyFilter implements IPropertyFilter<Array<string>> {
-    legalValues: Array<string>;
+export class EnumArrayPropertyFilter<T extends Record<string, string | number>> implements IPropertyFilter<Array<T[keyof T]>> {
+    legalValues: T;
 
-    constructor(legalValues: Array<string>) {
+    constructor(legalValues: T) {
 
         this.legalValues = legalValues;
     }
 
-    check(value: Array<string>) : Array<string> {
+    check(value: Array<T[keyof T]>) : Array<T[keyof T]> {
 
         var checkedList = [];
 
         for (var j = 0; j < value.length; j++) {
-            for (var i = 0; i < this.legalValues.length; i++)
-            {
-                if (value[j] === this.legalValues[i]) {
-                    checkedList.push(value[j]);
-                    break;
-                }
-            }
+            if (Object.values(this.legalValues).includes(value[j]))
+                checkedList.push(value[j]);
         }
 
         return checkedList;
