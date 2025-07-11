@@ -3,7 +3,7 @@
 
 // determine the number of decimal places that the column needs to be formatted to
 
-const determFormat = function(values, type, format, settings, maxNS, minNS) {
+export const determFormat = function(values, type, format, settings, maxNS, minNS) {
 
     if (format === undefined)
         format = '';
@@ -111,7 +111,7 @@ const determFormat = function(values, type, format, settings, maxNS, minNS) {
     return { dp, expw, format, sf, maxNS, minNS, t, lz };
 };
 
-let format = function(value, format) {
+export const format = function(value, format) {
 
     if (isNaN(value)) {
         return 'NaN';
@@ -158,5 +158,3 @@ let format = function(value, format) {
     }
 
 };
-
-export default { determFormat: determFormat, format: format };

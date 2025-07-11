@@ -1,24 +1,24 @@
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
-const Tracker = require('./itemtracker');
+import Tracker from './itemtracker';
 import focusLoop from '../common/focusloop';
 
-const b64 = require('../common/utils/b64');
-const { contextMenuListener } = require('../common/utils');
+import b64 from '../common/utils/b64';
+import { contextMenuListener } from '../common/utils';
 
-require('./refs');
+import './refs';
 
-const ElementModel = Backbone.Model.extend({
+export const Model = Backbone.Model.extend({
     defaults: {
         refs: [ ],
         refTable: null,
     },
 });
 
-const ElementView = Backbone.View.extend({
+export const View = Backbone.View.extend({
     initialize(data, interalFocus) {
 
         this.layout = new Tracker();
@@ -172,4 +172,4 @@ const ElementView = Backbone.View.extend({
     }
 });
 
-module.exports = { View: ElementView, Model: ElementModel };
+export default { View, Model };

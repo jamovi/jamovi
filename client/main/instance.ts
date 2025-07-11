@@ -4,10 +4,10 @@
 
 'use strict';
 
-const path = require('path');
+import path from 'path';
 
-const host = require('./host');
-const Notify = require('./notification');
+import host from './host';
+import Notify from './notification';
 
 const Analyses = require('./analyses');
 const DataSetViewModel = require('./dataset');
@@ -18,7 +18,7 @@ const I18n = require('../common/i18n');
 const Settings = require('./settings');
 import ProgressStream from './utils/progressstream';
 
-const { flatten, unflatten } = require('../common/utils/addresses');
+import { flatten, unflatten } from '../common/utils/addresses';
 
 import { UserFacingError } from './errors';
 import { CancelledError } from './errors';

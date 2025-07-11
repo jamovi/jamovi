@@ -1,10 +1,10 @@
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
-const Elem = require('./element');
+import Elem from './element';
 
 import i18n from '../common/i18n';
 
