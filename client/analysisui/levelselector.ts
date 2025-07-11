@@ -1,33 +1,38 @@
 'use strict';
 
-const RequestDataSupport = require('./requestdatasupport');
-import { FormatDef } from './formatdef';
+import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
+import { FormatDef, StringFormat } from './formatdef';
 import _focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import type LayoutGrid from './layoutgrid';
 import { VerticalAlignment } from './layoutcell';
-import { TitledOptionControl } from './optioncontrol';
+import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 
-export class LevelSelector extends TitledOptionControl {
+export type LevelSelectorProperties = GridOptionControlProperties<string> & {
+    allowNone: boolean;
+    variable: string;
+    defaultLevelIndex: number;
+    format: StringFormat;
+}
 
-    label: HTMLElement;
+export class LevelSelector extends OptionControl<LevelSelectorProperties> {
+
+    label: HTMLElement = null;
     input: HTMLSelectElement;
+    dataSupport: RequestDataSupport;
+    levels = [];
+    enabled = true;
+    none = '- None -';
 
-    constructor(params) {
+    constructor(params: LevelSelectorProperties) {
         super(params);
 
-        RequestDataSupport.extendTo(this);
+        this.dataSupport = GetRequestDataSupport(this);
 
-        this.$icon = null;
-        this.label = null;
-        this.el = HTML.parse('<div style="white-space: nowrap;" class="silky-list-item silky-format-string"></div>');
-    
-        this.levels = [];
-        this.enabled = true;
-        this.none = '- None -';
+        this.setRootElement(HTML.parse('<div style="white-space: nowrap;" class="silky-list-item silky-format-string"></div>'));
     }
 
-    protected registerProperties(properties) {
+    protected override registerProperties(properties) {
         super.registerProperties(properties);
 
         this.registerSimpleProperty('format', FormatDef.string);
@@ -36,7 +41,7 @@ export class LevelSelector extends TitledOptionControl {
         this.registerOptionProperty('allowNone');
     }
 
-    onPropertyChanged(name) {
+    override onPropertyChanged(name) {
         super.onPropertyChanged(name);
 
         if (name === 'variable') {
@@ -105,7 +110,7 @@ export class LevelSelector extends TitledOptionControl {
         if (allowNone === null)
             allowNone = false;
         let variable = this.getPropertyValue('variable');
-        let promise = this.requestData('column', { columnName: variable, properties: [ 'measureType', 'levels' ] });
+        let promise = this.dataSupport.requestData('column', { columnName: variable, properties: [ 'measureType', 'levels' ] });
         promise.then(rData => {
 
             if (this.isDisposed)
@@ -122,8 +127,8 @@ export class LevelSelector extends TitledOptionControl {
             if (this.label !== null)
                 this.label.classList.remove('disabled-text');
 
-            this.measureType = rData.measureType;
-            let enabled = this.enabled && this.measureType !== 'continuous';
+            let measureType = rData.measureType;
+            let enabled = this.enabled && measureType !== 'continuous';
 
             if (this.label !== null) {
                 if (enabled)
@@ -163,7 +168,7 @@ export class LevelSelector extends TitledOptionControl {
         });
     }
 
-    onOptionValueChanged(key, data) {
+    override onOptionValueChanged(key, data) {
         super.onOptionValueChanged(key, data);
         if (this.input)
             this._updateSelection();

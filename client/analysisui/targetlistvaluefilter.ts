@@ -1,35 +1,45 @@
 'use strict';
 
+import { FormattedValue } from "./formatdef";
+
 type FilterType = 'none' | 'unique' | 'uniquePerRow' | 'uniquePerColumn';
 
-export class TargetListValueFilter {
+type ICellValue<U> = {
+    rowIndex: number;
+    columnName: (string | number | symbol);
+    value: FormattedValue<U>;
+};
+type IRowInfo<R> = { [C in keyof R] : ICellValue<R[C]>}
 
-    _data: [] = [];
+export class TargetListValueFilter<R> {
 
-    addValue(value, rowIndex, columnName) {
-        var row = this._data[rowIndex];
+    _data: Partial<IRowInfo<R>>[] = [];
+
+    addValue<C extends keyof R>(value: FormattedValue<R[C]>, rowIndex: number, columnName: C): void {
+        let row: Partial<IRowInfo<R>> = this._data[rowIndex];
         if (row === undefined || row === null) {
             row = {};
             this._data[rowIndex] = row;
         }
 
-        var cell = row[columnName];
+        let cell: ICellValue<R[C]> = row[columnName];
         if (cell === undefined) {
-            cell = {};
+            cell = {rowIndex, columnName, value};
             row[columnName] = cell;
         }
-
-        cell.rowIndex = rowIndex;
-        cell.columnName = columnName;
-        cell.value = value;
+        else {
+            cell.rowIndex = rowIndex;
+            cell.columnName = columnName;
+            cell.value = value;
+        }
     }
 
-    insertRow(rowIndex, count) {
+    insertRow(rowIndex: number, count: number): void {
         for (let i = 0; i < count; i++)
             this._data.splice(rowIndex, 0, null);
     }
 
-    removeValue(rowIndex, columnName) {
+    removeValue<C extends keyof R>(rowIndex: number, columnName: C): void {
         let row = this._data[rowIndex];
         if (row === undefined)
             return;
@@ -37,15 +47,15 @@ export class TargetListValueFilter {
         delete row[columnName];
     }
 
-    clear() {
+    clear(): void {
         this._data = [];
     }
 
-    removeRow(rowIndex) {
+    removeRow(rowIndex: number): void {
         this._data.splice(rowIndex, 1);
     }
 
-    testValue(filterType: FilterType, value, rowIndex=null, columnName=null, silent=false) {
+    testValue<C extends keyof R>(filterType: FilterType, value: R[C], rowIndex: number=null, columnName:C=null, silent=false) {
         let filter = this['testValue_' + filterType];
         if (filter === undefined) {
             console.log('Unknown List Value Filter "' + filterType + '"');
@@ -54,15 +64,15 @@ export class TargetListValueFilter {
         return filter.call(this, value, rowIndex, columnName, silent);
     }
 
-    testValue_none(value, rowIndex, columnName) {
+    testValue_none<C extends keyof R>(value: FormattedValue<R[C]>, rowIndex: number, columnName: C) {
         return true;
     }
 
-    testValue_unique(value, rowIndex, columnName) {
-        for (var r = 0; r < this._data.length; r++) {
-            var row = this._data[r];
+    testValue_unique<C extends keyof R>(value: FormattedValue<R[C]>, rowIndex: number, columnName: C) {
+        for (let r = 0; r < this._data.length; r++) {
+            let row = this._data[r];
             for (let c in row) {
-                var cell = row[c];
+                let cell = row[c];
                 if (value.equalTo(cell.value))
                     return false;
             }
@@ -71,8 +81,8 @@ export class TargetListValueFilter {
         return true;
     }
 
-    testValue_uniquePerRow(value, rowIndex, columnName) {
-        if (rowIndex === 'null')
+    testValue_uniquePerRow<C extends keyof R>(value: FormattedValue<R[C]>, rowIndex: number, columnName: C) {
+        if (rowIndex === null)
             throw 'must have a rowIndex';
         var row = this._data[rowIndex];
         if (row === undefined)
@@ -87,7 +97,7 @@ export class TargetListValueFilter {
         return true;
     }
 
-    testValue_uniquePerColumn(value, rowIndex, columnName) {
+    testValue_uniquePerColumn<C extends keyof R>(value: FormattedValue<R[C]>, rowIndex: number, columnName: C) {
         if (columnName === 'null')
             throw 'must have a columnName';
 

@@ -1,25 +1,40 @@
 'use strict';
 
-import { TitledOptionControl } from './optioncontrol';
+import $ from 'jquery';  // for backwards compatibility
+
+import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import createChildLayoutSupport from './childlayoutsupport';
-import { FormatDef } from './formatdef';
-const Icons = require('./iconsupport');
+import { BooleanFormat, FormatDef } from './formatdef';
+import Icons from './iconsupport';
 import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
+export type GridCheckboxProperties = GridOptionControlProperties<boolean|string[]> & {
+    format: BooleanFormat;
+}
 
-export class GridCheckbox extends TitledOptionControl  {
+export class GridCheckbox extends OptionControl<GridCheckboxProperties, boolean>  {
     input: HTMLInputElement;
     label: HTMLElement;
     icons: HTMLElement;
     checkedValue: string;
 
-    static create(params) {
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.label: HTMLElement`.
+     */
+    $label: any;
+
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.input: HTMLElement`.
+     */
+    $input: any
+
+    static create(params: GridCheckboxProperties) {
         let classes = createChildLayoutSupport(params, GridCheckbox);
         return new classes(params);
     }
 
-    constructor(params) {
+    constructor(params: GridCheckboxProperties) {
         super(params);
 
         Icons.addSupport(this);
@@ -27,22 +42,22 @@ export class GridCheckbox extends TitledOptionControl  {
         this._subel = HTML.parse('<div role="presentation" class="silky-option-checkbox silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"></div>');
     
         if (this.el === undefined)
-            this.el = this._subel;
+            this.setRootElement(this._subel);
     
         let horizontalAlign = this.getPropertyValue("horizontalAlignment");
         this._subel.setAttribute('data-horizontal-align', horizontalAlign);
     }
 
-    protected registerProperties(properties) {
+    protected override registerProperties(properties) {
         super.registerProperties(properties);
 
         this.registerSimpleProperty('format', FormatDef.bool);
     }
 
-    onPropertyChanged(name) {
+    override onPropertyChanged(name) {
         super.onPropertyChanged(name);
         if (name === 'enable') {
-            let enabled = this.getPropertyValue(name);
+            let enabled = this.getPropertyValue('enable');
             let input = this._subel.querySelector<HTMLInputElement>('input');
             input.disabled = enabled === false;
             if (enabled)
@@ -52,11 +67,11 @@ export class GridCheckbox extends TitledOptionControl  {
         }
     }
 
-    getValue(keys=null) {
+    override getValue(keys=null): any {
         if (this.checkedValue === null)
-            return super.getValue(keys);
+            return super.getSourceValue(keys);
 
-        let value = super.getValue([]);
+        let value = super.getSourceValue([]);
         if (value === null)
             return false;
 
@@ -71,7 +86,7 @@ export class GridCheckbox extends TitledOptionControl  {
         return false;
     }
 
-    setValue(value, keys=[]) {
+    override setValue(value: boolean, keys=[]) {
         if (this.checkedValue === null)
             return super.setValue(value, keys);
 
@@ -101,7 +116,7 @@ export class GridCheckbox extends TitledOptionControl  {
                 list.push(this.checkedValue);
         }
 
-        return super.setValue(list);
+        return super.setSourceValue(list);
     }
 
     createItem() {
@@ -116,7 +131,9 @@ export class GridCheckbox extends TitledOptionControl  {
         this.labelId = focusLoop.getNextAriaElementId('label');
         let checkbox = HTML.parse(`<label id="${this.labelId}" style="white-space: nowrap;"></label>`);
         this.input = HTML.parse('<input class="silky-option-input" tabindex="0" type="checkbox" value="value" ' +  (value ? 'checked' : '') + ' >');
+        this.$input = $(this.input);
         this.label = HTML.parse('<span>' + label + '</span>');
+        this.$label = $(this.label);
         checkbox.append(this.input);
         checkbox.append(this.label);
         this._subel.append(checkbox);
@@ -145,7 +162,7 @@ export class GridCheckbox extends TitledOptionControl  {
         });
     }
 
-    onOptionValueChanged(key, data) {
+    override onOptionValueChanged(key, data) {
         super.onOptionValueChanged(key, data);
         if (this.input)
             this.input.checked = this.getValue();

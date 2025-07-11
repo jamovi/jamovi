@@ -1,7 +1,7 @@
 
 'use strict';
 
-const SuperClass = require('../common/superclass');
+import SuperClass from '../common/superclass';
 
 function LayoutDef() {
 
@@ -21,4 +21,4 @@ LayoutDef.extend = function(params) {
     };
 };
 
-module.exports = LayoutDef;
+export default LayoutDef;

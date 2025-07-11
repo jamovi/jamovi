@@ -1,11 +1,9 @@
 
 'use strict';
 
-const underscore = require('underscore');
-
 import { FormattedValue } from './formatdef';
 import { EventEmitter } from 'events';
-import { IOptionsEventParams } from './options';
+import { IOptionsEventParams, OptionDef } from './options';
 
 export interface IOptionEventParams extends IOptionsEventParams {
     eventType: string;
@@ -30,9 +28,10 @@ export class Opt<T> extends EventEmitter {
     _initialized: boolean = false;
     name: string;
     _overrideCount = 0;
+    params: OptionDef;
 
 
-    constructor(initialValue: T | null, params) {
+    constructor(initialValue: T | null, params: OptionDef) {
         super();
         this.params = params;
         this._paramsOverride = { };
@@ -109,7 +108,9 @@ export class Opt<T> extends EventEmitter {
             return obj[key];
     }
 
-    getValue(key) {
+    getValue(): T;
+    getValue(key: any): any;
+    getValue(key?) {
         return this._getObjectElement(this._value, key);
     }
 
@@ -158,7 +159,27 @@ export class Opt<T> extends EventEmitter {
         return this._paramsOverride;
     }
 
-    setValue(value, keys, eventParams) {
+    isEqual(a, b) {
+        if (a === b) return true;
+
+        if (a == null || b == null || typeof a !== 'object' || typeof b !== 'object') {
+            return false;
+        }
+
+        const aKeys = Object.keys(a);
+        const bKeys = Object.keys(b);
+        if (aKeys.length !== bKeys.length) return false;
+
+        for (let key of aKeys) {
+            if (!b.hasOwnProperty(key) || !this.isEqual(a[key], b[key])) {
+            return false;
+            }
+        }
+
+        return true;
+    }
+
+    setValue(value, keys, eventParams?) {
 
         if (eventParams === undefined) {
             if (keys === undefined) {
@@ -188,7 +209,7 @@ export class Opt<T> extends EventEmitter {
                 if (eventParams.externalEvent)
                     force = true;  // makes sure the server is updated with the default value;
             }
-            if (force || underscore.isEqual(fValue, this._value) === false) {
+            if (force || this.isEqual(fValue, this._value) === false) {
                 this._value = fValue;
                 if (eventParams.silent === false)
                     this.emit(eventParams.eventType, keys, eventParams.data);
@@ -221,7 +242,7 @@ export class Opt<T> extends EventEmitter {
                         b = { };
                     a[index] = b;
                 }
-                else if (i === keys.length - 1 && (force || underscore.isEqual(b, fValue) === false)) {
+                else if (i === keys.length - 1 && (force || this.isEqual(b, fValue) === false)) {
                     a[index] = fValue;
                     if (eventParams.silent === false)
                         this.emit(eventParams.eventType, keys, eventParams.data);
@@ -238,7 +259,7 @@ export class Opt<T> extends EventEmitter {
         return this._initialized;
     }
 
-    insertValueAt(value, keys, eventParams) {
+    insertValueAt(value, keys, eventParams?) {
 
         if (eventParams === undefined)
             eventParams = Opt.getDefaultEventParams("inserted");
@@ -283,7 +304,7 @@ export class Opt<T> extends EventEmitter {
         return false;
     }
 
-    removeAt(keys, eventParams) {
+    removeAt(keys, eventParams?) {
 
         if (eventParams === undefined)
             eventParams = Opt.getDefaultEventParams("removed");

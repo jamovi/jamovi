@@ -1,19 +1,58 @@
 'use strict';
 
-import ControlBase from './controlbase';
+import $ from 'jquery';
+
+import ControlBase, { ControlBaseProperties, Margin } from './controlbase';
 import LayoutCell, { ICellContentsItem } from './layoutcell';
-const EnumPropertyFilter = require('./enumpropertyfilter');
+import EnumPropertyFilter from './enumpropertyfilter';
 import LayoutGrid from './layoutgrid';
 
 export interface IRenderReturnData { height: number, width: number, cell?: LayoutCell };
 
+export enum HorizontalAlignment {
+  Left = "left",
+  Center = "center",
+  Right = "right"
+}
 
-export class GridControl extends ControlBase {
+export enum VerticalAlignment {
+  Top = "top",
+  Center = "center",
+  Bottom = "bottom"
+}
+
+function isVerticalAlignment(value: string): value is VerticalAlignment {
+  return Object.values(VerticalAlignment).includes(value as VerticalAlignment);
+}
+
+function isHorizontalAlignment(value: string): value is HorizontalAlignment {
+  return Object.values(HorizontalAlignment).includes(value as HorizontalAlignment);
+}
+
+export type GridControlProperties = ControlBaseProperties & {
+    stretchFactor: number;
+    horizontalAlignment: HorizontalAlignment;
+    verticalAlignment: VerticalAlignment;
+    minWidth: number;
+    minHeight: number;
+    maxWidth: number;
+    maxHeight: number;
+    useSingleCell: boolean;
+    cell: { row: number, column: number };
+    contentLink: boolean;  // displays the control with specific content of a content selector. The value is a bool however in the yaml it is a string of the content path.
+}
+
+export class GridControl<T extends GridControlProperties> extends ControlBase<T> {
     _fabricatedItem: boolean;
     _cell = null;
-    el?: HTMLElement;
+    protected _el?: HTMLElement;
 
-    constructor(params) {
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.el: HTMLElement`.
+     */
+    _$el: any;
+
+    constructor(params: T) {
         super(params);
         
         this._fabricatedItem = false;
@@ -21,14 +60,27 @@ export class GridControl extends ControlBase {
         this._cell = null;
     }
 
+    get el() {
+        return this._el;
+    }
+
+    get $el() : any {
+        return this._$el;
+    }
+
+    setRootElement(el: HTMLElement): void {
+        this._el = el;
+        this._$el = $(this._el);
+    }
+
     onRenderToGrid?(grid: LayoutGrid, row: number, column: number, owner): IRenderReturnData;
 
-    protected registerProperties(properties) {
+    protected override registerProperties(properties) {
         super.registerProperties(properties);
 
         this.registerSimpleProperty("stretchFactor", 0);
-        this.registerSimpleProperty("horizontalAlignment", "left", new EnumPropertyFilter(["left", "center", "right"], "left"));
-        this.registerSimpleProperty("verticalAlignment", "top", new EnumPropertyFilter(["top", "center", "bottom"], "top"));
+        this.registerSimpleProperty("horizontalAlignment", HorizontalAlignment.Left, new EnumPropertyFilter(HorizontalAlignment, HorizontalAlignment.Left));
+        this.registerSimpleProperty("verticalAlignment", VerticalAlignment.Top, new EnumPropertyFilter(VerticalAlignment, VerticalAlignment.Top));
         this.registerSimpleProperty("minWidth", -1);
         this.registerSimpleProperty("minHeight", -1);
         this.registerSimpleProperty("maxWidth", -1);
@@ -38,7 +90,7 @@ export class GridControl extends ControlBase {
         this.registerSimpleProperty("contentLink", true); // displays the control with specific content of a content selector. The value is a bool however in the yaml it is a string of the content path.
     }
 
-    onPropertyChanged(name)  {
+    override onPropertyChanged(name)  {
         super.onPropertyChanged(name);
         if (name === 'contentLink') {
             if (this._cell)
@@ -50,7 +102,7 @@ export class GridControl extends ControlBase {
         return this.el !== undefined && this.onRenderToGrid === undefined;
     }
 
-    _applyCellProperties(cell) {
+    _applyCellProperties(cell: LayoutCell): void {
 
         if (this.hasProperty('horizontalAlignment'))
             cell.setHorizontalAlign(this.getPropertyValue('horizontalAlignment'));
@@ -124,11 +176,11 @@ export class GridControl extends ControlBase {
             if (this.hasProperty("margin")) {
                 let margin = this.getPropertyValue("margin");
                 wrapper.classList.add("silky-control-margin-" + margin);
-                this.setPropertyValue("margin", "none");
+                this.setPropertyValue("margin", Margin.None);
             }
 
             let returnData = this.onRenderToGrid(wrapper, 0, 0, gridOwner);
-            this.el = wrapper; // this makes it comply with ICellContentsItem interface
+            this.setRootElement(wrapper); // this makes it comply with ICellContentsItem interface
 
             if (returnData.height > 0 || returnData.width > 0) {
                 let cell = grid.addCell(column, row, this as ICellContentsItem); // see above
@@ -141,7 +193,8 @@ export class GridControl extends ControlBase {
         }
         else if (this.usesSingleCell() && this._fabricatedItem && useSingleCell === false) {
             this.el.innerHTML = '';
-            delete this.el;
+            delete this._el;
+            delete this._$el;
             this._fabricatedItem = false;
         }
 

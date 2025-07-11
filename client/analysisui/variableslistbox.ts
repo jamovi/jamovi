@@ -1,54 +1,60 @@
 'use strict';
 
-import { FormatDef } from './formatdef';
-const RequestDataSupport = require('./requestdatasupport');
+import { FormatDef, VariablesFormat } from './formatdef';
+import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
 import focusLoop from '../common/focusloop';
-import { SelectableOptionListControl } from './optionlistcontrol';
+import { SelectableOptionListControl, SelectableOptionListControlProperties } from './optionlistcontrol';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { IItem } from './dragndrop';
 
-function checkParams(params) {
+function checkParams(params: VariablesListBoxProperties) : VariablesListBoxProperties {
     if (params.columns === undefined)
         params.template = { type: params.DefaultControls.VariableLabel };
 
     return params;
 }
 
+export type VariablesListBoxProperties = SelectableOptionListControlProperties<string> & {
+    format: VariablesFormat;
+}
 
-export class VariablesListBox extends SelectableOptionListControl {
+export class VariablesListBox extends SelectableOptionListControl<VariablesListBoxProperties> {
 
     static create(params) {
         checkParams(params);
         return new VariablesListBox(params);
     }
 
-    $icons: HTMLElement;
+    $icons: HTMLElement = null;
     $createButton: HTMLElement;
+    _suggestedVariableTypes = [];
+    _permittedVariableTypes = [];
+    _rendered = false;
 
-    constructor(params) {
+    dataSupport: RequestDataSupport;
+
+    constructor(params: VariablesListBoxProperties) {
         super(checkParams(params))
 
-        RequestDataSupport.extendTo(this);
+        this.dataSupport = GetRequestDataSupport(this);
 
-
-        this._suggestedVariableTypes = [];
-        this._permittedVariableTypes = [];
-        this.$icons = null;
-
-        this.checkScrollBars = () => {
-            if (this.$icons) {
-
-                let rightValue = 3 - this.el.scrollLeft;
-                let bottomValue = 3 - this.el.scrollTop;
-
-                this.$icons.style.bottom = `${bottomValue}px`;
-                this.$icons.style.right = `${rightValue}px`;
-            }
-        };
-
+        this.checkScrollBars = this.checkScrollBars.bind(this);
+        
         this.el.addEventListener('scroll', this.checkScrollBars);
     }
 
-    protected registerProperties(properties) {
+    checkScrollBars() {
+        if (this.$icons) {
+
+            let rightValue = 3 - this.el.scrollLeft;
+            let bottomValue = 3 - this.el.scrollTop;
+
+            this.$icons.style.bottom = `${bottomValue}px`;
+            this.$icons.style.right = `${rightValue}px`;
+        }
+    }
+
+    protected override registerProperties(properties) {
         super.registerProperties(properties);
 
         this.registerSimpleProperty('format', FormatDef.variables);
@@ -71,7 +77,7 @@ export class VariablesListBox extends SelectableOptionListControl {
         return null;
     }
 
-    onOptionSet(option) {
+    override onOptionSet(option) {
 
         super.onOptionSet(option);
 
@@ -122,7 +128,7 @@ export class VariablesListBox extends SelectableOptionListControl {
                     if (this.isSingleItem === false)
                         desiredName = desiredName + ' ' + (this.contentRowCount() + 1);
 
-                    let promise = this.requestAction('createColumn',  { columnType: 'output', name: desiredName}).then((value) => {
+                    this.dataSupport.requestAction('createColumn',  { columnType: 'output', name: desiredName}).then((value) => {
                         if (this.isSingleItem)
                             this.setValue(value);
                         else {
@@ -147,7 +153,7 @@ export class VariablesListBox extends SelectableOptionListControl {
         }
     }
 
-    onOptionValueChanged(key, data) {
+    override onOptionValueChanged(key, data) {
         if (this.isSingleItem && this.$createButton) {
             let value = this.getValue();
             if (value === null) {
@@ -162,7 +168,7 @@ export class VariablesListBox extends SelectableOptionListControl {
         super.onOptionValueChanged(key, data);
     }
 
-    addedContentToCell(cell) {
+    override addedContentToCell(cell) {
         super.addedContentToCell(cell);
 
         this.on('layoutgrid.validated', () => { this.checkScrollBars(); } );
@@ -172,7 +178,7 @@ export class VariablesListBox extends SelectableOptionListControl {
         this._rendered = true;
     }
 
-    testValue(item, silent, rowIndex, columnName) {
+    override testValue(item:IItem<string>, silent: boolean, rowIndex: number, columnName) {
         let allowItem = true;
         allowItem = super.testValue(item, silent, rowIndex, columnName);
         if (!allowItem)

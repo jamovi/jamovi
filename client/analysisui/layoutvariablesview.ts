@@ -1,14 +1,45 @@
 
 'use strict';
 
-import LayoutSupplierView from './layoutsupplierview';
-import { FormatDef, FormattedValue } from './formatdef';
-const EnumArrayPropertyFilter = require('./enumarraypropertyfilter');
-const EnumPropertyFilter = require('./enumpropertyfilter');
+import LayoutSupplierView, { SupplierViewProperties } from './layoutsupplierview';
+import { FormatDef, FormattedValue, VariableFormat } from './formatdef';
+import EnumArrayPropertyFilter from './enumarraypropertyfilter';
+import EnumPropertyFilter from './enumpropertyfilter';
 
+enum Population {
+    Auto = 'auto',
+    Manual = 'manual'
+}
 
-export class LayoutVariablesView extends LayoutSupplierView {
-    constructor(params) {
+enum SuggestedTypes {
+    Continuous = 'continuous',
+    Ordinal = 'ordinal',
+    Nominal = 'nominal',
+    NominalText = 'nominaltext',
+    Id = 'id'
+}
+
+enum PermittedTypes {
+    Continuous = 'continuous',
+    Ordinal = 'ordinal',
+    Nominal = 'nominal',
+    NominalText = 'nominaltext',
+    Id = 'id',
+    Numeric = 'numeric',
+    Factor = 'factor',
+    Output = 'output'
+}
+
+export type VariablesViewProperties = SupplierViewProperties<string> & {
+    suggested: SuggestedTypes[];
+    permitted: ('continuous' | 'ordinal' | 'nominal' | 'nominaltext' | 'id' | 'numeric' | 'factor' | 'output')[];
+    populate: Population;
+    hideNotPermitted: boolean;
+    format: VariableFormat;
+}
+
+export class LayoutVariablesView extends LayoutSupplierView<VariablesViewProperties> {
+    constructor(params: VariablesViewProperties) {
         super(params);
 
         this.el.classList.add('silky-options-variable-supplier-group');
@@ -16,17 +47,17 @@ export class LayoutVariablesView extends LayoutSupplierView {
         this._waitingFor = 0;
     }
 
-    protected registerProperties(properties) {
+    protected override registerProperties(properties: VariablesViewProperties) {
         super.registerProperties(properties);
 
-        this.registerSimpleProperty('suggested', [], new EnumArrayPropertyFilter(['continuous', 'ordinal', 'nominal', 'nominaltext', 'id']));
-        this.registerSimpleProperty('permitted', [], new EnumArrayPropertyFilter(['continuous', 'ordinal', 'nominal', 'nominaltext', 'id', 'numeric', 'factor', 'output']));
-        this.registerSimpleProperty('populate', 'auto', new EnumPropertyFilter(['auto', 'manual'], 'auto'));
+        this.registerSimpleProperty('suggested', [], new EnumArrayPropertyFilter(SuggestedTypes));
+        this.registerSimpleProperty('permitted', [], new EnumArrayPropertyFilter(PermittedTypes));
+        this.registerSimpleProperty('populate', Population.Auto, new EnumPropertyFilter(Population, Population.Auto));
         this.registerSimpleProperty('hideNotPermitted', false);
         this.registerSimpleProperty('format', FormatDef.variable);
     }
 
-    update() {
+    override update() {
         this._populateList(super.update);
     }
 
@@ -36,7 +67,7 @@ export class LayoutVariablesView extends LayoutSupplierView {
             baseFunction.call(this);
         else {
             this.displaySearch(true);
-            let promise = this.requestData('columns', null);
+            let promise = this.dataSupport.requestData('columns', null);
             promise.then(columnInfo => {
                 this.resources = columnInfo;
                 this.populateItemList();
@@ -45,7 +76,7 @@ export class LayoutVariablesView extends LayoutSupplierView {
     }
 
     requestMeasureType(columnId, item) {
-        let promise = this.requestData('column', { columnId: columnId, properties: [ 'measureType', 'id', 'hidden', 'columnType', 'dataType', 'outputAnalysisId' ] });
+        let promise = this.dataSupport.requestData('column', { columnId: columnId, properties: [ 'measureType', 'id', 'hidden', 'columnType', 'dataType', 'outputAnalysisId' ] });
         promise.then(rData => {
             if (rData.measureType === undefined)
                 rData.measureType = 'none';

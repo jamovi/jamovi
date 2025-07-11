@@ -5,23 +5,29 @@ import SelectableLayoutGrid from './selectablelayoutgrid';
 import DragNDrop from './dragndrop';
 import type { IItem } from './dragndrop';
 import type { IDragDropTarget } from './dragndrop';
-import  { ControlContainerItem } from './controlcontainer';
+import  { ControlContainer, ControlContainerProperties } from './controlcontainer';
 import LayoutGrid from './layoutgrid';
-const EnumPropertyFilter = require('./enumpropertyfilter');
-const RequestDataSupport = require('./requestdatasupport');
+import EnumPropertyFilter from './enumpropertyfilter';
+import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
 import focusLoop from '../common/focusloop';
 import type { SupplierTargetList } from './gridtargetcontrol';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import LayoutCell from './layoutcell';
 import BorderLayoutGrid from './layoutgridbordersupport';
+import Format from './format';
+import { Margin } from './controlbase';
 
-export type SupplierTarget = IDragDropTarget & { 
+export type TransferAction<U> = { name: string, resultFormat: Format<U> };
+
+export type SupplierTarget<U> = IDragDropTarget<U> & { 
     unblockActionButtons: () => HTMLElement; 
-    blockActionButtons: (except: HTMLElement, target: IDragDropTarget) => void;
-    preprocessItems: <T extends IItem>(items: T[], from: IDragDropTarget, action?, silent?: boolean) => T[];
+    blockActionButtons: (except: HTMLElement, target: IDragDropTarget<U>) => void;
+    preprocessItems: <I extends IItem<U>>(items: I[], from: IDragDropTarget<U>, action?, silent?: boolean) => I[];
+    getDefaultTransferAction: () =>  { name: string, resultFormat: Format<U> };
+    applyTransferActionToItems:  <I extends IItem<U>>(items: I[], action: TransferAction<U>) => I[];
 };
 
-export interface ISupplierItem extends IItem {
+export interface ISupplierItem<U> extends IItem<U> {
     index: number;
     used: number
 }
@@ -62,21 +68,34 @@ export class SupplierLayoutGrid extends BorderLayoutGrid {
 
 customElements.define('jmv-suppliergrid', SupplierLayoutGrid);
 
-export class LayoutSupplierView extends ControlContainerItem(SupplierLayoutGrid) implements IDragDropTarget {
-    dragDropManager: DragNDrop;
-    _targets: { [key: string]: SupplierTarget };
-    _items: ISupplierItem[] = [];
+export type SupplierViewProperties<U> = ControlContainerProperties & {
+    value: ISupplierItem<U>[];
+    margin: Margin;
+    persistentItems: boolean;
+    label: string;
+    format: Format<any>;
+    higherOrders: boolean;
+}
+
+type InferType<T> = T extends SupplierViewProperties<infer A> ? A : never;
+
+export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferType<P>> extends ControlContainer<P, typeof SupplierLayoutGrid> implements IDragDropTarget<U> {
+    
+    dragDropManager: DragNDrop<U>;
+    _targets: { [key: string]: SupplierTarget<U> };
+    _items: ISupplierItem<U>[] = [];
     baseLayout: LayoutGrid;
     supplier: SelectableLayoutGrid;
     $warning: HTMLElement;
     $searchButton: HTMLElement;
     $searchInput: HTMLInputElement;
+    dataSupport: RequestDataSupport;
     
-    constructor(params) {
-        super(params);
+    constructor(params: P) {
+        super(params, SupplierLayoutGrid);
 
         this.dragDropManager = new DragNDrop(this);
-        RequestDataSupport.extendTo(this);
+        this.dataSupport = GetRequestDataSupport(this);
 
         this._persistentItems = this.getPropertyValue('persistentItems');
         this._higherOrder = this.getPropertyValue('higherOrders');
@@ -96,18 +115,18 @@ export class LayoutSupplierView extends ControlContainerItem(SupplierLayoutGrid)
         this.blockFilterProcess = false;
     }
 
-    protected registerProperties(properties) {
+    protected override registerProperties(properties) {
         super.registerProperties(properties);
 
         this.registerComplexProperty('value', this.getList, this.setList, 'value_changed');
         this.registerSimpleProperty('persistentItems', false);
         this.registerSimpleProperty('label', null);
-        this.registerSimpleProperty('margin', 'normal', new EnumPropertyFilter(['small', 'normal', 'large', 'none'], 'normal'));
+        this.registerSimpleProperty('margin', Margin.Normal, new EnumPropertyFilter(Margin, Margin.Normal));
         this.registerSimpleProperty('format', null);
         this.registerSimpleProperty('higherOrders', false);
     }
 
-    setList(value: ISupplierItem[]) {
+    setList(value: ISupplierItem<U>[]) {
 
         this.el.classList.add('initialising');
 
@@ -150,7 +169,7 @@ export class LayoutSupplierView extends ControlContainerItem(SupplierLayoutGrid)
         return this.getList();
     }
 
-    setValue(value: ISupplierItem[]) {
+    setValue(value: ISupplierItem<U>[]) {
         this.setList(value);
     }
 
@@ -169,14 +188,14 @@ export class LayoutSupplierView extends ControlContainerItem(SupplierLayoutGrid)
     onPopulate() {
     }
 
-    displaySearch(value) {
+    displaySearch(value: boolean): void {
         if (value)
             this.$searchButton.style.display = '';
         else
             this.$searchButton.style.display = 'none';
     }
 
-    displayMsg(text, time) {
+    displayMsg(text: string, time?: number): void {
         if (time === undefined)
             time = 3000;
         this.$warning.innerText = text;
@@ -328,7 +347,7 @@ export class LayoutSupplierView extends ControlContainerItem(SupplierLayoutGrid)
         this.onPopulate();
     }
 
-    onContainerRendered() {
+    override onContainerRendered() {
         setTimeout(() => {
             let cell = this.el.getCell(2, this.el._rowCount - 1);
             if (! cell.content)
@@ -386,7 +405,7 @@ export class LayoutSupplierView extends ControlContainerItem(SupplierLayoutGrid)
     }
 
     getSelectedItems() {
-        let items: ISupplierItem[] = [];
+        let items: ISupplierItem<U>[] = [];
         let selectionCount = this.supplier.selectedCellCount();
         for (let i = 0; i < selectionCount; i++) {
             let item = this.getItem(this.supplier.getSelectedCell(i).data.row - 1);
@@ -397,7 +416,7 @@ export class LayoutSupplierView extends ControlContainerItem(SupplierLayoutGrid)
         return items;
     }
 
-    pullItem(formatted, use=true) : ISupplierItem | null {
+    pullItem(formatted, use=true) : ISupplierItem<U> | null {
         for (let i = 0; i < this._items.length; i++) {
             let item = this._items[i];
             if (item.value.equalTo(formatted)) {
@@ -429,7 +448,7 @@ export class LayoutSupplierView extends ControlContainerItem(SupplierLayoutGrid)
         return null;
     }
 
-    numberUsed(item: IItem) {
+    numberUsed(item: IItem<U>) {
         let count = 0;
         for (let tid in this._targets) {
             let target = this._targets[tid];
@@ -443,7 +462,7 @@ export class LayoutSupplierView extends ControlContainerItem(SupplierLayoutGrid)
         return count;
     }
 
-    removeTarget(target: SupplierTargetList) {
+    removeTarget(target: SupplierTargetList<U>) {
         let targetDragDropManager = target.dragDropManager;
 
         let id = '_' + targetDragDropManager._dropId;
@@ -470,7 +489,7 @@ export class LayoutSupplierView extends ControlContainerItem(SupplierLayoutGrid)
         delete this._targets[id];
     }
 
-    addTarget(target: SupplierTargetList) {
+    addTarget(target: SupplierTargetList<U>) {
 
         let targetDragDropManager = target.dragDropManager;
         let id = '_' + targetDragDropManager._dropId;
@@ -539,7 +558,7 @@ export class LayoutSupplierView extends ControlContainerItem(SupplierLayoutGrid)
         }
     }
 
-    render_term(item: IItem, row: number) {
+    render_term(item: IItem<U>, row: number) {
         let $item = HTML.parse('<div style="white-space: nowrap;" class="silky-list-item silky-format-term"></div>');
 
         item.el = $item;
@@ -567,7 +586,7 @@ export class LayoutSupplierView extends ControlContainerItem(SupplierLayoutGrid)
         //item.el = c1;
     }
 
-    render_variable(item: IItem, row: number) {
+    render_variable(item: IItem<U>, row: number) {
 
         let $item = HTML.parse('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
 

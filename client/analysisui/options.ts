@@ -1,8 +1,7 @@
 
 'use strict';
 
-import { FormatDef } from './formatdef';
-import Opt, { IOptionEventParams } from './option';
+import Opt from './option';
 import { EventEmitter } from 'events';
 
 type QueueType = { 
@@ -156,6 +155,11 @@ type GroupNode = { type: 'Group'; element: { name: string } & TypeNode };
 
 type TypeNode = BaseNode | ArrayNode | GroupNode;
 
+export type OptionDef = TypeNode & {
+    default?: any;
+    name: string;
+};
+
 export type InferOptionType<T> =
   T extends { type: 'Array'; template: infer U }
     ? InferOptionType<U>[]
@@ -199,7 +203,7 @@ export class Options extends EventEmitter {
     _serverQueuedEvents = new keyedQueue();
     _beginEdit = 0;
 
-    constructor(def, translator) {
+    constructor(def : OptionDef[], translator: (key: string) => string) {
         super();
 
         this._refList = { };
@@ -210,8 +214,8 @@ export class Options extends EventEmitter {
         this.initialize(def, translator);
     }
 
-    initialize(def, translator) {
-        for (let i = 0;i < def.length; i++) {
+    initialize(def: OptionDef[], translator: ((key: string) => string)) {
+        for (let i = 0; i < def.length; i++) {
             let item = def[i];
 
             if (item.default === undefined)
@@ -227,7 +231,7 @@ export class Options extends EventEmitter {
         }
     }
 
-    translateDefault(translator, item, defaultValue?) {
+    translateDefault(translator: ((key: string) => string), item: any, defaultValue?: any): string | null {
         if (defaultValue === undefined) {
             if (item.default) {
                 let translated = this.translateDefault(translator, item, item.default);
@@ -303,7 +307,7 @@ export class Options extends EventEmitter {
         return option;
     }
 
-    setOptionValue(name, value, keys, eventParams? : IOptionsEventParams) {
+    setOptionValue(name: string | Opt<any>, value: any, keys: (string | number)[], eventParams? : IOptionsEventParams) {
 
         if (eventParams === undefined) {
             if (keys === undefined) {
@@ -318,8 +322,8 @@ export class Options extends EventEmitter {
                 eventParams = Options.getDefaultEventParams();
         }
 
-        let option = null;
-        if (name._value !== undefined && name._initialized !== undefined)
+        let option: Opt<any> = null;
+        if (name instanceof Opt)
             option = name;
         else
             option = this.getOption(name);
@@ -337,14 +341,14 @@ export class Options extends EventEmitter {
         return true;
     }
 
-    setPropertyValue(name, propertyName, value, key, fragmentName) {
+    setPropertyValue(name: string | Opt<any>, propertyName: string, value, key, fragmentName) {
         if (propertyName === 'value' && ! fragmentName) {
             this.setOptionValue(name, value, key);
             return;
         }
 
-        let option = null;
-        if (name._value !== undefined && name._initialized !== undefined)
+        let option: Opt<any> = null;
+        if (name instanceof Opt)
             option = name;
         else
             option = this.getOption(name);
@@ -356,13 +360,13 @@ export class Options extends EventEmitter {
         this.onValueChanged(option, value, key, 'property');
     }
 
-    insertOptionValue(name, value, keys, eventParams) {
+    insertOptionValue(name: string | Opt<any>, value: any, keys: (string|number)[], eventParams?: IOptionsEventParams) {
 
         if (eventParams === undefined)
             eventParams = Options.getDefaultEventParams();
 
-        let option = null;
-        if (name._value !== undefined && name._initialized !== undefined)
+        let option: Opt<any> = null;
+        if (name instanceof Opt)
             option = name;
         else
             option = this.getOption(name);
@@ -374,13 +378,13 @@ export class Options extends EventEmitter {
             this.onValueChanged(option, value, keys, 'insert');
     }
 
-    removeOptionValue(name, keys, eventParams) {
+    removeOptionValue(name: string | Opt<any>, keys: (string | number)[], eventParams?: IOptionsEventParams) {
 
         if (eventParams === undefined)
             eventParams = Options.getDefaultEventParams();
 
-        let option = null;
-        if (name._value !== undefined && name._initialized !== undefined)
+        let option: Opt<any> = null;
+        if (name instanceof Opt)
             option = name;
         else
             option = this.getOption(name);

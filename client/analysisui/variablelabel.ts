@@ -1,28 +1,31 @@
 'use strict';
 
-import { TitledOptionControl } from './optioncontrol';
-const RequestDataSupport = require('./requestdatasupport');
-import { FormatDef } from './formatdef';
+import OptionControl, { GridOptionControlProperties } from './optioncontrol';
+import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
+import { FormatDef, VariableFormat } from './formatdef';
 import focusLoop from '../common/focusloop';
-
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
-export class VariableLabel extends TitledOptionControl {
+export type VariableLabelProperties = GridOptionControlProperties<string> & {
+    format: VariableFormat;
+}
+
+export class VariableLabel extends OptionControl<VariableLabelProperties> {
 
     label: HTMLElement = null;
     icon: HTMLElement = null;
+    dataSupport: RequestDataSupport;
+    _updateCount = 0;
 
-    constructor(params) {
+    constructor(params: VariableLabelProperties) {
         super(params);
 
-        RequestDataSupport.extendTo(this);
+        this.dataSupport = GetRequestDataSupport(this);
 
-        this.el = HTML.parse('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
-    
-        this._updateCount = 0;
+        this.setRootElement(HTML.parse('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>'));
     }
 
-    protected registerProperties(properties) {
+    protected override registerProperties(properties) {
         super.registerProperties(properties);
 
         this.registerSimpleProperty('format', FormatDef.variable);
@@ -66,7 +69,7 @@ export class VariableLabel extends TitledOptionControl {
 
     _updateIcon(columnName) {
         this._updateCount += 1;
-        let promise = this.requestData("column", { columnName: columnName, properties: [ "measureType", "dataType" ], requestId: this._updateCount });
+        let promise = this.dataSupport.requestData("column", { columnName: columnName, properties: [ "measureType", "dataType" ], requestId: this._updateCount });
         promise.then(rData => {
             if (rData.requestData.requestId !== this._updateCount)
                 return;
@@ -99,7 +102,7 @@ export class VariableLabel extends TitledOptionControl {
         });
     };
 
-    onOptionValueChanged(key, data) {
+    override onOptionValueChanged(key, data) {
         super.onOptionValueChanged(key, data);
         this.updateView();
     }
