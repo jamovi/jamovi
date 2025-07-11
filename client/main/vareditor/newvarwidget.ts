@@ -1,8 +1,8 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
 const NewVarWidget = Backbone.View.extend({
@@ -49,4 +49,4 @@ const NewVarWidget = Backbone.View.extend({
     }
 });
 
-module.exports = NewVarWidget;
+export default NewVarWidget;

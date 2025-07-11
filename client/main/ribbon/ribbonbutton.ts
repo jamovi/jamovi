@@ -5,11 +5,11 @@ import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
 import RibbonGroup from './ribbongroup';
 
-const ActionHub = require('../actionhub');
+import ActionHub from '../actionhub';
 import focusLoop, { IShortcutTokenOptions } from '../../common/focusloop';
-const Menu = require('../../common/menu');
-const EventEmitter = require('events');
-const { s6e } = require('../../common/utils');
+import Menu from '../../common/menu';
+import EventEmitter from 'events';
+import { s6e } from '../../common/utils';
 
 export class RibbonButton extends EventEmitter {
     el: HTMLElement;

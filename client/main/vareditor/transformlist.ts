@@ -1,8 +1,8 @@
 
 'use strict';
 
-const $ = require('jquery');
-const TransformListItem = require('./transformlistitem');
+import $ from 'jquery';
+import TransformListItem from './transformlistitem';
 import focusLoop from '../../common/focusloop';
 
 const TransformList = function() {
@@ -56,4 +56,4 @@ const TransformList = function() {
 
 
 
-module.exports = TransformList;
+export default TransformList;

@@ -1,9 +1,9 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
-const underscore = require('underscore');
+import $ from 'jquery';
+import Backbone  from 'backbone';
+import underscore from 'underscore';
 Backbone.$ = $;
 
 const Notif = Backbone.Model.extend({
@@ -90,4 +90,4 @@ const View = Backbone.View.extend({
     },
 });
 
-module.exports = View;
+export default View;

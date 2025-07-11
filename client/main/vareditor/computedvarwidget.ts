@@ -2,11 +2,11 @@
 'use strict';
 
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
-const formulaToolbar = require('./formulatoolbar');
-const dropdown = require('./dropdown');
+import formulaToolbar from './formulatoolbar';
+import dropdown from './dropdown';
 
 function insertText(el, newText, cursorOffset = 0) {
 
@@ -197,4 +197,4 @@ const ComputedVarWidget = Backbone.View.extend({
     }
 });
 
-module.exports = ComputedVarWidget;
+export default ComputedVarWidget;

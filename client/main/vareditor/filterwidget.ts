@@ -1,12 +1,12 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
-const formulaToolbar = require('./formulatoolbar');
-const dropdown = require('./dropdown');
-const Notify = require('../notification');
+import formulaToolbar from './formulatoolbar';
+import dropdown from './dropdown';
+import Notify from '../notification';
 
 const FilterWidget = Backbone.View.extend({
     className: 'FilterWidget',
@@ -864,4 +864,4 @@ const FilterWidget = Backbone.View.extend({
     }
 });
 
-module.exports = FilterWidget;
+export default FilterWidget;

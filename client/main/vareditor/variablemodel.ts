@@ -1,11 +1,11 @@
 
 'use strict';
 
-const underscore = require('underscore');
-const $ = require('jquery');
-const Backbone = require('backbone');
+import underscore from 'underscore';
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
-const Notify = require('../notification');
+import Notify from '../notification';
 
 const VariableModel = Backbone.Model.extend({
 
@@ -448,4 +448,4 @@ const VariableModel = Backbone.Model.extend({
     }
 });
 
-module.exports = VariableModel;
+export default VariableModel;

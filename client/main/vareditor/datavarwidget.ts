@@ -1,17 +1,18 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
-const DataVarLevelWidget = require('./datavarlevelwidget');
-const tarp = require('../utils/tarp');
-const dropdown = require('./dropdown');
-const MissingValueEditor = require('../editors/missingvalueeditor');
-const MeasureList = require('./measurelist');
-const dialogs = require('dialogs')({cancel:false});
+import DataVarLevelWidget from './datavarlevelwidget';
+import tarp from '../utils/tarp';
+import dropdown from './dropdown';
+import MissingValueEditor from '../editors/missingvalueeditor';
+import MeasureList from './measurelist';
+import _dialogs from 'dialogs';
+const dialogs = _dialogs({cancel:false});
 import focusLoop from '../../common/focusloop';
-const { s6e } = require('../../common/utils');
+import { s6e } from '../../common/utils';
 
 const DataVarWidget = Backbone.View.extend({
     className: 'DataVarWidget',
@@ -514,4 +515,4 @@ const DataVarWidget = Backbone.View.extend({
     }
 });
 
-module.exports = DataVarWidget;
+export default DataVarWidget;

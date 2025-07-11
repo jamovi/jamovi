@@ -4,12 +4,12 @@
 
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
-const host = require('../host');
-const Notify = require('../notification');
+import host from '../host';
+import Notify from '../notification';
 
 const PageSideload = Backbone.View.extend({
     className: 'PageSideload',
@@ -61,4 +61,4 @@ const PageSideload = Backbone.View.extend({
     },
 });
 
-module.exports = PageSideload;
+export default PageSideload;

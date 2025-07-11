@@ -1,8 +1,8 @@
 'use strict';
 
-const $ = require('jquery');
-const tarp = require('../utils/tarp');
-const MissingValueList = require('../vareditor/missingvaluelist');
+import $ from 'jquery';
+import tarp from '../utils/tarp';
+import MissingValueList from '../vareditor/missingvaluelist';
 
 
 const MissingValueEditor = function(model) {
@@ -112,4 +112,4 @@ const MissingValueEditor = function(model) {
     this._init();
 };
 
-module.exports = MissingValueEditor;
+export default MissingValueEditor;

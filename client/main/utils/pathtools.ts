@@ -1,7 +1,7 @@
 
 'use strict';
 
-module.exports = {
+export default {
     normalise : (path) => {
         if (path.startsWith('{{Documents}}'))
             path = path.replace('{{Documents}}', _('Documents'));
