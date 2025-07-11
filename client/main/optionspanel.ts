@@ -1,17 +1,18 @@
 'use strict';
 
-const $ = require('jquery');
+import $ from 'jquery';
 
-let Framesg = require('framesg');
+import _Framesg from 'framesg';
+let Framesg = _Framesg;
 if ('default' in Framesg) // this import is handled differently between browserify and vite
     Framesg = Framesg.default;
 
-const Backbone = require('backbone');
+import Backbone from 'backbone';
 Backbone.$ = $;
-const host = require('./host');
-const I18n = require('../common/i18n');
+import host from './host';
+import I18n from '../common/i18n';
 
-const SilkyView = require('./view');
+import SilkyView from './view';
 import focusLoop from '../common/focusloop';
 
 
@@ -397,4 +398,4 @@ let OptionsPanel = SilkyView.extend({
     }
 });
 
-module.exports = OptionsPanel;
+export default OptionsPanel;

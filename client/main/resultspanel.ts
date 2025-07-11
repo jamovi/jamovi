@@ -1,26 +1,26 @@
 'use strict';
 
-const $ = require('jquery');
-const underscore = require('underscore');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import underscore from 'underscore';
+import Backbone from 'backbone';
 Backbone.$ = $;
-const I18n = require('../common/i18n');
+import I18n from '../common/i18n';
 import focusLoop from '../common/focusloop';
 
-const formatIO = require('../common/utils/formatio');
+import { exportElem } from '../common/utils/formatio';
 
-const ContextMenu = require('./contextmenu');
-const Notify = require('./notification');
-const host = require('./host');
-const selectionLoop = require('../common/selectionloop');
+import ContextMenu from './contextmenu';
+import Notify from './notification';
+import host from './host';
+import selectionLoop from '../common/selectionloop';
 import ContextMenuButton from './contextmenu/contextmenubutton';
 
 import { flatten, unflatten } from '../common/utils/addresses';
-const { contextMenuListener } = require('../common/utils');
+import { contextMenuListener } from '../common/utils';
 
-require('./references');
+import './references';
 
-const path = require('path');
+import path from 'path';
 
 const ResultsPanel = Backbone.View.extend({
     className: 'ResultsPanel',
@@ -678,14 +678,14 @@ const ResultsPanel = Backbone.View.extend({
                 .map(analysis => analysis.id)
                 .map(id => this._getContent([ id ], options));
 
-            let refs = formatIO.exportElem(this._refsTable, 'text/html', options)
+            let refs = exportElem(this._refsTable, 'text/html', options)
                 .then((html) => { return { html }; });
             promises.push(refs);
 
             return Promise.all(promises).then((chunks) => {
                 chunks = chunks.map((chunk) => chunk.html);
                 let content = chunks.join('');
-                let html = formatIO.exportElem(content);
+                let html = exportElem(content);
                 return html;
             });
         }
@@ -1084,4 +1084,4 @@ const ResultsPanel = Backbone.View.extend({
     },
 });
 
-module.exports = ResultsPanel;
+export default ResultsPanel;

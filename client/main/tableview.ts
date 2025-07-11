@@ -4,20 +4,19 @@
 
 'use strict';
 
-const $ = require('jquery');
-const ColourPalette = require('./editors/colourpalette');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import ColourPalette from './editors/colourpalette';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
-const keyboardJS = require('keyboardjs');
-const SilkyView = require('./view');
-const Notify = require('./notification');
-const ContextMenu = require('./contextmenu');
-const Statusbar = require('./statusbar/statusbar');
+import keyboardJS from 'keyboardjs';
+import SilkyView from './view';
+import Notify from './notification';
+import ContextMenu from './contextmenu';
+import Statusbar from './statusbar/statusbar';
 import focusLoop from '../common/focusloop';
 
-const { s6e, contextMenuListener } = require('../common/utils');
-const { timeout } = require('q');
+import { s6e, contextMenuListener } from '../common/utils';
 
 const TableView = SilkyView.extend({
     className: 'tableview',
@@ -2809,4 +2808,4 @@ TableView.getScrollbarWidth = function() {
 };
 
 
-module.exports = TableView;
+export default TableView;

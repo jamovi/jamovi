@@ -1,10 +1,10 @@
 
 'use strict';
 
-var $ = require('jquery');
-var Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
-var SilkyView = require('./view');
+import SilkyView from './view';
 
 var ProgressBar = SilkyView.extend({
     className: "progress-bar",
@@ -57,4 +57,4 @@ var ProgressBar = SilkyView.extend({
     }
 });
 
-module.exports = ProgressBar;
+export default ProgressBar;

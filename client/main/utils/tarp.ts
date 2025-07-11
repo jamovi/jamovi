@@ -95,4 +95,4 @@ const hide = function(name) {
     }
 };
 
-module.exports = { init, show, hide };
+export default { init, show, hide };

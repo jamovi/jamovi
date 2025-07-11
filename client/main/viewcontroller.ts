@@ -1,14 +1,15 @@
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
-const keyboardJS = require('keyboardjs');
-const host = require('./host');
-const Notify = require('./notification');
-const dialogs = require('dialogs')({cancel:false});
-const { csvifyCells, htmlifyCells } = require('../common/utils/formatio');
+import keyboardJS from 'keyboardjs';
+import host from './host';
+import Notify from './notification';
+import _dialogs from 'dialogs';
+const dialogs = _dialogs({cancel:false});
+import { csvifyCells, htmlifyCells } from '../common/utils/formatio';
 
 import ActionHub from './actionhub';
 
@@ -788,4 +789,4 @@ class ViewController {
     }
 }
 
-module.exports = ViewController;
+export default ViewController;
