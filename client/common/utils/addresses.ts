@@ -1,14 +1,9 @@
 
-'use strict';
+export const flatten = function(arr) {
+    return arr.join('/');
+};
 
-export default {
-
-    flatten: function(arr) {
-        return arr.join('/');
-    },
-
-    unflatten: function(str) {
-        // equivalent to str.split('/'), except ignores / inside quotes
-        return str.match(/"[^"]+"|([^/]+)/g);
-    },
+export const unflatten = function(str) {
+    // equivalent to str.split('/'), except ignores / inside quotes
+    return str.match(/"[^"]+"|([^/]+)/g);
 };

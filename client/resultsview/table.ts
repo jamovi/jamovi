@@ -1,13 +1,12 @@
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
-const determFormat = require('../common/formatting').determFormat;
-const format = require('../common/formatting').format;
+import { determFormat, format } from '../common/formatting';
 import focusLoop from '../common/focusloop';
 
-const Elem = require('./element');
+import Elem from './element';
 
 const SUPSCRIPTS = ["\u1D43", "\u1D47", "\u1D48", "\u1D49", "\u1DA0", "\u1D4D", "\u02B0", "\u2071",
                 "\u02B2", "\u1D4F", "\u02E1", "\u1D50", "\u207F", "\u1D52", "\u1D56", "\u02B3", "\u02E2",
@@ -50,7 +49,7 @@ const createSortTransform = function(column, dir) {
     return trans;
 };
 
-const TableModel = Elem.Model.extend({
+export const Model = Elem.Model.extend({
     defaults : {
         name:  'name',
         title: '(no title)',
@@ -128,7 +127,7 @@ const isVis = function(column) {
     return column.visible === 0 || column.visible === 2;
 };
 
-const TableView = Elem.View.extend({
+export const View = Elem.View.extend({
     initialize(data) {
 
         Elem.View.prototype.initialize.call(this, data, true);
@@ -769,4 +768,4 @@ const TableView = Elem.View.extend({
     }
 });
 
-module.exports = { Model: TableModel, View: TableView };
+module.exports = { Model, View };

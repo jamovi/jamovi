@@ -1,16 +1,16 @@
 'use strict';
 
-const $ = require('jquery');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import Backbone from 'backbone';
 Backbone.$ = $;
 
-const Annotations = require('./annotations');
+import Annotations from './annotations';
 
-const Elem = require('./element');
-const b64 = require('../common/utils/b64');
+import Elem from './element';
+import b64 from '../common/utils/b64';
 import _focusLoop from '../common/focusloop';
 
-const ArrayModel = Elem.Model.extend({
+export const Model = Elem.Model.extend({
     defaults : {
         name:  'name',
         title: '(no title)',
@@ -26,7 +26,7 @@ const ArrayModel = Elem.Model.extend({
     }
 });
 
-const ArrayView = Elem.View.extend({
+export const View = Elem.View.extend({
     initialize: function(data) {
 
         Elem.View.prototype.initialize.call(this, data);
@@ -328,4 +328,4 @@ const ArrayView = Elem.View.extend({
     },
 });
 
-module.exports = { Model: ArrayModel, View: ArrayView };
+export default { Model, View };

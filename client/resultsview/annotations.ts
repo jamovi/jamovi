@@ -1,9 +1,9 @@
 
 'use strict';
 
-const Annotation = require('./annotation');
-const Heading = require('./heading');
-const formatIO = require('../common/utils/formatio');
+import Annotation from './annotation';
+import Heading from './heading';
+import formatIO from '../common/utils/formatio';
 
 const Annotations = { };
 
@@ -73,4 +73,4 @@ Annotations.activate = function(annotation, levelIndex) {
     formatIO.registerNodeObject(annotation.$el[0], annotation);
 };
 
-module.exports = Annotations;
+export default Annotations;
