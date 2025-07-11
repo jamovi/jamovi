@@ -59,4 +59,4 @@ SuperClass.create = function(_class) {
     //SuperClass.superClasses[_class.name] = _class;
 };
 
-module.exports = SuperClass;
+export default SuperClass;

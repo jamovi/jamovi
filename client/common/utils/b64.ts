@@ -13,4 +13,4 @@ function b64EncodeUnicode(str) {
     }));
 }
 
-module.exports = { enc: b64EncodeUnicode };
+export default { enc: b64EncodeUnicode };
