@@ -1,7 +1,11 @@
 'use strict';
+import { HTMLElementCreator as HTML }  from './htmlelementcreator';
+
 class jamoviIcon {
-    constructor(version) {
-        this.el = this.parseHTML(`<div class="icon-info-box">
+    el: HTMLElement;
+
+    constructor(version: string) {
+        this.el = HTML.parse(`<div class="icon-info-box">
             <div class="icon-version">
                 <svg width="75px" height="67.5px" viewBox="0 0 48.568981 47.277932" version="1.1">
                     <g transform="translate(-3.1769712,-1.2930852)">
@@ -11,10 +15,10 @@ class jamoviIcon {
                 <div class="version-separator"></div>
                 <div class="version-text">version <span id="version">${this.cleanVersion(version)}</span></div>
             </div>
-        </div>`)[0];
+        </div>`);
     }
 
-    cleanVersion(version) {
+    cleanVersion(version: string): string {
         var i = -1;
         let n = 3;
 
@@ -28,12 +32,6 @@ class jamoviIcon {
         
         return version;
     }
-    
-    parseHTML(str) {
-        const tmp = document.implementation.createHTMLDocument('');
-        tmp.body.innerHTML = str;
-        return [...tmp.body.childNodes];
-    }
 }
 
-module.exports = jamoviIcon;
+export default jamoviIcon;

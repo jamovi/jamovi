@@ -159,4 +159,4 @@ let format = function(value, format) {
 
 };
 
-module.exports = { determFormat: determFormat, format: format };
+export default { determFormat: determFormat, format: format };
