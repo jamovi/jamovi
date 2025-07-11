@@ -12,4 +12,4 @@ const get = function(colourIndex, alpha) {
     return 'hsla(' + (30 + (p[g] * 60)) + ', 17%, 52%, ' + alpha + ')';
 };
 
-module.exports = { get };
+export default { get };

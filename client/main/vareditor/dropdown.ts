@@ -1,7 +1,7 @@
 
 'use strict';
 
-const $ = require('jquery');
+import $ from 'jquery';
 import focusLoop from '../../common/focusloop';
 
 const dropdown = function() {
@@ -203,4 +203,4 @@ const hasFocus = function(relatedTarget) {
     return relatedTarget && (_dropdown.$el[0].contains(relatedTarget) || _dropdown.$el[0] === relatedTarget);
 }
 
-module.exports = { init, show, hide, updatePosition, focusedOn, clicked, isVisible, content, enter, hasFocus };
+export default { init, show, hide, updatePosition, focusedOn, clicked, isVisible, content, enter, hasFocus };

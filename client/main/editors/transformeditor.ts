@@ -1,15 +1,15 @@
 'use strict';
 
-const $ = require('jquery');
-const opsToolbar = require('./operatordropdown');
-const tarp = require('../utils/tarp');
-const formulaToolbar = require('../vareditor/formulatoolbar');
-const dropdown = require('../vareditor/dropdown');
-const VariableList = require('../vareditor/variablelist');
-const MeasureList = require('../vareditor/measurelist');
-const ColourPalette = require('./colourpalette');
-const Notify = require('../notification');
-const Backbone = require('backbone');
+import $ from 'jquery';
+import opsToolbar from './operatordropdown';
+import tarp from '../utils/tarp';
+import formulaToolbar from '../vareditor/formulatoolbar';
+import dropdown from '../vareditor/dropdown';
+import VariableList from '../vareditor/variablelist';
+import MeasureList from '../vareditor/measurelist';
+import ColourPalette from './colourpalette';
+import Notify from '../notification';
+import Backbone from 'backbone';
 import focusLoop from '../../common/focusloop';
 
 const TransformEditor = function(dataset) {
@@ -862,4 +862,4 @@ const TransformEditor = function(dataset) {
     this._init();
 };
 
-module.exports = TransformEditor;
+export default TransformEditor;

@@ -1,7 +1,7 @@
 
 'use strict';
 
-const $ = require('jquery');
+import $ from 'jquery';
 import focusLoop from '../../common/focusloop';
 
 function insertText(el, newText, cursorOffset = 0, range = null, checkEscape = true) {
@@ -421,4 +421,4 @@ const toolbar = function(dataset) {
 
 
 
-module.exports = toolbar;
+export default toolbar;

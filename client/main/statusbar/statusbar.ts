@@ -1,8 +1,7 @@
 'use strict';
 
-const $ = require('jquery');
-const StatusbarButton = require('./statusbarbutton');
-
+import $ from 'jquery';
+import StatusbarButton from './statusbarbutton';
 
 const Statusbar = function() {
 
@@ -68,4 +67,4 @@ const Statusbar = function() {
     };
 };
 
-module.exports = Statusbar;
+export default Statusbar;

@@ -4,7 +4,7 @@
 import RibbonButton from './ribbonbutton';
 import RibbonSeparator from './ribbonseparator';
 import RibbonGroup from './ribbongroup';
-const Quill = require('quill');
+import Quill from 'quill';
 const Icons = Quill.import('ui/icons');
 import RibbonTab from './ribbontab';
 

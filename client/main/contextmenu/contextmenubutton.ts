@@ -6,7 +6,7 @@ import RibbonGroup from '../ribbon/ribbongroup';
 import focusLoop from '../../common/focusloop';
 import Menu from '../../common/menu';
 
-const ActionHub = require('../actionhub');
+import ActionHub from '../actionhub';
 import { EventEmitter } from 'events';
 
 export class ContextMenuButton extends EventEmitter {

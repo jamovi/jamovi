@@ -5,7 +5,7 @@ import { EventDistributor } from "../../common/eventmap";
 
 import i18n from '../../common/i18n';
 import focusLoop from '../../common/focusloop';
-const host = require('../host');
+import host from '../host';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 import { RibbonModel } from "../ribbon";
 

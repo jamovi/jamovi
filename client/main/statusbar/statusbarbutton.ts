@@ -1,8 +1,8 @@
 
 'use strict';
 
-const $ = require('jquery');
-const ActionHub = require('../actionhub');
+import $ from 'jquery';
+import ActionHub from '../actionhub';
 
 const StatusbarButton = function(name, properties) {
 
@@ -55,4 +55,4 @@ const StatusbarButton = function(name, properties) {
     });
 };
 
-module.exports = StatusbarButton;
+export default StatusbarButton;

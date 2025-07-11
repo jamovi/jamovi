@@ -1,8 +1,8 @@
 
 'use strict';
 
-const $ = require('jquery');
-const MissingValueListItem = require('./missingvaluelistitem');
+import $ from 'jquery';
+import MissingValueListItem from './missingvaluelistitem';
 
 const MissingValueList = function() {
     this.isScrollTarget = function(target) {
@@ -149,4 +149,4 @@ const MissingValueList = function() {
 
 
 
-module.exports = MissingValueList;
+export default MissingValueList;

@@ -1,8 +1,8 @@
 
 'use strict';
 
-const $ = require('jquery');
-const MeasureListItem = require('./measurelistitem');
+import $ from 'jquery';
+import MeasureListItem from './measurelistitem';
 import focusLoop from '../../common/focusloop';
 
 const MeasureList = function(includeAuto) {
@@ -79,4 +79,4 @@ const MeasureList = function(includeAuto) {
 
 
 
-module.exports = MeasureList;
+export default MeasureList;
