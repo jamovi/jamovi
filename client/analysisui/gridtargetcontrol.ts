@@ -20,7 +20,7 @@ import type LayoutGrid from './layoutgrid';
 import { Margin } from './controlbase';
 import { IControlProvider } from './optionsview';
 
-const A11y = require('../common/focusloop');
+import A11y from '../common/focusloop';
 
 type OptionListControlType<U> = InstanceType<typeof OptionListControl<U>>;
 
