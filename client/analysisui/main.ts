@@ -33,7 +33,7 @@ const Format = _Format;
 const View = _View;
 /////////////////
 
-const I18n = require("../common/i18n");
+import I18n from "../common/i18n";
 
 window.s_ = I18n._;
 
