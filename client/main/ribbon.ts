@@ -10,7 +10,7 @@ import { EventDistributor, EventMap } from '../common/eventmap';
 import PlotsTab from './ribbon/plotstab';
 import RibbonTab from './ribbon/ribbontab';
 import SelectionLoop from '../common/selectionloop';
-const Notifs = require('./ribbon/notifs');
+import Notifs from './ribbon/notifs';
 import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
  

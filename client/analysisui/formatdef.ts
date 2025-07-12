@@ -579,4 +579,4 @@ export class FormattedValue<T> {
 }
 
 
-module.exports = FormattedValue;
+export default FormattedValue;

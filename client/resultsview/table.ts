@@ -768,4 +768,4 @@ export const View = Elem.View.extend({
     }
 });
 
-module.exports = { Model, View };
+export default { Model, View };
