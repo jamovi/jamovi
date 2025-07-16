@@ -2,8 +2,6 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
-import commonjs from 'vite-plugin-commonjs';
-import vitePluginRequire from 'vite-plugin-require';
 import vuejsPlugin from '@vitejs/plugin-vue';
 
 export default defineConfig(({ command, mode, ssrBuild }) => {
