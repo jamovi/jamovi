@@ -12,11 +12,11 @@ if ('default' in Framesg) // this import is handled differently between browseri
 import Options from './options';
 import OptionsView from './optionsview';
 import ui from './layoutdef';
-import _Format from './format';
-import { FormatDef as _FormatDef } from './formatdef';
-import _DefaultControls from './defaultcontrols';
+import Format from './format';
+import { FormatDef  } from './formatdef';
+import DefaultControls from './defaultcontrols';
 import LayoutUpdateCheck from './layoutupdatecheck';
-import _View from './actions';
+import View from './actions';
 import GridTargetControl from './gridtargetcontrol';
 import GridControl from './gridcontrol';
 import OptionControl from './optioncontrol';
@@ -24,14 +24,6 @@ import LayoutActionManager from './layoutactionmanager';
 import GetRequestDataSupport from './requestdatasupport';
 import { applyMagicEvents as ApplyMagicEvents } from './applymagicevents';
 import Keyboard from '../common/focusloop';
-
-// Making backwards compatible variables that modules use.
-// The underscore in '_LibraryName' ensures the libraries are loaded even though they are not used in this file, however are used in modules.
-const DefaultControls = _DefaultControls;
-const FormatDef = _FormatDef;
-const Format = _Format;
-const View = _View;
-/////////////////
 
 import I18n from "../common/i18n";
 
@@ -132,14 +124,14 @@ const Analysis = function(def, i18nDef, jamoviVersion, id) {
     };
     window._ = this.translate.bind(this);
 
-    if (ui)
-        // eval requires ui, but there's no references to ui, so this if ensures
-        // ui isn't optimised away
-        eval(def);
+    const funcBody = `{
+        const module = {}, exports = {};
+        ${def}
+        return module.exports;
+    }`;
 
-    // this comes through differently depending on whether the vite server
-    // or rollup build is used ... i don't know why.
-    const moduleExports = module.exports || module;
+    const func = new Function('ui', 'DefaultControls', 'FormatDef', 'Format', 'View', funcBody);
+    const moduleExports = func(ui, DefaultControls, FormatDef, Format, View);
 
     let options = moduleExports.options;
     let layoutDef = new moduleExports.view.layout();
@@ -257,7 +249,7 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
         Keyboard.enterFocusLoop(optionsBlock);
     });
     Keyboard.setFocusMode(focusMode);
-    
+
     Keyboard.enterFocusLoop(optionsBlock);
 
     let $optionsBlock = $('.jmv-options-block');
@@ -294,7 +286,7 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
             else {
                 $optionsBlock.append(analysis.View.el);
                 analysis.View.render();
-                
+
                 $optionsBlock.find('.placeholder-options').remove();
 
                 analysis.model.options.on('options.valuesForServer', onValuesForServerChanges);
@@ -322,7 +314,7 @@ function setTitle(title) {
 function updateOptions(values) {
     if (! analysis || analysis.inError)
         return;
-    
+
     if (analysis.View.isLoaded() === false) {
         setTimeout(() => {
             updateOptions(values);
@@ -349,7 +341,7 @@ function setOptionsValues(data, editType) {
 
     if (analysis.inError)
         return;
-    
+
     if (analysis.View.isLoaded() === false) {
         setTimeout(() => {
             setOptionsValues(data, editType);
