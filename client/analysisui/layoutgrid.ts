@@ -12,7 +12,7 @@ export function LayoutControl<P extends GridControlProperties, TBase extends Con
         declare _el: InstanceType<TGrid>;
 
         constructor(...args: any[]) {
-            super(args[0]);
+            super(...args);
 
             this.setRootElement(new Grid());
         }

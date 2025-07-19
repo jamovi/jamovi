@@ -24,7 +24,7 @@ export function ChildLayoutSupport<TBase extends TitledLayoutGridType>(Base: TBa
         _body: MultiContainer;
 
         constructor(...args: any[]) {
-            super(args[0]);
+            super(...args);
             this._style = this.getPropertyValue('style');
             this._styles = this._style.split('-');
             this._parentStyle = this._styles[0];
