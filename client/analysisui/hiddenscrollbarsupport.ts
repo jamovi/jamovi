@@ -4,7 +4,7 @@ type Constructor<T> = new (...args: any[]) => T;
 export const HiddenScrollBarSupport = <TBase extends Constructor<InstanceType<typeof GridControl>>>(Base: TBase) => 
     class HiddenScrollBarSupport extends Base {
     constructor(...args: any[]) {
-        super(args);
+        super(...args);
 
         this.timeoutId = null;
         this.timeoutId2 = null;
