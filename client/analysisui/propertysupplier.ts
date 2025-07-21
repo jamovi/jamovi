@@ -84,7 +84,7 @@ export class PropertySupplier<P extends CtrlDef> extends EventEmitter {
         this.properties[name] = properties;
     }
 
-    isValueDataBound(value: any) {
+    protected isValueDataBound(value: any) {
         if (typeof value === 'string') {
             let temp = value.trim();
             return temp.startsWith('(') && temp.endsWith(')');
@@ -93,7 +93,7 @@ export class PropertySupplier<P extends CtrlDef> extends EventEmitter {
         return false;
     }
 
-    getPropertyValue<K extends keyof P>(property: K): P[K] {
+    public getPropertyValue<K extends keyof P>(property: K): P[K] {
 
         var propertyObj = this.properties[property];
         if (propertyObj === undefined)
@@ -106,7 +106,7 @@ export class PropertySupplier<P extends CtrlDef> extends EventEmitter {
             return value;
     }
 
-    setPropertyValue<K extends keyof P>(property: K, value: P[K]) {
+    public setPropertyValue<K extends keyof P>(property: K, value: P[K]) {
         if (property === "name" || property === "type")
             throw "Cannot change the '" + property.toString() + "' property";
 
@@ -125,28 +125,37 @@ export class PropertySupplier<P extends CtrlDef> extends EventEmitter {
         }
     }
 
-    onPropertyChanged<K extends keyof P>(property: K) {
+    protected onPropertyChanged<K extends keyof P>(property: K) {
 
     }
 
-    isPropertyDefined<K extends keyof P>(propertyName: K) {
+    public isPropertyDefined<K extends keyof P>(propertyName: K) {
         let property = this.properties[propertyName];
         return property && property.isDefined;
     }
 
-    hasProperty<K extends keyof P>(property: K) {
+    public hasProperty<K extends keyof P>(property: K) {
         return property in this.properties;
     }
 
-    getTrigger<K extends keyof P>(property: K) {
+    public getTrigger<K extends keyof P>(property: K) {
         return this.properties[property].trigger;
     }
 
-    beginPropertyEdit() {
+    public runInEditScope(fn: () => void) {
+        this.beginPropertyEdit();
+        try {
+            fn();
+        } finally {
+            this.endPropertyEdit();
+        }
+    }
+
+    public beginPropertyEdit() {
         this._propertySupplier_editting += 1;
     }
 
-    endPropertyEdit() {
+    public endPropertyEdit() {
         if (this._propertySupplier_editting === 0)
             return;
 
@@ -160,7 +169,7 @@ export class PropertySupplier<P extends CtrlDef> extends EventEmitter {
         }
     }
 
-    firePropertyChangedEvent<K extends keyof P>(property: K) {
+    protected firePropertyChangedEvent<K extends keyof P>(property: K) {
         if (this._propertySupplier_editting > 0)
             this._propertySupplier_eventsPending[property] = true;
         else

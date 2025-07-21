@@ -25,8 +25,7 @@ export class ContextMenu extends EventEmitter { // this is constructed at the bo
             if (! this._showing && event.target === this.menu)
                 this.emit('menu-hidden', event.detail);
         } );
-        this.el.addEventListener('menuActioned', () => { 
-            console.log('PPPPPPPPPPP')
+        this.el.addEventListener('menuActioned', () => {
             this.menu.hide(true); 
         });
     }
