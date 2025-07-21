@@ -342,7 +342,7 @@ class RibbonMenu {
         let html = '';
 
         let iconElement = HTML.create('div', { class: 'jmv-ribbon-button-icon' });
-        let labelElement = HTML.create('div', { class: 'jmv-ribbon-button-label', id: this.labelId }, this.title);
+        let labelElement = HTML.create('div', { class: 'jmv-ribbon-button-label', id: this.labelId}, this.title);
 
         if ( ! this.menu) {
             this.menu = new Menu(this.el, 1, { className: 'analysis-menu', exitKeys: [ 'Alt+ArrowUp' ] });
@@ -382,6 +382,7 @@ class RibbonMenu {
             this.el.removeChild(this.el.firstChild);
         this.el.append(iconElement);
         this.el.append(labelElement);
+        this.el.append(HTML.create('div', { class: 'jmv-ribbon-menu-arrow', style: 'margin-top: 5px;' }));
 
         if (allHidden) {
             this.el.classList.add('menu-item-hiding');
