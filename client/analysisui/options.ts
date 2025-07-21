@@ -265,6 +265,15 @@ export class Options extends EventEmitter {
         return null;
     }
 
+    public runInEditScope(fn: () => void) {
+        this.beginEdit();
+        try {
+            fn();
+        } finally {
+            this.endEdit();
+        }
+    }
+
     beginEdit() {
         this._beginEdit += 1;
     }

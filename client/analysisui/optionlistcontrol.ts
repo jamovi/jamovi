@@ -549,13 +549,14 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
         else if (key === undefined || key.length === 0) {
             if (Array.isArray(value) === false)
                 throw 'value must be an array';
-            this.beginPropertyEdit();
-            super.setValue(this.virtualDataToReal(value), key, insert);
-            for (let r = 0; r < value.length; r++) {
-                this._localData[r] = this.clone(value[r]);
-                this.updateDisplayRow(this.rowIndexToDisplayIndex(r), value[r], true);
-            }
-            this.endPropertyEdit();
+            this.runInEditScope(() => {
+                value = value as U[];
+                super.setValue(this.virtualDataToReal(value), key, insert);
+                for (let r = 0; r < value.length; r++) {
+                    this._localData[r] = this.clone(value[r]);
+                    this.updateDisplayRow(this.rowIndexToDisplayIndex(r), value[r], true);
+                }
+            });
         }
         else if (key.length > 1) {
             if (key[1] === this._realColumnInfoList[0].name) {
@@ -565,12 +566,12 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
                 super.setValue(value, realKey, insert);
             }
             else {
-                value = value as U;
-                this.beginPropertyEdit();
-                super.setValue(this.virtualToRealRowData(value), key, insert);
-                this._localData[key[0]] = value;
-                this.updateDisplayRow(this.rowIndexToDisplayIndex(key[0]), value, true);
-                this.endPropertyEdit();
+                this.runInEditScope(() => {
+                    value = value as U;
+                    super.setValue(this.virtualToRealRowData(value), key, insert);
+                    this._localData[key[0]] = value;
+                    this.updateDisplayRow(this.rowIndexToDisplayIndex(key[0]), value, true);
+                });
             }
         }
     }

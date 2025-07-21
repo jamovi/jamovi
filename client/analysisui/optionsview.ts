@@ -86,6 +86,15 @@ export class ControlOption<T> {
         this.options.setPropertyValue(this.getName(), propertyName, value, key, fragmentName);
     }
 
+    runInEditScope(fn: () => void) {
+        this.beginEdit();
+        try {
+            fn();
+        } finally {
+            this.endEdit();
+        }
+    }
+
     beginEdit() {
         if (this.isVirtual === false)
             this.options.beginEdit();

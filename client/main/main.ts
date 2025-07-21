@@ -795,9 +795,9 @@ $(document).ready(async() => {
         }
     });
 
-    let optionspanel = new OptionsPanel({ el : '#main-options', iframeUrl : host.analysisUIUrl, model : instance });
+    let optionspanel = new OptionsPanel({ el : document.querySelector('#main-options'), iframeUrl : host.analysisUIUrl, model : instance });
     optionspanel.setDataSetModel(dataSetModel);
-    optionspanel.$el.on('splitpanel-hide', () =>  window.focus() );
+    optionspanel.el.addEventListener('splitpanel-hide', () =>  window.focus() );
 
     let editor = new VariableEditor({ el : '#variable-editor', model : dataSetModel, controller: viewController });
 
