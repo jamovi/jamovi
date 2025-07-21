@@ -134,7 +134,7 @@ export class Instance extends EventMap<IInstanceModel>{
         this._settings = new Settings({ coms: this.attributes.coms });
         this._modules = new Modules({ instance: this });
 
-        this._dataSetModel = new DataSetViewModel({ coms: this.attributes.coms });
+        this._dataSetModel = new DataSetViewModel(this.attributes.coms);
         this._dataSetModel.on('columnsChanged', this._columnsChanged, this);
 
         this._analyses = new Analyses({

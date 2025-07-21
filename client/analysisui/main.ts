@@ -12,11 +12,11 @@ if ('default' in Framesg) // this import is handled differently between browseri
 import Options from './options';
 import OptionsView from './optionsview';
 import ui from './layoutdef';
-import _Format from './format';
-import { FormatDef as _FormatDef } from './formatdef';
-import _DefaultControls from './defaultcontrols';
+import Format from './format';
+import { FormatDef } from './formatdef';
+import DefaultControls from './defaultcontrols';
 import LayoutUpdateCheck from './layoutupdatecheck';
-import _View from './actions';
+import View from './actions';
 import GridTargetControl from './gridtargetcontrol';
 import GridControl from './gridcontrol';
 import OptionControl from './optioncontrol';
@@ -24,14 +24,6 @@ import LayoutActionManager from './layoutactionmanager';
 import GetRequestDataSupport from './requestdatasupport';
 import { applyMagicEvents as ApplyMagicEvents } from './applymagicevents';
 import Keyboard from '../common/focusloop';
-
-// Making backwards compatible variables that modules use.
-// The underscore in '_LibraryName' ensures the libraries are loaded even though they are not used in this file, however are used in modules.
-const DefaultControls = _DefaultControls;
-const FormatDef = _FormatDef;
-const Format = _Format;
-const View = _View;
-/////////////////
 
 import I18n from "../common/i18n";
 
@@ -115,7 +107,7 @@ let dataResources = { columns: [] };
 
 document.oncontextmenu = function () { return false; };
 
-const Analysis = function(def, i18nDef, jamoviVersion, id) {
+const Analysis = function(def: string, i18nDef, jamoviVersion, id) {
 
     this.id = id;
 
@@ -132,18 +124,23 @@ const Analysis = function(def, i18nDef, jamoviVersion, id) {
     };
     window._ = this.translate.bind(this);
 
-    if (ui)
-        // eval requires ui, but there's no references to ui, so this if ensures
-        // ui isn't optimised away
-        eval(def);
+    const createOptionsView = new Function('ui', 'DefaultControls', 'FormatDef', 'Format', 'View', `
+return (function() {
+    const module = {};
+    const exports = {};
+    let result = (function () {
+        ${def}
+        return typeof module.exports !== 'undefined' ? module.exports : window.module;
+    })();
+    return result;
+})();
+`);
 
-    // this comes through differently depending on whether the vite server
-    // or rollup build is used ... i don't know why.
-    const moduleExports = module.exports || module;
+    let optionsViewInfo = createOptionsView(ui, DefaultControls, FormatDef, Format, View);
 
-    let options = moduleExports.options;
-    let layoutDef = new moduleExports.view.layout();
-    this.viewTemplate = new moduleExports.view();
+    let options = optionsViewInfo.options;
+    let layoutDef = new optionsViewInfo.view.layout();
+    this.viewTemplate = new optionsViewInfo.view();
 
     LayoutUpdateCheck(layoutDef);
 
@@ -331,17 +328,17 @@ function updateOptions(values) {
     }
 
     let model = analysis.model;
-    model.options.beginEdit();
-    let params = Options.getDefaultEventParams("changed");
-    params.externalEvent = true;
-    for (let key in values) {
-        let value = values[key];
-        if (key === 'results//heading')
-            setTitle(value);
-        else
-            model.options.setOptionValue(key, value, params);
-    }
-    model.options.endEdit();
+    model.options.runInEditScope(() => {
+        let params = Options.getDefaultEventParams("changed");
+        params.externalEvent = true;
+        for (let key in values) {
+            let value = values[key];
+            if (key === 'results//heading')
+                setTitle(value);
+            else
+                model.options.setOptionValue(key, value, params);
+        }
+    });
 }
 
 function setOptionsValues(data, editType) {
@@ -360,30 +357,30 @@ function setOptionsValues(data, editType) {
     analysis.id = data.id;
     let titleSet = false;
     let model = analysis.model;
-    model.options.beginEdit();
-    if (analysis.View.beginDataInitialization(data.id)) {
-        let params = Options.getDefaultEventParams("changed");
-        params.silent = true;
-        for (let key in data.options) {
-            let value = data.options[key];
-            if (key === 'results//heading') {
-                setTitle(value);
-                titleSet = true;
+    model.options.runInEditScope(() => {
+        if (analysis.View.beginDataInitialization(data.id)) {
+            let params = Options.getDefaultEventParams("changed");
+            params.silent = true;
+            for (let key in data.options) {
+                let value = data.options[key];
+                if (key === 'results//heading') {
+                    setTitle(value);
+                    titleSet = true;
+                }
+                else
+                    model.options.setOptionValue(key, value, params);
             }
-            else
-                model.options.setOptionValue(key, value, params);
-        }
-        if (editType === 'absolute') {
-            for (let op of model.options._list) {
-                if (data.options === null || (op.name in data.options) === false)
-                    model.options.setOptionValue(op.name, null, params);
+            if (editType === 'absolute') {
+                for (let op of model.options._list) {
+                    if (data.options === null || (op.name in data.options) === false)
+                        model.options.setOptionValue(op.name, null, params);
+                }
             }
+            if (titleSet === false)
+                setTitle('');
+            analysis.View.endDataInitialization(data.id);
         }
-        if (titleSet === false)
-            setTitle('');
-        analysis.View.endDataInitialization(data.id);
-    }
-    model.options.endEdit();
+    });
 
     parentFrame.send("optionsViewReady", true);
 }

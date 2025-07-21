@@ -1,207 +1,234 @@
 'use strict';
 
-import $ from 'jquery';
-
 import _Framesg from 'framesg';
 let Framesg = _Framesg;
 if ('default' in Framesg) // this import is handled differently between browserify and vite
     Framesg = Framesg.default;
 
-import Backbone from 'backbone';
-Backbone.$ = $;
 import host from './host';
 import I18n from '../common/i18n';
 
-import SilkyView from './view';
 import focusLoop from '../common/focusloop';
+import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
+import { EventEmitter } from 'tsee';
+import DataSetViewModel from './dataset';
 
 
-const AnalysisResources = function(analysis, $target, iframeUrl, instanceId) {
+class AnalysisResources extends EventEmitter {
+    frame: HTMLIFrameElement;
+    key: string;
+    optionsViewReady: boolean;
+    name: string;
+    dataSetModel: DataSetViewModel
 
-    Object.assign(this, Backbone.Events);
+    constructor(analysis, target: HTMLElement, iframeUrl, instanceId) {
+        super();
 
-    this.analysis = analysis;
-    this.name = analysis.name;
-    this.options = null;
-    this.def = null;
-    this.optionsViewReady = false;
+        this.analysis = analysis;
+        this.name = analysis.name;
+        this.options = null;
+        this.def = null;
+        this.optionsViewReady = false;
 
-    this.key = analysis.ns + '-' + analysis.name;
+        this.key = analysis.ns + '-' + analysis.name;
 
-    let element = `<iframe id="${this.key}"
-            name="${this.key}"
-            sandbox="allow-scripts allow-same-origin"
-            src="${iframeUrl}${instanceId}/"
-            class="silky-options-control silky-hidden-options-control"
-            style="overflow: hidden; box-sizing: border-box;"
-            aria-label="${analysis.name} Options"></iframe>`;
+        let element = `<iframe id="${this.key}"
+                name="${this.key}"
+                sandbox="allow-scripts allow-same-origin"
+                src="${iframeUrl}${instanceId}/"
+                class="silky-options-control silky-hidden-options-control"
+                style="overflow: hidden; box-sizing: border-box;"
+                aria-label="${analysis.name} Options"></iframe>`;
 
-    this.$frame = $(element);
-    $target.append(this.$frame);
+        this.frame = HTML.parse(element);
+        target.append(this.frame);
 
-    this.frameCommsApi = {
-        frameDocumentReady: data => {
-            this.notifyDocumentReady();
-            this.trigger("frameReady");
-        },
+        this.frameCommsApi = {
+            frameDocumentReady: data => {
+                this.notifyDocumentReady();
+                this.emit("frameReady");
+            },
 
-        onFrameMouseEvent: data => {
-            let event = $.Event( data.eventName, data);
+            onFrameMouseEvent: data => {
+                
 
-            let pos = $('iframe.silky-options-control').offset();
+                const iframe = document.querySelector('iframe.silky-options-control');
 
-            event.pageX += pos.left;
-            event.pageY += pos.top;
+                const rect = iframe.getBoundingClientRect();
+                const scrollLeft = window.scrollX || window.pageXOffset;
+                const scrollTop = window.scrollY || window.pageYOffset;
 
-            $(document).trigger(event);
-        },
+                const pos = {
+                    left: rect.left + scrollLeft,
+                    top: rect.top + scrollTop
+                };
 
-        onOptionsChanged: data => {
-            this.analysis.setOptions(data.values);
+                data.pageX += pos.left;
+                data.pageY += pos.top;
 
-            for (let name in data.properties) {
-                let pData = data.properties[name];
-                for (let i = 0; i < pData.length; i++) {
-                    this.analysis.options.setProperty(name, pData[i].name, pData[i].key, pData[i].value);
-                }
-            }
-        },
+                let event = new MouseEvent( data.eventName, data);
+                document.dispatchEvent(event);
+            },
 
-        hideOptions: data => {
-            this.trigger("hideOptions");
-        },
+            onOptionsChanged: data => {
+                this.analysis.setOptions(data.values);
 
-        requestAction: data => {
-            if (data.requestType === "createColumn") {
-                let column = this.dataSetModel.getFirstEmptyColumn();
-                return this.dataSetModel.changeColumn(column.id, data.requestData ).then(() => { return column.name; });
-            }
-        },
-
-        optionsViewReady: ready => {
-            this.optionsViewReady = ready;
-        },
-
-        requestData: data => {
-            if (data.requestType === "columns") {
-                let columns = this.dataSetModel.get('columns');
-                let columnData = [];
-                for (let i = 0; i < columns.length; i++) {
-                    if (columns[i].columnType === 'none')
-                        continue;
-                    columnData.push({ name: columns[i].name, id: columns[i].id, measureType: columns[i].measureType, dataType: columns[i].dataType, columnType:  columns[i].columnType, outputAnalysisId: columns[i].outputAnalysisId });
-                }
-                data.columns = columnData;
-            }
-            else if (data.requestType === "column") {
-                let found = false;
-                let columns = this.dataSetModel.get('columns');
-                for (let i = 0; i < columns.length; i++) {
-                    if ((data.requestData.columnId !== undefined && columns[i].id === data.requestData.columnId) ||
-                        (data.requestData.columnName !== undefined && columns[i].name === data.requestData.columnName)) {
-                        found = true;
-                        for (let p = 0; p < data.requestData.properties.length; p++) {
-                            let propertyName = data.requestData.properties[p];
-                            data[propertyName] = columns[i][propertyName];
-                        }
-                        break;
+                for (let name in data.properties) {
+                    let pData = data.properties[name];
+                    for (let i = 0; i < pData.length; i++) {
+                        this.analysis.options.setProperty(name, pData[i].name, pData[i].key, pData[i].value);
                     }
                 }
-                data.columnFound = found;
+            },
+
+            hideOptions: data => {
+                this.emit("hideOptions");
+            },
+
+            requestAction: data => {
+                if (data.requestType === "createColumn") {
+                    let column = this.dataSetModel.getFirstEmptyColumn();
+                    return this.dataSetModel.changeColumn(column.id, data.requestData ).then(() => { return column.name; });
+                }
+            },
+
+            optionsViewReady: ready => {
+                this.optionsViewReady = ready;
+            },
+
+            requestData: data => {
+                if (data.requestType === "columns") {
+                    let columns = this.dataSetModel.get('columns');
+                    let columnData = [];
+                    for (let i = 0; i < columns.length; i++) {
+                        if (columns[i].columnType === 'none')
+                            continue;
+                        columnData.push({ name: columns[i].name, id: columns[i].id, measureType: columns[i].measureType, dataType: columns[i].dataType, columnType:  columns[i].columnType, outputAnalysisId: columns[i].outputAnalysisId });
+                    }
+                    data.columns = columnData;
+                }
+                else if (data.requestType === "column") {
+                    let found = false;
+                    let columns = this.dataSetModel.get('columns');
+                    for (let i = 0; i < columns.length; i++) {
+                        if ((data.requestData.columnId !== undefined && columns[i].id === data.requestData.columnId) ||
+                            (data.requestData.columnName !== undefined && columns[i].name === data.requestData.columnName)) {
+                            found = true;
+                            for (let p = 0; p < data.requestData.properties.length; p++) {
+                                let propertyName = data.requestData.properties[p];
+                                data[propertyName] = columns[i][propertyName];
+                            }
+                            break;
+                        }
+                    }
+                    data.columnFound = found;
+                }
+                else
+                    data.error = "Request type unknown";
+                return data;
             }
-            else
-                data.error = "Request type unknown";
-            return data;
-        }
-    };
+        };
 
-    this.frameComms = new Framesg(this.$frame[0].contentWindow, this.key, this.frameCommsApi);
+        this.frameComms = new Framesg(this.frame.contentWindow, this.key, this.frameCommsApi);
 
-    this.setAnalysisTitle = function(title) {
+        
+        this.notifyDocumentReady = null;
+
+        this.ready = Promise.all([
+            analysis.ready.then(() => {
+                return new Promise((resolve, reject) => {
+                    if (analysis.missingModule) {
+                        this.def = { error: 'Missing module: ' + analysis.ns };
+                        resolve(this.def);
+                    }
+                    else if (analysis.uijs) {
+                        this.def = analysis.uijs;
+                        this.i18nDef = analysis.i18n;
+                        resolve(analysis.uijs);
+                    }
+                    else {
+                        // shouldn't get here
+                        let url = '../analyses/' + analysis.ns + '/' + analysis.name.toLowerCase();
+
+                        return fetch(url).then(response => response.text())
+                            .then(script => {
+                                this.def = script;
+                                resolve(script);
+                            })
+                            .catch(error => {
+                                // Optional: handle error or reject if needed
+                                console.error("Fetch error:", error);
+                            });
+                    }
+                });
+            }),
+            new Promise((resolve, reject) => {
+                this.notifyDocumentReady = resolve;
+                this.notifyAborted = reject;
+            }),
+            host.version.then(version => {
+                this.jamoviVersion = version;
+            })
+        ]).then(() => {
+            return this.frameComms.send("setOptionsDefinition", this.def, this.i18nDef, I18n.localeData, this.jamoviVersion, analysis.id, focusLoop.focusMode);
+        });
+    }
+
+    setAnalysisTitle(title) {
         if ( ! this.analysis.missingModule)
             this.frameComms.send("setTitle", title);
-    };
+    }
 
-    this.destroy = function() {
-        this.$frame.remove();
+    destroy() {
+        this.frame.remove();
         //this.frameComms.disconnect(); //This function doesn't yet exist which is a problem and a slight memory leak, i have submitted an issue to the project.
         //Temp work around, kind of.
         this.frameComms.receiveNamespace = "deleted"; //this will result in the internal message function exiting without executing any potentially problematic commands. However, the event handler is still attached and this is a problem.
-    };
+    }
 
-    this.setDataModel = function(dataSetModel, instance) {
+    setDataModel(dataSetModel: DataSetViewModel) {
         this.dataSetModel = dataSetModel;
-        this.instance = instance;
-    };
+    }
 
-    this.initializeView = function () {
+    initializeView() {
         this.optionsViewReady = false;
         this.ready.then(() => {
             this.analysis.ready.then(() => {
                 this.updateData(this.analysis.options.getValues());
             });
         });  
-    };
+    }
 
-    this.updateData = function(options) {
+    updateData(options) {
         this.options = options;
         if (!this.analysis.missingModule)
             this.frameComms.send("initialiseOptions", { id: this.analysis.id, options: this.options });
-    };
+    }
 
-    this.updateOptions = function (values) {
+    updateOptions(values) {
         if ( ! this.analysis.missingModule)
             this.frameComms.send("updateOptions", values);
-    };
+    }
 
-    this.notifyDataChanged = function(dataType, dataInfo) {
+    notifyDataChanged(dataType, dataInfo) {
         this.frameComms.send("dataChanged", { dataType: dataType, dataInfo: dataInfo });
-    };
+    }
 
-    let notifyAborted;
-    this.notifyDocumentReady = null;
+    abort() {
+        this.notifyAborted("Aborted");
+    }
+}
 
-    this.ready = Promise.all([
-        analysis.ready.then(() => {
-            return new Promise((resolve, reject) => {
-                if (analysis.missingModule) {
-                    this.def = { error: 'Missing module: ' + analysis.ns };
-                    resolve(this.def);
-                }
-                else if (analysis.uijs) {
-                    this.def = analysis.uijs;
-                    this.i18nDef = analysis.i18n;
-                    resolve(analysis.uijs);
-                }
-                else {
-                    // shouldn't get here
-                    let url = '../analyses/' + analysis.ns + '/' + analysis.name.toLowerCase();
-                    return $.get(url, null, (script) => {
-                        this.def = script;
-                        resolve(script);
-                    }, 'text');
-                }
-            });
-        }),
-        new Promise((resolve, reject) => {
-            this.notifyDocumentReady = resolve;
-            notifyAborted = reject;
-        }),
-        host.version.then(version => {
-            this.jamoviVersion = version;
-        })
-    ]).then(() => {
-        return this.frameComms.send("setOptionsDefinition", this.def, this.i18nDef, I18n.localeData, this.jamoviVersion, analysis.id, focusLoop.focusMode);
-    });
+class OptionsPanel {
+    _currentResources: AnalysisResources;
+    _analysesResources: { [key: string]: AnalysisResources } ;
+    model: any;
+    el: HTMLElement;
+    iframeUrl: string;
+    dataSetModel: DataSetViewModel
 
-    this.abort = function() {
-        notifyAborted("Aborted");
-    };
-};
-
-let OptionsPanel = SilkyView.extend({
-
-    initialize: function(args) {
+    constructor(args: { el: HTMLElement, model: any, iframeUrl: string }) {
+        this.el = args.el;
 
         if ('iframeUrl' in args)
             this.iframeUrl = args.iframeUrl;
@@ -210,48 +237,50 @@ let OptionsPanel = SilkyView.extend({
 
         this._currentResources = null;
 
-        $(window).resize(() => { this.resizeHandler(); });
-        this.$el.on('resized', () => { this.resizeHandler(); });
+        window.addEventListener('resize', () => { this.resizeHandler(); });
+        this.el.addEventListener('resized', () => { this.resizeHandler(); });
 
         args.model.analyses().on('analysisHeadingChanged', this._analysisNameChanged, this);
 
         args.model.analyses().on('analysisOptionsChanged', this._optionsChanged, this);
 
-        this.render();
-    },
+        this.model = args.model;
 
-    setFocus: function() {
+        this.render();
+    }
+
+    setFocus() {
         if (this._currentResources) {
-            this._currentResources.$frame[0].focus();
+            this._currentResources.frame.focus();
            setTimeout(() => { // needed for firefox cross iframe focus
-                this._currentResources.$frame[0].contentWindow.focus();
+                this._currentResources.frame.contentWindow.focus();
             }, 100);
         }
-    },
+    }
 
-    _optionsChanged: function (analysis, incoming) {
+    _optionsChanged(analysis, incoming) {
         if (incoming) {
             let analysesKey = analysis.ns + "-" + analysis.name;
             let resources = this._analysesResources[analysesKey];
             if (resources && analysis.id === resources.analysis.id)
                 resources.updateOptions(analysis.options.getValues());
         }
-    },
+    }
 
-    _analysisNameChanged: function(analysis) {
+    _analysisNameChanged(analysis) {
         let analysesKey = analysis.ns + "-" + analysis.name;
         let resources = this._analysesResources[analysesKey];
         if (resources)
             resources.setAnalysisTitle(analysis.getHeading());
-    },
+    }
 
-    reloadAnalyses: function(moduleName) {
+    reloadAnalyses(moduleName) {
         let analysis = null;
         if (this._currentResources !== null && this._currentResources.analysis.ns === moduleName) {
             analysis = this._currentResources.analysis;
             this.removeMsgListeners(this._currentResources);
             this._currentResources.abort();
-            this._currentResources.$frame.addClass('silky-hidden-options-control');
+            this._currentResources.frame.classList.add('silky-hidden-options-control');
             this._currentResources = null;
         }
 
@@ -265,16 +294,16 @@ let OptionsPanel = SilkyView.extend({
         if (analysis !== null) {
             this.setAnalysis(analysis);
         }
-    },
+    }
 
-    setAnalysis: function(analysis) {
+    setAnalysis(analysis) {
         let analysesKey = analysis.ns + "-" + analysis.name;
 
         let resources = this._analysesResources[analysesKey];
         let createdNew = false;
 
         if (resources === undefined) {
-            resources = new AnalysisResources(analysis, this.$el, this.iframeUrl, this.model.instanceId());
+            resources = new AnalysisResources(analysis, this.el, this.iframeUrl, this.model.instanceId());
             resources.setDataModel(this.dataSetModel);
             this._analysesResources[analysesKey] = resources;
             createdNew = true;
@@ -283,8 +312,8 @@ let OptionsPanel = SilkyView.extend({
         if (this._currentResources !== null && resources !== this._currentResources) {
             this.removeMsgListeners(this._currentResources);
             this._currentResources.abort();
-            this._currentResources.$frame.addClass('silky-hidden-options-control');
-            this._currentResources.$frame.css("height", 0);
+            this._currentResources.frame.classList.add('silky-hidden-options-control');
+            this._currentResources.frame.style.height = '0';
             this._currentResources = null;
         }
 
@@ -297,20 +326,20 @@ let OptionsPanel = SilkyView.extend({
             this.updateContentHeight();
         }
         if (this._currentResources !== null) {
-            this._currentResources.$frame.css("height", '');
-            this._currentResources.$frame.removeClass('silky-hidden-options-control');
+            this._currentResources.frame.style.height = '';
+            this._currentResources.frame.classList.remove('silky-hidden-options-control');
             if (focusLoop.inAccessibilityMode())
-                focusLoop.transferFocus(this._currentResources.$frame[0]);
+                focusLoop.transferFocus(this._currentResources.frame);
         }
-    },
+    }
 
-    notifyOfDataChange: function(resource, dataType, dataInfo) {
+    notifyOfDataChange(resource, dataType, dataInfo) {
         resource.ready.then(() => {
             resource.notifyDataChanged(dataType, dataInfo);
         });
-    },
+    }
 
-    setDataSetModel: function(dataSetModel) {
+    setDataSetModel(dataSetModel: DataSetViewModel) {
         this.dataSetModel = dataSetModel;
 
         this.dataSetModel.on('dataSetLoaded', event => {
@@ -341,28 +370,37 @@ let OptionsPanel = SilkyView.extend({
             }
 
         });
-    },
+    }
 
-    render: function() {
-        this.$el.empty();
-    },
+    render() {
+        this.el.innerHTML = '';
+    }
 
-    updateContentHeight: function() {
+    updateContentHeight() {
         if (this._currentResources === null)
             return;
 
-        let $frame = this._currentResources.$frame;
-        let pos = $frame.position();
+        let frame = this._currentResources.frame;
+        const offsetParent = frame.offsetParent;
+        const pos = {
+            top: frame.offsetTop,
+            left: frame.offsetLeft
+        };
 
-        let properties = this.$el.css(["height", "padding-top", "padding-bottom", "border-top", "border-bottom"]);
-        let height = parseFloat(properties.height) - parseFloat(properties["padding-top"]) - parseFloat(properties["padding-bottom"]) - parseFloat(properties["border-top"]) - parseFloat(properties["border-bottom"]);
+        let style = window.getComputedStyle(this.el);
+
+        let height = parseFloat(style.height)
+            - parseFloat(style.paddingTop)
+            - parseFloat(style.paddingBottom)
+            - parseFloat(style.borderTopWidth)
+            - parseFloat(style.borderBottomWidth);
 
         let value = height - pos.top;
 
-        $frame.css("height", value);
-    },
+        frame.style.height = `${value}px`;
+    }
 
-    addMsgListeners: function(resource) {
+    addMsgListeners(resource) {
         resource.on("hideOptions", () => {
             this.model.set('selectedAnalysis', null);
         });
@@ -370,14 +408,14 @@ let OptionsPanel = SilkyView.extend({
         resource.on("frameReady", () => {
             this.updateContentHeight();
         });
-    },
+    }
 
-    removeMsgListeners: function(resource) {
+    removeMsgListeners(resource) {
         resource.off("hideOptions");
         resource.off("frameReady");
-    },
+    }
 
-    hideOptions: function(clearSelected) {
+    hideOptions(clearSelected) {
         if (clearSelected === undefined)
             clearSelected = true;
         if (clearSelected) {
@@ -386,16 +424,17 @@ let OptionsPanel = SilkyView.extend({
                 this.model.set('selectedAnalysis', null);
         }
 
-        this.$el.trigger("splitpanel-hide");
-    },
+        let event = new CustomEvent('splitpanel-hide');
+        this.el.dispatchEvent(event);
+    }
 
-    frameReady: function(data) {
-        this.updateContentHeight();
-    },
-
-    resizeHandler: function() {
+    frameReady(data) {
         this.updateContentHeight();
     }
-});
+
+    resizeHandler() {
+        this.updateContentHeight();
+    }
+}
 
 export default OptionsPanel;

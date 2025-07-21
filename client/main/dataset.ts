@@ -1,25 +1,281 @@
-//
-// Copyright (C) 2016 Jonathon Love
-//
-
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
+import { EventMap } from "../common/eventmap";
 
-const DataSetModel = Backbone.Model.extend({
-    initialize() {
-    },
+enum TransformAction {
+    CREATE = 0,
+    UPDATE = 1,
+    REMOVE = 2,
+}
+
+enum MeasureType {
+    NONE = 'none',
+    NOMINAL = 'nominal',
+    ORDINAL = 'ordinal',
+    CONTINUOUS = 'continuous',
+    ID = 'id',
+}
+
+enum DataType {
+    NO_DATA_TYPE = 'none',
+    INTEGER = 'integer',
+    DECIMAL = 'decimal',
+    TEXT = 'text'
+}
+
+interface Transform {
+    action: TransformAction;
+    id: number;
+    name: string;
+    description: string;
+    formula: string[];
+    formulaMessage: string[];
+    colourIndex: number;
+    measureType: MeasureType;
+    suffix: string;
+}
+
+interface RowRange {
+    index: number;
+    count: number;
+}
+
+enum ColumnAction {
+    MODIFY = 0,
+    REMOVE = 1,
+    INSERT = 2,
+}
+
+enum ColumnType {
+    NONE = 'none',
+    DATA = 'data',
+    COMPUTED = 'computed',
+    RECODED = 'recoded',
+    FILTER = 'filter',
+    OUTPUT = 'output',
+}
+
+interface VariableLevel {
+    label: string;
+    value: number;
+    importValue: string;
+    pinned: boolean;
+}
+
+interface ColumnCellRange {
+    start: number;
+    end: number;
+}
+
+interface ProcessedDatasetRR {
+    rowData: any;
+    cellsChanged: any;
+    dataWrite: any;
+    insertData: { ids: any, indices: any };
+    data: any;
+}
+
+interface Column {
+    id: number;
+    name: string;
+    index: number;
+    dIndex: number;
+    action: ColumnAction;
+    columnType: ColumnType;
+    dataType: DataType;
+    measureType: MeasureType;
+    autoMeasure: boolean;
+    width: number;
+    hasLevels: boolean;
+    levels: VariableLevel[];
+    dps: number;
+    importName: string;
+    formula: string;
+    formulaMessage: string;
+    description: string;
+    hidden: boolean;
+    active: boolean;
+    filterNo: number;
+    trimLevels: boolean;
+    transform: number;
+    parentId: number;
+    editedCellRanges: ColumnCellRange[];
+    dataChanged: boolean;
+    missingValues: string[];
+    outputAnalysisId: number;
+}
+
+interface Viewport {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+}
+
+interface DataSetModelData {
+    hasDataSet : boolean,
+    columns    : Column[ ],
+    rowNums    : any[ ],
+    transforms : Transform[ ],
+    rowCount : number,
+    vRowCount : number,
+    columnCount : number,
+    vColumnCount : number,
+    tColumnCount : number,
+    removedRowRanges: RowRange[],
+    coms : any,
+    instanceId : string | null,
+    editingVar : number[] | null,
+    varEdited : boolean,
+    filtersVisible: boolean,
+    edited : boolean,
+    formula : string,
+    formulaMessage : string,
+    changesCount: number,
+    changesPosition: number,
+    deletedRowCount: number,
+    addedRowCount: number,
+    editedCellCount: number,
+    rowCountExFiltered: number
+}
+
+class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
+    columnsById: Map<number, Column>;
+
+    static stringifyMeasureType = function(type: number): MeasureType {
+        switch (type) {
+            case 2:
+                return MeasureType.NOMINAL;
+            case 3:
+                return MeasureType.ORDINAL;
+            case 4:
+                return MeasureType.CONTINUOUS;
+            case 5:
+                return MeasureType.ID;
+            default:
+                return MeasureType.NONE;
+        }
+    };
+
+    static parseMeasureType = function(str: MeasureType): number {
+        switch (str) {
+            case MeasureType.NOMINAL:
+                return 2;
+            case MeasureType.ORDINAL:
+                return 3;
+            case MeasureType.CONTINUOUS:
+                return 4;
+            case MeasureType.ID:
+                return 5;
+            default:
+                return 0;
+        }
+    };
+
+    static stringifyColumnType = function(type: number): ColumnType {
+        switch (type) {
+            case 1:
+                return ColumnType.DATA;
+            case 2:
+                return ColumnType.COMPUTED;
+            case 3:
+                return ColumnType.RECODED;
+            case 4:
+                return ColumnType.FILTER;
+            case 5:
+                return ColumnType.OUTPUT;
+            case 0:
+                return ColumnType.NONE;
+            default:
+                return ColumnType.NONE;
+        }
+    };
+
+    static parseColumnType = function(str: ColumnType): number {
+        switch (str) {
+            case ColumnType.DATA:
+                return 1;
+            case ColumnType.COMPUTED:
+                return 2;
+            case ColumnType.RECODED:
+                return 3;
+            case ColumnType.FILTER:
+                return 4;
+            case ColumnType.OUTPUT:
+                return 5;
+            case ColumnType.NONE:
+                return 0;
+            default:
+                return 1;
+        }
+    };
+
+    static stringifyDataType = function(type: number): DataType {
+        switch (type) {
+            case 1:
+                return DataType.INTEGER;
+            case 2:
+                return DataType.DECIMAL;
+            case 3:
+                return DataType.TEXT;
+            default:
+                return DataType.INTEGER;
+        }
+    };
+
+    static parseDataType = function(str: DataType): number {
+        switch (str) {
+            case DataType.INTEGER:
+                return 1;
+            case DataType.DECIMAL:
+                return 2;
+            case DataType.TEXT:
+                return 3;
+            default:
+                return 1;
+        }
+    };
+
+    constructor(coms, extra: Omit<M, keyof DataSetModelData>) {
+        super(Object.assign({
+            hasDataSet : false,
+            columns    : [ ],
+            rowNums    : [ ],
+            transforms : [ ],
+            rowCount : 0,
+            vRowCount : 0,
+            columnCount : 0,
+            vColumnCount : 0,
+            tColumnCount : 0,
+            removedRowRanges: [ ],
+            coms : coms,
+            instanceId : null,
+            editingVar : null,
+            varEdited : false,
+            filtersVisible: true,
+            edited : false,
+            formula : '',
+            formulaMessage : '',
+            changesCount: 0,
+            changesPosition: -1,
+            deletedRowCount: 0,
+            addedRowCount: 0,
+            editedCellCount: 0,
+            rowCountExFiltered: 0
+        }, extra) as M);
+    }
+
     filtersHidden() {
+        this.set({ 'filtersVisible': false } as Partial<M>);
         return this.get('filtersVisible') === false;
-    },
-    filterCount(onlyActive) {
+    }
+
+    filterCount(onlyActive?: boolean): number {
         let c = 0;
         let columns = this.attributes.columns;
         for (let i = 0; i < columns.length; i++) {
             let column = columns[i];
-            if (column.columnType === 'filter') {
+            if (column.columnType === ColumnType.FILTER) {
                 if ( ! onlyActive || column.active)
                     c += 1;
             }
@@ -27,90 +283,70 @@ const DataSetModel = Backbone.Model.extend({
                 break;
         }
         return c;
-    },
-    visibleRealColumnCount() {
+    }
+
+    visibleRealColumnCount(): number {
         let vCount = this.get('vColumnCount');  // visible columns (including virtual columns)
         let tCount = this.get('tColumnCount');  // total columns (including virtual columns)
         let rCount = this.get('columnCount');   // real columns (excluding virtual columns)
 
         return vCount - (tCount - rCount);
-    },
-    visibleRowCount() {
+    }
+
+    visibleRowCount(): number {
         if (this.get('filtersVisible'))
             return this.get('rowCount');
         else
             return this.get('rowCountExFiltered');
-    },
+    }
+
     clearEditingVar() {
         this.set('editingVar', null);
-    },
-    getDisplayedEditingColumns() {
+    }
+
+    getDisplayedEditingColumns(): Column[] | null {
         let ids = this.get('editingVar');
         if (ids === null)
             return null;
 
-        let columns = [];
+        let columns: Column[] = [];
         for (let id of ids) {
             let column = this.getColumnById(id);
             if (column && column.hidden === false)
                 columns.push(column);
         }
         return columns;
-    },
-    getEditingColumns(displayOnly) {
+    }
+
+    getEditingColumns(displayOnly? : boolean): Column[] | null {
         let ids = this.get('editingVar');
         if (ids === null)
             return null;
 
-        let columns = [];
+        let columns: Column[] = [];
         for (let id of ids) {
             let column = this.getColumnById(id);
             if (column && !(column.hidden && displayOnly))
                 columns.push(column);
         }
         return columns;
-    },
-    defaults : {
-        hasDataSet : false,
-        columns    : [ ],
-        rowNums    : [ ],
-        transforms : [ ],
-        rowCount : 0,
-        vRowCount : 0,
-        columnCount : 0,
-        vColumnCount : 0,
-        tColumnCount : 0,
-        removedRowRanges: [ ],
-        coms : null,
-        instanceId : null,
-        editingVar : null,
-        varEdited : false,
-        filtersVisible: true,
-        edited : false,
-        formula : '',
-        formulaMessage : '',
-        changesCount: 0,
-        changesPosition: -1,
-        deletedRowCount: 0,
-        addedRowCount: 0,
-        editedCellCount: 0,
-        rowCountExFiltered: 0
-    },
-    setup(infoPB) {
+    }
+
+    setup(infoPB): void {
 
         if (infoPB.hasDataSet) {
 
             this.set('edited', infoPB.edited);
 
             let schemaPB = infoPB.schema;
-            let columns = Array(schemaPB.columns.length);
+            let columns: Column[] = Array(schemaPB.columns.length);
 
             this.columnsById = new Map();
             let dIndex = 0;
             for (let i = 0; i < schemaPB.columns.length; i++) {
                 let columnPB = schemaPB.columns[i];
-                let column = { };
-                this._readColumnPB(column, columnPB);
+                let column = this._readColumnPB(columnPB);
+                
                 if (column.hidden)
                     column.dIndex = -1;
                 else {
@@ -141,11 +377,10 @@ const DataSetModel = Backbone.Model.extend({
             }
             this.attributes.removedRowRanges = removedRowRanges;
 
-            let transforms = Array(schemaPB.transforms.length);
+            let transforms: Transform[] = Array(schemaPB.transforms.length);
             for (let i = 0; i < schemaPB.transforms.length; i++) {
                 let transformPB = schemaPB.transforms[i];
-                let transform = { };
-                this._readTransformPB(transform, transformPB);
+                let transform = this._readTransformPB(transformPB);
                 transforms[i] = transform;
             }
             this.attributes.transforms  = transforms;
@@ -155,20 +390,24 @@ const DataSetModel = Backbone.Model.extend({
             this.set('hasDataSet', true);
             this.trigger('dataSetLoaded');
         }
-    },
-    getColumnById(id) {
+    }
+
+    getColumnById(id: number): Column {
         return this.columnsById.get(id);
-    },
-    getTransformById(id) {
+    }
+
+    getTransformById(id: number): Transform {
         for (let transform of this.attributes.transforms) {
             if (transform.id === id)
                 return transform;
         }
-    },
-    getFirstEmptyColumn() {
+    }
+
+    getFirstEmptyColumn(): Column {
         return this.getColumn(this.get('columnCount'));
-    },
-    getColumn(index, isDisplayIndex) {
+    }
+
+    getColumn(index: number, isDisplayIndex?: boolean): Column | null {
         if (isDisplayIndex) {
             if (index > -1) {
                 for (let i = index; i < this.attributes.columns.length; i++) {
@@ -181,8 +420,9 @@ const DataSetModel = Backbone.Model.extend({
         }
         else
             return this.attributes.columns[index];
-    },
-    insertRows(ranges) {
+    }
+
+    insertRows(ranges: { rowStart: number, rowCount: number}[]): Promise<any> {
 
         let coms = this.attributes.coms;
 
@@ -205,8 +445,9 @@ const DataSetModel = Backbone.Model.extend({
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
             this._processDatasetRR(datasetPB);
         });
-    },
-    deleteRows(rowRanges) {
+    }
+
+    deleteRows(rowRanges: { rowStart: number, rowCount: number}[]): Promise<any> {
 
         let coms = this.attributes.coms;
 
@@ -229,21 +470,23 @@ const DataSetModel = Backbone.Model.extend({
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
             this._processDatasetRR(datasetPB);
         });
-    },
-    indexToDisplayIndex(index) {
+    }
+
+    indexToDisplayIndex(index: number): number {
         let columns = this.attributes.columns;
         return columns[index].dIndex;
-    },
-    indexFromDisplayIndex(dIndex) {
-        let columns = this.attributes.columns;
+    }
+
+    indexFromDisplayIndex(dIndex: number): number {
         for (let i = dIndex; i < this.attributes.columns.length; i++) {
             let column = this.attributes.columns[i];
             if (column.dIndex === dIndex)
                 return column.index;
         }
         throw 'Column display index out of range.';
-    },
-    insertColumn(columns, isDisplayIndex) {
+    }
+
+    insertColumn(columns: Column[], isDisplayIndex?: boolean): Promise<any> {
 
         if (Array.isArray(columns) === false)
             columns = [columns];
@@ -292,18 +535,18 @@ const DataSetModel = Backbone.Model.extend({
             let columnType = params.columnType;
             if (columnType === undefined)
                 throw 'Column type not specified';
-            params.columnType = DataSetModel.parseColumnType(columnType || 'none');
+            params.columnType = DataSetModel.parseColumnType(columnType || ColumnType.NONE);
 
             if (params.measureType === undefined)
-                params.measureType = columnType === 'computed' ? 'continuous' : 'nominal';
+                params.measureType = columnType === ColumnType.COMPUTED ? MeasureType.CONTINUOUS : MeasureType.NOMINAL;
             params.measureType = DataSetModel.parseMeasureType(params.measureType);
 
             let dataType = params.dataType;
             if (dataType === undefined) {
-                if (params.measureType == 'ID')
-                    dataType = 'text';
+                if (params.measureType == MeasureType.ID)
+                    dataType = DataType.TEXT;
                 else
-                    dataType = 'integer';
+                    dataType = DataType.INTEGER;
             }
             params.dataType = DataSetModel.parseDataType(dataType);
 
@@ -330,8 +573,9 @@ const DataSetModel = Backbone.Model.extend({
                 return events.insertData;
             }
         });
-    },
-    _updateDisplayIndices() {
+    }
+
+    _updateDisplayIndices(): void {
         let _dIndex = 0;
         let columns = this.attributes.columns;
         for (let i = 0; i < columns.length; i++) {
@@ -342,8 +586,9 @@ const DataSetModel = Backbone.Model.extend({
             else
                 columns[i].dIndex = -1;
         }
-    },
-    toggleFilterVisibility() {
+    }
+
+    toggleFilterVisibility(): Promise<any> {
 
         let coms = this.attributes.coms;
 
@@ -363,11 +608,13 @@ const DataSetModel = Backbone.Model.extend({
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
             this._processDatasetRR(datasetPB);
         });
-    },
-    deleteColumn(id) {
+    }
+
+    deleteColumn(id: number): Promise<any> {
         return this.deleteColumns([id]);
-    },
-    deleteColumns(ids) {
+    }
+
+    deleteColumns(ids: number[]): Promise<any> {
 
         let coms = this.attributes.coms;
 
@@ -425,12 +672,14 @@ const DataSetModel = Backbone.Model.extend({
                 }
             }
         });
-    },
-    changeColumn(id, values) {
+    }
+
+    changeColumn(id: number, values: Partial<Column>): Promise<any> {
         let column = this.getColumnById(id);
         return this.changeColumns([{ index: column.index, id: id, values: values }]);
-    },
-    changeColumns(pairs) {
+    }
+
+    changeColumns(pairs: {index: number, id: number, values: Partial<Column>}[]): Promise<any> {
 
         let coms = this.attributes.coms;
         let datasetPB = new coms.Messages.DataSetRR();
@@ -529,12 +778,12 @@ const DataSetModel = Backbone.Model.extend({
             else
                 columnPB.missingValues = column.missingValues;
 
-            if (values.measureType !== 'continuous' && values.levels) {
+            if (values.measureType !== MeasureType.CONTINUOUS && values.levels) {
                 columnPB.hasLevels = true;
                 for (let i = 0; i < values.levels.length; i++) {
                     let level = values.levels[i];
                     let levelPB = new coms.Messages.VariableLevel();
-                    if (values.dataType === 'text') {
+                    if (values.dataType === DataType.TEXT) {
                         levelPB.value = i;
                         levelPB.label = level.label;
                         levelPB.importValue = level.importValue;
@@ -565,7 +814,8 @@ const DataSetModel = Backbone.Model.extend({
             console.log(error);
             throw error;
         });
-    },
+    }
+
     _processTransformData(datasetPB) {
         if (datasetPB.incSchema) {
 
@@ -606,16 +856,15 @@ const DataSetModel = Backbone.Model.extend({
                         oldName = transform.name;
                         oldMessage = transform.formulaMessage;
                         oldMeasureType = transform.measureType;
-                        this._readTransformPB(transform, transformPB);
+                        this._readTransformPB(transformPB, transform);
                     }
                     else {
                         created = true;
                         oldName = transformPB.name;
                         oldMessage = '';
                         oldMeasureType = '';
-                        transform = { };
                         nCreated++;
-                        this._readTransformPB(transform, transformPB);
+                        transform = this._readTransformPB(transformPB);
                         this.attributes.transforms.push(transform);
                     }
                     let nameChanged = (oldName !== transformPB.name);
@@ -636,7 +885,8 @@ const DataSetModel = Backbone.Model.extend({
             return { changed, changes };
         }
         return null;
-    },
+    }
+
     _processRowData(datasetPB) {
         let coms = this.attributes.coms;
         let data = { rowsDeleted: [], rowsInserted: [] };
@@ -650,13 +900,18 @@ const DataSetModel = Backbone.Model.extend({
             }
         }
         return data;
-    },
+    }
+
+    onProcessDatasetRR_incSchema?(changes): void;
+
+    onProcessDatasetRR_incData?(outputData, datasetPB): void;
+
     _processDatasetRR(datasetPB) {
         let coms = this.attributes.coms;
-        this.set( { changesCount: datasetPB.changesCount, changesPosition: datasetPB.changesPosition });
+        this.set( { changesCount: datasetPB.changesCount, changesPosition: datasetPB.changesPosition } as Partial<M>);
 
-        let outputData = { };
-        outputData.rowData = this._processRowData(datasetPB, outputData);
+        let outputData: ProcessedDatasetRR = { };
+        outputData.rowData = this._processRowData(datasetPB);
 
         let changed = [];
         let changes = [];
@@ -738,7 +993,7 @@ const DataSetModel = Backbone.Model.extend({
                         let oldDPS = column.dps;
                         oldTransform = column.transform;
                         oldParentId = column.parentId;
-                        this._readColumnPB(column, columnPB);
+                        this._readColumnPB(columnPB, column);
                         hiddenChanged = oldHidden !== column.hidden;
                         activeChanged = oldActive !== column.active;
                         dpsChanged = oldDPS !== column.dps;
@@ -752,9 +1007,8 @@ const DataSetModel = Backbone.Model.extend({
                         oldMeasureType = 0;
                         oldMessage = '';
                         oldFormula = '';
-                        column = { };
                         nCreated++;
-                        this._readColumnPB(column, columnPB);
+                        column = this._readColumnPB(columnPB);
                         nvCreated += column.hidden ? 0 : 1;
                         this.columnsById.set(column.id, column);
                         columns.splice(column.index, 0, column);
@@ -828,64 +1082,17 @@ const DataSetModel = Backbone.Model.extend({
             if (nCreated > 0 || nVisible > 0 || nHidden > 0 || nDeleted > 0)
                 this._updateDisplayIndices();
 
-            let old = this.attributes.viewport;
-            let viewport = Object.assign({}, this.attributes.viewport);
+            
 
-            for (let change of changes) {
-                if (change.deleted) {
-                    if (change.dIndex !== -1) {
-                        if (change.dIndex <= old.left) {  // to the left of the view
-                            viewport.left  -= 1;
-                            viewport.right -= 1;
-                        }
-                        else if (change.dIndex >= old.left && change.dIndex <= old.right) {     // contained in the view
-                            viewport.right -= 1;
-                        }
-                    }
-                }
-                else if (change.hiddenChanged || change.created) {
-                    let column = this.getColumnById(change.id);
-                    if (column.hidden) {
-                        if (change.created) {
-                            // do nothing
-                        }
-                        else if (change.dIndex > old.right) {  // to the right of the view
-                            // do nothing
-                        }
-                        else if (change.dIndex < old.left) {  // to the left of the view
-                            viewport.left  -= 1;
-                            viewport.right -= 1;
-                        }
-                        else {
-                            viewport.right -= 1;
-                        }
-                    }
-                    else {
-                        if (column.dIndex > viewport.right) {  // to the right of the view
-                            // do nothing
-                        }
-                        else if (column.dIndex < viewport.left) {
-                            viewport.left  += 1;
-                            viewport.right += 1;
-                        }
-                        else {
-                            viewport.right += 1;
-                            let cells = new Array(viewport.bottom - viewport.top + 1).fill(null);
-                            this.attributes.cells.splice(column.dIndex - viewport.left, 0, cells);
-                        }
-                    }
-                }
-            }
-
-            this.attributes.viewport = viewport;
+            if (this.onProcessDatasetRR_incSchema)
+                this.onProcessDatasetRR_incSchema(changes);
         }
 
         if (datasetPB.incData) {
             this.set('edited', true);
-            let dataInfo = this._parseCells(datasetPB);
-            outputData.cellsChanged = this.setCells(dataInfo, true);
-
-            outputData.dataWrite = dataInfo;
+        
+            if (this.onProcessDatasetRR_incData)
+                this.onProcessDatasetRR_incData(outputData, datasetPB);
         }
 
         if (nDeleted > 0) {
@@ -1007,7 +1214,8 @@ const DataSetModel = Backbone.Model.extend({
             this.trigger('refreshView');
 
         return outputData;
-    },
+    }
+
     _clumpPropertyChanges(changes, property, value) {
         let valueRanges = [];
         let hIndex = -1;
@@ -1040,7 +1248,8 @@ const DataSetModel = Backbone.Model.extend({
             }
         }
         return valueRanges;
-    },
+    }
+
     _determineLevelLabelChanges(column, columnPB) {
         let orderChanged = false;
         let levelNameChanges = [];
@@ -1064,7 +1273,8 @@ const DataSetModel = Backbone.Model.extend({
         }
 
         return { names: levelNameChanges, order: orderChanged };
-    },
+    }
+
     _determineMissingValuesChange(column, columnPB) {
         if ( ! (columnPB && columnPB.missingValues && Array.isArray(columnPB.missingValues) &&
             column && column.missingValues && Array.isArray(column.missingValues)))
@@ -1082,8 +1292,12 @@ const DataSetModel = Backbone.Model.extend({
         }
 
         return false;
-    },
-    _readColumnPB(column, columnPB) {
+    }
+
+    _readColumnPB(columnPB, column?: Column): Column {
+        if (column === undefined)
+            column = { };
+
         column.id = columnPB.id;
         column.name = columnPB.name;
         column.index = columnPB.index;
@@ -1118,7 +1332,7 @@ const DataSetModel = Backbone.Model.extend({
             levels = new Array(columnPB.levels.length);
             for (let i = 0; i < levels.length; i++) {
                 let levelPB = columnPB.levels[i];
-                if (column.dataType === 'text') {
+                if (column.dataType === DataType.TEXT) {
                     levels[i] = {
                         label: levelPB.label,
                         value: i,
@@ -1137,8 +1351,14 @@ const DataSetModel = Backbone.Model.extend({
             }
         }
         column.levels = levels;
-    },
-    _readTransformPB(transform, transformPB) {
+
+        return column;
+    }
+
+    _readTransformPB(transformPB, transform?: Transform): Transform {
+        if (transform === undefined)
+            transform = { };
+
         transform.id = transformPB.id;
         transform.name = transformPB.name;
         transform.description = transformPB.description;
@@ -1147,8 +1367,11 @@ const DataSetModel = Backbone.Model.extend({
         transform.formulaMessage = transformPB.formulaMessage;
         transform.colourIndex = transformPB.colourIndex;
         transform.measureType = DataSetModel.stringifyMeasureType(transformPB.measureType);
-    },
-    setTransforms(pairs) {
+
+        return transform;
+    }
+
+    setTransforms(pairs: { id: number, values: Partial<Transform>}[]): Promise<any> {
 
         let coms = this.attributes.coms;
         let datasetPB = new coms.Messages.DataSetRR();
@@ -1210,7 +1433,7 @@ const DataSetModel = Backbone.Model.extend({
             else if ( ! newTransform)
                 transformPB.measureType = DataSetModel.parseMeasureType(transform.measureType);
             else
-                transformPB.measureType = DataSetModel.parseMeasureType('None');
+                transformPB.measureType = DataSetModel.parseMeasureType(MeasureType.NONE);
 
             if ('formula' in values)
                 transformPB.formula = values.formula;
@@ -1234,8 +1457,9 @@ const DataSetModel = Backbone.Model.extend({
             console.log(error);
             throw error;
         });
-    },
-    removeTransforms(ids) {
+    }
+
+    removeTransforms(ids: number[]): Promise<any> {
 
         let coms = this.attributes.coms;
         let datasetPB = new coms.Messages.DataSetRR();
@@ -1245,9 +1469,6 @@ const DataSetModel = Backbone.Model.extend({
         datasetPB.schema.filtersVisible = this.get('filtersVisible');
 
         for (let id of ids) {
-
-            let transform = this.getTransformById(id);
-
             let transformPB = new coms.Messages.DataSetSchema.TransformSchema();
             transformPB.id = id;
             transformPB.action = 2; // action: 0 - CREATE, 1 - UPDATE, 2 - REMOVE
@@ -1267,7 +1488,8 @@ const DataSetModel = Backbone.Model.extend({
             console.log(error);
             throw error;
         });
-    },
+    }
+
     undo() {
         let coms = this.attributes.coms;
         let datasetPB = new coms.Messages.DataSetRR();
@@ -1285,8 +1507,9 @@ const DataSetModel = Backbone.Model.extend({
             console.log(error);
             throw error;
         });
-    },
-    redo() {
+    }
+
+    redo(): Promise<any> {
         let coms = this.attributes.coms;
         let datasetPB = new coms.Messages.DataSetRR();
         datasetPB.op = coms.Messages.GetSet.REDO;
@@ -1303,141 +1526,116 @@ const DataSetModel = Backbone.Model.extend({
             console.log(error);
             throw error;
         });
-    },
-    columnTypeLabel(type) {
+    }
+
+    columnTypeLabel(type: ColumnType | number): string {
         switch (type) {
-            case 'data':
+            case ColumnType.DATA:
             case 1:
                 return _('Data');
-            case 'computed':
+            case ColumnType.COMPUTED:
             case 2:
                 return _('Computed');
-            case 'recoded':
+            case ColumnType.RECODED:
             case 3:
                 return _('Transformed');
-            case 'filter':
+            case ColumnType.FILTER:
             case 4:
                 return _('Filter');
-            case 'output':
+            case ColumnType.OUTPUT:
             case 5:
                 return _('Output');
-            case 'none':
+            case ColumnType.NONE:
             case 0:
                 return _('None');
             default:
                 return _('None');
         }
     }
-});
+}
 
-
-
-DataSetModel.stringifyMeasureType = function(type) {
-    switch (type) {
-        case 2:
-            return 'nominal';
-        case 3:
-            return 'ordinal';
-        case 4:
-            return 'continuous';
-        case 5:
-            return 'id';
-        default:
-            return 'none';
-    }
+type DataSetViewModelData = {
+    cells: Cell[][];
+    filtered: any;
+    viewport: Viewport;
 };
 
-DataSetModel.parseMeasureType = function(str) {
-    switch (str) {
-        case 'nominal':
-            return 2;
-        case 'ordinal':
-            return 3;
-        case 'continuous':
-            return 4;
-        case 'id':
-            return 5;
-        default:
-            return 0;
-    }
-};
+interface Cell {
+    value: any;
+    missing: boolean;
+}
 
-DataSetModel.stringifyColumnType = function(type) {
-    switch (type) {
-        case 1:
-            return 'data';
-        case 2:
-            return 'computed';
-        case 3:
-            return 'recoded';
-        case 4:
-            return 'filter';
-        case 5:
-            return 'output';
-        case 0:
-            return 'none';
-        default:
-            return 'none';
-    }
-};
+class DataSetViewModel extends DataSetModel<DataSetViewModelData & DataSetModelData> { 
 
-DataSetModel.parseColumnType = function(str) {
-    switch (str) {
-        case 'data':
-            return 1;
-        case 'computed':
-            return 2;
-        case 'recoded':
-            return 3;
-        case 'filter':
-            return 4;
-        case 'output':
-            return 5;
-        case 'none':
-            return 0;
-        default:
-            return 1;
-    }
-};
-
-DataSetModel.stringifyDataType = function(type) {
-    switch (type) {
-        case 1:
-            return 'integer';
-        case 2:
-            return 'decimal';
-        case 3:
-            return 'text';
-        default:
-            return 'integer';
-    }
-};
-
-DataSetModel.parseDataType = function(str) {
-    switch (str) {
-        case 'integer':
-            return 1;
-        case 'decimal':
-            return 2;
-        case 'text':
-            return 3;
-        default:
-            return 1;
-    }
-};
-
-const DataSetViewModel = DataSetModel.extend({
-
-    initialize() {
-        this.on('columnsChanged', event => this._columnsChanged(event));
-    },
-    defaults() {
-        return Object.assign({
+    constructor(coms) {
+        super(coms, {
             cells    : [ ],
             filtered : [ ],
-            viewport : { left : 0, top : 0, right : -1, bottom : -1 },
-        }, DataSetModel.prototype.defaults);
-    },
+            viewport : { left : 0, top : 0, right : -1, bottom : -1 }
+        })
+        this.on('columnsChanged', event => this._columnsChanged(event));
+    }
+
+    override onProcessDatasetRR_incSchema(changes): void {
+        let old = this.attributes.viewport;
+        let viewport = Object.assign({}, this.attributes.viewport);
+
+        for (let change of changes) {
+            if (change.deleted) {
+                if (change.dIndex !== -1) {
+                    if (change.dIndex <= old.left) {  // to the left of the view
+                        viewport.left  -= 1;
+                        viewport.right -= 1;
+                    }
+                    else if (change.dIndex >= old.left && change.dIndex <= old.right) {     // contained in the view
+                        viewport.right -= 1;
+                    }
+                }
+            }
+            else if (change.hiddenChanged || change.created) {
+                let column = this.getColumnById(change.id);
+                if (column.hidden) {
+                    if (change.created) {
+                        // do nothing
+                    }
+                    else if (change.dIndex > old.right) {  // to the right of the view
+                        // do nothing
+                    }
+                    else if (change.dIndex < old.left) {  // to the left of the view
+                        viewport.left  -= 1;
+                        viewport.right -= 1;
+                    }
+                    else {
+                        viewport.right -= 1;
+                    }
+                }
+                else {
+                    if (column.dIndex > viewport.right) {  // to the right of the view
+                        // do nothing
+                    }
+                    else if (column.dIndex < viewport.left) {
+                        viewport.left  += 1;
+                        viewport.right += 1;
+                    }
+                    else {
+                        viewport.right += 1;
+                        let cells = new Array(viewport.bottom - viewport.top + 1).fill(null);
+                        this.attributes.cells.splice(column.dIndex - viewport.left, 0, cells);
+                    }
+                }
+            }
+        }
+
+        this.attributes.viewport = viewport;
+    }
+
+    override onProcessDatasetRR_incData(outputData, datasetPB): void {
+        let dataInfo = this._parseCells(datasetPB);
+        outputData.cellsChanged = this.setCells(dataInfo, true);
+
+        outputData.dataWrite = dataInfo;
+    }
+
     valueAt(rowNo, colNo) {
         let viewport = this.attributes.viewport;
         if (rowNo >= viewport.top &&
@@ -1451,7 +1649,8 @@ const DataSetViewModel = DataSetModel.extend({
         }
 
         return null;
-    },
+    }
+
     setViewport(viewport) {
 
         let nCols = viewport.right - viewport.left + 1;
@@ -1472,7 +1671,8 @@ const DataSetViewModel = DataSetModel.extend({
 
         if (nRows !== 0 && nCols !== 0)
             this.readCells(viewport);
-    },
+    }
+
     reshape(left, top, right, bottom) {
 
         // console.log("reshape : " + JSON.stringify({left:left,top:top,right:right,bottom:bottom}));
@@ -1542,7 +1742,7 @@ const DataSetViewModel = DataSetModel.extend({
         if (top > 0) {
             for (let i = 0; i < innerNCols; i++) {
                 for (let j = 0; j < top; j++)
-                    cells[i].unshift(".");
+                    cells[i].unshift({value: ".", missing: false});
             }
             for (let j = 0; j < top; j++) {
                 filtered.unshift(null);
@@ -1554,7 +1754,7 @@ const DataSetViewModel = DataSetModel.extend({
         if (bottom > 0) {
             for (let i = 0; i < innerNCols; i++) {
                 for (let j = 0; j < bottom; j++)
-                    cells[i].push(".");
+                    cells[i].push({value: ".", missing: false});
             }
             for (let j = 0; j < bottom; j++) {
                 filtered.push(null);
@@ -1568,12 +1768,14 @@ const DataSetViewModel = DataSetModel.extend({
         this.attributes.cells = cells;
 
         this.trigger("viewportChanged");
-    },
+    }
+
     readCells(viewport) {
         this.requestCells(viewport).then(dataInfo => {
             this.setCells(dataInfo);
         }).done();
-    },
+    }
+
     _parseCells(response) {
         let data = new Array(response.data.length);
         for (let i = 0; i < data.length; i++) {
@@ -1638,7 +1840,8 @@ const DataSetViewModel = DataSetModel.extend({
         }
 
         return { data, filterData, rowNums };
-    },
+    }
+
     requestCells(viewport) {
         let coms = this.attributes.coms;
         let cellsRequest = new coms.Messages.DataSetRR();
@@ -1661,7 +1864,8 @@ const DataSetViewModel = DataSetModel.extend({
             let data = this._parseCells(dsrrPB);
             return data;
         });
-    },
+    }
+
     changeCells(data, cbHtml, selection, selectionList) {
         let coms = this.attributes.coms;
         let cellsRequest = new coms.Messages.DataSetRR();
@@ -1746,7 +1950,8 @@ const DataSetViewModel = DataSetModel.extend({
 
         });
 
-    },
+    }
+
     _getViewPortUnion(block) {
         let viewTop = this.attributes.viewport.top;
         let viewBottom = this.attributes.viewport.bottom;
@@ -1802,8 +2007,9 @@ const DataSetViewModel = DataSetModel.extend({
         }
 
         return check;
-    },
-    setCells(dataInfo, silent) {
+    }
+
+    setCells(dataInfo, silent?: boolean) {
         let filterData = dataInfo.filterData;
         let data = dataInfo.data;
         let rowNumss = dataInfo.rowNums;
@@ -1855,7 +2061,8 @@ const DataSetViewModel = DataSetModel.extend({
         }
 
         return changedCells;
-    },
+    }
+
     _columnsChanged(event) {
 
         for (let changes of event.changes) {
@@ -1876,27 +2083,6 @@ const DataSetViewModel = DataSetModel.extend({
             this.readCells(viewport);
         }
     }
-});
-
-const genColName = function(index) {
-    let alph = [
-            'A','B','C','D','E','F','G','H','I',
-            'J','K','L','M','N','O','P','Q','R',
-            'S','T','U','V','W','X','Y','Z'
-        ];
-
-    let value = '';
-    let c = index;
-    do {
-        let i = c % alph.length;
-        value = alph[i] + value;
-        c -= i;
-        c /= alph.length;
-        c -= 1;
-    }
-    while (c >= 0);
-
-    return value;
 };
 
 export default DataSetViewModel;

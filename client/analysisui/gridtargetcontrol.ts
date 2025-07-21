@@ -945,71 +945,70 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
         this._actionStarted += 1;
         this._supplier.blockFilterProcess = true;
 
-        this.targetGrid.option.beginEdit();
-        this.targetGrid.beginPropertyEdit();
-        let postProcessSelectionIndex = null;
         let postProcessList = null;
-        let label = this.getTranslatedProperty('label');
-        if (this.gainOnClick) {
-            let selectedItems = this.getSupplierItems(action);
-            let selectedCount = selectedItems.length;
-            if (selectedCount > 0) {
-                if (selectedItems.length === 1) 
-                    A11y.speakMessage(s_('{vars} added to {list}.', {vars: selectedItems[0].value.toAriaLabel(), list: label}));
-                else 
-                    A11y.speakMessage(s_('{vars} items added to {list}.', {vars: selectedCount, list: label}));   
+        let postProcessSelectionIndex = null;
+        this.targetGrid.option.runInEditScope(() => {
+            this.targetGrid.runInEditScope(() => {
+                let label = this.getTranslatedProperty('label');
+                if (this.gainOnClick) {
+                    let selectedItems = this.getSupplierItems(action);
+                    let selectedCount = selectedItems.length;
+                    if (selectedCount > 0) {
+                        if (selectedItems.length === 1) 
+                            A11y.speakMessage(s_('{vars} added to {list}.', {vars: selectedItems[0].value.toAriaLabel(), list: label}));
+                        else 
+                            A11y.speakMessage(s_('{vars} items added to {list}.', {vars: selectedCount, list: label}));   
 
-                for (let i = 0; i < selectedCount; i++) {
-                    let selectedItem = selectedItems[i];
-                    if (postProcessSelectionIndex === null || postProcessSelectionIndex > selectedItem.index) {
-                        postProcessSelectionIndex = selectedItem.index;
-                        if (this._supplier.getPropertyValue('persistentItems'))
-                            postProcessSelectionIndex += 1;
+                        for (let i = 0; i < selectedCount; i++) {
+                            let selectedItem = selectedItems[i];
+                            if (postProcessSelectionIndex === null || postProcessSelectionIndex > selectedItem.index) {
+                                postProcessSelectionIndex = selectedItem.index;
+                                if (this._supplier.getPropertyValue('persistentItems'))
+                                    postProcessSelectionIndex += 1;
+                            }
+
+                            let nextTarget = this.targetGrid;
+                            while (this.addRawToOption(selectedItem, null, false) === false) {
+                                nextTarget = this.findListWithSpace(this.targetGrid);
+                                if (nextTarget === null)
+                                    break;
+
+                                this.setTargetGrid(nextTarget);
+                            }
+
+                            if (nextTarget === null)
+                                break;
+                        }
+                        postProcessList = this._supplier;
                     }
-
-                    let nextTarget = this.targetGrid;
-                    while (this.addRawToOption(selectedItem, null, false) === false) {
-                        nextTarget = this.findListWithSpace(this.targetGrid);
-                        if (nextTarget === null)
-                            break;
-
-                        this.setTargetGrid(nextTarget);
-                    }
-
-                    if (nextTarget === null)
-                        break;
                 }
-                postProcessList = this._supplier;
-            }
-        }
-        else if (this.targetGrid.el.selectedCellCount() > 0) {
-            let startRow = -1;
-            let length = 0;
-            let selectionCount = this.targetGrid.el.selectedCellCount();
-            let index = 0;
-            let removedVar = null;
-            while (this.targetGrid.el.selectedCellCount() > index) {
-                let cell = this.targetGrid.el.getSelectedCell(index);
-                removedVar = cell.item.getAriaLabel();
-                let rowIndex = this.targetGrid.displayRowToRowIndex(cell.data.row);
-                if (postProcessSelectionIndex === null || postProcessSelectionIndex > rowIndex)
-                    postProcessSelectionIndex = rowIndex;
+                else if (this.targetGrid.el.selectedCellCount() > 0) {
+                    let startRow = -1;
+                    let length = 0;
+                    let selectionCount = this.targetGrid.el.selectedCellCount();
+                    let index = 0;
+                    let removedVar = null;
+                    while (this.targetGrid.el.selectedCellCount() > index) {
+                        let cell = this.targetGrid.el.getSelectedCell(index);
+                        removedVar = cell.item.getAriaLabel();
+                        let rowIndex = this.targetGrid.displayRowToRowIndex(cell.data.row);
+                        if (postProcessSelectionIndex === null || postProcessSelectionIndex > rowIndex)
+                            postProcessSelectionIndex = rowIndex;
 
-                if (this.targetGrid.removeFromOption(this.targetGrid.getCellInfo(cell)) === false)
-                    index += 1; 
-            }
+                        if (this.targetGrid.removeFromOption(this.targetGrid.getCellInfo(cell)) === false)
+                            index += 1; 
+                    }
 
-            let removedCount = selectionCount - index;
-            if (removedCount === 1)
-                A11y.speakMessage(s_('{vars} removed from {list}.', {vars: removedVar, list: label}));
-            else
-                A11y.speakMessage(s_('{vars} items removed from {list}.', {vars: removedCount, list: label})); 
-            postProcessList = this.targetGrid;
-        }
-
-        this.targetGrid.endPropertyEdit();
-        this.targetGrid.option.endEdit();
-
+                    let removedCount = selectionCount - index;
+                    if (removedCount === 1)
+                        A11y.speakMessage(s_('{vars} removed from {list}.', {vars: removedVar, list: label}));
+                    else
+                        A11y.speakMessage(s_('{vars} items removed from {list}.', {vars: removedCount, list: label})); 
+                    postProcessList = this.targetGrid;
+                }
+            });
+        });
+        
         this._supplier.blockFilterProcess = false;
         this._supplier.filterSuppliersList();
 
