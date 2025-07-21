@@ -155,6 +155,8 @@ class ContextableEventEmittier extends EventEmitter {
         }
     }
 
+    onClose?(): void;
+
     	/** Removes DOM tree elements and any listeners from or too the view object */
     public close() {
         if ( ! this._isClosed) {
@@ -221,7 +223,7 @@ export abstract class EventDistributor extends HTMLElement {
 export class EventMap<T> extends ContextableEventEmittier {
     
     public attributes: T;
-    public previousAttributes: { [K in keyof T]?: T[K] } = { };
+    public previousAttributes: Partial<T> = { };
 
     constructor(attributes: T) {
         super();
@@ -237,7 +239,7 @@ export class EventMap<T> extends ContextableEventEmittier {
     }
 
     public set<K extends keyof T>(name: K, value: T[K]): void;
-    public set(attributes: { [K in keyof T]?: T[K] }): void;
+    public set(attributes: Partial<T>): void;
     public set(attributes:any, options=undefined): void {
         let hasChanged = false;
         let changed = { };

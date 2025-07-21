@@ -81,14 +81,14 @@ export class OptionControlBase<T, V, P extends OptionControlBaseProperties<T>> e
 
         if (event.cancel === false) {
             let option = this.getOption();
-            option.beginEdit();
-            this.beginPropertyEdit();
-            if (event.insert)
-                option.insertValueAt(event.value, event.key);
-            else
-                option.setValue(event.value, event.key);
-            this.endPropertyEdit();
-            option.endEdit();
+            option.runInEditScope(() => {
+                this.runInEditScope(() => {
+                    if (event.insert)
+                        option.insertValueAt(event.value, event.key);
+                    else
+                        option.setValue(event.value, event.key);
+                });
+            });
         }
     }
 
