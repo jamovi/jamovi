@@ -15,7 +15,11 @@
     background-image: url("../../assets/analysis-scatr-jmvbar.svg");
 }
 
-.jmv-ribbon-button[data-name="scatr-jmvscatter"] .jmv-ribbon-button-icon {
+.jmv-ribbon-button[data-name="scatr-scat"] .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-scatr-jmvscatter.svg");
+}
+
+.jmv-ribbon-button[data-name="more"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-plots-more.svg");
 }
 
