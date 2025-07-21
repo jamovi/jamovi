@@ -6,6 +6,8 @@ import RibbonTab from './ribbontab';
 import Placeholder from './placeholder';
 import RibbonButton from './ribbonbutton';
 import focusLoop from '../../common/focusloop';
+import RibbonGroup from './ribbongroup';
+import RibbonSeparator from './ribbonseparator';
 
 //import Store from '../store';
 
@@ -181,13 +183,12 @@ class PlotsTab extends RibbonTab {
             let menu = menus[groupName];
             let button = null;
             if (groupName === '.') {
-                //let subgroups = [];
+                let subgroups = [];
                 let buttons = [];
                 for (let subgroup in menu) {
                     
                     if (subgroup === '_new' || subgroup === '_title' || subgroup === 'ns')
                         continue;
-                    
                     
                     for (let item of menu[subgroup].items) {
                         let name = `${item.ns}-${item.name}`;
@@ -200,6 +201,7 @@ class PlotsTab extends RibbonTab {
                     }
                     //subgroups.push(new RibbonGroup({ title: '', margin: 'large', items: buttons }));
                 }
+                buttons.push(new RibbonSeparator());
                 button = buttons; //new RibbonGroup({ title: '', margin: 'large', items: buttons });
             }
             else {
@@ -225,6 +227,7 @@ class PlotsTab extends RibbonTab {
                 let buttonElement = document.createElement('button');
                 buttonElement.setAttribute('id', buttonId2);
                 button = new RibbonMenu(buttonElement, menu._title, groupName, shortcutKey, flattened, false, containsNew);
+                button = [button];
             }
 
             this.buttons.push(...button);
