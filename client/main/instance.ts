@@ -113,6 +113,15 @@ export type IBackstageSupport = IBackstageResources & ISettingsProvider & EventM
 
 export class Instance extends EventMap<IInstanceModel>{
 
+    _settings: Settings;
+    _modules: Modules;
+    _dataSetModel: DataSetViewModel;
+    _instanceId: string;
+    _onBC: (broadcast) => void;
+    transId: number = 0;
+    seqNo: number = 0;
+    command: string = '';
+
     constructor(coms) {
         super({
             coms : coms,
@@ -126,10 +135,6 @@ export class Instance extends EventMap<IInstanceModel>{
             editState: false,
             saveFormat: undefined
         })
-
-        this.transId = 0;
-        this.command = '';
-        this.seqNo = 0;
 
         this._settings = new Settings({ coms: this.attributes.coms });
         this._modules = new Modules({ instance: this });
@@ -855,7 +860,7 @@ export class Instance extends EventMap<IInstanceModel>{
         return { '.ppi': ppi, theme: theme, palette: palette };
     }
 
-    async _constructAnalysisRequest(analysis, options) {
+    async _constructAnalysisRequest(analysis, options?) {
 
         let coms = this.attributes.coms;
 
@@ -885,7 +890,7 @@ export class Instance extends EventMap<IInstanceModel>{
         return request;
     }
 
-    _sendAnalysisRequest(request, analysis) {
+    _sendAnalysisRequest(request) {
 
         let coms = this.attributes.coms;
 
@@ -897,8 +902,7 @@ export class Instance extends EventMap<IInstanceModel>{
         return coms.sendP(message);
     }
 
-    async _runAnalysis(analysis, changed) {
-        let coms = this.attributes.coms;
+    async _runAnalysis(analysis, changed?) {
         this._dataSetModel.set('edited', true);
 
         analysis.revision++;
@@ -908,11 +912,10 @@ export class Instance extends EventMap<IInstanceModel>{
         if (changed)
             request.changed = changed;
 
-        this._sendAnalysisRequest(request, analysis);
+        this._sendAnalysisRequest(request);
     }
 
     async _sendAnalysis(analysis, duplicee) {
-        let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
 
         let request = null;
@@ -925,15 +928,14 @@ export class Instance extends EventMap<IInstanceModel>{
             request.perform = 0; // INIT
         }
 
-        this._sendAnalysisRequest(request, analysis);
+        this._sendAnalysisRequest(request);
     }
 
     async deleteAnalysis(analysis) {
-        let coms = this.attributes.coms;
         this._dataSetModel.set('edited', true);
         let request = await this._constructAnalysisRequest(analysis);
         request.perform = 6; // DELETE
-        this._sendAnalysisRequest(request, analysis);
+        this._sendAnalysisRequest(request);
     }
 
     deleteAll() {
@@ -945,7 +947,7 @@ export class Instance extends EventMap<IInstanceModel>{
         this._sendAnalysisRequest(request);
     }
 
-    async _onReceive(payloadType, response) {
+    async _onReceive(payloadType, response?) {
 
         let coms = this.attributes.coms;
 

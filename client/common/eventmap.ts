@@ -238,18 +238,21 @@ export class EventMap<T> extends ContextableEventEmittier {
         return this.previousAttributes[name];
     }
 
-    public set<K extends keyof T>(name: K, value: T[K]): void;
-    public set(attributes: Partial<T>): void;
-    public set(attributes:any, options=undefined): void {
+    public set<K extends keyof T>(name: K, value: T[K], options?: { silent: boolean }): void;
+    public set(attributes: Partial<T>, options?: { silent: boolean }): void;
+    public set(attributes:any, value?: any, options?: { silent: boolean }): void {
         let hasChanged = false;
         let changed = { };
         if (typeof attributes === 'string') {
-            if (this._set(attributes, options)) {
-                changed[attributes] = options;
+            if (this._set(attributes, value)) {
+                changed[attributes] = value;
                 hasChanged = true;
             }
         }
         else {
+            if (value !== undefined)
+                options = value;
+
             for (let name in attributes) {
                 let newValue = attributes[name];
                 let oldValue = this.attributes[name];
@@ -263,11 +266,13 @@ export class EventMap<T> extends ContextableEventEmittier {
         }
 
         if (hasChanged) {
-            this.beginEventCompiling();
-            this.trigger(`change`, { changed });
-            for (let name in changed)
-                this.trigger(`change:${name}`, { changed });
-            this.endEventCompiling({ changed });
+            if (options === undefined || ! options.silent) {
+                this.beginEventCompiling();
+                this.trigger(`change`, { changed });
+                for (let name in changed)
+                    this.trigger(`change:${name}`, { changed });
+                this.endEventCompiling({ changed });
+            }
         }
     }
 
@@ -276,8 +281,6 @@ export class EventMap<T> extends ContextableEventEmittier {
         if (oldValue !== value) {
             this.previousAttributes[name] = oldValue;
             this.attributes[name] = value;
-            let changed = {};
-            changed[name] = value;
             return true;
         }
         return false;

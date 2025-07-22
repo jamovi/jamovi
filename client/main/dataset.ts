@@ -8,7 +8,7 @@ enum TransformAction {
     REMOVE = 2,
 }
 
-enum MeasureType {
+export enum MeasureType {
     NONE = 'none',
     NOMINAL = 'nominal',
     ORDINAL = 'ordinal',
@@ -16,7 +16,7 @@ enum MeasureType {
     ID = 'id',
 }
 
-enum DataType {
+export enum DataType {
     NO_DATA_TYPE = 'none',
     INTEGER = 'integer',
     DECIMAL = 'decimal',
@@ -46,7 +46,7 @@ enum ColumnAction {
     INSERT = 2,
 }
 
-enum ColumnType {
+export enum ColumnType {
     NONE = 'none',
     DATA = 'data',
     COMPUTED = 'computed',
@@ -55,7 +55,7 @@ enum ColumnType {
     OUTPUT = 'output',
 }
 
-interface VariableLevel {
+export interface VariableLevel {
     label: string;
     value: number;
     importValue: string;
@@ -75,7 +75,7 @@ interface ProcessedDatasetRR {
     data: any;
 }
 
-interface Column {
+export interface Column {
     id: number;
     name: string;
     index: number;
