@@ -801,7 +801,7 @@ $(document).ready(async() => {
 
     let editor = new VariableEditor({ el : '#variable-editor', model : dataSetModel, controller: viewController });
 
-    let notifications = new Notifications($('#notifications'));
+    let notifications = new Notifications(document.querySelector('#notifications'));
     instance.on( 'notification', note => notifications.notify(note));
     viewController.on('notification', note => notifications.notify(note));
     mainTable.on('notification', note => notifications.notify(note));
