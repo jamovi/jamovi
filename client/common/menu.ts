@@ -73,7 +73,10 @@ export class Menu extends HTMLElement {
 
         let focusToken = focusLoop.addFocusLoop(this, opts);
         focusToken.on('focusleave', (event) => {
-            this.hide(this);
+            if (focusLoop.loopEntering === null || focusToken.el.contains(focusLoop.loopEntering.el) === false)
+                this.hide(this);
+            else
+                event.cancel = true;
         });
     }
 
