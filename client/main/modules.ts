@@ -27,15 +27,26 @@ interface IModulesModel {
     error: any
 }
 
-interface IAnalysisMeta {
-    name : string,
-    ns: string,
-    title: string,
+interface IAnalysisPosition {
+    title: string
     menuGroup :string,
     menuSubgroup: string,
     menuTitle: string,
     menuSubtitle: string,
     category: string
+}
+
+interface IAnalysisMeta extends IAnalysisPosition {
+    name : string,
+    ns: string,
+}
+
+type AnalysisCategory = 'analyses' | 'plots';
+
+interface AnalysisDef {
+    name : string,
+    ns: string,
+    position: { [k in AnalysisCategory]? : IAnalysisPosition };
 }
 
 type Op =
@@ -191,7 +202,7 @@ class Module {
 
     _ns: string;
     _version: string;
-    _moduleDefn: any;
+    _moduleDefn: AnalysisDef[];
     _analysisDefns = { };
     _i18nDefns = { };
     _status: string = 'none';
@@ -234,11 +245,39 @@ class Module {
                 if (moduleDefn.languages)
                     this._languages = moduleDefn.languages;
 
-                this._moduleDefn = Object.assign(...moduleDefn.analyses.map(a => {
-                    let obj = { };
-                    obj[a.name] = a;
-                    return obj;
-                }));
+                this._moduleDefn = { };
+                for (let analysisMeta of moduleDefn.analyses) {
+                    let current = this._moduleDefn[analysisMeta.name]
+                    if ( ! current) {
+                        current = { name: analysisMeta.name, ns: analysisMeta.ns, position: { } };
+                        this._moduleDefn[analysisMeta.name] = current;
+                    }
+
+                    analysisMeta.category = analysisMeta.category ? analysisMeta.category : 'analyses';
+
+                    current.position[analysisMeta.category] = {
+                        title: analysisMeta.title,
+                        menuGroup :analysisMeta.menuGroup,
+                        menuSubgroup: analysisMeta.menuSubgroup,
+                        menuTitle: analysisMeta.menuTitle,
+                        menuSubtitle: analysisMeta.menuSubtitle,
+                        category: analysisMeta.category
+                    };
+
+                    for (let prop in analysisMeta) {
+                        if (prop === 'name' || 
+                            prop === 'ns' || 
+                            prop === 'title' || 
+                            prop === 'menuGroup' || 
+                            prop === 'menuSubgroup' || 
+                            prop === 'menuTitle' || 
+                            prop === 'menuSubtitle' || 
+                            prop === 'category' ) {
+                                continue;
+                        }
+                        current[prop] = analysisMeta[prop];
+                    }
+                }
                 this._status = 'ok';
             }
             catch (e) {
