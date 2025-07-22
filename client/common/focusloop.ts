@@ -177,6 +177,7 @@ class FocusLoop extends EventEmitter {
 
     _activeModalToken: FocusLoopToken;
     focusedLoop: FocusLoopToken;
+    loopEntering: FocusLoopToken;
 
     _keyProcessing: {
         ctrlDown: boolean;
@@ -1135,6 +1136,7 @@ class FocusLoop extends EventEmitter {
 
         this._mouseClicked = options.withMouse;
         let token = this.loopOptions.get(loopElement);
+        this.loopEntering = token;
         if (this.focusedLoop && this.focusedLoop !== token) {
             if (this.focusedLoop.requiresLeave())
                 this.leaveFocusLoop(this.focusedLoop.el);
@@ -1143,6 +1145,7 @@ class FocusLoop extends EventEmitter {
             this.focusedLoop = null;
         }
         this.focusedLoop = token;
+        this.loopEntering = null;
         this.focusedLoop.isActive = true;
         token.initalFocusMode = this.focusMode;
         if (token.modal)
@@ -1185,19 +1188,6 @@ class FocusLoop extends EventEmitter {
         if (token._leavingLoop)
             return false;
 
-        if (this.focusedLoop) { 
-            if (this.focusedLoop === token) {
-                if (this.focusedLoop.isActive === false) {
-                    this.focusedLoop = null;
-                    return false;
-                }
-            }
-            else if (this.focusedLoop.requiresLeave())
-                throw 'Hasnt been closed yet';
-        }
-        else
-            throw 'Leaving something thats not open';
-
         token._leavingLoop = true;
 
         let eventData = { cancel: false, passFocus: false, withMouse: withMouse };
@@ -1209,7 +1199,9 @@ class FocusLoop extends EventEmitter {
         }
 
         token.isActive = false;
-        this.focusedLoop = null;
+        if (this.focusedLoop && this.focusedLoop === token) {
+            this.focusedLoop = null;
+        }
         if (token.requiresLeave() === false)
             return false;
 
