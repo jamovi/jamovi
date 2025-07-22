@@ -1,17 +1,63 @@
 
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
-
+import { EventMap } from '../common/eventmap';
 import host from './host';
 import { Event } from'./utils/sync';
 
+enum Theme {
+    DEFAULT = 'default', 
+    MINIMAL = 'minimal',
+    SPSS = 'iheartspss', 
+    HADLEY = 'hadley', 
+    BW = 'bw'
+}
 
-const Settings = Backbone.Model.extend({
+enum Mode {
+    NORMAL = 'normal', 
+}
 
-    initialize(args) {
+interface SettingsData {
+    coms: any,
+    recents: any[ ],
+    //examples: [ ],
+    modules: any[ ],
+    theme: Theme,
+    devMode: boolean,
+    syntaxMode: boolean,
+    selectedLanguage: string,
+    zoom: number,
+    updateStatus: string,
+    format: string,
+    settingsRecieved: boolean,
+    [key: string]: any,
+}
+
+class Settings extends EventMap<SettingsData> {
+
+    _localSettings: [keyof SettingsData];
+    _configSettings: [keyof SettingsData];
+    _onBC: (broadcast) => void;
+    _sendEvent: Event;
+    _instanceId: string;
+    _toSend: {[key in keyof SettingsData]?: SettingsData[key]};
+
+    constructor(args: Partial<SettingsData>) {
+        super(Object.assign({
+            coms: null,
+            recents: [ ],
+            //examples: [ ],
+            modules: [ ],
+            theme: Theme.DEFAULT,
+            devMode: false,
+            syntaxMode: false,
+            selectedLanguage: '',
+            zoom: 100,
+            updateStatus: 'na',
+            format: '{"t":"sf","n":3,"p":3}',
+            settingsRecieved: false
+        }, args));
+
         let coms = this.attributes.coms;
         this._onBC = (broadcast) => this._onSettingsReceived(broadcast);
         coms.on('broadcast', this._onBC);
@@ -22,29 +68,14 @@ const Settings = Backbone.Model.extend({
         this._toSend = { };
         this._sendEvent = new Event();
         this._sendLoop();
-    },
+    }
 
     destroy() {
         let coms = this.attributes.coms;
         coms.off('broadcast', this._onBC);
-    },
+    }
 
-    defaults: {
-        coms: null,
-        recents: [ ],
-        //examples: [ ],
-        modules: [ ],
-        theme: 'default',
-        devMode: false,
-        syntaxMode: false,
-        selectedLanguage: '',
-        zoom: 100,
-        updateStatus: 'na',
-        format: '{"t":"sf","n":3,"p":3}',
-        settingsRecieved: false
-    },
-
-    retrieve(instanceId) {
+    retrieve(instanceId: string) {
 
         this._instanceId = instanceId;
 
@@ -58,7 +89,7 @@ const Settings = Backbone.Model.extend({
         return coms.send(request).then(response => {
             this._onSettingsReceived(response);
         });
-    },
+    }
 
     async _onSettingsReceived(message) {
         if (message.payloadType !== 'SettingsResponse')
@@ -87,21 +118,21 @@ const Settings = Backbone.Model.extend({
             host.zoom(this.attributes.zoom);
 
         this.set('settingsRecieved', true);
-    },
+    }
 
     async zoomIn() {
         host.zoomIn();
         let zoom = host.currentZoom();
         this.setSetting('zoom', zoom);
-    },
+    }
 
     zoomOut() {
         host.zoomOut();
         let zoom = host.currentZoom();
         this.setSetting('zoom', zoom);
-    },
+    }
 
-    setSetting(name, value) {
+    setSetting<K extends keyof SettingsData>(name: K, value: SettingsData[K]) {
 
         if (this.get(name) === value)
             return;
@@ -150,7 +181,7 @@ const Settings = Backbone.Model.extend({
             this._toSend[name] = value;
             this._sendEvent.set();
         }
-    },
+    }
 
     async _sendLoop() {
         while (true) {
@@ -160,7 +191,7 @@ const Settings = Backbone.Model.extend({
             this._sendEvent.clear();
             await this._send();
         }
-    },
+    }
 
     async _send() {
         if (Object.keys(this._toSend).length === 0)
@@ -179,13 +210,13 @@ const Settings = Backbone.Model.extend({
             this._toSend = Object.assign(sending, this._toSend);
             throw e;
         }
-    },
+    }
 
-    getSetting(name, def4ult) {
+    getSetting<K extends keyof SettingsData>(name: K, def4ult: SettingsData[K]) {
         let value = this.attributes[name];
         return value !== undefined ? value : def4ult;
-    },
+    }
 
-});
+}
 
 export default Settings;
