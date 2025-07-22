@@ -120,6 +120,7 @@ export class RibbonView extends EventDistributor {
     tabSelection: SelectionLoop;
     $tabs: NodeListOf<HTMLElement>;
     appMenu: AppMenu;
+    notifs: Notifs;
 
     constructor(model: RibbonModel) {
         super();
@@ -188,7 +189,9 @@ export class RibbonView extends EventDistributor {
                 jmv-ribbon-body
                 jmv-ribbon-group-body-horizontal" hloop="true" role="tabpanel" aria-roledescription="">
             </div>`));
-        this.append(HTML.parse(`<div id="jmv-ribbon-notifs"></div>`));
+
+        this.notifs = new Notifs();
+        this.append(this.notifs);
 
         focusLoop.addFocusLoop(this);
 
@@ -201,8 +204,6 @@ export class RibbonView extends EventDistributor {
         this.$body   = this.querySelector<HTMLElement>('.jmv-ribbon-body');
         this.$fileButton = this.querySelector<HTMLElement>('.jmv-ribbon-tab[data-tabname="file"]');
         this.$fullScreen = this.querySelector<HTMLElement>('.jmv-ribbon-fullscreen');
-
-        let $notifs = this.querySelector<HTMLElement>('#jmv-ribbon-notifs');
 
         this.$fileButton.addEventListener('click', (event) => {
             let newEvent = new CustomEvent<{tabName: keyof TabTypes, withMouse: boolean}>('tabSelected', { detail: { tabName: 'file', withMouse: event.detail > 0 }});
@@ -271,7 +272,7 @@ export class RibbonView extends EventDistributor {
             this.tabSelection.selectElement(event.target);
         };
 
-        this.notifs = new Notifs({ el : $notifs });
+        
 
         let currentTabName = this.model.get('selectedTab');
         let tabs = this.model.get('tabs');
@@ -328,7 +329,7 @@ export class RibbonView extends EventDistributor {
         //this.trigger('tabSelected', 'file', usingMouse);
     }
 
-    notify(options) {
+    notify(options: Partial<NotifData>) {
         return this.notifs.notify(options);
     }
 
