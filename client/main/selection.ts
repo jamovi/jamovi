@@ -1,35 +1,65 @@
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
+import { EventEmitter } from "tsee";
+import DataSetViewModel from "./dataset";
 
-class Selection {
+interface IRange {
+    start: number;
+    end: number;
+    focus: number;
+    pos: number;
+}
+
+interface ISelection {
+    rowNo: number;
+    colNo: number;
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+    colFocus?: number;
+    rowFocus?: number;
+
+    columnStart: number;
+    columnEnd: number;
+    columnFocus?: number;
+    columnPos: number;
+
+    _calcKey: string;
+}
+
+class Selection extends EventEmitter implements ISelection {
+    model: DataSetViewModel;
+    rowNo: number = 0;
+    colNo: number = 0;
+    top: number = 0;
+    bottom: number = 0;
+    left: number = 0;
+    right: number = 0;
+    colFocus: number = 0;
+    rowFocus: number = 0;
+
+    columnStart: number = 0;
+    columnEnd: number = 0;
+    columnFocus: number = 0;
+    columnPos: number = 0;
+
+    _calcKey: string = '';
+    hiddenIncluded: boolean = false;
+    _selectionNegative: boolean = false;
+
+    _handlers: ((oldSel, silent, ignoreTabStart) => Promise<any>)[];
+
+
     constructor(model) {
-        Object.assign(this, Backbone.Events);
+        super();
+
         this.model = model;
-        this._selectionNegative = false;
         this._handlers = [];
         this.clearSelectionList();
-        this.rowNo = 0;
-        this.colNo = 0;
-        this.top = 0;
-        this.bottom = 0;
-        this.left = 0;
-        this.right = 0;
-        this.colFocus = 0;
-        this.rowFocus = 0;
-
-        this.columnStart = 0;
-        this.columnEnd = 0;
-        this.columnFocus = 0;
-        this.columnPos = 0;
-        this._calcKey = '';
-
-        this.hiddenIncluded = false;
     }
 
-    getRange(selection, hiddenIncluded) {
+    getRange(selection, hiddenIncluded) : IRange {
 
         if (hiddenIncluded === undefined)
             hiddenIncluded = this.hiddenIncluded;
@@ -309,7 +339,7 @@ class Selection {
         this.setSelections(newSelection);
     }
 
-    setSelection(rowNo, colNo, clearSelectionList) {
+    setSelection(rowNo: number, colNo: number, clearSelectionList?: boolean) {
         if (this.hiddenIncluded) {
             let selection = this.createRange(colNo, colNo, colNo, colNo);
             selection.rowNo = rowNo;
@@ -392,19 +422,19 @@ class Selection {
         return changed;
     }
 
-    registerChangeEventHandler(handler) {
+    registerChangeEventHandler(handler: (oldSel, silent, ignoreTabStart) => Promise<any>) {
         this._handlers.push(handler);
     }
 
     _onSelectionTypeChanged(type) {
-        this.trigger('selectionTypeChanged', type);
+        this.emit('selectionTypeChanged', type);
     }
 
     _onSubselectionChanged() {
-        this.trigger('subselectionChanged');
+        this.emit('subselectionChanged');
     }
 
-    setSelections(mainSelection, subSelections, silent, ignoreTabStart) {
+    setSelections(mainSelection, subSelections, silent?: boolean, ignoreTabStart?: boolean) {
 
         if (mainSelection)
             this.legitimise(mainSelection, true);
@@ -428,7 +458,7 @@ class Selection {
         return this._onSelectionChanged(mainSelection, silent, ignoreTabStart);
     }
 
-    _onSelectionChanged(range, silent, ignoreTabStart) {
+    _onSelectionChanged(range, silent: boolean, ignoreTabStart: boolean) {
         let oldSel = this.clone();
 
         this._assign(range);
@@ -439,7 +469,7 @@ class Selection {
         if (range.columnFocus === undefined)
             delete this.columnFocus;
 
-        let promises = [];
+        let promises: Promise<any>[] = [];
         for (let handle of this._handlers) {
             let promise = handle(oldSel, silent, ignoreTabStart);
             if (promise)
@@ -462,7 +492,7 @@ class Selection {
     }
 
     _onSelectionAppend(prevSel, subtract) {
-        this.trigger('selectionAppended', prevSel, subtract);
+        this.emit('selectionAppended', prevSel, subtract);
     }
 
     selectionToColumnBlocks() {
@@ -598,7 +628,7 @@ class Selection {
     }
 
     _onSelectionCleared() {
-        this.trigger('selectionCleared');
+        this.emit('selectionCleared');
     }
 
     currentSelectionToColumns() {
@@ -723,22 +753,22 @@ class Selection {
         return overlap;
     }
 
-    resolveSelectionList($el) {
+    resolveSelectionList(el: HTMLElement) {
         if ( ! this._selectionNegative)
             return false;
 
         for (let i = 0; i < this.subSelections.length; i++) {
-            let $subSel = $el.find('.jmv-table-cell-secondary-selected');
+            let $subSel = el.querySelectorAll('.jmv-table-cell-secondary-selected');
             let subSel = this.subSelections[i];
             if (subSel.left >= this.left && subSel.right <= this.right &&
                     subSel.top >= this.top && subSel.bottom <= this.bottom) {
-                $($subSel[i]).remove();
+                $subSel[i].remove();
                 this.subSelections.splice(i, 1);
                 i -= 1;
             }
             else if (this._rangesOverlap(this, subSel)) {
 
-                $($subSel[i]).remove();
+                $subSel[i].remove();
                 this.subSelections.splice(i, 1);
 
                 let overlapRange = {
@@ -806,8 +836,8 @@ class Selection {
         this._selectionNegative = false;
 
         if (this.subSelections.length > 0) {
-            let $subSel = $el.find('.jmv-table-cell-secondary-selected');
-            $($subSel[0]).remove();
+            let $subSel = el.querySelectorAll('.jmv-table-cell-secondary-selected');
+            $subSel[0].remove();
             let mainSelection = this.subSelections[0];
             this.subSelections.splice(0, 1);
             this.setSelections(mainSelection, this.subSelections);
@@ -815,7 +845,7 @@ class Selection {
         else
             this.setSelection(this.rowNo, this.colNo);
 
-        this.trigger('resolved');
+        this.emit('resolved');
 
         return true;
     }
@@ -1230,7 +1260,7 @@ class Selection {
 
         let dataset = this.model;
         let data = [];
-        let valueIsFunc = $.isFunction(value);
+        let valueIsFunc = typeof value === 'function';
         for (let selection of selections) {
             let clippedSel = selection;
             if (value === null) {
