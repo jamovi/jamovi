@@ -1,93 +1,114 @@
 
 'use strict';
 
-import $ from 'jquery';
-import Backbone  from 'backbone';
-import underscore from 'underscore';
-Backbone.$ = $;
+import { EventDistributor, EventMap } from '../../common/eventmap';
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
-const Notif = Backbone.Model.extend({
-    defaults: {
-        id: 0,
-        text: '',
-        options: [ { name: 'dismiss', text: 'OK' } ],
-    },
-});
+export interface NotifData {
+    id: number,
+    text: string,
+    options: { name: string, text: string, dismiss?: boolean }[]
+}
 
-const Collection = Backbone.Collection.extend({
-    model: Notif,
-});
+class Notif extends EventMap<NotifData> {
+    constructor(options: Partial<NotifData>) {
+        super(Object.assign({
+            id: 0,
+            text: '',
+            options: [ { name: 'dismiss', text: 'OK' } ],
+        }, options));
+    }
+}
 
-const View = Backbone.View.extend({
-    tagName: 'div',
-    className: 'RibbonNotifs',
-    initialize() {
-        this.model = this.model || new Collection();
-        this.model.on('add', this._added, this);
-        this.model.on('remove', this._removed, this);
+class View extends EventDistributor {
+    nextId: number = 1;
+    notifs: Notif[] = [];
 
-        this.nextId = 1;
+    constructor() {
+        super();
+        this.classList.add('RibbonNotifs');
+    }
 
-        this.templ = underscore.template(`
-            <div class="jmv-ribbon-notif" data-id="<%= get('id') %>">
-                <div class="inner">
-                    <div class="message">
-                        <%=get('text')%>
-                    </div>
-                    <div class="options">
-                        <% _.each(get('options'), (option) => { %>
-                            <button
-                                data-id="<%= get('id') %>"
-                                data-name="<%= option.name %>"
-                                data-dismiss="<%= option.dismiss !== false ? 1 : 0 %>"
-                            ><%= option.text %>
-                            </button>
-                        <% }) %>
-                    </div>
-                </div>
-            </div>`);
-    },
-    _added(notif) {
-        let index = this.model.models.indexOf(notif);
-        let html = this.templ(notif);
-        let $el = $(html);
+    _added(notif: Notif) {
+        let index = this.notifs.indexOf(notif);
+        let html = `<div class="jmv-ribbon-notif" data-id="${notif.get('id')}">
+                        <div class="inner">
+                            <div class="message">
+                                ${notif.get('text')}
+                            </div>
+                            <div class="options">
+                                ${  (function() {
+                                        let buttons: string = '';
+                                        notif.get('options').forEach((option) => {
+                                            buttons += `<button data-id="${notif.get('id')}" data-name="${option.name}" data-dismiss="${option.dismiss !== false ? 1 : 0}">${option.text}</button>`;
+                                        })
+                                        return buttons;
+                                    })()
+                                }
+                            </div>
+                        </div>
+                    </div>`;
+        let el = HTML.parse(html);
 
         if (index === 0)
-            this.$el.prepend($el);
-        else
-            $(this.$el.children()[index-1]).after($el);
+            this.prepend(el);
+        else {
+            const referenceNode = this.children[index - 1];
+            if (referenceNode && referenceNode.nextSibling)
+                this.insertBefore(el, referenceNode.nextSibling);
+            else 
+                this.appendChild(el);
+        }
 
-        $el.find('button').on('click', (event) => this._clicked(event));
-    },
+        let buttons = el.querySelectorAll('button');
+        buttons.forEach(button => {
+            button.addEventListener('click', (event) => this._clicked(event));
+        });
+        
+    }
+
     _clicked(event) {
-        let $src = $(event.target);
-        let id = parseInt($src.attr('data-id'));
-        let name = $src.attr('data-name');
-        let dismiss = $src.attr('data-dismiss') === '1';
+        let src = event.target as HTMLElement;
+        let id = parseInt(src.getAttribute('data-id'));
+        let name = src.getAttribute('data-name');
+        let dismiss = src.getAttribute('data-dismiss') === '1';
 
-        let notif = this.model.models.filter((notif) => notif.get('id') === id)[0];
+        let notif = this.notifs.filter((notif) => notif.get('id') === id)[0];
         notif.trigger('click', { target: notif, name: name });
 
         if (dismiss)
-            this.model.remove(notif);
-    },
-    _removed(notif) {
-        let $el = this.$el.children('[data-id=' + notif.attributes.id + ']');
-        let height = $el.height();
-        $el.css('height', '' + height + 'px');
-        void($el[0].offsetHeight);
-        $el.css('height', '0px');
-        $el.one('transitionend', () => {
-            $el.remove();
+            this.removeNotif(notif);
+    }
+
+    removeNotif(notif: Notif) {
+        let index = this.notifs.indexOf(notif);
+        if (index !== -1) {
+            this.notifs.splice(index, 1);
+            this._removed(notif);
+        }
+    }
+
+    _removed(notif: Notif) {
+        let el = this.querySelector<HTMLElement>(`[data-id="${notif.attributes.id}"]`);
+        let height = el.offsetHeight;
+        el.style.height =  '' + height + 'px';
+        void(el.offsetHeight);
+        el.style.height = '0px';
+        el.addEventListener('transitionend', () => {
+            el.remove();
             notif.trigger('dismissed', { target: notif });
-        });
-    },
-    notify(options) {
+        }, { once: true });
+    }
+
+    notify(options: Partial<NotifData>) {
         options.id = this.nextId++;
         let notif = new Notif(options);
-        this.model.add(notif);
+        this.notifs.push(notif);
+        this._added(notif);
         return notif;
-    },
-});
+    }
+}
+
+customElements.define('jmv-notifs', View);
 
 export default View;

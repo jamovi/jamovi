@@ -15,6 +15,7 @@
     padding: 10px ;
     display: flex ;
     justify-content: space-between ;
+    align-items: center;
 }
 
 .jmv-ribbon-notif:not(:first-child) {
@@ -23,6 +24,9 @@
 
 .jmv-ribbon-notif .options {
     white-space: nowrap ;
+    display: flex;
+    gap: 5px;
+    align-items: center;
 }
 
 .jmv-ribbon-notif .message {

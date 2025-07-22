@@ -1,53 +1,81 @@
 
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
+import { EventDistributor } from "../common/eventmap";
+import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
+import Notify from "./notification";
 
-const NotificationView = Backbone.View.extend({
-    className: "notification",
-    initialize: function() {
+class NotificationView extends EventDistributor {
 
-        this.$el.addClass('jmv-notification hidden');
-        this.$el.attr('data-type', this.model.get('type'));
+    model: Notify;
+    $title: HTMLElement;
+    $progressBar: HTMLElement;
+    $progressBarBar: HTMLElement;
+    $message: HTMLElement;
+    $buttons: HTMLElement;
+    _finished: () => void;
+    dismiss: () => void;
+    reshow: () => void;
+    timeout: NodeJS.Timeout;
+
+    constructor(model: Notify) {
+        super();
+        this.model = model;
+
+        this.setAttribute('role', 'alert');
+        this.classList.add('notification');
+        this.classList.add('jmv-notification', 'hidden');
+        this.setAttribute('data-type', this.model.get('type'));
 
         this.model.on('change', () => this._update());
         this.model.on('change:dismissed', () => this.dismiss());
-        this.handlers = [];
 
-        this.$icon  = $('<div class="jmv-notification-icon"></div>').appendTo(this.$el);
-        this.$info = $('<div class="jmv-notification-info"></div>').appendTo(this.$el);
+        let $icon  = HTML.parse('<div class="jmv-notification-icon"></div>');
+        this.append($icon);
 
-        this.$title = $('<div class="jmv-notification-title"></div>').appendTo(this.$info);
-        this.$body  = $('<div class="jmv-notification-body"></div>').appendTo(this.$info);
+        let $info = HTML.parse('<div class="jmv-notification-info"></div>');
+        this.append($info);
 
-        this.$content = $('<div class="jmv-notification-content"></div>').appendTo(this.$body);
+        this.$title = HTML.parse('<div class="jmv-notification-title"></div>');
+        $info.append(this.$title);
 
-        this.$progressBar = $('<div class="jmv-notification-progressbar"></div>').appendTo(this.$content);
-        this.$progressBarBar = $('<div class="jmv-notification-progressbarbar"></div>').appendTo(this.$progressBar);
+        let $body  = HTML.parse('<div class="jmv-notification-body"></div>');
+        $info.append($body);
 
-        this.$message = $('<div class="jmv-notification-message"></div>').appendTo(this.$content);
+        let $content = HTML.parse('<div class="jmv-notification-content"></div>');
+        $body.append($content);
 
-        this.$buttons = $('<div class="jmv-notification-buttons"></div>').appendTo(this.$content);
-        this.$cancel = $(`<div class="jmv-notification-button-cancel">${_('Cancel')}</div>`).appendTo(this.$buttons);
+        this.$progressBar = HTML.parse('<div class="jmv-notification-progressbar"></div>');
+        $content.append(this.$progressBar);
+        this.$progressBarBar = HTML.parse('<div class="jmv-notification-progressbarbar"></div>');
+        this.$progressBar.append(this.$progressBarBar);
+
+        this.$message = HTML.parse('<div class="jmv-notification-message"></div>');
+        $content.append(this.$message);
+
+        this.$buttons = HTML.parse('<div class="jmv-notification-buttons"></div>');
+        $content.append(this.$buttons);
+
+        let $cancel = HTML.parse(`<div class="jmv-notification-button-cancel">${_('Cancel')}</div>`);
+        this.$buttons.append($cancel);
         
-        this.$buttons[0].style.display = (this.model.attributes.cancel ? null : 'none');
+        this.$buttons.style.display = (this.model.attributes.cancel ? null : 'none');
 
-        this.$cancel[0].addEventListener('click', (event) => {
+        $cancel.addEventListener('click', (event) => {
             this.model.cancel();
             this.model.dismiss();
         });
 
         this._finished = () => {
-            this.trigger('finished');
+            let event = new CustomEvent('finished');
+            this.dispatchEvent(event);
         };
         this.dismiss = () => {
-            this.$el.one('transitionend', this._finished);
+            this.addEventListener('transitionend', this._finished, { once: true });
             this.model.set('visible', false);
         };
         this.reshow = () => {
-            this.$el.off('transitionend', this._finished);
+            this.removeEventListener('transitionend', this._finished);
             clearTimeout(this.timeout);
             this.model.attributes.visible = true;
             if (this.model.duration !== 0)
@@ -56,64 +84,73 @@ const NotificationView = Backbone.View.extend({
         };
 
         this.reshow();
-    },
-    _update: function() {
-        this.$el.toggleClass('hidden', this.model.attributes.visible === false);
-        this.$message.text(this.model.attributes.message);
-        this.$title.text(this.model.attributes.title);
+    }
+
+    _update() {
+        this.classList.toggle('hidden', this.model.attributes.visible === false);
+        this.$message.innerText = this.model.attributes.message;
+        this.$title.innerText = this.model.attributes.title;
 
         if (this.model.attributes.progress[1] > 0) {
-            this.$progressBarBar.css('width', `${ 100 * this.model.attributes.progress[0] / this.model.attributes.progress[1] }%`);
-            this.$progressBar.show();
-            this.$message.hide();
+            this.$progressBarBar.style.width = `${ 100 * this.model.attributes.progress[0] / this.model.attributes.progress[1] }%`;
+            this.$progressBar.style.display = '';
+            this.$message.style.display = 'none';
         }
         else {
-            this.$progressBar.hide();
-            this.$message.show();
+            this.$progressBar.style.display = 'none';
+            this.$message.style.display = '';
         }
 
-        this.$buttons[0].style.display = (this.model.attributes.cancel ? null : 'none');
+        this.$buttons.style.display = (this.model.attributes.cancel ? null : 'none');
     }
-});
+}
 
-const Notifications = function($el) {
-    this.$el = $el;
-    this.$el.addClass('jmv-notifications');
-    this.list = [ ];
-};
+customElements.define('jmv-notification', NotificationView);
 
-Notifications.prototype.notify = function(notification) {
+interface NotificationItem { model: Notify, $view: NotificationView }
 
-    let found = false;
-    let dismiss = notification.attributes.dismissed;
+class Notifications {
+    el: HTMLElement;
+    list: NotificationItem[];
 
-    for (let item of this.list) {
-        if (item.model === notification
-                || (notification.id !== undefined
-                    && notification.id === item.model.attributes.id)) {
-            found = true;
-            if ( ! dismiss) {
-                item.model.set(notification.attributes);
-                item.$view.reshow();
+    constructor(el) {
+        this.el = el;
+        this.el.classList.add('jmv-notifications');
+        this.list = [ ];
+    }
+
+    notify(notification: Notify) {
+        let found = false;
+        let dismiss = notification.attributes.dismissed;
+
+        for (let item of this.list) {
+            if (item.model === notification || (notification.id !== undefined && notification.id === item.model.attributes.id)) {
+                found = true;
+                if ( ! dismiss) {
+                    item.model.set(notification.attributes);
+                    item.$view.reshow();
+                }
+                else {
+                    item.model.dismiss();
+                }
+                break;
             }
-            else {
-                item.model.dismiss();
-            }
-            break;
+        }
+
+        if (found === false && dismiss === false) {
+            let $view =new NotificationView(notification)
+            this.el.append($view);
+            let item: NotificationItem = { model: notification, $view: $view };
+            this.list.push(item);
+
+            $view.addEventListener('finished', () => {
+                this.list = this.list.filter(v => v !== item);
+                $view.remove();
+            });
         }
     }
-
-    if (found === false && dismiss === false) {
-        let $el = $('<div role="alert"></div>').appendTo(this.$el);
-        let $view = new NotificationView({ el : $el, model : notification });
-        let item = { model: notification, $view: $view };
-        this.list.push(item);
-
-        $view.on('finished', () => {
-            this.list = this.list.filter(v => v !== item);
-            $view.remove();
-        });
-    }
 };
+
+
 
 export default Notifications;
