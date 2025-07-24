@@ -3,7 +3,7 @@
 
 import focusLoop from '../common/focusloop';
 
-class References extends HTMLElement {
+export class References extends HTMLElement {
     constructor() {
         super();
 
@@ -45,7 +45,7 @@ class References extends HTMLElement {
         this._analyses = analyses;
     }
 
-    getNumbers(ns) {
+    getNumbers(ns?: string) {
         if ( ! this._numbers) {
             let numbers = { jmv: { }, R: { } };
             for (let module of this._modules)
@@ -303,7 +303,7 @@ class References extends HTMLElement {
     }
 }
 
-class Reference extends HTMLElement {
+export class Reference extends HTMLElement {
     constructor() {
         super();
 

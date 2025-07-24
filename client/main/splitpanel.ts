@@ -1,64 +1,68 @@
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
-import SilkyView from './view';
+import { EventDistributor } from '../common/eventmap';
 import SplitPanelSection from './splitpanelsection';
 
-const SplitPanel = SilkyView.extend({
-    className: "splitpanel",
+export class SplitPanel extends EventDistributor {
 
-    initialize() {
+    _resizing: boolean = false;
+    _allData: boolean = false;
+    _allResults: boolean = false;
+    mode: ('mixed' | 'data' | 'results') = 'mixed';
+    _optionsVisible: boolean = false;
+    _allowDocking: { left: boolean, right: boolean, both: boolean } = { left: false, right: false, both: false };
+    _transition: Promise<void>;
+    _initialWidthsSaved: boolean = false;
+    firstSection: SplitPanelSection;
+    _sections: { [name: string]: SplitPanelSection } = {};
+    _sectionsList: SplitPanelSection[] = [];
+    widths: number[];
+    optionsChanging: 'opening' | 'closing' | null;
+    _resultsWidth: string | null;
+    _otherWidth: number;
+    transitionCheckActive: boolean;
+    _startPosX: number;
+    _startPosY: number;
+    _dataWidth: number;
+    _splittersMoved: boolean;
 
-        this._resizing = false;
+    constructor() {
+        super();
 
-        this.$el.addClass("silky-splitpanel");
-        this.$el.css("position", "relative");
-        this.$el.css("overflow", "hidden");
+        this.classList.add('splitpanel');
 
-        this._allData = false;
-        this._allResults = false;
-
-        this.mode = 'mixed';
-        this._optionsVisible = false;
-
-        this._allowDocking = { left: false, right: false, both: false };
-
-        this._sections = { _list: [] };
+        this.classList.add("silky-splitpanel");
+        this.style.position = "relative";
+        this.style.overflow = "hidden";
 
         this._transition = Promise.resolve();
+    }
 
-        this._initialWidthsSaved = false;
-    },
-
-    getSection(i) {
-        if (i === parseInt(i, 10)) {
+    getSection(i: number | string) {
+        if (typeof i === 'number') {
             if (i < 0)
-                return this._sections._list[this._sections._list.length + i];
+                return this._sectionsList[this._sectionsList.length + i];
             else
-                return this._sections._list[i];
+                return this._sectionsList[i];
         }
 
         return this._sections[i];
-    },
+    }
 
     onWindowResize() {
         this._saveWidths();
-    },
+    }
 
-    addPanel(name, properties) {
-        let $panel = $(`<div id="${name}"></div>`);
-
-        let section = new SplitPanelSection(this._sections._list.length, $panel, {}, this);
-        this._sections._list[section.listIndex] = section;
+    addPanel(name: string, properties) {
+        let section = new SplitPanelSection(this._sectionsList.length, name, {}, this);
+        this._sectionsList[section.listIndex] = section;
         this._sections[section.name] = section;
 
-        $panel.on("splitpanel-hide", (event) => {
+        section.addEventListener("splitpanel-hide", (event) => {
             this.setVisibility(section, false);
         });
 
-        this.$el.append($panel);
+        this.append(section);
 
         if (this.firstSection === undefined)
             this.firstSection = section;
@@ -75,7 +79,7 @@ const SplitPanel = SilkyView.extend({
             this.normalise();
 
         return section;
-    },
+    }
 
     async setVisibility(i, value) {
 
@@ -95,12 +99,12 @@ const SplitPanel = SilkyView.extend({
                     return;
                 }
 
-                optionsSection.$panel.addClass('initialised');
+                optionsSection.classList.add('initialised');
 
                 this.optionsChanging = value ? 'opening' : 'closing';
 
                 if (value) {
-                    let columnTemplates = this.$el.css('grid-template-columns').split(' ');
+                    let columnTemplates = getComputedStyle(this).gridTemplateColumns.split(' ');
                     this._resultsWidth = columnTemplates[columnTemplates.length - 1];
                     this._otherWidth = parseInt(columnTemplates[0]) + parseInt(columnTemplates[1]) + parseInt(columnTemplates[2]);
                     this.allowDocking('left');
@@ -112,7 +116,7 @@ const SplitPanel = SilkyView.extend({
                 optionsSection.setVisibility(value);
                 this.onTransitioning();
 
-                optionsSection.$panel.one('transitionend', async () => {
+                optionsSection.addEventListener('transitionend', async () => {
                     await this.checkDockConditions(false);
                     if (value === false) {
                         this.suspendDocking('left');
@@ -126,12 +130,12 @@ const SplitPanel = SilkyView.extend({
                         this._saveWidths();
 
                     resolve();
-                });
+                }, { once:true });
             });
         });
-    },
+    }
 
-    _applyColumnTemplates(columnTemplates, normalise, clean) {
+    _applyColumnTemplates(columnTemplates, normalise: boolean, clean?) {
         if (normalise)
             this._normaliseWidths(columnTemplates, clean);
 
@@ -149,23 +153,37 @@ const SplitPanel = SilkyView.extend({
                 columnTemplates[columnTemplates.length - 1] = `minmax(auto, ${columnTemplates[columnTemplates.length - 1]} )`;
         }
 
-        this.$el.css('grid-template-columns', columnTemplates.join(' '));
-    },
+        this.style.gridTemplateColumns = columnTemplates.join(' ');
+    }
 
-    normalise(clean) {
-        let columnTemplates = this.$el.css('grid-template-columns').split(' ');
+    normalise(clean?) {
+        let columnTemplates = getComputedStyle(this).gridTemplateColumns.split(' ');
         this._applyColumnTemplates(columnTemplates, true, clean);
-    },
+    }
 
-    onTransitioning(layoutKey) {
-        this.trigger('form-changed');
+    getLayoutKey(el: HTMLElement) {
+        const style = getComputedStyle(el);
+        const gridTemplate = style.gridTemplateColumns;
+
+        // outerHeight(true) includes margin, so we calculate that manually
+        const height = el.offsetHeight;
+        const marginTop = parseFloat(style.marginTop) || 0;
+        const marginBottom = parseFloat(style.marginBottom) || 0;
+        const outerHeight = height + marginTop + marginBottom;
+
+        return gridTemplate + ' ' + outerHeight;
+    }
+
+    onTransitioning(layoutKey?: string) {
+        let event = new CustomEvent('form-changed');
+        this.dispatchEvent(event);
         if (layoutKey || ! this.transitionCheckActive) {
             this.transitionCheckActive = true;
             if ( ! layoutKey)
-                layoutKey = this.$el.css('grid-template-columns') + ' ' + this.$el.outerHeight(true);
+                layoutKey = this.getLayoutKey(this);
 
             setTimeout(() => {
-                let nextLayoutKey = this.$el.css('grid-template-columns') + ' ' + this.$el.outerHeight(true);
+                let nextLayoutKey = this.getLayoutKey(this);
                 if (layoutKey !== nextLayoutKey)
                     this.onTransitioning(nextLayoutKey);
                 else {
@@ -173,9 +191,9 @@ const SplitPanel = SilkyView.extend({
                 }
             }, 50);
         }
-    },
+    }
 
-    applyToSections(action) {
+    applyToSections(action: (SplitPanelSection) => (boolean | void)) {
         let section = this.firstSection;
         while (section !== null)
         {
@@ -184,36 +202,36 @@ const SplitPanel = SilkyView.extend({
 
             section = section.getNext('right');
         }
-    },
+    }
 
     render() {
-        this.applyToSections((currentSection) => {
+        this.applyToSections((currentSection: SplitPanelSection) => {
 
             let splitter = currentSection.getSplitter();
             if (splitter !== null) {
-                currentSection.$panel.before(splitter);
+                currentSection.before(splitter);
 
                 let data = { left: currentSection.getNext("left"), right: currentSection, self: this};
 
-                splitter.on("pointerdown", (event) => {
+                splitter.addEventListener("pointerdown", (event: PointerEvent) => {
                     let button = event.button;
 
-                    splitter[0].setPointerCapture(event.pointerId);
+                    splitter.setPointerCapture(event.pointerId);
 
                     this._resizing = true;
-                    this._startPosX = event.pageX === undefined ? event.originalEvent.pageX : event.pageX;
-                    this._startPosY = event.pageY === undefined ? event.originalEvent.pageY : event.pageY;
+                    this._startPosX = event.pageX;
+                    this._startPosY = event.pageY;
 
                     this._allResults = false;
                     this._allData = false;
 
                     this.allowDocking('both');
 
-                    splitter.one("pointerup pointercancel", async (event) => {
+                    ['pointerup', 'pointercancel'].forEach(eventName => splitter.addEventListener(eventName, async (event: PointerEvent) => {
                         if (this._resizing === false)
                             return;
 
-                        splitter[0].releasePointerCapture(event.pointerId);
+                        splitter.releasePointerCapture(event.pointerId);
 
                         this._saveWidths();
 
@@ -223,17 +241,17 @@ const SplitPanel = SilkyView.extend({
                         await this.checkDockConditions(true);
 
                         this.normalise();
-                    });
+                    }, { once:true }));
                 });
 
-                splitter.on("pointermove", async (event) => {
+                splitter.addEventListener("pointermove", async (event: PointerEvent) => {
                     if (this._resizing === false)
                         return;
 
                     this._resultsWidth = null;
 
-                    let xpos = event.pageX === undefined ? event.originalEvent.pageX : event.pageX;
-                    let ypos = event.pageY === undefined ? event.originalEvent.pageY : event.pageY;
+                    let xpos = event.pageX;
+                    let ypos = event.pageY;
 
                     let diffX = xpos - this._startPosX;
                     let diffY = ypos - this._startPosY;
@@ -247,27 +265,27 @@ const SplitPanel = SilkyView.extend({
                 });
             }
         });
-    },
+    }
 
-    allowDocking(type) {
+    allowDocking(type: ('left' | 'right' | 'both')) {
         let changed = this._allowDocking[type] === false;
         this._allowDocking[type] = true;
         if (changed)
             this.normalise();
-    },
+    }
 
-    suspendDocking(type, silent) {
+    suspendDocking(type: ('left' | 'right' | 'both'), silent?: boolean) {
         if (this._allowDocking[type] === false)
             return;
 
         this._allowDocking[type] = false;
         if ( ! silent)
             this.normalise();
-    },
+    }
 
     _saveWidths() {
         if (! this._allData && ! this._allResults) {
-            let columnTemplates = this.$el.css('grid-template-columns').split(' ');
+            let columnTemplates = getComputedStyle(this).gridTemplateColumns.split(' ');
             this.applyToSections((currentSection) => {
                 currentSection.lastWidth = parseInt(columnTemplates[currentSection.listIndex * 2]);
                 if (currentSection.listIndex * 2 === columnTemplates.length - 1)
@@ -276,12 +294,11 @@ const SplitPanel = SilkyView.extend({
 
             if (this._resultsWidth) {
                 let newOtherWidth = parseInt(columnTemplates[0]) + parseInt(columnTemplates[1]) + parseInt(columnTemplates[2]);
-                this._resultsWidth = parseInt(columnTemplates[columnTemplates.length - 1]) + (newOtherWidth  - this._otherWidth);
-                this._resultsWidth = `${ this._resultsWidth }px`;
+                this._resultsWidth = `${ parseInt(columnTemplates[columnTemplates.length - 1]) + (newOtherWidth  - this._otherWidth) }px`;
                 this._dataWidth = newOtherWidth;
             }
         }
-    },
+    }
 
     _normaliseWidths(columnTemplates, clean) {
 
@@ -324,11 +341,11 @@ const SplitPanel = SilkyView.extend({
             if (i != 0)
                 columnTemplates[i*2 - 1] = 'min-content';
         }
-    },
+    }
 
     resetState() {
 
-        if (this._sections._list.length !== 3)
+        if (this._sectionsList.length !== 3)
             return false;
 
         let dataPanel = this.getSection(0);
@@ -347,9 +364,9 @@ const SplitPanel = SilkyView.extend({
         dataPanel.adjustable = true;
 
         return true;
-    },
+    }
 
-    setMode(mode, silent) {
+    setMode(mode, silent?: boolean) {
 
         if (this._initialWidthsSaved === false)
             this._saveWidths();
@@ -370,17 +387,19 @@ const SplitPanel = SilkyView.extend({
                 let transitionTime = 300;
                 let transitionDelay = 20;
 
-                let columnTemplates = this.$el.css('grid-template-columns').split(' ');
+                let columnTemplates = getComputedStyle(this).gridTemplateColumns.split(' ');
                 if (mode === 'results') {
 
-                    this.getSection(-1).$panel.css({ width: '', opacity: '' });
+                    let section = this.getSection(-1);
+                    section.style.width = '';
+                    section.style.opacity = '';
 
                     // Set layout grid state ///
                     this.getSection(-1).fixed = false;
                     this.getSection(0).adjustable = false;
 
-                    let $dataPanel = this.getSection(0).$panel;
-                    $dataPanel.css('width', columnTemplates[0]);
+                    let $dataPanel = this.getSection(0);
+                    $dataPanel.style.width = columnTemplates[0];
 
                     this._applyColumnTemplates(columnTemplates, true);
                     ///////////////////
@@ -389,27 +408,29 @@ const SplitPanel = SilkyView.extend({
                     this._allData = false;
 
                     setTimeout(() => {
-                        $dataPanel.css('width', '0px');
+                        $dataPanel.style.width = '0px';
                         setTimeout(() => {  //Normalises the columnTemplate after transition
                             this.onTransitioning();  // this is here so that the resize event happens after transition to make it less jittery
                             if (this.resetState())
                                this.normalise(true);
-                            $dataPanel.css('width', '');
+                            $dataPanel.style.width = '';
                             resolve();
                         }, transitionTime);
                     }, transitionDelay);
                 }
                 else if (mode === 'data') {
 
-                    this.getSection(0).$panel.css({ width: '', opacity: '' });
+                    let section = this.getSection(0);
+                    section.style.width = '';
+                    section.style.opacity = '';
 
                     // Set layout grid state ///
                     this.getSection(-1).adjustable = false;
                     this.getSection(-1).fixed = false;
                     this.getSection(0).fixed = false;
 
-                    let $resultsPanel = this.getSection(-1).$panel;
-                    $resultsPanel.css('width', columnTemplates[columnTemplates.length - 1]);
+                    let $resultsPanel = this.getSection(-1);
+                    $resultsPanel.style.width = columnTemplates[columnTemplates.length - 1];
 
                     this._applyColumnTemplates(columnTemplates, true);
                     //////////////////
@@ -418,12 +439,12 @@ const SplitPanel = SilkyView.extend({
                     this._allData = true;
 
                     setTimeout(() => {
-                        $resultsPanel.css('width', '0px');
+                        $resultsPanel.style.width = '0px';
                         setTimeout(() => {  //Normalises the columnTemplate after transition
                             this.onTransitioning();
                             if (this.resetState())
                                this.normalise(true);
-                            $resultsPanel.css('width', '');
+                            $resultsPanel.style.width = '';
                             resolve();
                         }, transitionTime);
                     }, transitionDelay);
@@ -434,54 +455,58 @@ const SplitPanel = SilkyView.extend({
 
                     if (changed && ! this._resizing) {
                         if (prevMode === 'results') {
-                            this.getSection(0).$panel.css({ width: '', opacity: '' });
+                            let section = this.getSection(0);
+                            section.style.width = '';
+                            section.style.opacity = '';
 
                             // Set layout grid state ///
                             this.getSection(-1).adjustable = false;
                             this.getSection(-1).fixed = false;
                             this.getSection(0).fixed = false;
 
-                            let $resultsPanel = this.getSection(-1).$panel;
-                            $resultsPanel.css('width', columnTemplates[columnTemplates.length - 1]);
+                            let $resultsPanel = this.getSection(-1);
+                            $resultsPanel.style.width = `${columnTemplates[columnTemplates.length - 1]}px`;
 
                             this._applyColumnTemplates(columnTemplates, true);
                             //////////////////
 
                             setTimeout(() => {
                                 let width = this.getSection(-1).lastWidth;
-                                $resultsPanel.css('width', width + 'px');
+                                $resultsPanel.style.width = `${width}px`;
                                 setTimeout(() => {  //Normalises the columnTemplate after transition
                                     this.onTransitioning();
                                     this.refreshDockState(true);
                                     if (this.resetState())
                                        this.normalise(true);
-                                    $resultsPanel.css('width', '');
+                                    $resultsPanel.style.width = '';
                                     resolve();
                                 }, transitionTime);
                             }, transitionDelay);
                         }
                         else if (prevMode === 'data') {
-                            this.getSection(-1).$panel.css({ width: '', opacity: '' });
+                            let section = this.getSection(-1);
+                            section.style.width = '';
+                            section.style.opacity = '';
 
                             // Set layout grid state ///
                             this.getSection(0).adjustable = false;
-                            this.getSection(-1).fixed = false;
+                            section.fixed = false;
 
-                            let $dataPanel = this.getSection(0).$panel;
-                            $dataPanel.css('width', columnTemplates[0]);
+                            let $dataPanel = this.getSection(0);
+                            $dataPanel.style.width = columnTemplates[0];
 
                             this._applyColumnTemplates(columnTemplates, true);
                             //////////////////
 
                             setTimeout(() => {
                                 let width = this.getSection(0).lastWidth;
-                                $dataPanel.css('width', width + 'px');
+                                $dataPanel.style.width = `${width}px`;
                                 setTimeout(() => {  //Normalises the columnTemplate after transition
                                     this.onTransitioning();
                                     this.refreshDockState(true);
                                     if (this.resetState())
                                        this.normalise(true);
-                                    $dataPanel.css('width', '');
+                                    $dataPanel.style.width = '';
                                     resolve();
                                 }, transitionTime);
                             }, transitionDelay);
@@ -491,28 +516,30 @@ const SplitPanel = SilkyView.extend({
                         resolve();
                 }
 
-                if (! silent && changed)
-                    this.$el.trigger('mode-changed');
+                if (! silent && changed) {
+                    let event = new CustomEvent('mode-changed');
+                    this.dispatchEvent(event);
+                }
             });
         });
-    },
+    }
 
-    refreshDockState(silent) {
+    refreshDockState(silent?: boolean) {
         if (this.mode === 'mixed') {
             this.suspendDocking('right', silent);
             if (this._optionsVisible)
-                this.allowDocking('left', silent);
+                this.allowDocking('left');
             else
                 this.suspendDocking('left', silent);
         }
         else {
-            this.allowDocking('left', silent);
-            this.allowDocking('right', silent);
+            this.allowDocking('left');
+            this.allowDocking('right');
         }
         this.checkDockConditions(false);
-    },
+    }
 
-    async modifyLayout(data, diffX) {
+    async modifyLayout(data: { left: SplitPanelSection, right: SplitPanelSection }, diffX) {
         if (diffX === 0)
             return;
 
@@ -529,11 +556,11 @@ const SplitPanel = SilkyView.extend({
             return;
 
         let changed = false;
-        let columnTemplates = this.$el.css('grid-template-columns').split(' ');
+        let columnTemplates = getComputedStyle(this).gridTemplateColumns.split(' ');
         let shrinkingSection = diffX < 0 ? leftSection : rightSection;
         let growingSection = diffX > 0 ? leftSection : rightSection;
 
-        let shrinkingIndex = parseInt(shrinkingSection.$panel.css('grid-column-start')) - 1;
+        let shrinkingIndex = parseInt(getComputedStyle(shrinkingSection).gridColumnStart) - 1;
         let currentWidth = parseInt(columnTemplates[shrinkingIndex]);
         let shrunkWidth = currentWidth - Math.abs(diffX);
 
@@ -553,7 +580,7 @@ const SplitPanel = SilkyView.extend({
             changed = true;
         }
 
-        let growingIndex = parseInt(growingSection.$panel.css('grid-column-start')) - 1;
+        let growingIndex = parseInt(getComputedStyle(growingSection).gridColumnStart) - 1;
         let grownWidth = parseInt(columnTemplates[growingIndex]) + Math.abs(diffX);
         if (growingSection.width != grownWidth) {
             columnTemplates[growingIndex] = `${ grownWidth }px`;
@@ -561,23 +588,23 @@ const SplitPanel = SilkyView.extend({
             changed = true;
         }
 
-        rightSection.$panel.css('width', '');
-        leftSection.$panel.css('width', '');
+        rightSection.style.width = '';
+        leftSection.style.width = '';
 
         if (changed) {
             this.onTransitioning();
             this._applyColumnTemplates(columnTemplates, true);
             await this.checkDockConditions(false);
         }
-    },
+    }
 
     async checkDockConditions(updateMode) {
-        return new Promise((resolve) => {
+        return new Promise<void>((resolve) => {
             setTimeout( async() => {
                 this.widths = [];
                 let i = 0;
                 let wideCount = 0;
-                let widths = this.$el.css('grid-template-columns').split(' ');
+                let widths = getComputedStyle(this).gridTemplateColumns.split(' ');
                 for (let j = 0; j < widths.length; j = j+2) {
                     this.widths[i] = parseInt(widths[j]);
                     if (this.widths[i] > 40)
@@ -590,14 +617,14 @@ const SplitPanel = SilkyView.extend({
                 this._allData = this.widths[this.widths.length-1] <= 40 && wideCount <= 1;
 
                 if (this.widths[0] <= 40)
-                    this._sections._list[0].$panel.css('opacity', '0');
+                    this._sectionsList[0].style.opacity = '0';
                 else
-                    this._sections._list[0].$panel.css('opacity', '');
+                    this._sectionsList[0].style.opacity = '';
 
                 if (this.widths[this.widths.length-1] <= 40)
-                    this._sections._list[this._sections._list.length-1].$panel.css('opacity', '0');
+                    this._sectionsList[this._sectionsList.length-1].style.opacity = '0';
                 else
-                    this._sections._list[this._sections._list.length-1].$panel.css('opacity', '');
+                    this._sectionsList[this._sectionsList.length-1].style.opacity = '';
 
                 if (updateMode) {
                     if (this._allResults)
@@ -612,6 +639,6 @@ const SplitPanel = SilkyView.extend({
             }, 0);
         });
     }
-});
+}
 
-export default SplitPanel;
+customElements.define('jmv-splitpanel', SplitPanel);

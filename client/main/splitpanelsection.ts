@@ -1,27 +1,40 @@
 
 'use strict';
 
-import $ from 'jquery';
+import type { SplitPanel } from "./splitpanel";
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
-const SplitPanelSection = function(index, $panel, initData, parent) {
+class SplitPanelSection extends HTMLElement {
+    listIndex: number;
+    name: string;
+    parent: SplitPanel;
+    _visible: boolean = true;
+    adjustable: boolean = true;
+    fixed: boolean = false;
+    width: number = 0;
+    anchor: ('left' | 'right' | 'none') = 'right';
+    _nextSection: { left: SplitPanelSection | null, right: SplitPanelSection | null} = { left: null, right: null };
+    _splitter: HTMLElement;
+    lastWidth: number | null = null;
 
-    this.parent = parent;
-    this.listIndex = index;
-    this.name = $panel.attr("id");
+    constructor(index: number, name: string, initData, parent: SplitPanel) {
+        super();
 
-    if (this.name === undefined)
-        throw "All splitter panels require an id attribute";
+        this.setAttribute('id', name);
+        this.name = name;
+        this.parent = parent;
+        this.listIndex = index;
 
-    this.$panel = $panel;
-    this._visible = true;
-    this._nextSection = { left: null, right: null };
-    this.adjustable = true;
-    this.fixed = false;
-    this.anchor = 'right';
-    this.width = 0;
-    this.lastWidth = null;
+        if (this.name === undefined)
+            throw "All splitter panels require an id attribute";
 
-    this.initalise = function(initData) {
+        this.lastWidth = null;
+
+        if (initData !== undefined) 
+            this.initalise(initData);
+    }
+
+    initalise (initData) {
         if (initData.anchor !== undefined)
             this.anchor = initData.anchor;
         if (initData.adjustable !== undefined)
@@ -30,10 +43,10 @@ const SplitPanelSection = function(index, $panel, initData, parent) {
             this.fixed = initData.fixed;
         if (initData.visible !== undefined)
             this.setVisibility(initData.visible);
-    };
+    }
 
-    this.getNext = function(direction, action, context) {
-        var currentSection = this._nextSection[direction];
+    getNext(direction: ('left' | 'right'), action?: (SplitPanelSection) => boolean, context?) {
+        let currentSection = this._nextSection[direction];
         if ( ! action)
             return currentSection;
 
@@ -42,53 +55,53 @@ const SplitPanelSection = function(index, $panel, initData, parent) {
                 break;
             currentSection = currentSection._nextSection[direction];
         }
-    };
+    }
 
-    this.setVisibility = function(value) {
+    setVisibility(value: boolean) {
         let changed = value !== this._visible;
         this._visible = value;
         let $splitter = this.getSplitter();
         if (value) {
-            $panel.removeClass('hidden-panel');
+            this.classList.remove('hidden-panel');
             if ($splitter)
-                $splitter.removeClass('hidden-panel');
+                $splitter.classList.remove('hidden-panel');
         }
         else {
-            $panel.addClass('hidden-panel');
+            this.classList.add('hidden-panel');
             if ($splitter)
-                $splitter.addClass('hidden-panel');
+                $splitter.classList.add('hidden-panel');
         }
         return changed;
-    };
+    }
 
-    this.getVisibility = function() {
+    getVisibility() {
         return this._visible;
-    };
+    }
 
-    this.getSplitter = function() {
+    getSplitter() {
         if (this.listIndex === 0)
             return null;
 
         if (this._splitter === undefined) {
-            this._splitter = $('<div class="silky-splitpanel-splitter" role="separator" aria-label="Window Splitter"><div style="font-size: 21px; color: #b0b0b0a6;"><span class="mif-more-vert"></span></div><div class="click-panel"></div></div>');
-            this._splitter.css('width', SplitPanelSection.sepWidth);
-            this._splitter.css('grid-area',`2 / ${ this.listIndex * 2 } / -1 / span 1`);
+            this._splitter = HTML.parse('<div class="silky-splitpanel-splitter" role="separator" aria-label="Window Splitter"><div style="font-size: 21px; color: #b0b0b0a6;"><span class="mif-more-vert"></span></div><div class="click-panel"></div></div>');
+            this._splitter.style.width = `${SplitPanelSectionSepWidth}px`;
+            this._splitter.style.gridArea = `2 / ${ this.listIndex * 2 } / -1 / span 1`;
         }
         return this._splitter;
-    };
+    }
 
-    this.getMinWidth = function() {
-        return parseInt(this.$panel.css('min-width'));
-    };
+    getMinWidth() {
+        return parseInt(getComputedStyle(this).minWidth, 10);
+    }
 
-    this.setNextSection = function(edge, section) {
+    setNextSection(edge: ('left' | 'right'), section:SplitPanelSection) {
         this._nextSection[edge] = section;
-    };
+    }
+}
 
-    if (initData !== undefined)
-        this.initalise(initData);
-};
+customElements.define('jmv-splitsection', SplitPanelSection);
 
-SplitPanelSection.sepWidth = 12;
+
+export const SplitPanelSectionSepWidth = 12;
 
 export default SplitPanelSection;

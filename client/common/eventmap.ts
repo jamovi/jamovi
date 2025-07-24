@@ -7,7 +7,7 @@ interface IEventGroupInfo {
     triggered: boolean
 }
 
-class ContextableEventEmittier extends EventEmitter {
+export class ContextableEventEmittier extends EventEmitter {
     private _listeners: Map<string | symbol, any>;
 
     private _groupListners: Map<string, IEventGroupInfo>;

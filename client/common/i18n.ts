@@ -14,7 +14,7 @@ function s6e(x) {
 export class I18n {
     _availableLanguages: Array<string>;
     language: string;
-    jed: typeof Jed;
+    jed: Jed;
     localeData: any;
 
     constructor() {

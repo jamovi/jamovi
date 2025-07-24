@@ -1,27 +1,40 @@
 'use strict';
 
-import $ from 'jquery';
 import ActionHub from './actionhub';
-import Backbone from 'backbone';
-Backbone.$ = $;
 
 import host from './host';
 import ResultsPanel from './resultspanel';
 import focusLoop from '../common/focusloop';
 import jamoviIcon from '../common/icon';
+import Instance from './instance';
 
-const ResultsView = Backbone.View.extend({
-    className: 'ResultsView',
-    initialize: function (args) {
+export class ResultsView extends HTMLElement {
+
+    icon: jamoviIcon;
+    richView: ResultsPanel;
+    model: Instance;
+    selectedView: ResultsPanel;
+    welcome: HTMLElement;
+    iframeUrl: string;
+
+    constructor() {
+        super();
+    }
+
+    intialise(iframeUrl: string, model : Instance) {
+        this.model = model;
+        this.iframeUrl = iframeUrl;
+
+        this.classList.add('ResultsView');
         host.version.then(version => {
             this.icon = new jamoviIcon(version);
-            this.$el[0].appendChild(this.icon.el);
+            this.appendChild(this.icon.el);
         });
         
 
-        this.$el.addClass('jmv-results');
-        this.$el.attr('tabindex', '-1');
-        focusLoop.applyShortcutOptions(this.$el[0], {
+        this.classList.add('jmv-results');
+        this.setAttribute('tabindex', '-1');
+        focusLoop.applyShortcutOptions(this, {
                 key: 'R',
                 maintainAccessibility: true, 
                 action: (event) => {
@@ -32,16 +45,9 @@ const ResultsView = Backbone.View.extend({
             }
         );
 
-        this.$richView = $('<div></div>');
-        this.$richView.appendTo(this.$el);
-        this.richView = new ResultsPanel({
-            el: this.$richView,
-            iframeUrl: args.iframeUrl,
-            model: this.model,
-            mode: 'rich' });
-        this.richView.on('hideOptions', () => {
-            this.trigger('hideOptions');
-        });
+        this.richView = new ResultsPanel(this.model, iframeUrl, 'rich' );
+        this.append(this.richView);
+
 
         this.selectedView = this.richView;
 
@@ -84,7 +90,9 @@ const ResultsView = Backbone.View.extend({
         ActionHub.get('textListBullet').on('request', (source) => this.selectedView.annotationAction({ type: 'format', name: 'list', value: source.value ? '' : 'bullet' }));
         ActionHub.get('textClear').on('request', () => this.selectedView.annotationAction({ type: 'clean', name: 'script', value: '' }));
         ActionHub.get('textLink').on('request', () => this.selectedView.annotationAction({ type: 'format', name: 'link', value: '' }));
-    },
+
+    }
+
     showWelcome() {
 
         const iframe = document.createElement('iframe');
@@ -98,7 +106,7 @@ const ResultsView = Backbone.View.extend({
         this.welcome.setAttribute('role', 'none');
 
         this.welcome.appendChild(iframe);
-        this.$el[0].appendChild(this.welcome);
+        this.appendChild(this.welcome);
 
         host.version.then((version) => {
             iframe.src = `https://www.jamovi.org/welcome/?v=${ version }&p=${ host.os }&plan=${ localStorage.getItem("plan") }`;
@@ -121,20 +129,23 @@ const ResultsView = Backbone.View.extend({
         this.model.analyses().once('analysisCreated', (event) => {
             this.hideWelcome();
         });
-    },
+    }
+
     hideWelcome() {
         if (this.welcome)
             this.welcome.classList.add('jmv-welcome-panel-hidden');
         
         this.hidePlaceHolder();
-    },
+    }
+
     hidePlaceHolder() {
         if (this.icon)
             this.icon.el.classList.add('hidden');
-    },
+    }
+
     getAsHTML(options, part) {
         return this.richView.getAsHTML(options, part);
-    },
-});
+    }
+}
 
-export default ResultsView;
+customElements.define('jmv-results', ResultsView);
