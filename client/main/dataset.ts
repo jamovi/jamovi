@@ -486,7 +486,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
         throw 'Column display index out of range.';
     }
 
-    insertColumn(columns: Column[], isDisplayIndex?: boolean): Promise<any> {
+    insertColumn(columns: Column[] | Column, isDisplayIndex?: boolean): Promise<any> {
 
         if (Array.isArray(columns) === false)
             columns = [columns];

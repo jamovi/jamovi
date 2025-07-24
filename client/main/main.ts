@@ -13,12 +13,12 @@ import Selection from './selection';
 import ViewController from './viewcontroller';
 import TableView from './tableview';
 import VariablesView from './variablesview';
-import ResultsView from './results';
-import SplitPanel from './splitpanel';
+import { ResultsView } from './results';
+import './splitpanel';
+import type { SplitPanel } from './splitpanel';
 import { BackstageModel, BackstageView as Backstage} from './backstage';
 import { RibbonModel, RibbonView as Ribbon, TabTypes } from './ribbon';
 import Notifications from './notifications';
-import SplitPanelSection from './splitpanelsection';
 import OptionsPanel from './optionspanel';
 import VariableEditor from './variableeditor';
 import ActionHub from './actionhub';
@@ -445,11 +445,9 @@ $(document).ready(async() => {
         instance.set('editState', tabName === 'annotation');
     });
 
-    let halfWindowWidth = 585 + SplitPanelSection.sepWidth;
-    let optionsFixedWidth = 585;
-    let splitPanel  = new SplitPanel({el : '#main-view'});
+    let splitPanel = document.querySelector('#main-view') as SplitPanel;
 
-    splitPanel.$el.on('mode-changed', () => {
+    splitPanel.addEventListener('mode-changed', () => {
         document.body.setAttribute('data-splitpanel-mode', splitPanel.mode);
         switch (splitPanel.mode) {
             case 'results':
@@ -492,17 +490,17 @@ $(document).ready(async() => {
 
     splitPanel.addPanel('main-table', { adjustable: true, fixed: false, anchor: 'left' });
     splitPanel.addPanel('main-options', { adjustable: false, fixed: true, anchor: 'right', visible: false });
-    splitPanel.addPanel('results', { adjustable: true, fixed: true, anchor: 'right' });
-
+    
+    let resultsPanel = splitPanel.addPanel('results', { adjustable: true, fixed: true, anchor: 'right' });
+    let resultsView = new ResultsView();
+    resultsView.setAttribute('role', 'region');
+    resultsView.setAttribute('aria-label', 'Analyses Results');
+    resultsView.setAttribute('aria-live', 'polite');
+    resultsPanel.append(resultsView);
 
     let $mainTable = $('#main-table');
     $mainTable.attr('role', 'region');
     $mainTable.attr('aria-label', 'Spreadsheet');
-
-    let $results = $('#results');
-    $results.attr('role', 'region');
-    $results.attr('aria-label', 'Analyses Results');
-    $results.attr('aria-live', 'polite');
 
     instance.on('change:selectedAnalysis', function(event) {
         if ('selectedAnalysis' in event.changed) {
@@ -603,7 +601,7 @@ $(document).ready(async() => {
         }
     });
 
-    let section = splitPanel.getSection('main-options');
+    //let section = splitPanel.getSection('main-options');
 
     splitPanel.render();
 
@@ -630,18 +628,20 @@ $(document).ready(async() => {
         }
     });
 
-    splitPanel.on('form-changed', () => {
+    splitPanel.addEventListener('form-changed', () => {
         mainTable.$el.trigger('resized');
     });
 
-    let resultsView = new ResultsView({ el : '#results', iframeUrl : host.resultsViewUrl, model : instance });
+ 
 
-    resultsView.on('hideOptions', () => {
+    resultsView.intialise(host.resultsViewUrl, instance);
+
+    resultsView.addEventListener('hideOptions', () => {
         optionspanel.hideOptions();
     });
 
     let _annotationReturnTab = null;
-    resultsView.$el.on('annotationFocus', (event) => {
+    resultsView.addEventListener('annotationFocus', (event) => {
         if (_annotationReturnTab === undefined)
             _annotationReturnTab = null;
 
@@ -653,7 +653,7 @@ $(document).ready(async() => {
         ribbonModel.set('selectedTab', 'annotation');
     });
 
-    resultsView.$el.on('annotationLostFocus', (event) => {
+    resultsView.addEventListener('annotationLostFocus', (event) => {
         setTimeout(() => {
             if (_annotationReturnTab !== null) {
                 ribbonModel.set('selectedTab', _annotationReturnTab);
@@ -662,11 +662,12 @@ $(document).ready(async() => {
         }, 10);
     });
 
-    resultsView.$el.on('analysisLostFocus', (event) => {
+    resultsView.addEventListener('analysisLostFocus', (event) => {
         $(window).focus();
     });
 
-    resultsView.$el.on('activeFormatChanged', (event, data) => {
+    resultsView.addEventListener('activeFormatChanged', (event: CustomEvent) => {
+        let data = event.detail;
         let annotationsTab = ribbonModel.getTab('annotation');
         annotationsTab.clearValues();
 

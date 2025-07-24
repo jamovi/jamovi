@@ -1,7 +1,7 @@
 'use strict';
 
 import { EventEmitter } from "tsee";
-import DataSetViewModel from "./dataset";
+import DataSetViewModel, { Column } from "./dataset";
 
 interface IRange {
     start: number;
@@ -1064,7 +1064,7 @@ class Selection extends EventEmitter implements ISelection {
         this.setSelections(range, [], false, ignoreTabStart);
     }
 
-    createSelectionsFromColumns(rowNo, columns, silent, ignoreTabStart) {
+    createSelectionsFromColumns(rowNo: number, columns: Column[], silent?: boolean, ignoreTabStart?: boolean) {
         columns.sort((a, b) => a.index - b.index);
 
         let selections = [];

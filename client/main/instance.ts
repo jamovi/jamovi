@@ -9,7 +9,7 @@ import path from 'path';
 import host from './host';
 import Notify from './notification';
 
-import Analyses from './analyses';
+import Analyses, { Analysis } from './analyses';
 import DataSetViewModel from './dataset';
 import OptionsPB from './optionspb';
 import { Modules } from './modules';
@@ -82,12 +82,12 @@ export interface IModuleInteractions {
 }
 
 export interface ISettingsProvider {
-    settings: () => typeof Settings;
+    settings: () => Settings;
 }
 
 export interface IInstanceModel {
     coms : any,
-    selectedAnalysis : any,
+    selectedAnalysis : Analysis | 'refsTable' | null,
     hasDataSet : boolean,
     path : string,
     title : string,
@@ -95,7 +95,8 @@ export interface IInstanceModel {
     resultsSupplier: any,
     arbitraryCodePresent: boolean,
     editState: boolean,
-    saveFormat: string
+    saveFormat: string,
+    edited: boolean
 }
 
 export interface IBackstageResources {
@@ -121,6 +122,7 @@ export class Instance extends EventMap<IInstanceModel>{
     transId: number = 0;
     seqNo: number = 0;
     command: string = '';
+    _analyses: Analyses;
 
     constructor(coms) {
         super({
@@ -133,7 +135,8 @@ export class Instance extends EventMap<IInstanceModel>{
             resultsSupplier: null,
             arbitraryCodePresent: false,
             editState: false,
-            saveFormat: undefined
+            saveFormat: undefined,
+            edited: false
         })
 
         this._settings = new Settings({ coms: this.attributes.coms });
@@ -142,9 +145,7 @@ export class Instance extends EventMap<IInstanceModel>{
         this._dataSetModel = new DataSetViewModel(this.attributes.coms);
         this._dataSetModel.on('columnsChanged', this._columnsChanged, this);
 
-        this._analyses = new Analyses({
-            modules: this._modules,
-            dataSetModel: this._dataSetModel });
+        this._analyses = new Analyses(this._dataSetModel, this._modules);
 
         this._analyses.on('analysisOptionsChanged', this._onOptionsChanged, this);
 

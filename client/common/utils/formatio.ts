@@ -67,7 +67,7 @@ export function htmlifyCells(cells, options={}) {
     return '<!DOCTYPE html>\n<html><head><meta charset="utf-8">' + generator + '</head><body><table>' + rows.join('\n') + '</table></body></html>';
 }
 
-export function exportElem(el, format, options={ images:'absolute', margin: '24', docType: true }) {
+export function exportElem(el, format=undefined, options={ images:'absolute', margin: '24', docType: true }) {
     if (format === 'text/plain') {
         return Promise.resolve(_textify(el).trim());
     }

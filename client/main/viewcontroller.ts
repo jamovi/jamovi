@@ -1,9 +1,5 @@
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
-
 import keyboardJS from 'keyboardjs';
 import host from './host';
 import Notify from './notification';
@@ -14,10 +10,18 @@ import { csvifyCells, htmlifyCells } from '../common/utils/formatio';
 import ActionHub from './actionhub';
 
 import focusLoop from '../common/focusloop';
+import { EventEmitter } from 'tsee';
+import DataSetViewModel, { ColumnType } from './dataset';
+import Selection from './selection';
 
-class ViewController {
+class ViewController extends EventEmitter {
+    model: DataSetViewModel;
+    selection: Selection;
+    _editNote: Notify;
+
     constructor(model, selection) {
-        Object.assign(this, Backbone.Events);
+        super();
+
         this.model = model;
         this.selection = selection;
 
@@ -177,7 +181,7 @@ class ViewController {
                 try {
                     await this.model.insertColumn({
                         index: 0,
-                        columnType: 'filter',
+                        columnType: ColumnType.FILTER,
                         hidden: this.model.get('filtersVisible') === false
                     });
                     await this.model.set('editingVar', [this.model.getColumn(0).id]);
@@ -359,7 +363,7 @@ class ViewController {
     }
 
     _notifyCopying() {
-        this.trigger('copying');
+        this.emit('copying');
     }
 
     async pasteClipboardToSelection(source, content) {
@@ -373,7 +377,7 @@ class ViewController {
                 message: _('Please use ctrl-v to paste into the spreadsheet.'),
                 duration: 4000,
             });
-            this.trigger('notification', notification);
+            this.emit('notification', notification);
             return;
         }
 
@@ -392,7 +396,7 @@ class ViewController {
                 message: _('Too much data, use import instead'),
                 duration: 4000,
             });
-            this.trigger('notification', notification);
+            this.emit('notification', notification);
             return;
         }
 
@@ -413,7 +417,7 @@ class ViewController {
                     message: error.cause,
                     duration: 4000,
                 });
-                this.trigger('notification', notification);
+                this.emit('notification', notification);
             }
         }
     }
@@ -448,7 +452,7 @@ class ViewController {
 
     _notifyEditProblem(details) {
         this._editNote.set(details);
-        this.trigger('notification', this._editNote);
+        this.emit('notification', this._editNote);
     }
 
     async cutSelectionToClipboard() {
@@ -734,7 +738,7 @@ class ViewController {
     }
 
     _onColumnAppended(colNo) {
-        this.trigger('columnAppended', colNo);
+        this.emit('columnAppended', colNo);
     }
 
     async _insertFromSelectedColumns(itemConstruction, direction) {

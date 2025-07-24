@@ -12,6 +12,7 @@ import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
 import { EventEmitter } from 'tsee';
 import DataSetViewModel from './dataset';
+import { Analysis } from './analyses';
 
 
 class AnalysisResources extends EventEmitter {
@@ -20,8 +21,12 @@ class AnalysisResources extends EventEmitter {
     optionsViewReady: boolean;
     name: string;
     dataSetModel: DataSetViewModel
+    analysis: Analysis;
+    ready: Promise<any>;
+    def: string;
+    i18nDef: any;
 
-    constructor(analysis, target: HTMLElement, iframeUrl, instanceId) {
+    constructor(analysis: Analysis, target: HTMLElement, iframeUrl: string, instanceId: string) {
         super();
 
         this.analysis = analysis;
@@ -415,7 +420,7 @@ class OptionsPanel {
         resource.off("frameReady");
     }
 
-    hideOptions(clearSelected) {
+    hideOptions(clearSelected?: boolean) {
         if (clearSelected === undefined)
             clearSelected = true;
         if (clearSelected) {

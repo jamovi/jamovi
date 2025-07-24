@@ -1,9 +1,5 @@
 'use strict';
 
-import $ from 'jquery';
-import underscore from 'underscore';
-import Backbone from 'backbone';
-Backbone.$ = $;
 import I18n from '../common/i18n';
 import focusLoop from '../common/focusloop';
 
@@ -21,29 +17,58 @@ import { contextMenuListener } from '../common/utils';
 import './references';
 
 import path from 'path';
+import { EventDistributor } from '../common/eventmap';
+import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
+import Instance from './instance';
+import { Analysis } from './analyses';
+import { References } from './references';
 
-const ResultsPanel = Backbone.View.extend({
-    className: 'ResultsPanel',
-    initialize(args) {
+interface AnalysisResource {
+    id: number,
+    analysis : Analysis,
+    iframe : HTMLIFrameElement,
+    $container : HTMLElement,
+    loaded : boolean,
+    isEmpty: boolean,
+    hasTitle: boolean,
+    sized: boolean
+}
 
-        this._focus = 0;
-        this.el.innerHTML = '';
-        this.el.classList.add('jmv-results-panel');
-        this.el.classList.add('results-loop');
-        this.$el.attr('role', 'list');
-        this.$el.attr('aria-label', 'Results');
-        this.$el.attr('tabindex', '-1');
+class ResultsPanel extends EventDistributor {
+    model: Instance;
+    resources: { [key: number]:AnalysisResource };
+    analysisCount: number;
+    _focus: number = 0;
+    annotationFocus: number = 0;
+    resultsLooper: selectionLoop;
+    _menuId: number | null;
+    _refsTable: References;
+    _ready: boolean = false;
+    mode: string;
+    iframeUrl: string;
 
-        this.el.dataset.mode = args.mode;
-        this.annotationFocus = 0;
 
-        this.resultsLooper = new selectionLoop('results-loop', this.el, true);
+    constructor(model: Instance, iframeUrl: string, mode: string) {
+        super();
+
+        this.model = model;
+        this.classList.add('ResultsPanel');
+        this.innerHTML = '';
+        this.classList.add('jmv-results-panel');
+        this.classList.add('results-loop');
+        this.setAttribute('role', 'list');
+        this.setAttribute('aria-label', 'Results');
+        this.setAttribute('tabindex', '-1');
+
+        this.dataset.mode = mode;
+
+        this.resultsLooper = new selectionLoop('results-loop', this);
         this.analysisCount = 0;
 
-        focusLoop.addFocusLoop(this.el);
+        focusLoop.addFocusLoop(this);
 
         this._menuId = null;
-        ContextMenu.el.addEventListener('menuClicked', (event, button) => {
+        ContextMenu.el.addEventListener('menuClicked', (event: CustomEvent<ContextMenuButton>) => {
             if (this._menuId !== null) {
                 const menuEvent = event as CustomEvent<ContextMenuButton>;
                 const button = menuEvent.detail;
@@ -63,8 +88,12 @@ const ResultsPanel = Backbone.View.extend({
                 if (event) {
                     if (event.button === 2) {
                         let resource = this._tryGetResource(event.pageX, event.pageY);
-                        if (resource !== null)
-                            this._resultsMouseClicked(event.button, event.offsetX - resource.$container.offset().left, event.offsetY - resource.$container.offset().top, resource.analysis);
+                        if (resource !== null) {
+                            const containerRect = resource.$container.getBoundingClientRect();
+                            const containerLeft = containerRect.left + window.scrollX;
+                            const containerTop = containerRect.top + window.scrollY;
+                            this._resultsMouseClicked(event.button, event.offsetX - containerLeft, event.offsetY - containerTop, resource.analysis);
+                        }
                     }
                 }
             }
@@ -72,11 +101,9 @@ const ResultsPanel = Backbone.View.extend({
 
         this.resources = { };
 
-        if ('iframeUrl' in args)
-            this.iframeUrl = args.iframeUrl;
+        this.iframeUrl = iframeUrl;
 
-        if ('mode' in args)
-            this.mode = args.mode;
+        this.mode = mode;
 
         let analyses = this.model.analyses();
         analyses.on('analysisCreated', this._analysisCreated, this);
@@ -89,14 +116,12 @@ const ResultsPanel = Backbone.View.extend({
 
         window.addEventListener('message', event => this._messageEvent(event));
 
-        this.$el.on('click', () => {
+        this.addEventListener('click', () => {
             if (this.model.attributes.selectedAnalysis !== null)
                 this.model.set('selectedAnalysis', null);
         });
 
-        this._ready = false;
-
-        this._refsTable = document.createElement('jmv-references');
+        this._refsTable = document.createElement('jmv-references') as References;
         this._refsTable.setAttribute('role', 'listitem');
         this._refsTable.setAttribute('tabindex', '-1');
         this._refsTable.setAttribute('aria-label', _('References'));
@@ -116,12 +141,12 @@ const ResultsPanel = Backbone.View.extend({
             }
         });
         this._refsTable.addEventListener('click', (event) => this._resultsClicked(event, 'refsTable'));
-        this.el.appendChild(this._refsTable);
+        this.appendChild(this._refsTable);
 
-        contextMenuListener(this.el, (event) => {
+        contextMenuListener(this, (event) => {
             if (Object.keys(this.resources).length > 0) {
                 this._showMenu(-1, { entries: [ ], pos: { left: event.pageX, top: event.pageY }});
-                this.el.classList.add('all-selected');
+                this.classList.add('all-selected');
             }
             event.preventDefault();
             return false;
@@ -132,7 +157,8 @@ const ResultsPanel = Backbone.View.extend({
         this.model.settings().on('change:syntaxMode', () => this._updateAll());
         this.model.settings().on('change:refsMode', () => this._updateRefsMode());
         this.model.on('change:editState', () => this._updateEditState());
-    },
+    }
+
     _updateRefsMode() {
         if ( ! this._ready)
             return;
@@ -142,7 +168,8 @@ const ResultsPanel = Backbone.View.extend({
             this._refsTable.style.display = '';
         else
             this._refsTable.style.display = 'none';
-    },
+    }
+
     _checkIfEverythingReady() {
         if (this._ready)
             return;
@@ -155,7 +182,8 @@ const ResultsPanel = Backbone.View.extend({
         this._ready = true;
         this._refsTable.update();
         this._updateRefsMode();
-    },
+    }
+
     _analysisCreated(analysis) {
 
         this._updateRefs(analysis);
@@ -176,35 +204,38 @@ const ResultsPanel = Backbone.View.extend({
             classes = 'empty-analysis';
 
 
-        let $container = $(`<div class="jmv-results-container results-loop-list-item results-loop-auto-select  ${ classes }" tabindex="-1" role="listitem" aria-label="${ isEmptyAnalysis ? 'Annotation Field' : (analysis.results.title + '- Results')}"></div>`);
+        let $container = HTML.parse(`<div class="jmv-results-container results-loop-list-item results-loop-auto-select  ${ classes }" tabindex="-1" role="listitem" aria-label="${ isEmptyAnalysis ? 'Annotation Field' : (analysis.results.title + '- Results')}"></div>`);
 
-        $container.on('keydown', (event) => {
+        $container.addEventListener('keydown', (event) => {
             if ((event.ctrlKey || event.metaKey) && event.code === 'KeyC') {
                 this._menuEvent({ op: 'copy', address: [ analysis.id] });
                 event.stopPropagation();
             }
         });
 
-        let $after = $(this._refsTable);
+        let after: Element = this._refsTable;
+
         if (analysis.results.index > 0) {
-            let $siblings = this.$el.children('.jmv-results-container');
+            let siblings = Array.from(this.children).filter(el => el.classList.contains('jmv-results-container'));
+
             let index = analysis.results.index - 1;
-            if (index < $siblings.length)
-                $after = $siblings[index];
+            if (index < siblings.length)
+                after = siblings[index];
         }
 
-        $container.insertBefore($after);
+        after.parentNode.insertBefore($container, after);
 
-        $container.attr('data-analysis-name', analysis.name);
+        $container.setAttribute('data-analysis-name', analysis.name);
 
         if ( ! isEmptyAnalysis || analysis.index === 0)
             this.resultsLooper.highlightElement($container[0], true, false);
 
-        let $cover = $('<div class="jmv-results-cover"></div>').appendTo($container);
-        let $iframe = $(element).appendTo($container);
-        let iframe = $iframe[0];
+        let $cover = HTML.parse('<div class="jmv-results-cover"></div>');
+        $container.append($cover);
+        let iframe = HTML.parse<HTMLIFrameElement>(element);
+        $container.append(iframe);
 
-        $container.on('keydown', (event) => {
+        $container.addEventListener('keydown', (event) => {
             if (event.keyCode === 13) { //enter
                 this.model.set('selectedAnalysis', analysis);
             }
@@ -219,87 +250,110 @@ const ResultsPanel = Backbone.View.extend({
 
         let selected = this.model.get('selectedAnalysis');
         if (selected !== null && analysis.id === selected.id) {
-            $container.attr('data-selected', '');
-            $container.attr('aria-current', true);
+            $container.setAttribute('data-selected', '');
+            $container.setAttribute('aria-current', 'true');
         }
 
-        let resources = {
+        let resources: AnalysisResource = {
             id: analysis.id,
             analysis : analysis,
             iframe : iframe,
-            $iframe : $iframe,
             $container : $container,
             loaded : false,
             isEmpty: isEmptyAnalysis,
-            hasTitle: ! isEmptyAnalysis || analysis.isFirst()
+            hasTitle: ! isEmptyAnalysis || analysis.isFirst(),
+            sized: false
         };
 
         this.resources[analysis.id] = resources;
 
-        $iframe.on('load', () => {
+        iframe.addEventListener('load', () => {
             this._sendI18nDef(resources);
             this._sendResults(resources);
             resources.loaded = true;
         });
 
-        $iframe.on('mouseover mouseout', (event) => {
+        iframe.addEventListener('mouseover mouseout', (event) => {
             this._sendMouseEvent(resources, event);
         });
 
         if (isEmptyAnalysis === false) {
-            $cover.on('click', event => this._resultsClicked(event, analysis));
+            $cover.addEventListener('click', event => this._resultsClicked(event, analysis));
             this.analysisCount += 1;
             if (this.analysisCount === 1)
-                $container.attr('tabindex', 0);
+                $container.setAttribute('tabindex', '0');
         }
         else {
-            $cover.on('click', event =>  {
+            $cover.addEventListener('click', event =>  {
                 this._resultsClicked(event, analysis);
                 let iframe = resources.iframe;
-                let clickEvent = $.Event('enterannotation', { });
+                let clickEvent = {
+                    type: 'click',
+                    button: event.button,
+                    pageX: event.offsetX,
+                    pageY: event.offsetY,
+                    bubbles: event.bubbles
+                };
+                //let clickEvent = new CustomEvent('enterannotation', { detail: {} });
                 iframe.contentWindow.postMessage(clickEvent, this.iframeUrl);
             });
         }
 
-        contextMenuListener($cover[0], event => {
+        contextMenuListener($cover, event => {
             this._resultsMouseClicked(2, event.offsetX, event.offsetY, analysis);
             event.stopPropagation();
             event.preventDefault();
             return false;
         });
 
-        $cover.on('mouseenter', event => {
+        $cover.addEventListener('mouseenter', event => {
             this._sendMouseEvent(resources, event);
-            $iframe.addClass('hover');
+            iframe.classList.add('hover');
         });
 
-        $cover.on('mouseleave', event => {
+        $cover.addEventListener('mouseleave', event => {
             this._sendMouseEvent(resources, event);
-            $iframe.removeClass('hover');
+            iframe.classList.remove('hover');
         });
-    },
+    }
+
     _analysisDeleted(analysis) {
         this._updateRefs();
         let resources = this.resources[analysis.id];
         let $container = resources.$container;
-        $container.css('height', '0');
+        $container.style.height = '0px';
         if (analysis.name === 'empty')
             $container.remove();
         else {
             this.analysisCount -= 1;
             let removed = false;
-            $container.one('transitionend', () => {
+            $container.addEventListener('transitionend', () => {
                 $container.remove();
                 removed = true;
-            });
+            }, { once: true });
             setTimeout(() => {
                 if (removed === false)
                     $container.remove();
             }, 400);
         }
         delete this.resources[analysis.id];
-    },
-    _updateRefs(exclude) {
+    }
+
+    deepEqual(a, b) {
+        if (a === b) return true;
+
+        if (typeof a !== typeof b) return false;
+
+        if (typeof a !== 'object' || a === null || b === null) return false;
+
+        const aKeys = Object.keys(a);
+        const bKeys = Object.keys(b);
+        if (aKeys.length !== bKeys.length) return false;
+
+        return aKeys.every(key => this.deepEqual(a[key], b[key]));
+    }
+
+    _updateRefs(exclude?: Analysis) {
         if ( ! this._ready)
             return;
 
@@ -309,7 +363,7 @@ const ResultsPanel = Backbone.View.extend({
         this._refsTable.update();
         let refNums = this._refsTable.getNumbers();
         for (let name in oldNums) {
-            if ( ! underscore.isEqual(refNums[name], oldNums[name]))
+            if ( ! this.deepEqual(refNums[name], oldNums[name]))
                 modulesWithRefChanges.push(name);
         }
 
@@ -320,39 +374,44 @@ const ResultsPanel = Backbone.View.extend({
                     this._sendRefNumbers(res);
             }
         }
-    },
-    _annotationEvent(sender, analysis, address) {
+    }
+
+    _annotationEvent(sender, analysis: Analysis, address) {
         if (sender !== this) {
             let resources = this.resources[analysis.id];
             resources.analysis = analysis;
             if (resources.loaded)
                 this._sendResults(resources);
         }
-    },
-    _analysisNameChanged(analysis){
+    }
+
+    _analysisNameChanged(analysis: Analysis){
         let resources = this.resources[analysis.id];
         if (resources) {
             let heading = analysis.getHeading();
             if (heading === null)
                 heading = analysis.results.title
-            resources.$container.attr('aria-label', `${ heading } - Results`);
+            resources.$container.setAttribute('aria-label', `${ heading } - Results`);
         }
-    },
-    _resultsEvent(analysis) {
+    }
+
+    _resultsEvent(analysis: Analysis) {
         this._updateRefs(analysis);
         let resources = this.resources[analysis.id];
         resources.analysis = analysis;
         if (resources.loaded)
             this._sendResults(resources);
-    },
+    }
+
     _updateAllRefNumbers() {
         for (let id in this.resources) {
             let res = this.resources[id];
             if (res.loaded)
                 this._sendRefNumbers(res);
         }
-    },
-    _sendRefNumbers(resources) {
+    }
+
+    _sendRefNumbers(resources: AnalysisResource) {
         let analysis = resources.analysis;
         let event = {
             type: 'reftablechanged',
@@ -362,10 +421,9 @@ const ResultsPanel = Backbone.View.extend({
             }
         };
         resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
-    },
-    _sendMouseEvent(resources, eventData) {
-        let analysis = resources.analysis;
+    }
 
+    _sendMouseEvent(resources: AnalysisResource, eventData) {
         let event = {
             type: 'mouseEvent',
             data: {
@@ -373,8 +431,9 @@ const ResultsPanel = Backbone.View.extend({
             }
         };
         resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
-    },
-    async _sendI18nDef(resources) {
+    }
+
+    async _sendI18nDef(resources: AnalysisResource) {
         let analysis = resources.analysis;
 
         await analysis.ready;
@@ -387,8 +446,9 @@ const ResultsPanel = Backbone.View.extend({
             }
         };
         resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
-    },
-    _sendResults(resources) {
+    }
+
+    _sendResults(resources: AnalysisResource) {
 
         let format;
         try {
@@ -420,12 +480,13 @@ const ResultsPanel = Backbone.View.extend({
                 isEmpty: resources.isEmpty,
                 hasTitle: resources.hasTitle,
                 selected: newSelected === null ? null : newSelected === analysis,
-                annotationSelected: newSelected === null ? false : newSelected.name === 'empty',
+                annotationSelected: newSelected instanceof Analysis ? newSelected.name === 'empty' : false,
                 editState: this.model.get('editState')
             }
         };
         resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
-    },
+    }
+
     _updateAll() {
 
         for (let id in this.resources) {
@@ -437,16 +498,25 @@ const ResultsPanel = Backbone.View.extend({
             this._sendResults(resources);
         }
 
-    },
+    }
+
     _tryGetResource(xpos, ypos) {
         for (let id in this.resources) {
             let $container = this.resources[id].$container;
-            let offset = $container.offset();
-            if (xpos >= offset.left && xpos <= offset.left + $container.width() && ypos >= offset.top && ypos <= offset.top + $container.height())
+
+            let rect = $container.getBoundingClientRect();
+            let left = rect.left + window.scrollX;
+            let top = rect.top + window.scrollY;
+            let width = $container.offsetWidth;
+            let height = $container.offsetHeight;
+
+            if (xpos >= left && xpos <= left + width && ypos >= top && ypos <= top + height)
                 return this.resources[id];
         }
+
         return null;
-    },
+    }
+
     _resultsClicked(event, analysis) {
         event.stopPropagation();
         let current = this.model.get('selectedAnalysis');
@@ -456,19 +526,27 @@ const ResultsPanel = Backbone.View.extend({
             this.model.set('selectedAnalysis', analysis);
         else
             this.model.set('selectedAnalysis', null);
-    },
-    _resultsMouseClicked(button, offsetX, offsetY, analysis) {
+    }
+
+    _resultsMouseClicked(button, offsetX, offsetY, analysis: Analysis) {
         let selected = this.model.attributes.selectedAnalysis;
         if ((selected === null && analysis !== null) || selected === analysis) {
             let resources = this.resources[analysis.id];
             let iframe = resources.iframe;
-            let clickEvent = $.Event('click', { button: button, pageX: offsetX, pageY: offsetY, bubbles: true });
+            let clickEvent = {
+                type: 'click',
+                button: button,
+                pageX: offsetX,
+                pageY: offsetY,
+                bubbles: true
+            };
             iframe.contentWindow.postMessage(clickEvent, this.iframeUrl);
         }
         else {
             this.model.set('selectedAnalysis', null);
         }
-    },
+    }
+
     _refsRightClicked(event) {
 
         let rect = this._refsTable.getBoundingClientRect();
@@ -509,7 +587,8 @@ const ResultsPanel = Backbone.View.extend({
 
         this._menuId = 0;
         ContextMenu.showResultsMenu(entries, left, top);
-    },
+    }
+
     _messageEvent(event) {
 
         for (let id in this.resources) {
@@ -521,41 +600,40 @@ const ResultsPanel = Backbone.View.extend({
             let payload = event.data;
             let eventType = payload.type;
             let eventData = payload.data;
-            let $iframe = resources.$iframe;
+            let iframe = resources.iframe;
             let $container = resources.$container;
             let analysis = resources.analysis;
 
             let options = { };
-
             switch (eventType) {
                 case 'annotationChanged':
                     this.model.set('edited', true);
-                    this.$el.trigger('annotationChanged');
+                    this.dispatchEvent(new CustomEvent('annotationChanged'));
                     break;
                 case 'annotationFocus':
                     this._focus += 1;
                     if (this._focus === 1) {
                         this.annotationGotFocus();
-                        this.$el.trigger('annotationFocus');
+                        this.dispatchEvent(new CustomEvent('annotationFocus'));
                     }
                     break;
                 case 'analysisLostFocus':
-                    this.$el.trigger('analysisLostFocus');
+                    this.dispatchEvent(new CustomEvent('analysisLostFocus'));
                     break;
                 case 'annotationLostFocus':
                     this._focus -= 1;
                     if (this._focus === 0) {
                         this.annotationLostFocus();
-                        this.$el.trigger('annotationLostFocus');
+                        this.dispatchEvent(new CustomEvent('annotationLostFocus'));
                     }
                     else if (this._focus < 0)
                         throw "shouldn't get here";
                     break;
                 case 'activeFormatChanged':
-                    this.$el.trigger('activeFormatChanged', eventData);
+                    this.dispatchEvent(new CustomEvent('activeFormatChanged', { detail: eventData }));
                     break;
                 case 'headingChanged':
-                    this.$el.trigger('headingChanged', eventData);
+                    this.dispatchEvent(new CustomEvent('headingChanged', { detail: eventData }));
                     analysis.updateHeading();
                     break;
                 case 'sizeChanged':
@@ -566,16 +644,16 @@ const ResultsPanel = Backbone.View.extend({
                     if (width < 620)
                         width = 620;
 
-                    if ($iframe.height() === 0)
-                        $iframe.width(width);
+                    if (iframe.offsetHeight === 0)
+                        iframe.style.width = `${width}px`;
 
                     let selected = this.model.get('selectedAnalysis');
-                    if (eventData.scrollIntoView && selected !== null && selected.id !== undefined && selected.id.toString() === id)
+                    if (selected instanceof Analysis && eventData.scrollIntoView && selected !== null && selected.id !== undefined && selected.id.toString() === id)
                         this._scrollIntoView($container, height);
-                    $iframe.width(width);
-                    $iframe.height(height);
-                    $container.width(width);
-                    $container.height(height);
+                    iframe.style.width = `${width}px`;
+                    iframe.style.height = `${height}px`;
+                    $container.style.width = `${width}px`;
+                    $container.style.height = `${height}px`;
 
                     resources.sized = true;
                     this._checkIfEverythingReady();
@@ -585,9 +663,12 @@ const ResultsPanel = Backbone.View.extend({
                     this.copyItem(id, eventData);
                     break;
                 case 'menu':
-                    let offset = $iframe.offset();
-                    eventData.pos.left += offset.left;
-                    eventData.pos.top  += offset.top;
+                    const rect = iframe.getBoundingClientRect();
+                    const scrollLeft = window.scrollX || document.documentElement.scrollLeft;
+                    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+
+                    eventData.pos.left += rect.left + scrollLeft;
+                    eventData.pos.top  += rect.top + scrollTop;
                     this._showMenu(id, eventData);
                     break;
                 case 'setOption':
@@ -614,23 +695,57 @@ const ResultsPanel = Backbone.View.extend({
                     host.openUrl(eventData.url);
                     break;
                 case 'mouseEvent':
-                    let newEvent = $.Event( eventData.eventName, eventData);
+                    /*let newEvent = $.Event( eventData.eventName, eventData);
 
                     let pos = $iframe.offset();
 
                     newEvent.pageX += pos.left;
                     newEvent.pageY += pos.top;
 
-                    $(document).trigger(newEvent);
+                    $(document).trigger(newEvent);*/
+
+
+                    // Get iframe offset relative to document
+                    const rect2 = iframe.getBoundingClientRect();
+                    const offsetLeft = rect2.left + window.scrollX;
+                    const offsetTop = rect2.top + window.scrollY;
+
+                    // Adjust the mouse coordinates
+                    const adjustedPageX = (eventData.pageX || 0) + offsetLeft;
+                    const adjustedPageY = (eventData.pageY || 0) + offsetTop;
+
+                    // Create a new MouseEvent
+                    const newEvent = new MouseEvent(eventData.eventName, {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window,
+                        pageX: adjustedPageX,
+                        pageY: adjustedPageY,
+                        clientX: adjustedPageX - window.scrollX,  // Optional: emulate original viewport position
+                        clientY: adjustedPageY - window.scrollY,
+                        button: eventData.button || 0,
+                        buttons: eventData.buttons || 0,
+                        ctrlKey: eventData.ctrlKey || false,
+                        shiftKey: eventData.shiftKey || false,
+                        altKey: eventData.altKey || false,
+                        metaKey: eventData.metaKey || false
+                    });
+
+                    // Dispatch it on the document
+                    document.dispatchEvent(newEvent);
+
+
                     break;
             }
         }
-    },
+    }
+
     copyItem(id, data) {
         let address = data.address.slice();
         address.unshift(id);
         this._menuEvent({ op: 'copy', address });
-    },
+    }
+
     _showMenu(id, data) {
 
         this._menuId = id;
@@ -668,8 +783,9 @@ const ResultsPanel = Backbone.View.extend({
         });
 
         ContextMenu.showResultsMenu(entries, data.pos.left, data.pos.top);
-    },
-    getAsHTML(options, part) {
+    }
+
+    getAsHTML(options, part?) {
         if ( ! part) {
 
             options.fragment = true;
@@ -697,7 +813,8 @@ const ResultsPanel = Backbone.View.extend({
         let address = unflatten(part);
         return this._getContent(address, options)
             .then((content) => content.html);
-    },
+    }
+
     _getContent(address, options) {
 
         if (address.length === 0) {
@@ -725,7 +842,8 @@ const ResultsPanel = Backbone.View.extend({
             };
             window.addEventListener('message', responseHandler);
         });
-    },
+    }
+
     async _menuEvent(event) {
 
         if (event.op === 'copy') {
@@ -878,12 +996,12 @@ const ResultsPanel = Backbone.View.extend({
             let address = event.address;
 
             if (address === null) {
-                this.el.classList.remove('all-selected');
+                this.classList.remove('all-selected');
             } else if (event.address.length === 0) {
-                this.el.classList.add('all-selected');
+                this.classList.add('all-selected');
                 event.address = null;
             } else {
-                this.el.classList.remove('all-selected');
+                this.classList.remove('all-selected');
                 address = address.slice(); // clone
                 let id = address.shift();
                 event.address = address;
@@ -894,8 +1012,9 @@ const ResultsPanel = Backbone.View.extend({
                 this.resources[this._menuId].iframe.contentWindow.postMessage(message, this.iframeUrl);
             }
         }
-    },
-    _scrollIntoView($item, itemHeight) {
+    }
+
+    /*_scrollIntoView($item: HTMLElement, itemHeight: number) {
 
         itemHeight = itemHeight || $item.height();
 
@@ -921,10 +1040,51 @@ const ResultsPanel = Backbone.View.extend({
             else if (itemBottom < viewBottom)
                 this.$el.stop().animate({ scrollTop: itemBottom - viewHeight }, { duration: 'slow', easing: 'swing' });
         }
-    },
+    }*/
+
+    _scrollIntoView(item: HTMLElement, itemHeight: number) {
+        const containerStyle = getComputedStyle(this);
+
+        // Fallback to actual offsetHeight if itemHeight is not provided
+        itemHeight = itemHeight || item.offsetHeight;
+
+        const viewPad = parseInt(containerStyle.paddingTop || "0", 10);
+        const viewTop = this.scrollTop;
+        const viewHeight = this.parentElement?.clientHeight || this.clientHeight;
+        const viewBottom = viewTop + viewHeight;
+
+        // Position of item relative to container
+        const itemTop = item.offsetTop;
+        const itemBottom = itemTop + itemHeight + 24;
+
+        const targetScrollTop = (() => {
+            if (itemHeight < viewHeight) {
+                if (itemTop < viewTop + viewPad)
+                    return itemTop;
+                else if (itemBottom > viewBottom)
+                    return itemBottom - viewHeight;
+            } else {
+                if (itemTop > viewTop + viewPad)
+                    return itemTop;
+                else if (itemBottom < viewBottom)
+                    return itemBottom - viewHeight;
+            }
+            return null;
+        })();
+
+        // Smooth scroll if needed
+        if (targetScrollTop !== null) {
+            this.scrollTo({
+                top: targetScrollTop,
+                behavior: 'smooth'
+            });
+        }
+    }
+
     setFocus() {
-        focusLoop.enterFocusLoop(this.el);
-    },
+        focusLoop.enterFocusLoop(this);
+    }
+
     _selectedChanged(event) {
         let oldSelected = this.model.previous('selectedAnalysis');
         let newSelected = this.model.get('selectedAnalysis');
@@ -937,14 +1097,14 @@ const ResultsPanel = Backbone.View.extend({
             else {
                 let oldSelectedResults = this.resources[oldSelected.id];
                 if (oldSelectedResults) {
-                    oldSelectedResults.$container.removeAttr('data-selected');
-                    oldSelectedResults.$container.attr('aria-current', false);
+                    oldSelectedResults.$container.removeAttribute('data-selected');
+                    oldSelectedResults.$container.setAttribute('aria-current', 'false');
                 }
             }
         }
 
         if (newSelected !== null) {
-            this.$el.attr('data-analysis-selected', '');
+            this.setAttribute('data-analysis-selected', '');
             if (newSelected === 'refsTable') {
                 this._refsTable.select();
                 this._refsTable.dataset.selected = '';
@@ -952,8 +1112,8 @@ const ResultsPanel = Backbone.View.extend({
             else {
                 let newSelectedResults = this.resources[newSelected.id];
                 if (newSelectedResults) {
-                    newSelectedResults.$container.attr('data-selected', '');
-                    newSelectedResults.$container.attr('aria-current', true);
+                    newSelectedResults.$container.setAttribute('data-selected', '');
+                    newSelectedResults.$container.setAttribute('aria-current', 'true');
                 }
                 this._refsTable.deselect();
                 delete this._refsTable.dataset.selected;
@@ -962,10 +1122,11 @@ const ResultsPanel = Backbone.View.extend({
         }
         else {
             this._sendSelected(null);
-            this.$el.removeAttr('data-analysis-selected');
+            this.removeAttribute('data-analysis-selected');
         }
-    },
-    _sendSelected(resourceId) {
+    }
+
+    _sendSelected(resourceId: number) {
         let selectedResource = this.resources[resourceId];
         for (let id in this.resources) {
             let resource = this.resources[id];
@@ -987,7 +1148,8 @@ const ResultsPanel = Backbone.View.extend({
 
             resource.iframe.contentWindow.postMessage(event, this.iframeUrl);
         }
-    },
+    }
+
     annotationGotFocus() {
         // Added debounce to minimize focus events flying around due
         // to the disconnect between the toolbar and the editors in the iframes
@@ -1014,7 +1176,8 @@ const ResultsPanel = Backbone.View.extend({
             }
         }
 
-    },
+    }
+
     annotationLostFocus() {
         this.annotationFocus -= 1;
         if (this.annotationFocus === 0) {
@@ -1040,7 +1203,8 @@ const ResultsPanel = Backbone.View.extend({
         }
         else if (this.annotationFocus < 0)
             throw "shouldn't get here";
-    },
+    }
+
     _updateEditState() {
         let event = {
             type: 'annotationEvent',
@@ -1058,7 +1222,8 @@ const ResultsPanel = Backbone.View.extend({
 
             resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
         }
-    },
+    }
+
     annotationAction(action) {
         let event = {
             type: 'annotationEvent',
@@ -1075,13 +1240,15 @@ const ResultsPanel = Backbone.View.extend({
             if (resources.loaded === false)
                 continue;
 
-            let attr = resources.$container.attr('data-selected');
-            if (attr !== undefined && attr !== false) {
+            let attr = resources.$container.getAttribute('data-selected');
+            if (attr !== undefined && attr !== 'false') {
                 resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
                 break;
             }
         }
-    },
-});
+    }
+}
+
+customElements.define('jmv-resultspanel', ResultsPanel);
 
 export default ResultsPanel;
