@@ -18,6 +18,7 @@ class PlotsTab extends RibbonTab {
     //store: Store;
     _moduleCount = 0;
     _analysesList = { };
+    _moreIndex: number = -1;
 
     constructor(modules, model) {
         super('plots', 'P', _('Plots'));
@@ -33,6 +34,9 @@ class PlotsTab extends RibbonTab {
         this.store.on('notification', note => {
             this.emit('notification', note);
          });*/
+
+         this.sep1 = new RibbonSeparator();
+         this.sep2 = new RibbonSeparator()
 
         this.populate();
     }
@@ -151,8 +155,10 @@ class PlotsTab extends RibbonTab {
                     continue;
 
                 let groupName = analysis.menuGroup;
+                if ((groupName === '.' || groupName === 'More') && analysis.ns !== 'scatr')
+                    groupName = 'Other plots';
                 let subgroup = analysis.menuSubgroup;
-                let menu = groupName in menus ? menus[groupName] : { _title: _translate(analysis.menuGroup) };
+                let menu = groupName in menus ? menus[groupName] : { _title: _translate(groupName) };
                 if (analysis.ns === 'jmv' || menu.ns !== 'jmv')
                     menu.ns = analysis.ns;
 
@@ -181,7 +187,6 @@ class PlotsTab extends RibbonTab {
         let shortcutIndex = 1;
         for (let groupName in menus) {
             let menu = menus[groupName];
-            let button = null;
             if (groupName === '.') {
                 let subgroups = [];
                 let buttons = [];
@@ -202,7 +207,9 @@ class PlotsTab extends RibbonTab {
                     //subgroups.push(new RibbonGroup({ title: '', margin: 'large', items: buttons }));
                 }
                 buttons.push(new RibbonSeparator());
-                button = buttons; //new RibbonGroup({ title: '', margin: 'large', items: buttons });
+                this._moreIndex = buttons.length;
+                buttons.push(new RibbonSeparator());
+                this.buttons.push(...buttons);
             }
             else {
                 let flattened = [ ];
@@ -222,15 +229,16 @@ class PlotsTab extends RibbonTab {
                     flattened = items.concat(flattened);
                 }
 
-                let shortcutKey = menu.ns === 'jmv' ?  (shortcutIndex++).toString() : null;
+                let shortcutKey = menu.ns === 'scatr' ?  'M' : null;
                 let buttonId2 = focusLoop.getNextAriaElementId('button');
                 let buttonElement = document.createElement('button');
                 buttonElement.setAttribute('id', buttonId2);
-                button = new RibbonMenu(buttonElement, menu._title, groupName, shortcutKey, flattened, false, containsNew);
-                button = [button];
+                let button = new RibbonMenu(buttonElement, menu._title, groupName, shortcutKey, flattened, false, containsNew);
+                if (menu.ns === 'scatr')
+                    this.buttons.splice(this._moreIndex, 0, button);
+                else
+                    this.buttons.push(button);
             }
-
-            this.buttons.push(...button);
         }
 
         if (this.settings.attributes.settingsRecieved === false) {

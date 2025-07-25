@@ -382,7 +382,7 @@ class RibbonMenu {
             this.el.removeChild(this.el.firstChild);
         this.el.append(iconElement);
         this.el.append(labelElement);
-        this.el.append(HTML.create('div', { class: 'jmv-ribbon-menu-arrow', style: 'margin-top: 5px;' }));
+        this.el.append(HTML.create('div', { class: 'jmv-ribbon-menu-arrow', style: 'margin: 7px 0 0 0;' }));
 
         if (allHidden) {
             this.el.classList.add('menu-item-hiding');
@@ -396,7 +396,7 @@ class RibbonMenu {
 
         // Add click event listeners
         this.menuItems.forEach(item => {
-            item.addEventListener('click', event => this._itemClicked(event, event.detail > 0));
+            item.addEventListener('click', (event: MouseEvent) => this._itemClicked(event));
         });
 
         // Add scroll event listeners
