@@ -140,8 +140,8 @@ body.windows.electron .jmv-ribbon-appmenu {
 
 .jmv-ribbon-body {
     background-color : #F0F0F0 ;
-    height: 67px;
-    padding: 3px 0px 3px 6px;
+    height: 80px;
+    padding: 3px 5px 3px 6px;
     -webkit-app-region: no-drag;
     display: flex ;
     /*overflow-x: overlay;

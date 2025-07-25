@@ -55,6 +55,10 @@
     padding: 6px 0;
     transition: 0.2s width, 0.1s opacity, .2s visibility, 0.2s background-color;
     transition-delay: .01s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .jmv-analyses-button:focus {
