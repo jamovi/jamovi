@@ -153,9 +153,10 @@ async function copyToClipboard(content) {
 
 async function pasteFromClipboard() {
     const { text, html } = await ipc.invoke('paste-from-clipboard');
-    if (html === text)
-        html = '';
-    return { text, html };
+    return {
+        text,
+        html: html === text ? '' : html
+    };
 }
 
 async function setLanguage(code) {
