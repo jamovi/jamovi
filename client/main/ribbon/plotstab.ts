@@ -2,7 +2,7 @@
 'use strict';
 
 import RibbonMenu from './ribbonmenu';
-import RibbonTab from './ribbontab';
+import RibbonTab, { RibbonItem } from './ribbontab';
 import Placeholder from './placeholder';
 import RibbonButton from './ribbonbutton';
 import focusLoop from '../../common/focusloop';
@@ -12,7 +12,7 @@ import RibbonSeparator from './ribbonseparator';
 //import Store from '../store';
 
 class PlotsTab extends RibbonTab {
-    buttons = [ ];
+    buttons: RibbonItem[] = [ ];
     settings;
     modules;
     //store: Store;
@@ -35,36 +35,33 @@ class PlotsTab extends RibbonTab {
             this.emit('notification', note);
          });*/
 
-         this.sep1 = new RibbonSeparator();
-         this.sep2 = new RibbonSeparator()
-
         this.populate();
     }
 
-    _onModuleVisibilityChanged(module) {
+    private _onModuleVisibilityChanged(module) {
         if (module.visible)
             this._showModule(module.name);
         else
             this._hideModule(module.name);
     }
 
-    _hideModule(name) {
+    private _hideModule(name) {
         for (let i = 0; i < this.buttons.length; i++) {
             let button = this.buttons[i];
-            if (button.hideModule)
+            if (button instanceof RibbonMenu)
                 button.hideModule(name);
         }
     }
 
-    _showModule(name) {
+    private _showModule(name: string) {
         for (let i = 0; i < this.buttons.length; i++) {
             let button = this.buttons[i];
-            if (button.showModule)
+            if (button instanceof RibbonMenu)
                 button.showModule(name);
         }
     }
 
-    needsRefresh() {
+    public override needsRefresh() {
         let modules = this.modules.get('modules');
         let count = 0;
         for (let module of modules) {
@@ -85,7 +82,7 @@ class PlotsTab extends RibbonTab {
         return false;
     }
 
-    async getRibbonItems() {
+    protected override async getRibbonItems() {
         this.buttons = [ ];
         if ( ! this.modules)
             return this.buttons;
@@ -198,7 +195,7 @@ class PlotsTab extends RibbonTab {
                     for (let item of menu[subgroup].items) {
                         let name = `${item.ns}-${item.name}`;
                         let analysisButton = new RibbonButton({ class: 'jmv-analyses-button', title: _(item.title), name: name, size: 'large', /*shortcutKey: 'v', shortcutPosition: { x: '50%', y: '90%' }*/ });
-                        analysisButton.on('menuActioned', () => {
+                        analysisButton.addEventListener('menuActioned', (event) => {
                             let analysis = { name:item.name, ns:item.ns, title:item.title };
                             this._analysisSelected(analysis);
                         });
@@ -233,7 +230,7 @@ class PlotsTab extends RibbonTab {
                 let buttonId2 = focusLoop.getNextAriaElementId('button');
                 let buttonElement = document.createElement('button');
                 buttonElement.setAttribute('id', buttonId2);
-                let button = new RibbonMenu(buttonElement, menu._title, groupName, shortcutKey, flattened, false, containsNew);
+                let button = new RibbonMenu(menu._title, groupName, shortcutKey, flattened, false, containsNew);
                 if (menu.ns === 'scatr')
                     this.buttons.splice(this._moreIndex, 0, button);
                 else
@@ -253,7 +250,7 @@ class PlotsTab extends RibbonTab {
         return this.buttons;
     }
 
-    _analysisSelected(analysis) {
+    private _analysisSelected(analysis) {
        /* if (analysis.name === 'modules' && analysis.ns === 'app')
             this.store.show(1);
         else if (analysis.name === 'manageMods' && analysis.ns === 'app')

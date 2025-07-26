@@ -20,7 +20,7 @@ export class DataTab extends RibbonTab {
         this.populate();
     }
 
-    getRibbonItems() {
+    override getRibbonItems() {
         return [
             new RibbonGroup({ title: _('Clipboard'), margin: 'large', items: [
                 new RibbonButton({ title: _('Paste'), name: 'paste', size: 'large', shortcutKey: 'v', shortcutPosition: { x: '50%', y: '90%' } }),

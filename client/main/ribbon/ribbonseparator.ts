@@ -1,11 +1,9 @@
 'use strict';
 
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
-import { EventEmitter } from 'events';
+import { RibbonItem } from './ribbontab';
 
-export class RibbonSeparator extends EventEmitter {
+export class RibbonSeparator extends HTMLElement implements RibbonItem {
 
-    el: HTMLElement;
     dock: 'right' | 'left';
 
     constructor(params?) {
@@ -15,16 +13,16 @@ export class RibbonSeparator extends EventEmitter {
             params = { };
 
         let right = params.right === undefined ? false : params.right;
-        let el = params.el === undefined ? HTML.create('div') : params.el;
 
-        this.el = el;
-        this.el.classList.add('jmv-ribbon-separator');
+        this.classList.add('jmv-ribbon-separator');
 
         this.dock = right ? 'right' : 'left';
 
         if (right)
-            this.el.classList.add('right');
+            this.classList.add('right');
     }
 }
+
+customElements.define('jmv-ribbon-sep', RibbonSeparator);
 
 export default RibbonSeparator;

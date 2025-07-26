@@ -2,7 +2,7 @@
 'use strict';
 
 import RibbonMenu from './ribbonmenu';
-import RibbonTab from './ribbontab';
+import RibbonTab, { RibbonItem } from './ribbontab';
 import Placeholder from './placeholder';
 import focusLoop from '../../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
@@ -10,7 +10,7 @@ import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 import Store from '../store';
 
 export class AnalyseTab extends RibbonTab {
-    buttons = [ ];
+    buttons: RibbonItem[] = [ ];
     settings;
     modules;
     store: Store;
@@ -44,10 +44,10 @@ export class AnalyseTab extends RibbonTab {
             this._hideModule(module.name);
     }
 
-    _hideModule(name) {
+    _hideModule(name: string) {
         for (let i = 0; i < this.buttons.length; i++) {
             let button = this.buttons[i];
-            if (button.hideModule)
+            if (button instanceof RibbonMenu)
                 button.hideModule(name);
         }
     }
@@ -55,12 +55,12 @@ export class AnalyseTab extends RibbonTab {
     _showModule(name) {
         for (let i = 0; i < this.buttons.length; i++) {
             let button = this.buttons[i];
-            if (button.showModule)
+            if (button instanceof RibbonMenu)
                 button.showModule(name);
         }
     }
 
-    needsRefresh() {
+    override needsRefresh() {
         let modules = this.modules.get('modules');
         let count = 0;
         for (let module of modules) {
@@ -81,7 +81,7 @@ export class AnalyseTab extends RibbonTab {
         return false;
     }
 
-    async getRibbonItems() {
+    override async getRibbonItems() {
         this.buttons = [ ];
         if ( ! this.modules)
             return this.buttons;
@@ -130,17 +130,16 @@ export class AnalyseTab extends RibbonTab {
         }
 
         let buttonId = focusLoop.getNextAriaElementId('button');
-        let buttonElement = HTML.create('button', { class: 'jmv-modules-menu-item', id: buttonId });
-        let  button = new RibbonMenu(buttonElement, _('Modules'), 'modules', 'M', [
+        let  button = new RibbonMenu(_('Modules'), 'modules', 'M', [
             { name : 'modules', title : _('jamovi library'), ns : 'app' },
             { name : 'manageMods', title : _('Manage installed'), ns : 'app' },
             { name: 'installedList', title: _('Installed Modules'), type: 'group', items: moduleList }
         ], true, false);
+        button.setAttribute('id', buttonId);
+        button.classList.add('jmv-modules-menu-item');
         this.buttons.push(button);
 
         let menus = { };
-        let lastSub = null;
-
         for (let module of modules) {
             let _translate = await module.getTranslator();
             let isNew = module.new;
@@ -155,7 +154,7 @@ export class AnalyseTab extends RibbonTab {
                     menu.ns = analysis.ns;
 
                 menu._new = isNew;
-                let submenu = { name };
+                let submenu;
                 if (subgroup in menu)
                     submenu = menu[subgroup];
                 else
@@ -199,8 +198,8 @@ export class AnalyseTab extends RibbonTab {
 
             let shortcutKey = menu.ns === 'jmv' ?  (shortcutIndex++).toString() : null;
             let buttonId2 = focusLoop.getNextAriaElementId('button');
-            let buttonElement = HTML.create('button', { id: buttonId2 });
-            let button = new RibbonMenu(buttonElement, menu._title, groupName, shortcutKey, flattened, false, containsNew);
+            let button = new RibbonMenu(menu._title, groupName, shortcutKey, flattened, false, containsNew);
+            button.setAttribute('id', buttonId2);
             this.buttons.push(button);
         }
 
@@ -216,7 +215,7 @@ export class AnalyseTab extends RibbonTab {
         return this.buttons;
     }
 
-    _analysisSelected(analysis) {
+    private _analysisSelected(analysis) {
         if (analysis.name === 'modules' && analysis.ns === 'app')
             this.store.show(1);
         else if (analysis.name === 'manageMods' && analysis.ns === 'app')
