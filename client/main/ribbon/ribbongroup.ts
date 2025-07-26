@@ -4,13 +4,14 @@
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 import ActionHub from '../actionhub';
 import focusLoop from '../../common/focusloop';
-import { EventEmitter } from 'events';
+import RibbonTab, { RibbonItem } from './ribbontab';
 
-export class RibbonGroup extends EventEmitter {
-    el: HTMLElement;
+export class RibbonGroup extends HTMLElement implements RibbonItem {
     name: string;
     title: string;
     dock: 'right' | 'left';
+    parent: RibbonTab;
+    items: RibbonItem[];
 
     /*
     params
@@ -31,7 +32,6 @@ export class RibbonGroup extends EventEmitter {
         let title = params.title === undefined ? null : params.title;
         let orientation = params.orientation === undefined ? 'horizontal' : params.orientation;
         let right = params.right === undefined ? false : params.right;
-        let el = params.el === undefined ? HTML.create('div') : params.el;
         let titlePosition =  params.titlePosition === undefined ? 'bottom' : params.titlePosition;
         let margin =  params.margin === undefined ? 'normal' : params.margin;
         let align = params.alignContents === undefined ? (orientation === 'horizontal' ? 'center' : 'stretch') : params.alignContents;
@@ -39,20 +39,19 @@ export class RibbonGroup extends EventEmitter {
 
         let labelId = focusLoop.getNextAriaElementId('label');
 
-        this.el = el;
-        this.el.classList.add('jmv-ribbon-group');
-        this.el.classList.add('jmv-ribbon-group-margin-' + margin);
+        this.classList.add('jmv-ribbon-group');
+        this.classList.add('jmv-ribbon-group-margin-' + margin);
         if (title !== null) {
-            this.el.setAttribute('data-position', titlePosition);
-            this.el.setAttribute('aria-labelledby', labelId);
-            this.el.setAttribute('role', 'group');
+            this.setAttribute('data-position', titlePosition);
+            this.setAttribute('aria-labelledby', labelId);
+            this.setAttribute('role', 'group');
         }
         else
-            this.el.setAttribute('role', 'group');
-        this.el.setAttribute('aria-orientation', orientation);
+            this.setAttribute('role', 'group');
+        this.setAttribute('aria-orientation', orientation);
 
         if (name !== null)
-            this.el.setAttribute('data-name', this.name.toLowerCase());
+            this.setAttribute('data-name', this.name.toLowerCase());
 
         this.name = name;
         this.title = title;
@@ -60,14 +59,14 @@ export class RibbonGroup extends EventEmitter {
 
         //this.el.setAttribute('aria-disabled', true);
         if (right)
-            this.el.classList.add('right');
+            this.classList.add('right');
 
         this.items = [];
 
         this.body = HTML.create('div', { class: `jmv-ribbon-group-body jmv-ribbon-group-body-${orientation}`, style: `style="align-items:${align};"`, role: 'none'});
-        this.el.append(this.body);
+        this.append(this.body);
         if (title !== null)
-            this.el.append(HTML.create('div', { class: 'jmv-ribbon-group-label', id: labelId }, title));
+            this.append(HTML.create('div', { class: 'jmv-ribbon-group-label', id: labelId }, title));
 
         if (params.items !== undefined) {
             for (let i = 0; i < params.items.length; i++)
@@ -75,7 +74,7 @@ export class RibbonGroup extends EventEmitter {
         }
     }
     
-    setParent(parent, parentShortcutPath, inMenu) {
+    setParent(parent: RibbonTab, parentShortcutPath?: string, inMenu?: boolean) {
         for (let i = 0; i < this.items.length; i++) {
             let item = this.items[i];
             if (item.setParent)
@@ -83,7 +82,7 @@ export class RibbonGroup extends EventEmitter {
         }
     }
 
-    setTabName(name) {
+    setTabName(name: string) {
         for (let i = 0; i < this.items.length; i++) {
             let item = this.items[i];
             if (item.setTabName)
@@ -91,7 +90,7 @@ export class RibbonGroup extends EventEmitter {
         }
     }
 
-    getEntryButton(openPath, open, fromMouse) {
+    getEntryButton(openPath: string[], open: boolean, fromMouse?: boolean) {
         if (openPath.length > 0) {
             for (let item of this.items) {
                 if (item.getEntryButton) {
@@ -104,7 +103,7 @@ export class RibbonGroup extends EventEmitter {
         return null;
     }
 
-    addItem(item) {
+    addItem(item: RibbonItem) {
         this.items.push(item);
 
         if (this.separator === undefined && item.dock === 'right') {
@@ -113,20 +112,20 @@ export class RibbonGroup extends EventEmitter {
         }
 
         if (item.dock === 'right')
-            this.separator.after(item.el);
+            this.separator.after(item);
         else {
             if (this.separator === undefined)
-                this.body.append(item.el);
+                this.body.append(item);
             else
-                this.separator.before(item.el);
+                this.separator.before(item);
         }
 
-        item.on('menuActioned', (item) => {
+        item.addEventListener('menuActioned', (event: CustomEvent) => {
+            let item = event.detail;
             if (this.name !== null) {
                 let action = ActionHub.get(this.name);
                 action.do(item);
             }
-            this.emit('menuActioned', item);
         });
     }
 
@@ -138,7 +137,7 @@ export class RibbonGroup extends EventEmitter {
     }
 
     setEnabled(enabled) {
-        this.el.setAttribute('aria-disabled', (! enabled).toString());
+        this.setAttribute('aria-disabled', (! enabled).toString());
     }
 
     getMenus() {
@@ -150,5 +149,7 @@ export class RibbonGroup extends EventEmitter {
         return menus;
     }
 }
+
+customElements.define('jmv-ribbon-group', RibbonGroup);
 
 export default RibbonGroup;

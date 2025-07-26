@@ -6,6 +6,8 @@ import focusLoop from '../common/focusloop';
 import Menu from '../common/menu';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { EventEmitter } from 'events';
+import { RibbonItem } from './ribbon/ribbontab';
+
 
 export class ContextMenu extends EventEmitter { // this is constructed at the bottom
     el: HTMLElement;
@@ -31,7 +33,7 @@ export class ContextMenu extends EventEmitter { // this is constructed at the bo
     }
 
  
-    show(menuItems:any[], x:number, y:number, anchor='left', openPath=[]) {
+    show(menuItems:RibbonItem[], x:number, y:number, anchor='left', openPath=[]) {
 
         this.buttons = [ ];
 
@@ -41,7 +43,7 @@ export class ContextMenu extends EventEmitter { // this is constructed at the bo
         this.separator = HTML.create('div', { class: 'jmv-click-menu-separator' });
         this.el.append(this.separator);
 
-        let openButton = null;
+        let openButton: RibbonItem = null;
 
         for (let i = 0; i < menuItems.length; i++) {
             let button = menuItems[i];
@@ -55,9 +57,9 @@ export class ContextMenu extends EventEmitter { // this is constructed at the bo
             }
 
             if (button.dock === 'right')
-                this.separator.after(button.el);
+                this.separator.after(button);
             else
-                this.separator.before(button.el);
+                this.separator.before(button);
 
             this.buttons.push(button);
 
@@ -70,7 +72,7 @@ export class ContextMenu extends EventEmitter { // this is constructed at the bo
                 const style = getComputedStyle(this.el);
                 const width = this.el.offsetWidth + parseFloat(style.marginLeft) + parseFloat(style.marginRight);
                 x -= width - 10;
-                const top = openButton.el.offsetTop ;
+                const top = openButton.offsetTop ;
                 y -= top + 10;
             }
 

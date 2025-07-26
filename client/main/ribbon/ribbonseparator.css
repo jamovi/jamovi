@@ -4,6 +4,7 @@
     border-left-color: #E0E0E0;
     border-left-width: 1px;
     margin: 3px 3px;
+    display: block;
 }
 
 .jmv-ribbon-group-body-vertical > .jmv-ribbon-separator {

@@ -6,10 +6,10 @@ import RibbonSeparator from './ribbonseparator';
 import RibbonGroup from './ribbongroup';
 import Quill from 'quill';
 const Icons = Quill.import('ui/icons');
-import RibbonTab from './ribbontab';
+import RibbonTab, { RibbonItem } from './ribbontab';
 
 export class AnnotationTab extends RibbonTab {
-    items: any[];
+    items: RibbonItem[];
 
     constructor() {
         super('annotation', 'E', _('Edit'));
@@ -44,7 +44,7 @@ export class AnnotationTab extends RibbonTab {
         }
     }
 
-    createColorItems(prefix: string, resetText: string): any[] {
+    createColorItems(prefix: string, resetText: string) {
         return [
             new RibbonButton({ title: resetText, name: prefix + 'Reset', class: 'reset-color' }),
             new RibbonSeparator(),

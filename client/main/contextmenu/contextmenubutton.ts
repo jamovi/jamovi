@@ -7,12 +7,13 @@ import focusLoop from '../../common/focusloop';
 import Menu from '../../common/menu';
 
 import ActionHub from '../actionhub';
-import { EventEmitter } from 'events';
+import { RibbonItem } from '../ribbon/ribbontab';
 
-export class ContextMenuButton extends EventEmitter {
-    el: HTMLElement;
+export class ContextMenuButton extends HTMLButtonElement implements RibbonItem {
     eventData: any;
     menu: Menu
+    _menuGroup: RibbonGroup;
+    dock: 'left';
 
     /*
     options
@@ -37,20 +38,17 @@ export class ContextMenuButton extends EventEmitter {
         let size = 'medium';
         let right = options.right === undefined ? false : options.right;
         let level = options.level === undefined ? 0 : options.level;
-        let el = options.el === undefined ? HTML.create('button') : options.el;
-
         this.eventData = options.eventData  === undefined ? null : options.eventData;
         this.useActionHub = options.useActionHub  === undefined ? true : options.useActionHub;
         this._enabled = options.enabled === undefined ? true : options.enabled;
         this._iconId = options.iconId === undefined ? null : options.iconId;
 
-        this.el = el;
-        this.el.classList.add('jmv-ribbon-button', 'jmv-context-menu-button');
-        this.el.classList.add('jmv-ribbon-button-size-' + size);
-        this.el.setAttribute('tabindex', '0');
-        this.el.setAttribute('role', 'menuitem');
+        this.classList.add('jmv-ribbon-button', 'jmv-context-menu-button');
+        this.classList.add('jmv-ribbon-button-size-' + size);
+        this.setAttribute('tabindex', '0');
+        this.setAttribute('role', 'menuitem');
         this.id = focusLoop.getNextAriaElementId('menu-btn');
-        this.el.setAttribute('id', this.id);
+        this.setAttribute('id', this.id);
 
         this.tabName = null;
         this._definedTabName = false;
@@ -65,30 +63,30 @@ export class ContextMenuButton extends EventEmitter {
         this.level = level;
         this.dock = right ? 'right' : 'left';
 
-        this.el.setAttribute('data-name', this.name.toLowerCase());
+        this.setAttribute('data-name', this.name.toLowerCase());
         if (this._iconId !== null)
-            this.el.setAttribute('data-icon', this._iconId.toLowerCase());
+            this.setAttribute('data-icon', this._iconId.toLowerCase());
         if (this._enabled === false)
-            this.el.setAttribute('aria-disabled', 'true');
+            this.setAttribute('aria-disabled', 'true');
         if (right)
-            this.el.classList.add('right');
+            this.classList.add('right');
 
         focusLoop.createHoverItem(this, () => {
             if (this.menu)
                 this.showMenu(true);
             else
-                this.el.focus({preventScroll:true});
+                this.focus({preventScroll:true});
         });
 
-        this.el.addEventListener('mousedown', event => {
+        this.addEventListener('mousedown', event => {
             if (this.menu)
                 this._clicked(event, event.detail > 0);
         });
-        this.el.addEventListener('mouseup', event => {
+        this.addEventListener('mouseup', event => {
             if ( ! this.menu)
                 this._clicked(event, event.detail > 0);
         });
-        this.el.addEventListener('keydown', (event) => {
+        this.addEventListener('keydown', (event) => {
             if (event.code === 'Enter' || event.code === 'Space')
                 this._clicked(event, false);
             else if (event.code == 'ArrowRight' && this._menuGroup !== undefined)
@@ -133,9 +131,9 @@ export class ContextMenuButton extends EventEmitter {
     setEnabled(enabled) {
         this._enabled = enabled;
         if (enabled)
-            this.el.removeAttribute('aria-disabled');
+            this.removeAttribute('aria-disabled');
         else
-            this.el.setAttribute('aria-disabled', 'true');
+            this.setAttribute('aria-disabled', 'true');
     }
 
     _clicked(event, fromMouse) {
@@ -143,7 +141,7 @@ export class ContextMenuButton extends EventEmitter {
         if (this.menu && this.menu.contains(event.target))
             return;
 
-        this.el.dispatchEvent(new CustomEvent<ContextMenuButton>('menuClicked', { bubbles: true, detail: this }));
+        this.dispatchEvent(new CustomEvent<ContextMenuButton>('menuClicked', { bubbles: true, detail: this }));
 
         let action = null;
         if (this.useActionHub)
@@ -157,7 +155,7 @@ export class ContextMenuButton extends EventEmitter {
                     action.do();
 
                 const event = new CustomEvent('menuActioned', { bubbles: true });
-                this.el.dispatchEvent(event);
+                this.dispatchEvent(event);
             }
         }
 
@@ -166,13 +164,12 @@ export class ContextMenuButton extends EventEmitter {
 
     addItem(item) {
         if (this._menuGroup === undefined) {
-            this.menu = new Menu(this.el, this.level + 1, { exitKeys: ['ArrowLeft'] });
+            this.menu = new Menu(this, this.level + 1, { exitKeys: ['ArrowLeft'] });
 
-            this.el.append(HTML.create('div', { class: 'jmv-context-menu-arrow' }));
+            this.append(HTML.create('div', { class: 'jmv-context-menu-arrow' }));
 
-            let menugroup = HTML.create('div');
-            this._menuGroup = new RibbonGroup({ orientation: 'vertical', el: menugroup });
-            this.menu.append(this._menuGroup.el);
+            this._menuGroup = new RibbonGroup({ orientation: 'vertical' });
+            this.menu.append(this._menuGroup);
             this.menu.setAttribute('aria-labelledby', this.id);
         }
 
@@ -198,7 +195,7 @@ export class ContextMenuButton extends EventEmitter {
         html += '   <div class="jmv-ribbon-button-icon"></div>';
         html += '   <div class="jmv-ribbon-button-label">' + this.title + '</div>';
 
-        this.el.innerHTML = html;
+        this.innerHTML = html;
     }
 
     hideMenu(fromMouse) {
@@ -212,10 +209,10 @@ export class ContextMenuButton extends EventEmitter {
         if ( ! this.menu)
             return;
 
-        const rect = this.el.getBoundingClientRect();
-        const style = getComputedStyle(this.el);
+        const rect = this.getBoundingClientRect();
+        const style = getComputedStyle(this);
 
-        const x = rect.left + window.scrollX + this.el.offsetWidth + 
+        const x = rect.left + window.scrollX + this.offsetWidth + 
                 parseFloat(style.marginLeft) + parseFloat(style.marginRight);
 
         const y = rect.top + window.scrollY;
@@ -223,7 +220,7 @@ export class ContextMenuButton extends EventEmitter {
         this.menu.show(x, y, { withMouse: fromMouse });
     }
 
-    getEntryButton(openPath, open, fromMouse) {
+    getEntryButton(openPath: string[], open: boolean, fromMouse?: boolean) {
         if (this.name === openPath[0]) {
             if (open)
                 this.showMenu(fromMouse);
@@ -246,5 +243,7 @@ export class ContextMenuButton extends EventEmitter {
             this.showMenu(fromMouse);
     }
 }
+
+customElements.define('jmv-context-menu-button', ContextMenuButton, { extends: 'button' });
 
 export default ContextMenuButton;
