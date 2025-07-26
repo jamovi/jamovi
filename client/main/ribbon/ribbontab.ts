@@ -3,6 +3,16 @@
 
 import { EventEmitter } from 'events';
 import { TabTypes } from '../ribbon';
+import Menu from '../../common/menu';
+
+
+export interface RibbonItem extends HTMLElement {
+    setParent?: (parent: RibbonTab, shortcut: string, inMenu?: boolean) => void;
+    setTabName?: (name:string) => void;
+    getMenus?: () => Menu[];
+    dock: 'right' | 'left';
+    getEntryButton?: (openPath: string[], open: boolean, fromMouse?: boolean) => RibbonItem;
+}
 
 export abstract class RibbonTab extends EventEmitter {
     _name: keyof TabTypes;
@@ -11,8 +21,6 @@ export abstract class RibbonTab extends EventEmitter {
     _ribbon: HTMLElement;
     _separator: HTMLElement;
     el: HTMLElement; 
-
-
 
     constructor(name: keyof TabTypes, shortcutPath: string, title: string) {
         super();
@@ -32,7 +40,7 @@ export abstract class RibbonTab extends EventEmitter {
         //this.populate();
     }
 
-    public needsRefresh?():void;
+    public needsRefresh?(): void;
 
     public get name() {
         return this._name;
@@ -59,7 +67,7 @@ export abstract class RibbonTab extends EventEmitter {
             this._ribbon.parentNode.removeChild(this._ribbon)
     }
 
-    protected abstract getRibbonItems(): Array<any> | Promise<Array<any>>;
+    protected abstract getRibbonItems(): RibbonItem[] | Promise<RibbonItem[]>;
 
     protected async populate() {
         let items = this.getRibbonItems();
@@ -72,7 +80,7 @@ export abstract class RibbonTab extends EventEmitter {
         }
     }
 
-    private populateFromList(items: Array<any>) {
+    private populateFromList(items: RibbonItem[]) {
 
         const childNodes = Array.from(this._ribbon.childNodes);
         for (const child of childNodes) {
@@ -87,7 +95,7 @@ export abstract class RibbonTab extends EventEmitter {
             if (item.setTabName)
                 item.setTabName(this.name);
 
-            let el = item.el;
+            let el = item;
 
             if (item.dock === 'right')
                 this._separator.after(el);

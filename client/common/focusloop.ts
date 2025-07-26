@@ -1410,31 +1410,31 @@ class FocusLoop extends EventEmitter {
             this.setFocusMode('hover',  { noTransfer: true, silent: false });
     }
 
-    createHoverItem(item, focusAction) {
-        let itemElement = item.$el === undefined ? item.el : item.$el[0];
-        itemElement.addEventListener('click', event => {
-            if (item._focusFocusTimer) {
-                clearTimeout(item._focusFocusTimer);
-                item._focusFocusTimer = null;
+    createHoverItem(item: HTMLElement, focusAction?: () => void) {
+        let _focusFocusTimer = null;
+        item.addEventListener('click', event => {
+            if (_focusFocusTimer) {
+                clearTimeout(_focusFocusTimer);
+                _focusFocusTimer = null;
             }
         });
-        itemElement.addEventListener('mousemove', (event) => {
-            if (itemElement.contains(document.activeElement))
+        item.addEventListener('mousemove', (event) => {
+            if (item.contains(document.activeElement))
                 return;
 
-            if ( ! item._focusFocusTimer) {
-                item._focusFocusTimer = setTimeout(() => {
+            if ( ! _focusFocusTimer) {
+                _focusFocusTimer = setTimeout(() => {
                     if (focusAction)
                         focusAction();
                     else
-                    itemElement.focus({preventScroll:true});
+                    item.focus({preventScroll:true});
                 }, 300);
             }
         });
-        itemElement.addEventListener('mouseleave', (event) => {
-            if (item._focusFocusTimer) {
-                clearTimeout(item._focusFocusTimer);
-                item._focusFocusTimer = null;
+        item.addEventListener('mouseleave', (event) => {
+            if (_focusFocusTimer) {
+                clearTimeout(_focusFocusTimer);
+                _focusFocusTimer = null;
             }
         });
     }

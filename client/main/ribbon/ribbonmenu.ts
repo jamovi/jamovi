@@ -3,9 +3,10 @@
 import focusLoop, { IShortcutTokenOptions } from '../../common/focusloop';
 import Menu from '../../common/menu';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { RibbonItem } from './ribbontab';
+import AnalyseTab from './analysetab';
 
-class RibbonMenu {
-    el: HTMLElement;
+class RibbonMenu extends HTMLElement implements RibbonItem {
     focusId: string;
     title: string;
     name: string;
@@ -15,18 +16,17 @@ class RibbonMenu {
     labelId: string;
     items: any;
     menu: Menu;
-    parent: any;
+    parent: AnalyseTab;
     hidden: boolean = false;
 
-    constructor(el, title:string, name:string, shortcutKey:string, items: any[], right: boolean, containsNew: boolean) {
-
-        this.el = el;
-        this.el.classList.add('jmv-ribbon-button');
-        this.el.classList.add('jmv-analyses-button');
-        this.el.setAttribute('tabindex', '0');
+    constructor(title:string, name:string, shortcutKey:string, items: any[], right: boolean, containsNew: boolean) {
+        super();
+        this.classList.add('jmv-ribbon-button');
+        this.classList.add('jmv-analyses-button');
+        this.setAttribute('tabindex', '0');
         this.focusId = focusLoop.getNextFocusId();
-        this.el.setAttribute('data-focus-id', this.focusId);
-        this.el.setAttribute('role', 'menuitem');
+        this.setAttribute('data-focus-id', this.focusId);
+        this.setAttribute('role', 'menuitem');
 
         this.title = title;
         this.name = name;
@@ -36,32 +36,32 @@ class RibbonMenu {
         this.shortcutKey = shortcutKey;
 
         this.labelId = focusLoop.getNextAriaElementId('label');
-        this.el.setAttribute('aria-labelledby', this.labelId);
+        this.setAttribute('aria-labelledby', this.labelId);
 
         if (shortcutKey) {
             let keySplit = shortcutKey.split('-');
             let stcOptions: IShortcutTokenOptions = { key: keySplit[0].toUpperCase(), action: event => this._clicked(event, false) };
             if (keySplit.length > 1)
                 stcOptions.position = keySplit[1].toUpperCase();
-            focusLoop.applyShortcutOptions(this.el, stcOptions);
+            focusLoop.applyShortcutOptions(this, stcOptions);
         }
 
-        this.el.setAttribute('data-name', this.name.toLowerCase());
+        this.setAttribute('data-name', this.name.toLowerCase());
         //this.el.setAttribute('aria-disabled', true);
         if (containsNew)
-            this.el.classList.add('contains-new');
+            this.classList.add('contains-new');
         if (right)
-            this.el.classList.add('right');
+            this.classList.add('right');
 
-        this.el.addEventListener('mousedown', event => {
+        this.addEventListener('mousedown', event => {
             if (this.menu)
                 this._clicked(event, event.detail > 0);
         });
-        this.el.addEventListener('mouseup', event => {
+        this.addEventListener('mouseup', event => {
             if ( ! this.menu)
                 this._clicked(event, event.detail > 0);
         });
-        this.el.addEventListener('keydown', (event) => {
+        this.addEventListener('keydown', (event) => {
             if ((event.altKey && event.code == 'ArrowDown') || event.code === 'Enter' || event.code === 'Space')
                 this._clicked(event, false);
         });
@@ -69,15 +69,15 @@ class RibbonMenu {
         this._refresh();
     }
 
-    setParent(parent, parentShortcutPath) {
+    setParent(parent: AnalyseTab, parentShortcutPath) {
         this.parent = parent;
 
         if (this.shortcutKey)
-            focusLoop.applyShortcutOptions(this.el, { path: parentShortcutPath });
+            focusLoop.applyShortcutOptions(this, { path: parentShortcutPath });
     }
 
     setEnabled(enabled:boolean) {
-        this.el.setAttribute('aria-disabled', (! enabled).toString());
+        this.setAttribute('aria-disabled', (! enabled).toString());
     }
 
     _notifySelected(name, ns, title, checked) {
@@ -95,7 +95,7 @@ class RibbonMenu {
         this.positionMenu(fromMouse);
     }
 
-    hideModule(name:string, item) {
+    hideModule(name:string, item?) {
         if (item === undefined)
             item = this;
 
@@ -125,7 +125,7 @@ class RibbonMenu {
         }
     }
 
-    showModule(name:string, item) {
+    showModule(name:string, item?) {
         if (item === undefined)
             item = this;
 
@@ -214,10 +214,10 @@ class RibbonMenu {
     }
 
     _moduleListScroll(event) {
-        this.el.querySelectorAll('.side-panel-visible').forEach(el => {
+        this.querySelectorAll('.side-panel-visible').forEach(el => {
             el.classList.remove('side-panel-visible');
         });
-        this.el.querySelectorAll('.jmv-ribbon-menu-item.open').forEach(el => {
+        this.querySelectorAll('.jmv-ribbon-menu-item.open').forEach(el => {
             el.classList.remove('open');
         });
     }
@@ -248,7 +248,7 @@ class RibbonMenu {
 
         item.el = HTML.parse(html);
 
-        focusLoop.createHoverItem(item);
+        focusLoop.createHoverItem(item.el);
 
         return item.el;
     }
@@ -302,7 +302,7 @@ class RibbonMenu {
                 input.addEventListener('change', event => this._moduleDisplayClicked(event));
             });
         }
-        focusLoop.createHoverItem(item, () => {
+        focusLoop.createHoverItem(item.el, () => {
             if (item.analyses) {
                 this.showSidePanel(item, true);
             }
@@ -345,14 +345,14 @@ class RibbonMenu {
         let labelElement = HTML.create('div', { class: 'jmv-ribbon-button-label', id: this.labelId}, this.title);
 
         if ( ! this.menu) {
-            this.menu = new Menu(this.el, 1, { className: 'analysis-menu', exitKeys: [ 'Alt+ArrowUp' ] });
+            this.menu = new Menu(this, 1, { className: 'analysis-menu', exitKeys: [ 'Alt+ArrowUp' ] });
             this.menu.addEventListener('menu-hidden', (event: CustomEvent) => {
-                this.el.querySelectorAll('.jmv-ribbon-menu-item.open').forEach(el => {
+                this.querySelectorAll('.jmv-ribbon-menu-item.open').forEach(el => {
                     el.classList.remove('open');
                 });
             });
             this.menu.addEventListener('menu-shown', (event) => {
-                this.el.classList.remove('contains-new');
+                this.classList.remove('contains-new');
             });
         }
 
@@ -378,14 +378,14 @@ class RibbonMenu {
             }
         }
 
-        while (this.el.firstChild)
-            this.el.removeChild(this.el.firstChild);
-        this.el.append(iconElement);
-        this.el.append(labelElement);
-        this.el.append(HTML.create('div', { class: 'jmv-ribbon-menu-arrow', style: 'margin: 7px 0 0 0;' }));
+        while (this.firstChild)
+            this.removeChild(this.firstChild);
+        this.append(iconElement);
+        this.append(labelElement);
+        this.append(HTML.create('div', { class: 'jmv-ribbon-menu-arrow', style: 'margin: 7px 0 0 0;' }));
 
         if (allHidden) {
-            this.el.classList.add('menu-item-hiding');
+            this.classList.add('menu-item-hiding');
             this.hidden = true;
         }
 
@@ -414,9 +414,9 @@ class RibbonMenu {
 
     positionMenu(fromMouse=false) {
         let anchor = 'left';
-        let rect = this.el.getBoundingClientRect();
+        let rect = this.getBoundingClientRect();
         let x = rect.left + window.scrollX;
-        let y = rect.top + window.scrollY + this.el.offsetHeight;
+        let y = rect.top + window.scrollY + this.offsetHeight;
         if (this.inMenu) {
             const menuStyle = window.getComputedStyle(this.menu);
             const menuMarginLeft = parseFloat(menuStyle.marginLeft);
@@ -427,5 +427,7 @@ class RibbonMenu {
         this.menu.show(x, y, { withMouse: fromMouse });
     }
 }
+
+customElements.define('jmv-ribbon-modulemenu', RibbonMenu);
 
 export default RibbonMenu;
