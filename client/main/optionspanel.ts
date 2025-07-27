@@ -318,7 +318,7 @@ class OptionsPanel {
             this.removeMsgListeners(this._currentResources);
             this._currentResources.abort();
             this._currentResources.frame.classList.add('silky-hidden-options-control');
-            this._currentResources.frame.style.height = '0';
+            this._currentResources.frame.style.height = '0px';
             this._currentResources = null;
         }
 
