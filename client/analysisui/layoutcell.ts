@@ -450,13 +450,13 @@ export class LayoutCell extends HTMLElement {
 
         let data: Partial<Record<keyof CSSStyleDeclaration, string>> = { };
         if (minWidth !== -1)
-            data.minWidth = minWidth.toString();
+            data.minWidth = `${minWidth}px`;
         if (maxWidth !== -1)
-            data.maxWidth = maxWidth.toString();
+            data.maxWidth = `${maxWidth}px`;
         if (minHeight !== -1)
-            data.minHeight = minHeight.toString();
+            data.minHeight = `${minHeight}px`;
         if (maxHeight !== -1)
-            data.maxHeight = maxHeight.toString();
+            data.maxHeight = `${maxHeight}px`;
 
         Object.assign(this.content.style, data); 
     }
