@@ -1,5 +1,7 @@
 'use strict';
 
+import $ from 'jquery';  // for backwards compatibility
+
 import LayoutGrid from './layoutgrid';
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import { FormatDef, StringFormat } from './formatdef';
@@ -27,17 +29,44 @@ export type GridTextboxProperties = GridOptionControlProperties<any> & {
 
 export class GridTextbox extends OptionControl<GridTextboxProperties> {
 
-    $label: HTMLElement;
-    $input: HTMLInputElement;
-    $suffix: HTMLElement;
-    $suggestValues: HTMLElement;
-    $fullCtrl: HTMLElement;
+    label: HTMLElement;
+    input: HTMLInputElement;
+    suffix: HTMLElement;
+    suggestValues: HTMLElement;
+    fullCtrl: HTMLElement;
     valueId: string;
+
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.label: HTMLElement`.
+     */
+    $label: any;
+
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.input: HTMLElement`.
+     */
+    $input: any;
+
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.suffix: HTMLElement`.
+     */
+    $suffix: any;
+
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.suggestValues: HTMLElement`.
+     */
+    $suggestValues: any;
+
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.fullCtrl: HTMLElement`.
+     */
+    $fullCtrl: any;
 
     constructor(params: GridTextboxProperties) {
         super(params);
 
+        this.suffix = null;
         this.$suffix = null;
+        this.label = null;
         this.$label = null;
     }
 
@@ -56,18 +85,18 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
         super.onPropertyChanged(name);
         if (name === 'enable') {
             let disabled = this.getPropertyValue(name) === false;
-            this.$input.disabled = disabled;
+            this.input.disabled = disabled;
             if (disabled) {
-                if (this.$label !== null)
-                    this.$label.classList.add('disabled-text');
-                if (this.$suffix !== null)
-                    this.$suffix.classList.add('disabled-text');
+                if (this.label !== null)
+                    this.label.classList.add('disabled-text');
+                if (this.suffix !== null)
+                    this.suffix.classList.add('disabled-text');
             }
             else {
-                if (this.$label !== null)
-                    this.$label.classList.remove('disabled-text');
-                if (this.$suffix !== null)
-                    this.$suffix.classList.remove('disabled-text');
+                if (this.label !== null)
+                    this.label.classList.remove('disabled-text');
+                if (this.suffix !== null)
+                    this.suffix.classList.remove('disabled-text');
             }
         }
     }
@@ -100,8 +129,9 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
         let startClass = label === '' ? '' : 'silky-option-text-start';
         if (label !== '') {
             this.labelId = focusLoop.getNextAriaElementId('label');
-            this.$label = HTML.parse(`<label id="${this.labelId}" for="${id}" class="silky-option-text-label silky-control-margin-${this.getPropertyValue('margin')} ${startClass}" style="display: inline; white-space: nowrap;" >${label}</label>`);
-            cell = grid.addCell(column, row, this.$label);
+            this.label = HTML.parse(`<label id="${this.labelId}" for="${id}" class="silky-option-text-label silky-control-margin-${this.getPropertyValue('margin')} ${startClass}" style="display: inline; white-space: nowrap;" >${label}</label>`);
+            this.$label = $(this.label);
+            cell = grid.addCell(column, row, this.label);
             cell.blockInsert('right');
             cell.setAlignment('left', 'center');
             valueOffset += 1;
@@ -149,7 +179,8 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
             }
             dd = dd + '</div>';
         }
-        this.$suggestValues = HTML.parse(dd);
+        this.suggestValues = HTML.parse(dd);
+        this.$suggestValues = $(this.suggestValues);
 
         let t = '<input id="'+id+'" class="silky-option-input silky-option-text-input silky-option-value silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline;" type="text" spellcheck="false" value="' + this.getValueAsString() + '"';
 
@@ -161,49 +192,50 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
         t += '>';
         
 
-        this.$input = HTML.parse(t);
+        this.input = HTML.parse(t);
+        this.$input = $(this.input);
         if (this.getPropertyValue('stretchFactor') === 0)
-            this.$input.classList.add('silky-option-' + this.getPropertyValue('width') + '-text');
+            this.input.classList.add('silky-option-' + this.getPropertyValue('width') + '-text');
         if (this.getPropertyValue('borderless'))
-            this.$input.classList.add('frameless-textbox');
+            this.input.classList.add('frameless-textbox');
         if (this.getPropertyValue('alignText') === 'center')
-            this.$input.classList.add('centre-text');
+            this.input.classList.add('centre-text');
 
-        this.$input.addEventListener('focus', () => { this.$input.select(); });
-        this.$input.addEventListener('keyup', (event) => {
+        this.input.addEventListener('focus', () => { this.input.select(); });
+        this.input.addEventListener('keyup', (event) => {
             if (event.keyCode == 13) {
-                this.$input.blur();
+                this.input.blur();
             }
         });
-        this.$input.addEventListener('focus', (event) => {
-            if (this.$suggestValues)
-                this.$suggestValues.style.display = '';
-            if (this.$fullCtrl)
-                this.$fullCtrl.classList.add('float-up');
+        this.input.addEventListener('focus', (event) => {
+            if (this.suggestValues)
+                this.suggestValues.style.display = '';
+            if (this.fullCtrl)
+                this.fullCtrl.classList.add('float-up');
         });
-        this.$input.addEventListener('blur', (event) => {
-            if (this.$suggestValues)
-                this.$suggestValues.style.display = 'none';
-            if (this.$fullCtrl)
-                this.$fullCtrl.classList.remove('float-up');
+        this.input.addEventListener('blur', (event) => {
+            if (this.suggestValues)
+                this.suggestValues.style.display = 'none';
+            if (this.fullCtrl)
+                this.fullCtrl.classList.remove('float-up');
         });
-        this.$input.addEventListener('change', (event) => {
+        this.input.addEventListener('change', (event) => {
 
-            if (this.$input.validity.valid === false)
-                this.$input.classList.add('silky-options-option-invalid');
+            if (this.input.validity.valid === false)
+                this.input.classList.add('silky-options-option-invalid');
             else
-                this.$input.classList.remove('silky-options-option-invalid');
+                this.input.classList.remove('silky-options-option-invalid');
 
-            let value = this.$input.value;
+            let value = this.input.value;
             let parsed = this.parse(value);
 
             this.setValue(parsed.value);
             if (parsed.success === false)
-                this.$input.value = this.getValueAsString();
+                this.input.value = this.getValueAsString();
         });
 
-        if (this.$suggestValues) {
-            let suggestions = this.$suggestValues.querySelectorAll<HTMLElement>('.jmv-option-text-input-suggested-option')
+        if (this.suggestValues) {
+            let suggestions = this.suggestValues.querySelectorAll<HTMLElement>('.jmv-option-text-input-suggested-option')
             suggestions.forEach((el) => {
                 el.addEventListener('mousedown', (event) => {
                     let option = event.target;
@@ -213,18 +245,19 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
 
                         this.setValue(parsed.value);
                         if (parsed.success === false)
-                            this.$input.value = this.getValueAsString();
+                            this.input.value = this.getValueAsString();
                     }
                 });
             });
         }
 
-        let $ctrl = this.$input;
+        let $ctrl = this.input;
         if (suggestedValues !== null) {
             $ctrl = HTML.parse('<div role="presentation"></div>');
-            $ctrl.append(this.$input);
-            $ctrl.append(this.$suggestValues);
-            this.$fullCtrl = $ctrl;
+            $ctrl.append(this.input);
+            $ctrl.append(this.suggestValues);
+            this.fullCtrl = $ctrl;
+            this.$fullCtrl = $(this.fullCtrl);
         }
 
         cell = subgrid.addCell(0, 0, $ctrl);
@@ -235,8 +268,9 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
         if (suffix !== '') {
             startClass = suffix === '' ? '' : 'silky-option-text-end';
 
-            this.$suffix = HTML.parse('<div class="silky-option-suffix silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline; white-space: nowrap;" >' + _(suffix) + '</div>');
-            cell = subgrid.addCell(1, 0, this.$suffix);
+            this.suffix = HTML.parse('<div class="silky-option-suffix silky-control-margin-' + this.getPropertyValue('margin') + ' ' + startClass + '" style="display: inline; white-space: nowrap;" >' + _(suffix) + '</div>');
+            this.$suffix = $(this.suffix);
+            cell = subgrid.addCell(1, 0, this.suffix);
             cell.setAlignment('left', 'center');
         }
         
@@ -253,8 +287,8 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
 
     override onOptionValueChanged(key, data) {
         super.onOptionValueChanged(key, data);
-        if (this.$input)
-            this.$input.value = this.getValueAsString();
+        if (this.input)
+            this.input.value = this.getValueAsString();
     }
 }
 

@@ -226,9 +226,9 @@ export class BorderLayoutGrid extends LayoutGrid {
         }
 
         if (start === -1 && edgeCells) {
-            edgeCells.top.cell.classList.remove("first-row top-edge");
+            edgeCells.top.cell.classList.remove("first-row", "top-edge");
             edgeCells.bottom.cell.removeEventListener('layoutcell.spanAllRowsChanged', this._rowBoundaryPropertyChanged);
-            edgeCells.bottom.cell.classList.remove("last-row bottom-edge");
+            edgeCells.bottom.cell.classList.remove("last-row", "bottom-edge");
             delete this._topBottomCells[columnIndex];
             return;
         }
@@ -246,7 +246,7 @@ export class BorderLayoutGrid extends LayoutGrid {
             if (cell !== oldCell) {
                 cell.classList.add("top-edge");
                 if (oldCell)
-                    oldCell.classList.remove("first-row top-edge");
+                    oldCell.classList.remove("first-row", "top-edge");
                 edgeCells.top = { cell, row: start };
                 changed = true;
             }
@@ -296,9 +296,9 @@ export class BorderLayoutGrid extends LayoutGrid {
             }
 
             if (start === -1 && edgeCells) {
-                edgeCells.left.cell.classList.remove("first-cell left-edge");
+                edgeCells.left.cell.classList.remove("first-cell", "left-edge");
                 edgeCells.right.cell.removeEventListener('layoutcell.horizontalStretchFactorChanged', this._colBoundaryPropertyChanged);
-                edgeCells.right.cell.classList.remove("last-cell right-edge");
+                edgeCells.right.cell.classList.remove("last-cell", "right-edge");
                 delete this._leftRightCells[rowIndex];
                 return;
             }
@@ -316,7 +316,7 @@ export class BorderLayoutGrid extends LayoutGrid {
                 if (cell !== oldCell) {
                     cell.classList.add("left-edge");
                     if (oldCell)
-                        oldCell.classList.remove("first-cell left-edge");
+                        oldCell.classList.remove("first-cell", "left-edge");
                     edgeCells.left = { cell, column: start };
                     changed = true;
                 }
