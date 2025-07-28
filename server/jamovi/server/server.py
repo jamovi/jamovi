@@ -883,7 +883,7 @@ class Server:
                 (fr'{ path_b }/[-0-9a-f]+/', SingleFileHandler, {
                     'path': analysisui_path,
                     'extra_headers': cache_headers }),
-                (fr'{ path_b }/assets/([-.0-9a-zA-Z]+)', StaticFileHandler, {
+                (fr'{ path_b }/assets/(.*)', StaticFileHandler, {
                     'path': assets_path }),
                 (fr'{ path_b }/([-.0-9a-zA-Z]+)', StaticFileHandler, {
                     'path': client_path,
@@ -895,7 +895,7 @@ class Server:
                 (fr'{ path_c }/[-0-9a-z]+/[0-9]+/', SingleFileHandler, {
                     'path': resultsview_path,
                     'extra_headers': cache_headers }),
-                (fr'{ path_c }/assets/([-.0-9a-zA-Z]+)', StaticFileHandler, {
+                (fr'{ path_c }/assets/(.*)', StaticFileHandler, {
                     'path': assets_path }),
                 (fr'{ path_c }/([-.0-9a-zA-Z]+)', StaticFileHandler, {
                     'path': client_path,
