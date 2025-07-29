@@ -170,20 +170,9 @@ COPY $JAMOVI_ROOT/jmv/ /tmp/source/jmv
 WORKDIR /tmp/source/jmv
 RUN jmc --install . --to /usr/lib/jamovi/modules --rhome $R_HOME --rlibs /usr/lib/jamovi/modules/base/R --patch-version --skip-deps
 
-
-##### EXTRAS #####
-
-FROM compiler AS extras
-
-ARG JAMOVI_ROOT=.
-
 COPY $JAMOVI_ROOT/plots/ /tmp/source/plots
 WORKDIR /tmp/source/plots
-RUN jmc --install . --to /usr/lib/jamovi/modules --rhome $R_HOME --rlibs /usr/lib/jamovi/modules/base/R
-
-WORKDIR /tmp/source
-RUN git clone https://github.com/davidfoxcroft/lsj-data.git /usr/lib/jamovi/modules/lsj-data
-RUN git clone https://github.com/jamovi/r-datasets.git /usr/lib/jamovi/modules/r-datasets
+RUN jmc --install . --to /usr/lib/jamovi/modules --rhome $R_HOME --rlibs /usr/lib/jamovi/modules/base/R --patch-version --skip-deps
 
 
 ##### I18N #####
@@ -230,7 +219,6 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     libreadline8
 
 COPY --from=jmv     /usr/lib/jamovi/ /usr/lib/jamovi/
-COPY --from=extras  /usr/lib/jamovi/ /usr/lib/jamovi/
 COPY --from=client  /usr/lib/jamovi/client/ /usr/lib/jamovi/client/
 COPY --from=i18n    /usr/lib/jamovi/i18n/json /usr/lib/jamovi/i18n/json
 COPY --from=engine  /usr/lib/jamovi/bin/jamovi-engine /usr/lib/jamovi/bin/jamovi-engine
