@@ -175,11 +175,11 @@ export class RibbonView extends EventDistributor {
             }
         }, this);
 
-        this.classList.add('jmv-ribbon', 'app-dragable');
+        this.classList.add('jmv-ribbon');
         this.appMenu = new AppMenu(this.model);
 
         this.append(HTML.parse(`
-            <div class="jmv-ribbon-header" role="group" aria-orientation="horizontal">
+            <div class="jmv-ribbon-header app-dragable" role="group" aria-orientation="horizontal">
                 <button class="jmv-ribbon-tab file-tab" data-tabname="file" role="toolbaritem"  aria-label="${_('File')}" aria-haspopup="true" aria-expanded="false"><span style="font-size: 150%; pointer-events: none;" class="mif-menu"></span></button>
                 <div class="ribbon-tabs" role="tablist"></div>
                 <div id="jmv-user-button"></div>
