@@ -1411,7 +1411,7 @@ export class BackstageView  extends EventDistributor {
 
         this.model.set('activated', true);
 
-        document.body.querySelector('.app-dragable').classList.add('ignore');
+        document.body.querySelectorAll('.app-dragable').forEach(el => el.classList.add('ignore'));
         document.getElementById('main').setAttribute('aria-hidden', 'true');
         document.querySelector('.jmv-ribbon-tab.file-tab').setAttribute('aria-expanded', 'true');
 
@@ -1445,7 +1445,7 @@ export class BackstageView  extends EventDistributor {
         this.model.set('place', '');
         this.style.width = '';
 
-        document.body.querySelector('.app-dragable').classList.remove('ignore');
+        document.body.querySelectorAll('.app-dragable').forEach(el => el.classList.remove('ignore'));
         document.getElementById('main').setAttribute('aria-hidden', 'false');
         document.querySelector('.jmv-ribbon-tab.file-tab').setAttribute('aria-expanded', 'false');
 
