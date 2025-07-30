@@ -24,7 +24,7 @@ export class EditorPanel extends EventEmitter {
 
         //this.$el.empty();
         //this.$el.addClass('jmv-editor-panel');
-        focusLoop.addFocusLoop(this.el, { level: 1, closeHandler: this.close.bind(this) });
+        focusLoop.addFocusLoop(this.el, { level: 1 });
 
         let main = HTML.create('div', {class: 'jmv-editor-panel-main'});
         this.el.append(main);
