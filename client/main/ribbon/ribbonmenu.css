@@ -96,7 +96,7 @@
 }
 
 [focusmode="default"] .jmv-ribbon-button:not([aria-disabled]):not(.maintain-color):hover {
-    background-color: #3e6da93b;
+    background-color: #c6d1df;
 }
 
 [focusmode="hover"] .jmv-ribbon-button:not([aria-disabled]):not(.maintain-color):hover {
