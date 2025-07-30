@@ -52,7 +52,9 @@
 }
 
 .jmv-analyses-button {
-    padding: 6px 0;
+    padding: 6px 3px;
+    min-width: 74px;
+    width: auto;
     transition: 0.2s width, 0.1s opacity, .2s visibility, 0.2s background-color;
     transition-delay: .01s;
     display: flex;
