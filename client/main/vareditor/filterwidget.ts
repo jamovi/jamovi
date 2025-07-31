@@ -727,9 +727,10 @@ const FilterWidget = Backbone.View.extend({
                 return;
             }
 
-            this.dataset.set('editingVar', [column.id]);
-
-            $element.select();
+            setTimeout(() => { //so that the focusloop handler can process the focus mode before editingVar is set. Otherwise the spreadsheet gets the focus.
+                this.dataset.set('editingVar', [column.id]);
+                $element.select();
+            }, 0);
         });
         $element.on('blur', (event) => {
             if (this._isRealBlur()) {
