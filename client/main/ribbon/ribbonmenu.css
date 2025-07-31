@@ -1,5 +1,7 @@
 .jmv-ribbon-temp-button {
-    padding: 6px 0 !important;
+    padding: 6px 3px !important;
+    min-width: 74px;
+    width: auto;
 }
 
 .end-temp-button {
