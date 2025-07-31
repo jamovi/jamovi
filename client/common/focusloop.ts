@@ -1139,7 +1139,7 @@ class FocusLoop extends EventEmitter {
         this.loopEntering = token;
         if (this.focusedLoop && this.focusedLoop !== token) {
             if (this.focusedLoop.requiresLeave())
-                this.leaveFocusLoop(this.focusedLoop.el);
+                this.leaveFocusLoop(this.focusedLoop.el, this._mouseClicked, true);
             else
                 this.focusedLoop.isActive = false;
             this.focusedLoop = null;
@@ -1176,7 +1176,7 @@ class FocusLoop extends EventEmitter {
     }
 
 
-    leaveFocusLoop(loopElement: HTMLElement, withMouse=false) : boolean | (() => void) {
+    leaveFocusLoop(loopElement: HTMLElement, withMouse=false, noFocusPassing=false) : boolean | (() => void) {
 
         let token = this.loopOptions.get(loopElement);
         if ( ! token)
@@ -1209,7 +1209,7 @@ class FocusLoop extends EventEmitter {
             this.endModalMode();
 
         let validExitElement = false;
-        if (token.exitSelector && ! withMouse) {
+        if (noFocusPassing === false && token.exitSelector && ! withMouse) {
             let selector = token.exitSelector;
             let element: HTMLElement;
             if (typeof selector === 'string')
