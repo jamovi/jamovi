@@ -132,7 +132,8 @@ const TransformEditor = function(dataset) {
         });
 
         this.$contents[0].addEventListener('focusout', (event) => {
-            if ( !this._addingLevel && ! this.$contents[0].contains(event.relatedTarget))
+            let ff= dropdown.focusedOn();
+            if ( !this._addingLevel && ! this.$contents[0].contains(event.relatedTarget) && (ff !== null && ! this.$contents[0].contains(ff[0])))
                 tarp.hide('recode-formula');
         } );
 
@@ -356,10 +357,12 @@ const TransformEditor = function(dataset) {
             this.$contents.removeClass('super-focus');
             this._applyFormula();
             window.clearTextSelection();
+            dropdown.hide();
         }, () => {
             this.$contents.removeClass('super-focus');
             this._applyFormula();
             window.clearTextSelection();
+            dropdown.hide();
         });
     };
 
@@ -380,6 +383,7 @@ const TransformEditor = function(dataset) {
 
         elements.$showEditor.on('click', (event) => {
             let $formula = null;
+            this._addingLevel = true;
             for (let $next_formula of elements.$formulas) {
                 if (this._$wasEditingFormula === $next_formula) {
                     $formula = $next_formula;
@@ -388,15 +392,32 @@ const TransformEditor = function(dataset) {
             }
             if ( ! $formula ) {
                 $formula = elements.$focusedFormula === null ? elements.$formulas[0] : elements.$focusedFormula;
-                dropdown.show(elements.$formulaGrid, this.formulasetup);
-                this.formulasetup.show($formula, '', true);
-                $formula.focus();
-                elements.$showEditor.addClass('is-active');
+                if (this._$wasEditingFormula !== $formula) {
+                    this.formulasetup.show($formula, '', true);
+                    dropdown.show(elements.$formulaGrid, this.formulasetup).then(() => {
+                        this._editorClicked = false;
+                    });
+                    //$formula.focus();
+                    elements.$showEditor.addClass('is-active');
+                }
             }
+            this._addingLevel = false;
         });
 
         elements.$showEditor.on('mousedown', (event) => {
             this._$wasEditingFormula = dropdown.focusedOn() !== null ? this.formulasetup.focusedOn() : null;
+        });
+
+        document.addEventListener("selectionchange", () => {
+            const sel = window.getSelection();
+            for (let i = 0; i < elements.$formulas.length; i++) {
+                if (elements.$formulas[i] && (elements.$formulas[i][0].contains(sel.anchorNode) || sel.anchorNode === elements.$formulas[i][0])) {
+                    let range = sel.getRangeAt(0);
+                    elements.$formulas[i].attr('sel-start', range.startOffset);
+                    elements.$formulas[i].attr('sel-end', range.endOffset);
+                    break;
+                }
+            }
         });
 
         if (hasCondition) {
@@ -652,11 +673,11 @@ const TransformEditor = function(dataset) {
         return { $formulaBox,  $showEditor, $formulaGrid, _subFocusClicked: false, _opEditClicked: false };
     };
 
-    this._startsWithValidOps = function($formula) {
+    this._startsWithValidOps = function($formula, ignorePlaceholder?) {
         let validOps = ['==', '!=', '=', '<=', '>=', '<', '>'];
 
         let text = $formula.text().trim();
-        if (text === '') {
+        if (!ignorePlaceholder && text === '') {
             text = $formula.attr('placeholder');
         }
 
@@ -779,9 +800,10 @@ const TransformEditor = function(dataset) {
 
                     let sel = window.getSelection();
 
-                    let count = this._startsWithValidOps($formula);
+                    let count = this._startsWithValidOps($formula, true);
 
-                    sel.setBaseAndExtent($formula[0].firstChild, 0, $formula[0].firstChild, count);
+                    if ($formula[0].firstChild)
+                        sel.setBaseAndExtent($formula[0].firstChild, 0, $formula[0].firstChild, count);
                     $formula[0].focus();
 
                     $opEdit.addClass('is-active');
@@ -801,7 +823,10 @@ const TransformEditor = function(dataset) {
             });
         }
 
-        $formula.blur((event) => {
+        $formula.on('focusout', (event: FocusEvent) => {
+            if (this.formulasetup.$el[0].contains(event.relatedTarget))
+                return;
+
             if (this._isRealBlur(elements)) {
                 dropdown.hide();
                 window.clearTextSelection();
@@ -851,7 +876,7 @@ const TransformEditor = function(dataset) {
     };
 
     this._isRealBlur = function(elements) {
-        return dropdown.clicked() === false && elements._subFocusClicked === false;
+        return dropdown.clicked() === false && elements._subFocusClicked === false && !this.formulasetup.$el[0].contains(document.activeElement);
     };
 
     this._notifyEditProblem = function(details) {

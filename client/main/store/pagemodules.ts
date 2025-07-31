@@ -189,6 +189,8 @@ const PageModules = Backbone.View.extend({
         this.$visibility.off();
         this.$install.off();
 
+        let scrollTop = this.$body.scrollTop();
+
         this.$content.find('.jmv-store-module').addClass('to-be-removed');
 
         this._updateMessage();
@@ -323,6 +325,7 @@ const PageModules = Backbone.View.extend({
         this.$visibility.on('click', event => this._visibilityClicked(event));
 
         this.$content.focus();
+        this.$body.scrollTop(scrollTop);
 
     },
     _moduleLeave(event) {
