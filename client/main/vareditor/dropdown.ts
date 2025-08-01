@@ -1,206 +1,224 @@
-
 'use strict';
 
 import $ from 'jquery';
 import focusLoop from '../../common/focusloop';
 
-const dropdown = function() {
-    this._inTools = false;
-    this.$formula = null;
+export interface DropdownContent extends HTMLElement {
+    isScrollTarget: (target: EventTarget | null) => boolean;
+}
 
-    $(window).resize( (event) => {
-        this._findPosition();
-    } );
+interface ShowOptions {
+    data: {
+        dropdown: Dropdown;
+        check: boolean;
+    };
+}
 
-    window.addEventListener('scroll', (event) => {
-        if (this._shown && ! this._waiting && this.item.isScrollTarget(event.target) === false) {
+class Dropdown extends HTMLElement {
+    private _inTools: boolean = false;
+    private _shown: boolean = false;
+    private _waiting: boolean = false;
+    private _resolve: (() => void) | null = null;
+    private _promise: Promise<void> | null = null;
+    private $$formulaWrapper: $<HTMLElement> | null = null;
+    private $formula: HTMLElement | null = null;
+    private $content: DropdownContent | null = null;
+    private $contents: HTMLDivElement;
+    private _boundHide: (() => void) | null = null;
+
+    constructor() {
+        super();
+
+        this.classList.add('jmv-dropdown-widget', 'dropdown-hidden', 'dropdown-remove');
+        this.tabIndex = -1;
+
+        this.$contents = document.createElement('div');
+        this.$contents.className = 'jmv-dropdown-contents';
+        this.append(this.$contents);
+
+        focusLoop.addFocusLoop(this, {
+            level: 1,
+            hoverFocus: false,
+            closeHandler: () => this.hide({ data: { dropdown: this, check: false } }),
+            exitKeys: ['Escape']
+        });
+
+        window.addEventListener('resize', () => this._findPosition());
+        window.addEventListener('scroll', this._onScroll, true);
+        document.addEventListener('mousedown', this._onDocumentMouseDown);
+        this.addEventListener('focusout', this._onFocusOut);
+    }
+
+    private _onScroll = (event: Event) => {
+        if (this._shown && !this._waiting && this.$content?.isScrollTarget(event.target) === false) {
             this.hide({ data: { dropdown: this, check: false } });
         }
-    }, true);
+    };
 
-    this.$el = $('<div class="jmv-dropdown-widget dropdown-hidden dropdown-remove" tabindex="-1"></div>');
-    let options = { level: 1, hoverFocus: false, closeHandler: () => { this.hide({ data: { dropdown: this, check: false } }); }, exitKeys: ['Escape'] };
-    focusLoop.addFocusLoop(this.$el[0], options);
-
-    this.$contents = $('<div class="jmv-dropdown-contents"></div>').appendTo(this.$el);
-
-    $(document).on('mousedown', (event) => {
-        let divRect = this.$el[0].getBoundingClientRect();
-        let inTool = event.clientX >= divRect.left && event.clientX <= divRect.right && event.clientY >= divRect.top && event.clientY <= divRect.bottom;
-        let inFormula = false;
-        if (this.$formula) {
-            divRect = this.$formula[0].getBoundingClientRect();
-            inFormula = event.clientX >= divRect.left && event.clientX <= divRect.right && event.clientY >= divRect.top && event.clientY <= divRect.bottom;
-        }
+    private _onDocumentMouseDown = (event: MouseEvent) => {
+        const inTool = this._elementContainsPoint(this, event);
+        const inFormula = this.$formula ? this._elementContainsPoint(this.$formula, event) : false;
 
         this._inTools = inTool;
 
-        if ( ! inTool && ! inFormula)
+        if (!inTool && !inFormula) {
             this.hide({ data: { dropdown: this, check: false } });
-
-    });
-
-    this.$el.on('focusout', (event) => {
-        if (this.$el[0].contains(event.relatedTarget))
-            return;
-
-        if (this._shown && event.relatedTarget !== this.$formula[0])
-            this.hide( { data: { dropdown: this, check: false } });
-    });
-
-    this.hide = function(event) {
-        let self = event.data.dropdown;
-        if (( ! event.data.check || self._inTools === false) && self._shown) {
-            self.$el.addClass('dropdown-hidden dropdown-remove');
-            self.$content.off('hide-dropdown', null, this.hide);
-            self.$formula.trigger('editor:closing');
-            self.$formula.attr('aria-expanded', false);
-            self.$formula = null;
-            self._shown = false;
-            self._waiting = false;
-            if (this._resolve) {
-                this._resolve();
-                this._resolve = null;
-            }
-            
         }
-
-        self._inTools = false;
     };
 
-    this._findPosition = function() {
-        if ( ! this.$formula )
-            return;
+    private _onFocusOut = (event: FocusEvent) => {
+        if (!this.contains(event.relatedTarget as Node) && event.relatedTarget !== this.$formula) {
+            this.hide({ data: { dropdown: this, check: false } });
+        }
+    };
 
-        if ( ! this._shown)
-            return;
+    private _elementContainsPoint(element: HTMLElement, event: MouseEvent): boolean {
+        const rect = element.getBoundingClientRect();
+        return event.clientX >= rect.left && event.clientX <= rect.right &&
+               event.clientY >= rect.top && event.clientY <= rect.bottom;
+    }
 
-        this.$el.removeClass('dropdown-remove');
+    private _findPosition() {
+        if (!this.$formula || !this._shown) return;
+
+        this.classList.remove('dropdown-remove');
+
         setTimeout(() => {
-            this.$el.removeClass('dropdown-hidden');
-            this.$el.on('transitionend', (event) => {
+            this.classList.remove('dropdown-hidden');
+            this.addEventListener('transitionend', () => {
                 this._waiting = false;
-            });
+            }, { once: true });
         }, 0);
 
-        let offset = this.$formula.offset();
-        let positionInfo = this.$formula[0].getBoundingClientRect();
-        let height = positionInfo.height;
-        let width = this.$formula.outerWidth(false);
-        let data = {
-            top: offset.top + height + 1,
-            left: offset.left
-        };
-        this.$el.offset(data);
-        this.$el.css('min-width', width);
-    };
+        const rect = this.$formula.getBoundingClientRect();
+        const top = rect.top + rect.height + 1 + window.scrollY;
+        const left = rect.left + window.scrollX;
 
-    this.onFocusOut = function(event) {
-        if (this._shown && this.$el[0].contains(event.relatedTarget) === false && this.$el[0] !== event.relatedTarget)
-            this.hide( { data: { dropdown: this, check: false } });
-    };
-    this.onFocusOut = this.onFocusOut.bind(this);
+        this.style.position = 'absolute';
+        this.style.top = `${top}px`;
+        this.style.left = `${left}px`;
+        this.style.minWidth = `${this.$formula.offsetWidth}px`;
+    }
 
-    this.show = function($formula, content, wait) {
+    public show($formula: $<HTMLElement>, content: DropdownContent, wait: boolean = false): Promise<void> {
+        const formulaEl = $formula[0];
 
-        if (content.$el != this.$content) {
+        if (content !== this.$content) {
             if (this.$content) {
-                this.$content.detach();
-                this.$content.off('hide-dropdown', null, this.hide);
+                this.$content.remove();
+                this.$content.removeEventListener('hide-dropdown', this._boundHide!);
             }
+
             if (this._resolve) {
                 this._resolve();
                 this._resolve = null;
             }
 
-            this.$content = content.$el;
-            this.$content.on('hide-dropdown', null, { dropdown: this, check: false }, this.hide);
-            this.$contents.append(content.$el);
-            this.item = content;
+            this.$content = content;
+            this._boundHide = () => this.hide({ data: { dropdown: this, check: false } });
+            this.$content.addEventListener('hide-dropdown', this._boundHide);
+            this.$contents.append(this.$content);
         }
 
-        if ( ! this._resolve) {
-            this._promise = new Promise((resolve, reject) => {
+        if (!this._resolve) {
+            this._promise = new Promise<void>((resolve) => {
                 this._resolve = resolve;
             });
         }
 
         setTimeout(() => {
-            focusLoop.enterFocusLoop(this.$el[0], { withMouse: false, exitSelector: $formula[0] });
+            focusLoop.enterFocusLoop(this, { withMouse: false, exitSelector: formulaEl });
         }, 200);
 
-
-        if (this._shown && $formula === this.$formula)
-            return this._promise;
+        if (this._shown && formulaEl === this.$formula) {
+            return this._promise!;
+        }
 
         this._shown = true;
         this._waiting = wait;
 
         if (this.$formula) {
-            this.$formula.attr('aria-expanded', false);
-            this.$formula.off('focusout', this.onFocusOut);
+            this.$formula.setAttribute('aria-expanded', 'false');
+            this.$formula.removeEventListener('focusout', this._onFocusOut);
         }
 
-        this.$formula = $formula;
+        this.$$formulaWrapper = $formula;
+        this.$formula = formulaEl;
 
         if (this.$formula) {
-            this.$formula.attr('aria-expanded', true);
-            this.$formula.on('focusout', this.onFocusOut);
+            this.$formula.setAttribute('aria-expanded', 'true');
+            this.$formula.addEventListener('focusout', this._onFocusOut);
         }
 
-        if ( ! wait)
+        if (!wait) {
             this._findPosition();
+        }
 
-        return this._promise;
-    };
-};
-
-let  _dropdown = null;
-
-const init = function() {
-    if (_dropdown === null) {
-        _dropdown = new dropdown();
-        $('body').append(_dropdown.$el);
+        return this._promise!;
     }
-};
 
-const show = function($formula, content, wait) {
-    return _dropdown.show($formula, content, wait);
-};
+    public hide(event: ShowOptions) {
+        const { dropdown: self, check } = event.data;
 
-const hide = function() {
-    _dropdown.hide( { data: { dropdown: _dropdown, check: false } });
-};
+        if ((!check || !self._inTools) && self._shown) {
+            self.classList.add('dropdown-hidden', 'dropdown-remove');
+            self.$content?.removeEventListener('hide-dropdown', this._boundHide!);
+            self.$formula?.dispatchEvent(new CustomEvent('editor:closing'));
+            self.$formula?.setAttribute('aria-expanded', 'false');
 
-const updatePosition = function() {
-    _dropdown._findPosition();
-};
+            self.$formula = null;
+            self._shown = false;
+            self._waiting = false;
 
-const focusedOn = function() {
-    return _dropdown.$formula;
-};
+            if (this._resolve) {
+                this._resolve();
+                this._resolve = null;
+            }
+        }
 
-const clicked = function() {
-    return _dropdown._inTools;
-};
+        self._inTools = false;
+    }
 
-const isVisible = function() {
-    return _dropdown._shown;
-};
+    get formula() {
+        return this.$$formulaWrapper;
+    }
 
-const content = function() {
-    return _dropdown.item;
-};
+    get inTools() {
+        return this._inTools;
+    }
 
-const enter = function() {
-    focusLoop.enterFocusLoop(_dropdown.$el[0], { withMouse: false, exitSelector: _dropdown.$formula[0] });
+    get isVisible() {
+        return this._shown;
+    }
+
+    get content() {
+        return this.$content;
+    }
+
+    public enter() {
+        focusLoop.enterFocusLoop(this, { withMouse: false, exitSelector: this.$formula! });
+    }
+
+    public hasFocus(relatedTarget: Element | null = document.activeElement): boolean {
+        return !!relatedTarget && (this.contains(relatedTarget) || this === relatedTarget);
+    }
 }
 
-const hasFocus = function(relatedTarget) {
-    if (relatedTarget === undefined)
-        relatedTarget = document.activeElement;
+customElements.define('jmv-dropdown', Dropdown);
 
-    return relatedTarget && (_dropdown.$el[0].contains(relatedTarget) || _dropdown.$el[0] === relatedTarget);
-}
+const dropdownInstance = new Dropdown();
 
-export default { init, show, hide, updatePosition, focusedOn, clicked, isVisible, content, enter, hasFocus };
+document.body.append(dropdownInstance);
+
+export default {
+    init: () => {},
+    show: (formula: $<HTMLElement>, content: DropdownContent, wait = false) => dropdownInstance.show(formula, content, wait),
+    hide: () => dropdownInstance.hide({ data: { dropdown: dropdownInstance, check: false } }),
+    updatePosition: () => dropdownInstance['_findPosition'](),
+    focusedOn: () => dropdownInstance.formula,
+    clicked: () => dropdownInstance.inTools,
+    isVisible: () => dropdownInstance.isVisible,
+    content: () => dropdownInstance.content,
+    enter: () => dropdownInstance.enter(),
+    hasFocus: (relatedTarget?: Element | null) => dropdownInstance.hasFocus(relatedTarget ?? null)
+};

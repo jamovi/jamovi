@@ -13,6 +13,7 @@ import _dialogs from 'dialogs';
 const dialogs = _dialogs({cancel:false});
 import focusLoop from '../../common/focusloop';
 import { s6e } from '../../common/utils';
+import { MeasureType } from '../dataset';
 
 const DataVarWidget = Backbone.View.extend({
     className: 'DataVarWidget',
@@ -303,7 +304,7 @@ const DataVarWidget = Backbone.View.extend({
                 this.$measureList.attr('aria-expanded', false);
             }
             else {
-                this.measureList.setParent(this.$measureList);
+                this.measureList.setParent(this.$measureList[0]);
                 dropdown.show(this.$measureList, this.measureList);
                 this.$measureList.attr('aria-expanded', true);
             }
@@ -312,7 +313,8 @@ const DataVarWidget = Backbone.View.extend({
             this.$measureList.focus();
         });
 
-        this.measureList.$el.on('selected-measure-type', (event, measureType) => {
+        this.measureList.addEventListener('selected-measure-type', (event: CustomEvent<MeasureType>) => {
+            let measureType = event.detail;
             this.model.set({ measureType: measureType, autoMeasure: false });
             dropdown.hide();
             this.$measureList.attr('aria-expanded', false);
@@ -332,7 +334,7 @@ const DataVarWidget = Backbone.View.extend({
                 }
                 else
                 {
-                    this.measureList.setParent(this.$measureList);
+                    this.measureList.setParent(this.$measureList[0]);
                     dropdown.show(this.$measureList, this.measureList);
                     this.$measureList.attr('aria-expanded', true);
                 }

@@ -1,29 +1,46 @@
-
 'use strict';
 
-import $ from 'jquery';
 import focusLoop from '../../common/focusloop';
+import { MeasureType } from '../dataset';
 
-const MeasureListItem = function(measureType, text) {
-    this.measureType = measureType;
-    this.name = text ? text : measureType;
+class MeasureListItem extends HTMLElement {
+    measureType: MeasureType;
+    name: string;
+    id: string;
+    $icon: HTMLElement;
+    $label: HTMLElement;
 
-    this.id = focusLoop.getNextAriaElementId('listitem');
+    constructor(measureType: MeasureType, text?: string) {
+        super();
+        this.measureType = measureType;
+        this.name = text ? text : measureType;
 
-    let labelId = focusLoop.getNextAriaElementId('label');
-    this.$el = $(`<div id="${this.id}" class="jmv-measure-list-item" aria-labelledby="${labelId}" role="listitem"></div>`);
+        this.id = focusLoop.getNextAriaElementId('listitem');
+        const labelId = focusLoop.getNextAriaElementId('label');
 
-    this.$el.attr('data-id', measureType);
+        this.id = this.id;
+        this.className = 'jmv-measure-list-item';
+        this.setAttribute('aria-labelledby', labelId);
+        this.setAttribute('role', 'listitem');
+        this.setAttribute('data-id', measureType);
 
-    this.$icon = $('<div class="icon measure-type-' + this.measureType + '"></div>').appendTo(this.$el);
-    this.$label = $(`<div id="${labelId}" class="label">${this.name}</div>`).appendTo(this.$el);
+        this.$icon = document.createElement('div');
+        this.$icon.className = `icon measure-type-${this.measureType}`;
+        this.appendChild(this.$icon);
 
+        this.$label = document.createElement('div');
+        this.$label.id = labelId;
+        this.$label.className = 'label';
+        this.$label.textContent = this.name;
+        this.appendChild(this.$label);
 
-    this.$el.on('click', (event) => {
-        this.$el.trigger('selected', this);
-    });
-};
+        this.addEventListener('click', () => {
+            const event = new CustomEvent('selected', { detail: this });
+            this.dispatchEvent(event);
+        });
+    }
+}
 
-
+customElements.define('jmv-measurelistitem', MeasureListItem);
 
 export default MeasureListItem;

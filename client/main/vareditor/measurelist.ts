@@ -1,82 +1,93 @@
-
 'use strict';
 
-import $ from 'jquery';
 import MeasureListItem from './measurelistitem';
 import focusLoop from '../../common/focusloop';
+import { MeasureType } from '../dataset';
+import { DropdownContent } from './dropdown';
 
-const MeasureList = function(includeAuto) {
-    this.includeAuto = includeAuto === undefined ? true : false;
-    this.isScrollTarget = function(target) {
-        return target === this.$middle[0];
-    };
+type ParentElement = HTMLSelectElement | HTMLInputElement | HTMLElement & { value: string };
 
-    this.id = focusLoop.getNextAriaElementId('list');
+export default class MeasureList extends HTMLElement implements DropdownContent {
+    private $middle: HTMLDivElement;
+    private $parent?: ParentElement;
+    private includeAuto: boolean;
 
-    this.$el = $(`<div id="${this.id}" role="list" class="jmv-measure-list"></div>`);
+    constructor(includeAuto: boolean = true) {
+        super();
+        this.includeAuto = includeAuto;
+        this.id = focusLoop.getNextAriaElementId('list');
 
-    this.$middle = $('<div class="middle" role="presentation"></div>').appendTo(this.$el);
+        this.className = 'jmv-measure-list';
+        this.setAttribute('role', 'list');
 
-    this.setParent = function($element) {
+        this.$middle = document.createElement('div');
+        this.$middle.className = 'middle';
+        this.$middle.setAttribute('role', 'presentation');
+        this.appendChild(this.$middle);
+
+        this.populate();
+    }
+
+    public isScrollTarget(target: EventTarget | null): boolean {
+        return target === this.$middle;
+    }
+
+    public setParent(element: ParentElement): void {
         if (this.$parent) {
-            this.$parent.off('change', null, this._valueChanged);
+            this.$parent.removeEventListener('change', this._valueChanged);
         }
 
-        this.$parent = $element;
-
+        this.$parent = element;
         this._valueChanged();
 
-        this.$parent.on('change', null, this, this._valueChanged);
-    };
+        this.$parent.addEventListener('change', this._valueChanged);
+    }
 
-    this._valueChanged = () => {
-        this.$el.find('.jmv-measure-list-item.highlighted').removeClass('highlighted');
-        let val = this.$parent.val();
-        this.$el.find('.jmv-measure-list-item[data-id=' + this.$parent.val() + ']').addClass('highlighted');
-        let $element = this.$el.find('.jmv-measure-list-item.highlighted');
-        if ($element.length > 0) {
-            $element[0].scrollIntoView(false);
-            this.$parent.attr('aria-activedescendant', $element.attr('id'));
+    private _valueChanged = (): void => {
+        const highlighted = this.querySelector('.jmv-measure-list-item.highlighted') as HTMLElement | null;
+        if (highlighted)
+            highlighted.classList.remove('highlighted');
+
+        if (!this.$parent)
+            return;
+
+        const val = this.$parent.value;
+        const item = this.querySelector(`.jmv-measure-list-item[data-id="${val}"]`) as HTMLElement | null;
+        if (item) {
+            item.classList.add('highlighted');
+            item.scrollIntoView(false);
+            this.$parent.setAttribute('aria-activedescendant', item.id);
         }
     };
 
-    this.populate = function() {
-        this.$middle.empty();
+    private populate(): void {
+        this.$middle.innerHTML = '';
 
-        let item = null;
+        const items: MeasureListItem[] = [];
 
         if (this.includeAuto) {
-            item = new MeasureListItem('none', _('Auto'));
-            item.$el.appendTo(this.$middle);
-            this._createItemEvents(item);
+            items.push(new MeasureListItem(MeasureType.NONE, _('Auto')));
         }
 
-        item = new MeasureListItem('nominal', _('Nominal'));
-        item.$el.appendTo(this.$middle);
-        this._createItemEvents(item);
+        items.push(new MeasureListItem(MeasureType.NOMINAL, _('Nominal')));
+        items.push(new MeasureListItem(MeasureType.ORDINAL, _('Ordinal')));
+        items.push(new MeasureListItem(MeasureType.CONTINUOUS, _('Continuous')));
+        items.push(new MeasureListItem(MeasureType.ID, _('ID')));
 
-        item = new MeasureListItem('ordinal', _('Ordinal'));
-        item.$el.appendTo(this.$middle);
-        this._createItemEvents(item);
+        for (const item of items) {
+            this.$middle.appendChild(item);
+            this._createItemEvents(item);
+        }
+    }
 
-        item = new MeasureListItem('continuous', _('Continuous'));
-        item.$el.appendTo(this.$middle);
-        this._createItemEvents(item);
-
-        item = new MeasureListItem('id', _('ID'));
-        item.$el.appendTo(this.$middle);
-        this._createItemEvents(item);
-    };
-
-    this._createItemEvents = function(item) {
-        item.$el.on('selected', () => {
-            this.$el.trigger('selected-measure-type', item.measureType);
+    private _createItemEvents(item: MeasureListItem): void {
+        item.addEventListener('selected', () => {
+            const event = new CustomEvent('selected-measure-type', {
+                detail: item.measureType,
+            });
+            this.dispatchEvent(event);
         });
-    };
+    }
+}
 
-    this.populate();
-};
-
-
-
-export default MeasureList;
+customElements.define('jmv-measuretype-list', MeasureList);

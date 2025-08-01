@@ -1,119 +1,145 @@
-
 'use strict';
 
 import $ from 'jquery';
+import { Descriptions } from '../vareditor/formulatoolbar';
+import { DropdownContent } from '../vareditor/dropdown';
 
 function insertText(el, newText) {
-
     let sel = window.getSelection();
     let range = sel.getRangeAt(0);
     let start = range.startOffset;
     let end = range.endOffset;
-    let text = el.textContent;
+    let text = el.innerText;
     let before = text.substring(0, start);
-    let after  = text.substring(end, text.length);
+    let after  = text.substring(end);
 
-    el.textContent = (before + newText + after);
+    el.textContent = before + newText + after;
     sel.setBaseAndExtent(el.firstChild, start + newText.length, el.firstChild, start + newText.length);
 
     el.focus();
 }
 
-function insertInto(open, close, input){
-    let val = input.textContent, s = input.selectionStart, e = input.selectionEnd;
-    if (e==s) {
-        input.textContent = val.slice(0,e) + open + close + val.slice(e);
-        input.selectionStart += close.length;
-        input.selectionEnd = e + close.length;
-    } else {
-        input.textContent = val.slice(0,s) + open + val.slice(s,e) + close + val.slice(e);
-        input.selectionStart += close.length + 1;
-        input.selectionEnd = e + close.length;
-    }
+function allFunctions(functionsContent): Descriptions {
+    let descriptions = {};
 
-}
+    const createItem = (name, value, labelText) => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.dataset.name = name;
+        div.dataset.value = value;
+        div.innerHTML = value;
+        functionsContent.appendChild(div);
+        descriptions[name] = { label: labelText, content: '' };
+    };
 
-function allFunctions($functionsContent) {
-    let descriptions = { };
+    createItem('equal', '==', _('Equal to'));
+    createItem('notequal', '!=', _('Not equal to'));
+    createItem('gt', '>', _('Greater than'));
+    createItem('lt', '<', _('Less than'));
+    createItem('gte', '>=', _('Greater than or equal to'));
+    createItem('lte', '<=', _('Less than or equal to'));
 
-    //$functionsContent.append($('<div class="subtitle" data-name="">Math</div>'));
-    $functionsContent.append($('<div class="item item-activated" data-name="equal" data-value="==">==</div>'));
-    descriptions.equal = { label: _('Equal to'), content: '' };
-    $functionsContent.append($('<div class="item" data-name="notequal" data-value="!=">!=</div>'));
-    descriptions.notequal = { label: _('Not equal to'), content: '' };
-    $functionsContent.append($('<div class="item" data-name="gt" data-value=">">&gt;</div>'));
-    descriptions.gt = { label: _('Greater than'), content: '' };
-    $functionsContent.append($('<div class="item" data-name="lt" data-value="<">&lt;</div>'));
-    descriptions.lt = { label: _('Less than'), content: '' };
-    $functionsContent.append($('<div class="item" data-name="gte" data-value=">=">&gt;=</div>'));
-    descriptions.gte = { label: _('Greater than or equal to'), content: '' };
-    $functionsContent.append($('<div class="item" data-name="lte" data-value="<=">&lt;=</div>'));
-    descriptions.lte = { label: _('Less than or equal to'), content: '' };
+    functionsContent.firstChild.classList.add('item-activated'); // Activate first item by default
 
     return descriptions;
 }
 
-const dropdown = function() {
+class Dropdown extends HTMLElement implements DropdownContent {
+    private ops: HTMLDivElement;
+    private label: HTMLDivElement;
+    private description: HTMLDivElement;
+    private functions: HTMLDivElement;
+    private functionsTitle: HTMLDivElement;
+    private functionsContent: HTMLDivElement;
+    private descriptions: Descriptions;
+    private $formula: $<HTMLElement> | null = null;
+    private formula: HTMLElement | null = null;
 
-    this.isScrollTarget = function(target) {
-        return target === this.$functionsContent[0];
-    };
+    constructor() {
+        super();
+        this.className = 'jmv-operator-dropdown-options';
 
-    this.$options = $('<div class="jmv-operator-dropdown-options"></div>');//.appendTo(this.$el);
-    this.$el = this.$options;
+        this.ops = document.createElement('div');
+        this.ops.className = 'ops-box';
+        this.appendChild(this.ops);
 
-    this.$ops = $('<div class="ops-box"></div>').appendTo(this.$options);
-    this.$label = $('<div class="option-label">This is a label!</div>').appendTo(this.$options);
-    this.$description = $('<div class="option-description">This is the place where the option description will go!</div>').appendTo(this.$options);
+        this.label = document.createElement('div');
+        this.label.className = 'option-label';
+        this.label.textContent = 'This is a label!';
+        this.appendChild(this.label);
 
-    this.$functions = $('<div class="op"></div>').appendTo(this.$ops);
-    this.$functionsTitle = $(`<div class="title">${_('Operators')}</div>`).appendTo(this.$functions);
-    this.$functionsContent = $('<div class="content"></div>').appendTo(this.$functions);
+        this.description = document.createElement('div');
+        this.description.className = 'option-description';
+        this.description.textContent = 'This is the place where the option description will go!';
+        this.appendChild(this.description);
 
-    this.descriptions = allFunctions(this.$functionsContent);
+        this.functions = document.createElement('div');
+        this.functions.className = 'op';
+        this.ops.appendChild(this.functions);
 
-    let info = this.descriptions.equal;
-    if (info !== undefined) {
-        this.$label.text(info.label);
-        this.$description.text(info.content);
+        this.functionsTitle = document.createElement('div');
+        this.functionsTitle.className = 'title';
+        this.functionsTitle.textContent = _('Operators');
+        this.functions.appendChild(this.functionsTitle);
+
+        this.functionsContent = document.createElement('div');
+        this.functionsContent.className = 'content';
+        this.functions.appendChild(this.functionsContent);
+
+        this.descriptions = allFunctions(this.functionsContent);
+
+        const defaultInfo = this.descriptions.equal;
+        if (defaultInfo) {
+            this.label.textContent = defaultInfo.label;
+            this.description.textContent = defaultInfo.content;
+        }
+
+        this.functionsContent.addEventListener('click', (event) => {
+            const target = event.target as HTMLElement;
+            if (target.classList.contains('item') && this.formula) {
+                this.formula.focus();
+                insertText(this.formula, target.dataset.value || '');
+                const inputEvent = new Event('input', { bubbles: true });
+                this.formula.dispatchEvent(inputEvent);
+            }
+        });
+
+        this.functionsContent.addEventListener('mouseenter', (event) => {
+            const target = event.target as HTMLElement;
+            if (target.classList.contains('item')) {
+                const items = this.functionsContent.querySelectorAll('.item');
+                items.forEach(item => item.classList.remove('item-activated'));
+                target.classList.add('item-activated');
+
+                const info = this.descriptions[target.dataset.name || ''];
+                if (info) {
+                    this.label.textContent = info.label;
+                    this.description.textContent = info.content;
+                } else {
+                    this.label.textContent = '';
+                    this.description.textContent = _('No information about this function is available');
+                }
+            } else {
+                this.label.textContent = '';
+                this.description.textContent = '';
+            }
+        }, true);
     }
 
-    this.$functionsContent.on("click", (event) => {
-        if ($(event.target).hasClass('item')) {
-            this.$formula.focus();
-            insertText(this.$formula[0], event.target.dataset.value);
-            this.$formula.trigger('input', { });
-        }
-    });
+    public isScrollTarget(target: HTMLElement): boolean {
+        return target === this.functionsContent;
+    }
 
-    this.$functionsContent.find('.item').on("mouseenter", (event) => {
-        //this.$formula.focus();
-        $(".content .item").removeClass("item-activated");
-        if ($(event.target).hasClass("item")) {
-            $(event.target).addClass("item-activated");
-            let info = this.descriptions[$(event.target).data('name')];
-            if (info !== undefined) {
-                this.$label.text(info.label);
-                this.$description.text(info.content);
-            }
-            else {
-                this.$label.text('');
-                this.$description.text(_('No information about this function is available'));
-            }
-        }
-        else {
-            this.$label.text('');
-            this.$description.text('');
-        }
-    });
+    public show(formula: $<HTMLElement>): void {
+        this.$formula = formula;
+        this.formula = formula[0];
+    }
 
-    this.show = function($formula) {
-        this.$formula = $formula;
-    };
-
-    this.focusedOn = function() {
+    public focusedOn(): $<HTMLElement> | null {
         return this.$formula;
-    };
-};
+    }
+}
 
-export default dropdown;
+customElements.define('jmv-operatorselector', Dropdown);
+
+export default Dropdown;

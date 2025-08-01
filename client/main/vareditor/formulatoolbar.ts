@@ -1,8 +1,9 @@
-
 'use strict';
 
 import $ from 'jquery';
 import focusLoop from '../../common/focusloop';
+import DataSetViewModel from '../dataset';
+import { DropdownContent } from './dropdown';
 
 function insertText(el, newText, cursorOffset = 0, range = null, checkEscape = true) {
     
@@ -32,393 +33,421 @@ function insertText(el, newText, cursorOffset = 0, range = null, checkEscape = t
     el.focus();
 }
 
-function insertInto(open, close, input){
-    let val = input.textContent, s = input.selectionStart, e = input.selectionEnd;
-    if (e==s) {
-        input.textContent = val.slice(0,e) + open + close + val.slice(e);
-        input.selectionStart += close.length;
-        input.selectionEnd = e + close.length;
-    } else {
-        input.textContent = val.slice(0,s) + open + val.slice(s,e) + close + val.slice(e);
-        input.selectionStart += close.length + 1;
-        input.selectionEnd = e + close.length;
+type FunctionDescription = {
+  label: string;
+  content: string;
+};
+
+export type Descriptions = {
+  [name: string]: FunctionDescription;
+};
+
+function allFunctions(functionsContent) : Descriptions {
+    const descriptions = {};
+
+    function createElement(tag, attrs = {}, textContent = '') {
+        const el = document.createElement(tag);
+        for (const [key, value] of Object.entries(attrs)) {
+            if (key === 'class') el.className = value;
+            else if (key === 'dataset') {
+                for (const [dKey, dValue] of Object.entries(value)) {
+                    el.dataset[dKey] = dValue;
+                }
+            }
+            else if (key === 'html') {
+                el.innerHTML = value;
+            }
+            else {
+                el.setAttribute(key, value);
+            }
+        }
+        if (textContent) el.textContent = textContent;
+        return el;
     }
 
-}
+    function addGroup(titleKey, items) {
+        let labelId = focusLoop.getNextAriaElementId('label');
+        let group = createElement('div', { role: 'group', 'aria-labelledby': labelId });
+        group.appendChild(createElement('div', {
+            id: labelId,
+            role: 'presentation',
+            class: 'subtitle',
+            'data-name': ''
+        }, _(titleKey)));
+        functionsContent.appendChild(group);
 
-function allFunctions($functionsContent) {
-    let descriptions = { };
+        for (const item of items) {
+            group.appendChild(createElement('div', {
+                role: 'option',
+                'aria-selected': 'false',
+                class: 'item',
+                dataset: { name: item.name }
+            }, item.name));
+            descriptions[item.name] = { label: item.label, content: item.content };
+        }
+    }
 
-    let labelId = focusLoop.getNextAriaElementId('label');
-    let $group = $(`<div role="group" aria-labelledby="${labelId}"></div>`);
-    $group.append($(`<div id="${labelId}" role="presentation" class="subtitle" data-name="">${_('Math')}</div>`));
-    $functionsContent.append($group);
-    $group.append($(`<div role="option" aria-selected="true" class="item item-activated" data-name="ABS">ABS</div>`));
-    descriptions.ABS = { label: 'ABS( <i>number</i> )', content: _('Returns the absolute value of a number.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="EXP">EXP</div>'));
-    descriptions.EXP = { label: 'EXP( <i>number</i> )', content: _('Returns the exponent for basis ℯ of a number.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="LN">LN</div>'));
-    descriptions.LN = { label: 'LN( <i>number</i> )', content: _('Returns the natural logarithm of a number.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="LOG10">LOG10</div>'));
-    descriptions.LOG10 = { label: 'LOG10( <i>number</i> )', content: _('Returns the base-10 logarithm of a number.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="SQRT">SQRT</div>'));
-    descriptions.SQRT = { label: 'SQRT( <i>number</i> )', content: _('Returns the square root of a number.') };
+    addGroup('Math', [
+        { name: 'ABS', label: 'ABS( <i>number</i> )', content: _('Returns the absolute value of a number.') },
+        { name: 'EXP', label: 'EXP( <i>number</i> )', content: _('Returns the exponent for basis ℯ of a number.') },
+        { name: 'LN', label: 'LN( <i>number</i> )', content: _('Returns the natural logarithm of a number.') },
+        { name: 'LOG10', label: 'LOG10( <i>number</i> )', content: _('Returns the base-10 logarithm of a number.') },
+        { name: 'SQRT', label: 'SQRT( <i>number</i> )', content: _('Returns the square root of a number.') }
+    ]);
 
-    labelId = focusLoop.getNextAriaElementId('label');
-    $group = $(`<div role="group" aria-labelledby="${labelId}"></div>`);
-    $group.append($(`<div id="${labelId}" role="presentation" class="subtitle" data-name="">${_('Statistical')}</div>`));
-    $functionsContent.append($group);
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="ABSIQR">ABSIQR</div>'));
-    descriptions.ABSIQR = { label: 'ABSIQR( <i>variable</i> )', content: _('Convenience short-hand for ABS(IQR( variable ))') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="ABSZ">ABSZ</div>'));
-    descriptions.ABSZ = { label: 'ABSZ( <i>variable</i>, group_by=0 )', content: _('Convenience short-hand for ABS(Z( variable ))') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="BOXCOX">BOXCOX</div>'));
-    descriptions.BOXCOX = { label: 'BOXCOX( <i>variable, lambda</i> )', content: _('Returns a Box Cox transformation of the variable.') };
-    $group.append($('<div role="option" aria-selected="false" role="option" aria-selected="false" class="item" data-name="IQR">IQR</div>'));
-    descriptions.IQR = { label: 'IQR( <i>variable</i> )', content: _('Returns a whether the variable is an outlier according to the IQR: If the value is within the box of a Boxplot 0 is returned, absolute values larger than 1.5 are outside the whiskers.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="MAX">MAX</div>'));
-    descriptions.MAX = { label: 'MAX( <i>variable</i> )', content: _('Returns the largest value of a set of numbers.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="MAXABSIQR">MAXABSIQR</div>'));
-    descriptions.MAXABSIQR = { label: 'MAXABSIQR( variable 1, variable 2, … )', content: _('Convenience short-hand for MAX(ABSIQR( variable 1, variable 2, … ))') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="MAXABSZ">MAXABSZ</div>'));
-    descriptions.MAXABSZ = { label: 'MAXABSZ( variable 1, variable 2, …, group_by=0 )', content: _('Convenience short-hand for MAX(ABSZ( variable 1, variable 2, … ))') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="MEAN">MEAN</div>'));
-    descriptions.MEAN = { label: 'MEAN( <i>number 1, number 2, …</i>, ignore_missing=0, min_valid=0 )', content: _('Returns the mean of a set of numbers.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="MIN">MIN</div>'));
-    descriptions.MIN = { label: 'MIN( <i>variable</i> )', content: _('Returns the smallest value of a set of numbers.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="RANK">RANK</div>'));
-    descriptions.RANK = { label: 'RANK( <i>variable</i> )', content: _('Ranks each value') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="ROUND">ROUND</div>'));
-    descriptions.ROUND = { label: 'ROUND( <i>variable</i>, digits=0 )', content: _('Rounds each value') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="FLOOR">FLOOR</div>'));
-    descriptions.FLOOR = { label: 'FLOOR( <i>variable</i> )', content: _('Rounds each value to the integer below') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="CEILING">CEILING</div>'));
-    descriptions.CEILING = { label: 'CEILING( <i>variable</i> )', content: _('Rounds each value to the integer above') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="SCALE">SCALE</div>'));
-    descriptions.SCALE = { label: 'SCALE( <i>variable</i>, group_by=0 )', content: _('Returns the normalized values of a set of numbers.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="STDEV">STDEV</div>'));
-    descriptions.STDEV = { label: 'STDEV( <i>number 1, number 2, …</i>, ignore_missing=0 )', content: _('Returns the standard deviation of a set of numbers.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="SUM">SUM</div>'));
-    descriptions.SUM = { label: 'SUM( <i>number 1, number 2, …</i>, ignore_missing=0, min_valid=0 )', content: _('Returns the sum of a set of numbers.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VMAD">VMAD</div>'));
-    descriptions.VMAD = { label: 'VMAD( <i>variable</i>, group_by=0 )', content: _('Returns the median absolute deviation of a variable.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VMADR">VMADR</div>'));
-    descriptions.VMADR = { label: 'VMADR( <i>variable</i>, group_by=0 )', content: _('Returns the robust median absolute deviation of a variable.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VMAX">VMAX</div>'));
-    descriptions.VMAX = { label: 'VMAX( <i>variable</i>, group_by=0 )', content: _('Returns the largest value of a variable.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VMEAN">VMEAN</div>'));
-    descriptions.VMEAN = { label: 'VMEAN( <i>variable</i>, group_by=0 )', content: _('Returns the overall mean of a variable.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VMED">VMED</div>'));
-    descriptions.VMED = { label: 'VMED( <i>variable</i>, group_by=0 )', content: _('Returns the median of a variable.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VMIN">VMIN</div>'));
-    descriptions.VMIN = { label: 'VMIN( <i>variable</i>, group_by=0 )', content: _('Returns the smallest value of a variable.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VMODE">VMODE</div>'));
-    descriptions.VMODE = { label: 'VMODE( <i>variable</i>, group_by=0 )', content: _('Returns the most common value in a variable.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VN">VN</div>'));
-    descriptions.VN = { label: 'VN( <i>variable</i>, group_by=0 )', content: _('Returns the number of cases in a variable.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VSE">VSE</div>'));
-    descriptions.VSE = { label: 'VSE( <i>variable</i>, group_by=0 )', content: _('Returns the standard error of the mean of a variable.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VSTDEV">VSTDEV</div>'));
-    descriptions.VSTDEV = { label: 'VSTDEV( <i>variable</i>, group_by=0 )', content: _('Returns the standard deviation of a variable.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VSUM">VSUM</div>'));
-    descriptions.VSUM = { label: 'VSUM( <i>variable</i>, group_by=0 )', content: _('Returns the overall sum of a variable.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VAR">VAR</div>'));
-    descriptions.VAR = { label: 'VAR( <i>number 1, number 2, …</i>, ignore_missing=0 )', content: _('Returns the variance of a set of numbers.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VVAR">VVAR</div>'));
-    descriptions.VVAR = { label: 'VVAR( <i>variable</i>, group_by=0 )', content: _('Returns the variance of a variable.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="Z">Z</div>'));
-    descriptions.Z = { label: 'Z( <i>variable</i>, group_by=0 )', content: _('Returns the normalized values of a set of numbers.') };
+    addGroup('Statistical', [
+        { name: 'ABSIQR', label: 'ABSIQR( <i>variable</i> )', content: _('Convenience short-hand for ABS(IQR( variable ))') },
+        { name: 'ABSZ', label: 'ABSZ( <i>variable</i>, group_by=0 )', content: _('Convenience short-hand for ABS(Z( variable ))') },
+        { name: 'BOXCOX', label: 'BOXCOX( <i>variable, lambda</i> )', content: _('Returns a Box Cox transformation of the variable.') },
+        { name: 'IQR', label: 'IQR( <i>variable</i> )', content: _('Returns a whether the variable is an outlier according to the IQR: If the value is within the box of a Boxplot 0 is returned, absolute values larger than 1.5 are outside the whiskers.') },
+        { name: 'MAX', label: 'MAX( <i>variable</i> )', content: _('Returns the largest value of a set of numbers.') },
+        { name: 'MAXABSIQR', label: 'MAXABSIQR( variable 1, variable 2, … )', content: _('Convenience short-hand for MAX(ABSIQR( variable 1, variable 2, … ))') },
+        { name: 'MAXABSZ', label: 'MAXABSZ( variable 1, variable 2, …, group_by=0 )', content: _('Convenience short-hand for MAX(ABSZ( variable 1, variable 2, … ))') },
+        { name: 'MEAN', label: 'MEAN( <i>number 1, number 2, …</i>, ignore_missing=0, min_valid=0 )', content: _('Returns the mean of a set of numbers.') },
+        { name: 'MIN', label: 'MIN( <i>variable</i> )', content: _('Returns the smallest value of a set of numbers.') },
+        { name: 'RANK', label: 'RANK( <i>variable</i> )', content: _('Ranks each value') },
+        { name: 'ROUND', label: 'ROUND( <i>variable</i>, digits=0 )', content: _('Rounds each value') },
+        { name: 'FLOOR', label: 'FLOOR( <i>variable</i> )', content: _('Rounds each value to the integer below') },
+        { name: 'CEILING', label: 'CEILING( <i>variable</i> )', content: _('Rounds each value to the integer above') },
+        { name: 'SCALE', label: 'SCALE( <i>variable</i>, group_by=0 )', content: _('Returns the normalized values of a set of numbers.') },
+        { name: 'STDEV', label: 'STDEV( <i>number 1, number 2, …</i>, ignore_missing=0 )', content: _('Returns the standard deviation of a set of numbers.') },
+        { name: 'SUM', label: 'SUM( <i>number 1, number 2, …</i>, ignore_missing=0, min_valid=0 )', content: _('Returns the sum of a set of numbers.') },
+        { name: 'VMAD', label: 'VMAD( <i>variable</i>, group_by=0 )', content: _('Returns the median absolute deviation of a variable.') },
+        { name: 'VMADR', label: 'VMADR( <i>variable</i>, group_by=0 )', content: _('Returns the robust median absolute deviation of a variable.') },
+        { name: 'VMAX', label: 'VMAX( <i>variable</i>, group_by=0 )', content: _('Returns the largest value of a variable.') },
+        { name: 'VMEAN', label: 'VMEAN( <i>variable</i>, group_by=0 )', content: _('Returns the overall mean of a variable.') },
+        { name: 'VMED', label: 'VMED( <i>variable</i>, group_by=0 )', content: _('Returns the median of a variable.') },
+        { name: 'VMIN', label: 'VMIN( <i>variable</i>, group_by=0 )', content: _('Returns the smallest value of a variable.') },
+        { name: 'VMODE', label: 'VMODE( <i>variable</i>, group_by=0 )', content: _('Returns the most common value in a variable.') },
+        { name: 'VN', label: 'VN( <i>variable</i>, group_by=0 )', content: _('Returns the number of cases in a variable.') },
+        { name: 'VSE', label: 'VSE( <i>variable</i>, group_by=0 )', content: _('Returns the standard error of the mean of a variable.') },
+        { name: 'VSTDEV', label: 'VSTDEV( <i>variable</i>, group_by=0 )', content: _('Returns the standard deviation of a variable.') },
+        { name: 'VSUM', label: 'VSUM( <i>variable</i>, group_by=0 )', content: _('Returns the overall sum of a variable.') },
+        { name: 'VAR', label: 'VAR( <i>number 1, number 2, …</i>, ignore_missing=0 )', content: _('Returns the variance of a set of numbers.') },
+        { name: 'VVAR', label: 'VVAR( <i>variable</i>, group_by=0 )', content: _('Returns the variance of a variable.') },
+        { name: 'Z', label: 'Z( <i>variable</i>, group_by=0 )', content: _('Returns the normalized values of a set of numbers.') }
+    ]);
 
-    labelId = focusLoop.getNextAriaElementId('label');
-    $group = $(`<div role="group" aria-labelledby="${labelId}"></div>`);
-    $group.append($(`<div id="${labelId}" role="presentation" class="subtitle" data-name="">${_('Logical')}</div>`));
-    $functionsContent.append($group);
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="IF">IF</div>'));
-    descriptions.IF = { label: 'IF( <i>expression, value, else</i> )', content: _('If the expression resolves true, use the value, otherwise the else.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="IFMISS">IFMISS</div>'));
-    descriptions.IFMISS = { label: 'IFMISS( <i>variable, value, else</i> )', content: _('When the variable contains a missing value, use the value, otherwise the else.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="NOT">NOT</div>'));
-    descriptions.NOT = { label: 'NOT( <i>value</i> )', content: _('Inverts the value.') };
+    addGroup('Logical', [
+        { name: 'IF', label: 'IF( <i>expression, value, else</i> )', content: _('If the expression resolves true, use the value, otherwise the else.') },
+        { name: 'IFMISS', label: 'IFMISS( <i>variable, value, else</i> )', content: _('When the variable contains a missing value, use the value, otherwise the else.') },
+        { name: 'NOT', label: 'NOT( <i>value</i> )', content: _('Inverts the value.') }
+    ]);
 
-    labelId = focusLoop.getNextAriaElementId('label');
-    $group = $(`<div role="group" aria-labelledby="${labelId}"></div>`);
-    $group.append($(`<div id="${labelId}" role="presentation" class="subtitle" data-name="">${_('Text')}</div>`));
-    $functionsContent.append($group);
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="CONTAINS">CONTAINS</div>'));
-    descriptions.CONTAINS = { label: 'CONTAINS( <i>item1, item2, item3, ..., in1, in2, in3, ...</i> )', content: _('Determines if any of the items appear in in1, in2, in3, .... Note that most of these arguments are optional -- it is possible to simply use __CONTAINS(needle, haystack)__.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="SPLIT">SPLIT</div>'));
-    descriptions.SPLIT = { label: 'SPLIT( <i>variable</i>, sep=\',\', piece )', content: _('Splits text into pieces based on a separator. _piece_ specifies the desired piece by index.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="TEXT">TEXT</div>'));
-    descriptions.TEXT = { label: 'TEXT( <i>number</i> )', content: _('Converts the value to text.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VALUE">VALUE</div>'));
-    descriptions.VALUE = { label: 'VALUE( <i>text</i> )', content: _('Converts text to a number (if possible).') };
+    addGroup('Text', [
+        { name: 'CONTAINS', label: 'CONTAINS( <i>item1, item2, item3, ..., in1, in2, in3, ...</i> )', content: _('Determines if any of the items appear in in1, in2, in3, .... Note that most of these arguments are optional -- it is possible to simply use __CONTAINS(needle, haystack)__.' ) },
+        { name: 'SPLIT', label: 'SPLIT( <i>variable</i>, sep=\',\', piece )', content: _('Splits text into pieces based on a separator. _piece_ specifies the desired piece by index.') },
+        { name: 'TEXT', label: 'TEXT( <i>number</i> )', content: _('Converts the value to text.') },
+        { name: 'VALUE', label: 'VALUE( <i>text</i> )', content: _('Converts text to a number (if possible).') }
+    ]);
 
-    labelId = focusLoop.getNextAriaElementId('label');
-    $group = $(`<div role="group" aria-labelledby="${labelId}"></div>`);
-    $group.append($(`<div id="${labelId}" role="presentation" class="subtitle" data-name="">${_('Date / Time')}</div>`));
-    $functionsContent.append($group);
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="DATEVALUE">DATEVALUE</div>'));
-    descriptions.DATEVALUE = { label: 'DATEVALUE( <i>value, format=\'%Y-%m-%d\'</i> )', content: _('Parses a date, and converts it to the number of days since the 1st of January, 1970.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="DATE">DATE</div>'));
-    descriptions.DATE = { label: 'DATE( <i>value, format=\'%Y-%m-%d\'</i> )', content: _('Takes a number representing the number of days since the 1st of January 1970, and produces a formatted date.') };
+    addGroup('Date / Time', [
+        { name: 'DATEVALUE', label: 'DATEVALUE( <i>value, format=\'%Y-%m-%d\'</i> )', content: _('Parses a date, and converts it to the number of days since the 1st of January, 1970.') },
+        { name: 'DATE', label: 'DATE( <i>value, format=\'%Y-%m-%d\'</i> )', content: _('Takes a number representing the number of days since the 1st of January 1970, and produces a formatted date.') }
+    ]);
 
-    labelId = focusLoop.getNextAriaElementId('label');
-    $group = $(`<div role="group" aria-labelledby="${labelId}"></div>`);
-    $group.append($(`<div id="${labelId}" role="presentation" class="subtitle" data-name="">${_('Reference')}</div>`));
-    $functionsContent.append($group);
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="HLOOKUP">HLOOKUP</div>'));
-    descriptions.HLOOKUP = { label: 'HLOOKUP( <i>index, value 1, value 2, ..., ignore_missing=0</i> )', content: _('The value in the provided values at index.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="MATCH">MATCH</div>'));
-    descriptions.MATCH = { label: 'MATCH( <i>value, value 1, value 2, ...</i> )', content: _('The index of value in the provided values.') };
+    addGroup('Reference', [
+        { name: 'HLOOKUP', label: 'HLOOKUP( <i>index, value 1, value 2, ..., ignore_missing=0</i> )', content: _('The value in the provided values at index.') },
+        { name: 'MATCH', label: 'MATCH( <i>value, value 1, value 2, ...</i> )', content: _('The index of value in the provided values.') }
+    ]);
 
-    labelId = focusLoop.getNextAriaElementId('label');
-    $group = $(`<div role="group" aria-labelledby="${labelId}"></div>`);
-    $group.append($(`<div id="${labelId}" role="presentation" class="subtitle" data-name="">${_('Misc')}</div>`));
-    $functionsContent.append($group);
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="COUNT">COUNT</div>'));
-    descriptions.COUNT = { label: 'COUNT( <i>value 1, value 2, ...</i> )', content: _('Counts the number of non-missing values') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="FILTER">FILTER</div>'));
-    descriptions.FILTER = { label: 'FILTER( <i>variable, filter expression</i> )', content: _('Filters a variable using the filter expression.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="INT">INT</div>'));
-    descriptions.INT = { label: 'INT( <i>number</i> )', content: _('Converts a number to an integer.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="OFFSET">OFFSET</div>'));
-    descriptions.OFFSET = { label: 'OFFSET( <i>variable, integer</i> )', content: _('Offsets the values up or down.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="ROW">ROW</div>'));
-    descriptions.ROW = { label: 'ROW( <i>NO ARGUMENTS</i> )', content: _('Returns the row numbers.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="SAMPLE">SAMPLE</div>'));
-    descriptions.SAMPLE = { label: 'SAMPLE( <i>variable, n, otherwise=NA</i> )', content: _('Draws a sample of n from the variable. i.e. SAMPLE(var, 20), i.e. SAMPLE(1, 20), i.e. SAMPLE(\'training\', 20, \'test\')') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="VROWS">VROWS</div>'));
-    descriptions.VROWS = { label: 'VROWS( <i>variable</i>, group_by=0 )', content: _('Returns the number of rows of a variable.') };
+    addGroup('Misc', [
+        { name: 'COUNT', label: 'COUNT( <i>value 1, value 2, ...</i> )', content: _('Counts the number of non-missing values') },
+        { name: 'FILTER', label: 'FILTER( <i>variable, filter expression</i> )', content: _('Filters a variable using the filter expression.') },
+        { name: 'INT', label: 'INT( <i>number</i> )', content: _('Converts a number to an integer.') },
+        { name: 'OFFSET', label: 'OFFSET( <i>variable, integer</i> )', content: _('Offsets the values up or down.') },
+        { name: 'ROW', label: 'ROW( <i>NO ARGUMENTS</i> )', content: _('Returns the row numbers.') },
+        { name: 'SAMPLE', label: 'SAMPLE( <i>variable, n, otherwise=NA</i> )', content: _('Draws a sample of n from the variable. i.e. SAMPLE(var, 20), i.e. SAMPLE(1, 20), i.e. SAMPLE(\'training\', 20, \'test\')') },
+        { name: 'VROWS', label: 'VROWS( <i>variable</i>, group_by=0 )', content: _('Returns the number of rows of a variable.') }
+    ]);
 
-    labelId = focusLoop.getNextAriaElementId('label');
-    $group = $(`<div role="group" aria-labelledby="${labelId}"></div>`);
-    $group.append($(`<div id="${labelId}" role="presentation" class="subtitle" data-name="">${_('Simulation')}</div>`));
-    $functionsContent.append($group);
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="BETA">BETA</div>'));
-    descriptions.BETA = { label: 'BETA( <i>alpha, beta</i> )', content: _('Draws samples from a Beta distribution.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="GAMMA">GAMMA</div>'));
-    descriptions.GAMMA = { label: 'GAMMA( <i>shape, scale</i> )', content: _('Draws samples from a Gamma distribution.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="NORM">NORM</div>'));
-    descriptions.NORM = { label: 'NORM( <i>mean, sd</i> )', content: _('Draws samples from a normal (Gaussian) distribution.') };
-    $group.append($('<div role="option" aria-selected="false" class="item" data-name="UNIF">UNIF</div>'));
-    descriptions.UNIF = { label: 'UNIF( <i>low, high</i> )', content: _('Draws samples from a uniform distribution.') };
+    addGroup('Simulation', [
+        { name: 'BETA', label: 'BETA( <i>alpha, beta</i> )', content: _('Draws samples from a Beta distribution.') },
+        { name: 'GAMMA', label: 'GAMMA( <i>shape, scale</i> )', content: _('Draws samples from a Gamma distribution.') },
+        { name: 'NORM', label: 'NORM( <i>mean, sd</i> )', content: _('Draws samples from a normal (Gaussian) distribution.') },
+        { name: 'UNIF', label: 'UNIF( <i>low, high</i> )', content: _('Draws samples from a uniform distribution.') }
+    ]);
 
     return descriptions;
 }
 
-const toolbar = function(dataset) {
-    this.dataset = dataset;
+export class Toolbar extends HTMLElement implements DropdownContent {
+  private model: DataSetViewModel;
+  private lastRange: Range | null;
+  private descriptions: Descriptions;
 
-    this.isScrollTarget = function(target) {
-        return target === this.$functionsContent[0] || target === this.$varsContent[0];
-    };
+  private $label: HTMLDivElement;
+  private $description: HTMLDivElement;
+  private $functionsContent: HTMLDivElement;
+  private $varsContent: HTMLDivElement;
+  private $$formula!: $<HTMLElement>;
+  private $formula!: HTMLTextAreaElement;
 
+  constructor(model: DataSetViewModel) {
+    super();
+    this.model = model;
+    this.lastRange = null;
+
+    // Main container
     this.id = focusLoop.getNextAriaElementId('tool');
+    this.className = 'jmv-formula-toolbar-options';
 
-    this.$options = $(`<div id="${this.id}" class="jmv-formula-toolbar-options"></div>`);//.appendTo(this.$el);
-    this.$el = this.$options;
+    // Ops container
+    let $ops = document.createElement('div');
+    $ops.setAttribute('role', 'presentation');
+    $ops.className = 'ops-box';
+    this.appendChild($ops);
 
+    // Label
+    this.$label = document.createElement('div');
+    this.$label.setAttribute('aria-live', 'polite');
+    this.$label.className = 'option-label';
+    this.appendChild(this.$label);
 
+    // Description
+    this.$description = document.createElement('div');
+    this.$description.setAttribute('aria-live', 'polite');
+    this.$description.className = 'option-description';
+    this.appendChild(this.$description);
 
-    this.$ops = $(`<div role="presentation" class="ops-box"></div>`).appendTo(this.$options);
-    this.$label = $('<div aria-live="polite" class="option-label">This is a label!</div>').appendTo(this.$options);
-    this.$description = $('<div aria-live="polite" class="option-description">This is the place where the option description will go!</div>').appendTo(this.$options);
+    // Functions panel
+    let $functions = document.createElement('div');
+    $functions.setAttribute('role', 'presentation');
+    $functions.className = 'op';
+    $ops.appendChild($functions);
 
-    this.$functions = $(`<div role="presentation" class="op"></div>`).appendTo(this.$ops);
-    let labelId = focusLoop.getNextAriaElementId('label');
-    this.$functionsTitle = $(`<div id="${labelId}" class="title">${_('Functions')}</div>`).appendTo(this.$functions);
-    this.$functionsContent = $(`<div role="listbox"  tabindex="0" aria-labelledby="${labelId}" class="content"></div>`).appendTo(this.$functions);
+    const functionsLabelId = focusLoop.getNextAriaElementId('label');
+    let $functionsTitle = document.createElement('div');
+    $functionsTitle.id = functionsLabelId;
+    $functionsTitle.className = 'title';
+    $functionsTitle.textContent = _('Functions');
+    $functions.appendChild($functionsTitle);
+
+    this.$functionsContent = document.createElement('div');
+    this.$functionsContent.setAttribute('role', 'listbox');
+    this.$functionsContent.setAttribute('tabindex', '0');
+    this.$functionsContent.setAttribute('aria-labelledby', functionsLabelId);
+    this.$functionsContent.className = 'content';
+    $functions.appendChild(this.$functionsContent);
 
     this.descriptions = allFunctions(this.$functionsContent);
 
-    this.lastRange = null;
-
-    let info = this.descriptions.ABS;
-    if (info !== undefined) {
-        this.$description.html(info.content);
-        this.$label.html(info.label); // this html insertion is not a problem as the label is generated above.
+    const info = this.descriptions.ABS;
+    if (info) {
+      this.$description.innerHTML = info.content;
+      this.$label.innerHTML = info.label;
     }
 
-    this.$functionsContent.on("dblclick", (event) => {
-        if ($(event.target).hasClass('item')) {
-            //this.$formula.focus();
-            setTimeout(() => {
-                insertText(this.$formula[0], event.target.dataset.name + "()", -1, this.lastRange);
-                this.$formula.trigger('input', { });
-            }, 0);
-        }
+    this.$functionsContent.addEventListener("dblclick", (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.classList.contains('item')) {
+        setTimeout(() => this.insertFunction(target.dataset.name!), 0);
+      }
     });
 
-    this.$functionsContent.on('focus', (event) => {
+    this.$functionsContent.addEventListener('focus', () => this.displayFunctionInfo());
+
+    this.$functionsContent.addEventListener('keydown', (event: KeyboardEvent) => {
+      this.onkeydownEvent(event, this.insertFunction.bind(this));
+      this.displayFunctionInfo();
+    });
+
+    this.$functionsContent.addEventListener("click", (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const items = this.$functionsContent.querySelectorAll(".item");
+      items.forEach(item => {
+        item.classList.remove("item-activated");
+        item.setAttribute('aria-selected', 'false');
+      });
+      if (target.classList.contains("item")) {
+        target.classList.add("item-activated");
+        target.setAttribute('aria-selected', 'true');
         this.displayFunctionInfo();
+      } else {
+        this.$description.textContent = '';
+        this.$label.textContent = '';
+      }
     });
 
-    this.$functionsContent.on('keydown', (event) => {
-        this.onkeydown(event, this.insertFunction);
-        this.displayFunctionInfo();
+    // Variables panel
+    let $vars = document.createElement('div');
+    $vars.className = 'op';
+    $ops.appendChild($vars);
+
+    const varsLabelId = focusLoop.getNextAriaElementId('label');
+    let $varsTitle = document.createElement('div');
+    $varsTitle.id = varsLabelId;
+    $varsTitle.className = 'title';
+    $varsTitle.textContent = _('Variables');
+    $vars.appendChild($varsTitle);
+
+    this.$varsContent = document.createElement('div');
+    this.$varsContent.setAttribute('role', 'listbox');
+    this.$varsContent.setAttribute('tabindex', '0');
+    this.$varsContent.setAttribute('aria-labelledby', varsLabelId);
+    this.$varsContent.className = 'content';
+    $vars.appendChild(this.$varsContent);
+
+    this.$varsContent.addEventListener("dblclick", (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (target.dataset.name !== 'current' && target.classList.contains('item')) {
+        setTimeout(() => this.insertvar(target.dataset.name!), 0);
+      }
     });
 
-    this.displayFunctionInfo = function() {
-        let $selectedItem = this.$functionsContent.find(".item[aria-selected=true]");
-        let info = this.descriptions[$selectedItem.data('name')];
-        if (info !== undefined) {
-            this.$label.html(info.label); // this html insertion is not a problem as the label is generated above.
-            this.$description.html(info.content);
-        }
-        else {
-            this.$label.text('');
-            this.$description.text(_('No information about this function is available'));
-        }
-    }
+    this.$varsContent.addEventListener('focus', () => this.displayVariableInfo());
 
-    this.insertFunction = function(value) {
-        insertText(this.$formula[0], value + "()", -1, this.lastRange);
-        this.$formula.trigger('input', { });
-    }
-
-    this.onkeydown = function(event, insertCallback) {
-        let list = $(event.delegateTarget).find('.item');
-        if (event.keyCode === 40) { //down key
-            let $selectedItem = $(event.delegateTarget).find(".item[aria-selected=true]");
-            let index = list.index($selectedItem[0]);
-            if (index === -1 || index === list.length - 1)
-                index = 0;
-            else
-                index += 1;
-
-            let next = list[index];
-            this.selectItem($(event.delegateTarget), $(next));
-
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        else if (event.keyCode === 38) { //up key
-            let $selectedItem = $(event.delegateTarget).find(".item[aria-selected=true]");
-            let index = list.index($selectedItem[0]);
-            if (index === -1 || index === 0)
-                index = list.length - 1;
-            else
-                index -= 1;
-
-            let next = list[index];
-            this.selectItem($(event.delegateTarget), $(next));
-
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        else if (event.keyCode == 13 || event.keyCode == 32) {
-            //this.$formula.focus();
-            let $selectedItem = $(event.delegateTarget).find(".item[aria-selected=true]");
-            if ($selectedItem) {
-                setTimeout(() => {
-                    insertCallback.call(this, $selectedItem[0].dataset.name);
-                }, 0);
-                event.preventDefault();
-            }
-        }
-    }
-
-    this.selectItem = function($list, $target) {
-        $list.find(".item").removeClass("item-activated");
-        $list.find(".item[aria-selected=true]").attr('aria-selected', 'false');
-        if ($target.hasClass("item")) {
-            $target.addClass("item-activated");
-            $target.attr('aria-selected', 'true');
-            $target[0].scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-        else {
-            this.$description.text('');
-            this.$label.text('');
-        }
-    }
-
-    this.$functionsContent.on("click", (event) => {
-        this.$functionsContent.find(".item").removeClass("item-activated");
-        this.$functionsContent.find(".item[aria-selected=true]").attr('aria-selected', 'false');
-        if ($(event.target).hasClass("item")) {
-            $(event.target).addClass("item-activated");
-            $(event.target).attr('aria-selected', 'true');
-            this.displayFunctionInfo();
-        }
-        else {
-            this.$description.text('');
-            this.$label.text('');
-        }
-    });
-
-    this.$vars = $('<div class="op"></div>').appendTo(this.$ops);
-    labelId = focusLoop.getNextAriaElementId('label');
-    this.$varsTitle = $(`<div id="${labelId}" class="title">${_('Variables')}</div>`).appendTo(this.$vars);
-    this.$varsContent = $(`<div role="listbox" tabindex="0" aria-labelledby="${labelId}" class="content"></div>`).appendTo(this.$vars);
-
-    this.insertvar = function(value) {
-        insertText(this.$formula[0], value, 0, this.lastRange, value !== '$source');
-        this.$formula.trigger('input', { });
-    }
-
-    this.$varsContent.on("dblclick", (event) => {
-        if (event.target.dataset.name !== 'current' && $(event.target).hasClass('item')) {
-            //this.$formula.focus();
-            setTimeout(() => {
-                let value = event.target.dataset.name;
-                insertText(this.$formula[0], value, 0, this.lastRange, value !== '$source');
-                this.$formula.trigger('input', { });
-            }, 0);
-        }
-    });
-
-    this.$varsContent.on('focus', (event) => {
+    this.$varsContent.addEventListener("click", (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const items = this.$varsContent.querySelectorAll(".item");
+      items.forEach(item => item.classList.remove("item-activated"));
+      if (target.classList.contains("item")) {
+        target.classList.add("item-activated");
+        items.forEach(item => item.setAttribute('aria-selected', 'false'));
+        target.setAttribute('aria-selected', 'true');
         this.displayVariableInfo();
+      }
     });
 
-    this.displayVariableInfo = function() {
-        let $selectedItem = this.$varsContent.find(".item[aria-selected=true]");
-        let value = $selectedItem.text();
-        if (value === '$source') {
-            this.$description.text(_('The current value of the variable to which this transform is applied.'));
-            this.$label.text(_('Keyword: {v}', {v: value }));
-        }
-        else {
-            this.$description.text(_('This is a data variable.'));
-            this.$label.text(_('Variable: {v}', {v: value}));
-        }
+    this.$varsContent.addEventListener('keydown', (event: KeyboardEvent) => {
+      this.onkeydownEvent(event, this.insertvar.bind(this));
+      this.displayVariableInfo();
+    });
+  }
+
+  public isScrollTarget(target: EventTarget | null): boolean {
+    return target === this.$functionsContent || target === this.$varsContent;
+  }
+
+  private displayFunctionInfo(): void {
+    const selectedItem = this.$functionsContent.querySelector(".item[aria-selected='true']") as HTMLElement | null;
+    if (!selectedItem) {
+      this.$label.textContent = '';
+      this.$description.textContent = _('No information about this function is available');
+      return;
     }
 
-    this.$varsContent.on("click", (event) => {
-        this.$varsContent.find(".item").removeClass("item-activated");
-        $(event.target).addClass("item-activated");
-        this.$varsContent.find(".item[aria-selected=true]").attr('aria-selected', 'false');
-        $(event.target).attr('aria-selected', 'true');
-        this.displayVariableInfo();
-    });
+    const info = this.descriptions[selectedItem.dataset.name!];
+    if (info) {
+      this.$label.innerHTML = info.label;
+      this.$description.innerHTML = info.content;
+    } else {
+      this.$label.textContent = '';
+      this.$description.textContent = _('No information about this function is available');
+    }
+  }
 
-    this.$varsContent.on('keydown', (event) => {
-        this.onkeydown(event, this.insertvar);
-        this.displayVariableInfo();
-    });
+  private insertFunction(value: string): void {
+    insertText(this.$formula, value + "()", -1, this.lastRange);
+    this.$formula.dispatchEvent(new Event('input'));
+  }
 
-    this.show = function($formula, variableName, useValue) {
+  private insertvar(value: string): void {
+    insertText(this.$formula, value, 0, this.lastRange, value !== '$source');
+    this.$formula.dispatchEvent(new Event('input'));
+  }
 
-        this.$formula = $formula;
+  private onkeydownEvent(event: KeyboardEvent, insertCallback: (name: string) => void): void {
+    const list = Array.from((event.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('.item'));
+    if (!list.length) return;
 
-        this.$varsContent.empty();
-        if (useValue)
-            this.$varsContent.append($('<div role="option" class="item" data-name="$source">$source</div>'));
-        for (let col of this.dataset.get("columns")) {
-            if (col.name !== '' && col.columnType !== 'filter') {
-                if (col.name === variableName)
-                    this.$varsContent.append($(`<div role="option" aria-disabled="true" class="item item-grayed-out" data-name="current">${col.name} ${_('(current)')}</div>`));
-                else
-                    this.$varsContent.append($('<div role="option" class="item" data-name="' + col.name + '">' + col.name + '</div>'));
-            }
+    const selectedItem = (event.currentTarget as HTMLElement).querySelector(".item[aria-selected='true']") as HTMLElement | null;
+    let index = selectedItem ? list.indexOf(selectedItem) : -1;
+
+    switch (event.keyCode) {
+      case 40: // down
+        index = (index === -1 || index === list.length - 1) ? 0 : index + 1;
+        this.selectItem(event.currentTarget as HTMLElement, list[index]);
+        event.preventDefault();
+        break;
+      case 38: // up
+        index = (index === -1 || index === 0) ? list.length - 1 : index - 1;
+        this.selectItem(event.currentTarget as HTMLElement, list[index]);
+        event.preventDefault();
+        break;
+      case 13: // enter
+      case 32: // space
+        if (selectedItem) {
+          setTimeout(() => insertCallback(selectedItem.dataset.name!), 0);
+          event.preventDefault();
         }
-    };
+        break;
+    }
+  }
 
-    this.focusedOn = function() {
-        return this.$formula;
-    };
-};
+  private selectItem(listRoot: HTMLElement, target: HTMLElement): void {
+    const items = listRoot.querySelectorAll(".item");
+    items.forEach(item => {
+      item.classList.remove("item-activated");
+      item.setAttribute('aria-selected', 'false');
+    });
+    if (target && target.classList.contains("item")) {
+      target.classList.add("item-activated");
+      target.setAttribute('aria-selected', 'true');
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    } else {
+      this.$description.textContent = '';
+      this.$label.textContent = '';
+    }
+  }
 
+  private displayVariableInfo(): void {
+    const selectedItem = this.$varsContent.querySelector(".item[aria-selected='true']") as HTMLElement | null;
+    if (!selectedItem) {
+      this.$description.textContent = '';
+      this.$label.textContent = '';
+      return;
+    }
 
+    const value = selectedItem.textContent!;
+    if (value === '$source') {
+      this.$description.textContent = _('The current value of the variable to which this transform is applied.');
+      this.$label.textContent = _('Keyword: {v}', { v: value });
+    } else {
+      this.$description.textContent = _('This is a data variable.');
+      this.$label.textContent = _('Variable: {v}', { v: value });
+    }
+  }
 
-export default toolbar;
+  public show($formula: $<HTMLElement>, variableName: string, useValue: boolean): void {
+    this.$$formula = $formula;
+    this.$formula = $formula[0] as HTMLTextAreaElement;
+
+    this.$varsContent.innerHTML = '';
+    if (useValue) {
+      const sourceDiv = document.createElement('div');
+      sourceDiv.setAttribute('role', 'option');
+      sourceDiv.className = 'item';
+      sourceDiv.dataset.name = '$source';
+      sourceDiv.textContent = '$source';
+      this.$varsContent.appendChild(sourceDiv);
+    }
+
+    for (const col of this.model.get("columns")) {
+      if (col.name && col.columnType !== 'filter') {
+        const div = document.createElement('div');
+        div.setAttribute('role', 'option');
+        div.className = 'item';
+        div.dataset.name = col.name;
+
+        if (col.name === variableName) {
+          div.classList.add('item-grayed-out');
+          div.setAttribute('aria-disabled', 'true');
+          div.textContent = `${col.name} ${_('(current)')}`;
+        } else {
+          div.textContent = col.name;
+        }
+
+        this.$varsContent.appendChild(div);
+      }
+    }
+  }
+
+  public focusedOn(): $<HTMLElement> {
+    return this.$$formula;
+  }
+}
+
+customElements.define('jmv-formula-toolbar', Toolbar);
+
+export default Toolbar;

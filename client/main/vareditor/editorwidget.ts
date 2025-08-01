@@ -179,7 +179,7 @@ const EditorWidget = Backbone.View.extend({
             this.$multiVarList.empty();
             for (let column of this.model.columns) {
                 let item = new VariableListItem(column);
-                item.$el.appendTo(this.$multiVarList);
+                this.$multiVarList.append(item);
             }
         }
         else

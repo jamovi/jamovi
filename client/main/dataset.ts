@@ -23,7 +23,7 @@ export enum DataType {
     TEXT = 'text'
 }
 
-interface Transform {
+export interface Transform {
     action: TransformAction;
     id: number;
     name: string;

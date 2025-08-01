@@ -52,7 +52,7 @@ const RecodedVarWidget = Backbone.View.extend({
                 dropdown.hide();
             else
             {
-                this.variableList.setParent(this.$variableList);
+                this.variableList.setParent(this.$variableList[0]);
                 dropdown.show(this.$variableList, this.variableList);
             }
             event.preventDefault();
@@ -70,7 +70,7 @@ const RecodedVarWidget = Backbone.View.extend({
                     dropdown.hide();
                 else
                 {
-                    this.variableList.setParent(this.$variableList);
+                    this.variableList.setParent(this.$variableList[0]);
                     dropdown.show(this.$variableList, this.variableList);
                 }
                 event.stopPropagation();
@@ -85,7 +85,8 @@ const RecodedVarWidget = Backbone.View.extend({
             }
         });
 
-        this.variableList.$el.on('selected-variable', (event, variable) => {
+        this.variableList.addEventListener('selected-variable', (event) => {
+            let variable = event.detail;
             this.model.set('parentId', variable.id);
             dropdown.hide();
         });
@@ -115,20 +116,21 @@ const RecodedVarWidget = Backbone.View.extend({
         });
 
 
-        this.transformList.$el.on('selected-transform', (event, transform) => {
+        this.transformList.addEventListener('selected-transform', (event) => {
+            let transform = event.detail;
             this.model.set('transform', transform.id);
             this._updateTransformColour();
             dropdown.hide();
         });
 
-        this.transformList.$el.on('edit-transform', (event, transform) => {
-            let dataset = this.model.dataset;
+        this.transformList.addEventListener('edit-transform', (event) => {
+            let transform = event.detail;
             this.$el.trigger('edit:transform', transform.id);
             dropdown.hide();
         });
 
-        this.transformList.$el.on('duplicate-transform', (event, transform) => {
-            let dataset = this.model.dataset;
+        this.transformList.addEventListener('duplicate-transform', (event) => {
+            let transform = event.detail;
             let copy = {
                 name: transform.name,
                 description: transform.description,
@@ -139,7 +141,8 @@ const RecodedVarWidget = Backbone.View.extend({
             this._createTransform(copy);
         });
 
-        this.transformList.$el.on('remove-transform', (event, transform) => {
+        this.transformList.addEventListener('remove-transform', (event) => {
+            let transform = event.detail;
             let dataset = this.model.dataset;
             dataset.removeTransforms([transform.id]).catch((error) => {
                 this._notifyEditProblem({
@@ -150,7 +153,7 @@ const RecodedVarWidget = Backbone.View.extend({
             });
         });
 
-        this.transformList.$el.on('create-transform', (event) => {
+        this.transformList.addEventListener('create-transform', (event) => {
             this._createTransform();
         });
 

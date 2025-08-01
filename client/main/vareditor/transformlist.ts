@@ -1,59 +1,101 @@
 
 'use strict';
 
-import $ from 'jquery';
 import TransformListItem from './transformlistitem';
 import focusLoop from '../../common/focusloop';
+import { HTMLElementCreator as HTML } from '../../common/htmlelementcreator';
+import { Transform } from '../dataset';
+import { DropdownContent } from './dropdown';
 
-const TransformList = function() {
-    this.isScrollTarget = function(target) {
-        return target === this.$middle[0];
-    };
 
-    this.id = focusLoop.getNextAriaElementId('list');
-    this.$el = $(`<div id="${this.id}" class="jmv-transform-list" role="list"></div>`);
+export default class TransformList extends HTMLElement implements DropdownContent {
+    id: string;
+    top: HTMLElement;
+    none: HTMLButtonElement;
+    middle: HTMLElement;
+    bottom: HTMLElement;
+    createNew: HTMLButtonElement;
 
-    this.$top = $('<div class="top"></div>').appendTo(this.$el);
-    this.$none =$(`<button role="listitem" class="transform-none-item">${_('None')}</button>`).appendTo(this.$top);
+    constructor() {
+        super();
+        this.id = focusLoop.getNextAriaElementId('list');
+        this.className = "jmv-transform-list";
+        this.setAttribute('role', 'list');
 
-    this.$middle = $('<div role="presentation" class="middle"></div>').appendTo(this.$el);
+        this.top = HTML.parse(`<div class="top"></div>`);
+        this.appendChild(this.top);
 
-    this.$bottom = $('<div role="presentation" class="bottom"></div>').appendTo(this.$el);
-    this.$createNew = $(`<button role="listitem" class="transform-create">${_('Create New Transform...')}</button>`).appendTo(this.$bottom);
+        this.none = HTML.parse<HTMLButtonElement>(`<button role="listitem" class="transform-none-item">${_('None')}</button>`);
+        this.top.appendChild(this.none);
 
-    this.$createNew.on('click', (event) => {
-        this.$el.trigger('create-transform');
-    });
+        this.middle = HTML.parse(`<div role="presentation" class="middle"></div>`);
+        this.appendChild(this.middle);
 
-    this.$none.on('click', (event) => {
-        this.$el.trigger('selected-transform', { name: 'None', id: 0 });
-    });
+        this.bottom = HTML.parse(`<div role="presentation" class="bottom"></div>`);
+        this.appendChild(this.bottom);
 
-    this.populate = function(transforms) {
-        this.$middle.empty();
-        for (let transform of transforms) {
-            let item = new TransformListItem(transform, false);
-            item.$el.appendTo(this.$middle);
+        this.createNew = HTML.parse<HTMLButtonElement>(`<button role="listitem" class="transform-create">${_('Create New Transform...')}</button>`);
+        this.bottom.appendChild(this.createNew);
+
+        this._attachEventHandlers();
+    }
+
+    private _attachEventHandlers(): void {
+        this.createNew.addEventListener('click', () => {
+            this.dispatchEvent(new CustomEvent('create-transform', { bubbles: true }));
+        });
+
+        this.none.addEventListener('click', () => {
+            this.dispatchEvent(new CustomEvent('selected-transform', {
+                detail: { name: 'None', id: 0 },
+                bubbles: true
+            }));
+        });
+    }
+
+    public isScrollTarget(target: EventTarget | null): boolean {
+        return target === this.middle;
+    }
+
+    public populate(transforms: Transform[]): void {
+        this.middle.innerHTML = ''; // Clear content
+
+        for (const transform of transforms) {
+            const item = new TransformListItem(transform, false);
+            this.middle.appendChild(item);
             this._createItemEvents(item);
         }
-    };
+    }
 
-    this._createItemEvents = function(item) {
-        item.$el.on('selected', () => {
-            this.$el.trigger('selected-transform', item.transform);
+    private _createItemEvents(item: TransformListItem): void {
+        item.addEventListener('selected', () => {
+            this.dispatchEvent(new CustomEvent('selected-transform', {
+                detail: item.transform,
+                bubbles: true
+            }));
         });
-        item.$el.on('editing', (x) => {
-            this.$el.trigger('edit-transform', item.transform);
-        });
-        item.$el.on('duplicate', (x) => {
-            this.$el.trigger('duplicate-transform', item.transform);
-        });
-        item.$el.on('remove', (x) => {
-            this.$el.trigger('remove-transform', item.transform);
-        });
-    };
-};
 
+        item.addEventListener('editing', () => {
+            this.dispatchEvent(new CustomEvent('edit-transform', {
+                detail: item.transform,
+                bubbles: true
+            }));
+        });
 
+        item.addEventListener('duplicate', () => {
+            this.dispatchEvent(new CustomEvent('duplicate-transform', {
+                detail: item.transform,
+                bubbles: true
+            }));
+        });
 
-export default TransformList;
+        item.addEventListener('remove', () => {
+            this.dispatchEvent(new CustomEvent('remove-transform', {
+                detail: item.transform,
+                bubbles: true
+            }));
+        });
+    }
+}
+
+customElements.define('jmv-transform-list', TransformList);
