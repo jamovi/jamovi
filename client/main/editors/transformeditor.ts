@@ -11,6 +11,7 @@ import ColourPalette from './colourpalette';
 import Notify from '../notification';
 import Backbone from 'backbone';
 import focusLoop from '../../common/focusloop';
+import { MeasureType } from '../dataset';
 
 const TransformEditor = function(dataset) {
 
@@ -257,8 +258,9 @@ const TransformEditor = function(dataset) {
             this.$measureList.focus();
         });
 
-        this.measureList.$el.on('selected-measure-type', (event, measureType) => {
+        this.measureList.addEventListener('selected-measure-type', (event: CustomEvent<MeasureType>) => {
             let id = this._id;
+            let measureType = event.detail;
             let values = { measureType: measureType };
             this.dataset.setTransforms([{ id: id, values: values }]).catch((error) => {
                 this._populate();
@@ -384,22 +386,22 @@ const TransformEditor = function(dataset) {
         elements.$showEditor.on('click', (event) => {
             let $formula = null;
             this._addingLevel = true;
-            for (let $next_formula of elements.$formulas) {
+            /*for (let $next_formula of elements.$formulas) {
                 if (this._$wasEditingFormula === $next_formula) {
                     $formula = $next_formula;
                     break;
                 }
-            }
+            }*/
             if ( ! $formula ) {
                 $formula = elements.$focusedFormula === null ? elements.$formulas[0] : elements.$focusedFormula;
-                if (this._$wasEditingFormula !== $formula) {
+                //if (this._$wasEditingFormula !== $formula) {
                     this.formulasetup.show($formula, '', true);
                     dropdown.show(elements.$formulaGrid, this.formulasetup).then(() => {
                         this._editorClicked = false;
                     });
                     //$formula.focus();
                     elements.$showEditor.addClass('is-active');
-                }
+                //}
             }
             this._addingLevel = false;
         });
@@ -824,7 +826,7 @@ const TransformEditor = function(dataset) {
         }
 
         $formula.on('focusout', (event: FocusEvent) => {
-            if (this.formulasetup.$el[0].contains(event.relatedTarget))
+            if (this.formulasetup.contains(event.relatedTarget))
                 return;
 
             if (this._isRealBlur(elements)) {
@@ -876,7 +878,7 @@ const TransformEditor = function(dataset) {
     };
 
     this._isRealBlur = function(elements) {
-        return dropdown.clicked() === false && elements._subFocusClicked === false && !this.formulasetup.$el[0].contains(document.activeElement);
+        return dropdown.clicked() === false && elements._subFocusClicked === false && !this.formulasetup.contains(document.activeElement);
     };
 
     this._notifyEditProblem = function(details) {

@@ -1,77 +1,119 @@
-
 'use strict';
 
-import $ from 'jquery';
 import VariableListItem from './variablelistitem';
 import focusLoop from '../../common/focusloop';
+import { Column } from '../dataset';
+import { DropdownContent } from './dropdown';
 
-const VariableList = function() {
-    this.isScrollTarget = function(target) {
-        return target === this.$middle[0];
-    };
+class VariableList extends HTMLElement implements DropdownContent {
+    private $none: HTMLDivElement;
+    private $middle: HTMLDivElement;
+    private $parent: HTMLInputElement | HTMLSelectElement | null = null;
+    public items: VariableListItem[] = [];
 
-    this.items = [];
+    constructor() {
+        super();
+        this.id = focusLoop.getNextAriaElementId('list');
 
-    this.id = focusLoop.getNextAriaElementId('list');
-    this.$el = $(`<div id="${this.id}" class="jmv-variable-list" role="list"></div>`);
-    this.$none =$(`<div class="jmv-variable-list-item none-item" data-id="0" role="listitem">${_('None')}</div>`).appendTo(this.$el);
+        // Create main container
 
-    this.$middle = $('<div class="middle" role="presentation"></div>').appendTo(this.$el);
+        this.className = 'jmv-variable-list';
+        this.setAttribute('role', 'list');
 
-    this.$none.on('click', (event) => {
-        this.$el.trigger('selected-variable', { name: _('None'), id: 0 });
-    });
+        // 'None' item
+        this.$none = document.createElement('div');
+        this.$none.className = 'jmv-variable-list-item none-item';
+        this.$none.dataset.id = "0";
+        this.$none.setAttribute('role', 'listitem');
+        this.$none.textContent = _('None');
+        this.appendChild(this.$none);
 
-    this.setParent = function($element) {
-        if (this.$parent) {
-            this.$parent.off('change', null, this._valueChanged);
-        }
+        // Middle container
+        this.$middle = document.createElement('div');
+        this.$middle.className = 'middle';
+        this.$middle.setAttribute('role', 'presentation');
+        this.appendChild(this.$middle);
 
-        this.$parent = $element;
+        // Event for 'None' item
+        this.$none.addEventListener('click', () => {
+            const customEvent = new CustomEvent('selected-variable', {
+                detail: { name: _('None'), id: 0 },
+                bubbles: true
+            });
+            this.dispatchEvent(customEvent);
+        });
+
+        this._valueChanged = this._valueChanged.bind(this);
+    }
+
+    public isScrollTarget(target: EventTarget | null): boolean {
+        return target === this.$middle;
+    }
+
+    public setParent(element: HTMLInputElement | HTMLSelectElement): void {
+        if (this.$parent)
+            this.$parent.removeEventListener('change', this._valueChanged);
+
+        this.$parent = element;
 
         this._valueChanged();
 
-        this.$parent.on('change', null, this, this._valueChanged);
-    };
+        this.$parent.addEventListener('change', this._valueChanged);
+    }
 
-    this._valueChanged = () => {
-        this.$el.find('.jmv-variable-list-item.highlighted').removeClass('highlighted');
-        let val = this.$parent.val();
-        this.$el.find('.jmv-variable-list-item[data-id=' + this.$parent.val() + ']').addClass('highlighted');
-        let $element = this.$el.find('.jmv-variable-list-item.highlighted');
-        if ($element.length > 0) {
-            $element[0].scrollIntoView(false);
-            this.$parent.attr('aria-activedescendant', $element[0].getAttribute('id'));
+    private _valueChanged(): void {
+        // Remove highlights
+        const highlightedItems = this.querySelectorAll('.jmv-variable-list-item.highlighted');
+        highlightedItems.forEach(el => el.classList.remove('highlighted'));
+
+        if (!this.$parent) return;
+
+        const val = this.$parent.value;
+        const selectedItem = this.querySelector<HTMLElement>(`.jmv-variable-list-item[data-id="${val}"]`);
+        if (selectedItem) {
+            selectedItem.classList.add('highlighted');
+            selectedItem.scrollIntoView(false);
+            this.$parent.setAttribute('aria-activedescendant', selectedItem.id || '');
         }
-    };
+    }
 
-
-    this.populate = function(columns, excludeNone) {
+    public populate(columns: Column[], excludeNone: boolean): void {
         if (excludeNone)
-            this.$none.addClass('hidden');
+            this.$none.classList.add('hidden');
         else
-            this.$none.removeClass('hidden');
+            this.$none.classList.remove('hidden');
 
         this.items = [];
-        this.$middle.empty();
-        for (let column of columns) {
-            let item = new VariableListItem(column);
+        this.$middle.innerHTML = '';
+
+        for (const column of columns) {
+            const item = new VariableListItem(column);
             this.items.push(item);
-            item.$el.appendTo(this.$middle);
-            item.$el.attr('data-id', column.id);
+            this.$middle.appendChild(item);
+
+            item.setAttribute('data-id', column.id.toString());
             this._createItemEvents(item);
         }
-        if (this.$parent)
-            this.$el.find('.jmv-variable-list-item[data-id=' + this.$parent.val() + ']').addClass('highlighted');
-    };
 
-    this._createItemEvents = function(item) {
-        item.$el.on('selected', () => {
-            this.$el.trigger('selected-variable', item.variable);
+        if (this.$parent) {
+            const highlighted = this.querySelector<HTMLElement>(`.jmv-variable-list-item[data-id="${this.$parent.value}"]`);
+            if (highlighted) {
+                highlighted.classList.add('highlighted');
+            }
+        }
+    }
+
+    private _createItemEvents(item: VariableListItem): void {
+        item.addEventListener('selected', () => {
+            const customEvent = new CustomEvent('selected-variable', {
+                detail: item.variable,
+                bubbles: true
+            });
+            this.dispatchEvent(customEvent);
         });
-    };
-};
+    }
+}
 
-
+customElements.define('jmv-variable-list', VariableList);
 
 export default VariableList;
