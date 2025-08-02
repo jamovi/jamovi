@@ -59,8 +59,10 @@ export const View = Backbone.View.extend({
         element.setAttribute('tabindex', '0');
         element.addEventListener('keydown', (event) => {
             if ((event.ctrlKey || event.metaKey) && event.code === 'KeyC') {
-                this.copyContentToClipboard()
-                event.stopPropagation();
+                if (document.activeElement === element) {
+                    this.copyContentToClipboard()
+                    event.stopPropagation();
+                }
             }
         });
     },
