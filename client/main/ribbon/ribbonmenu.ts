@@ -47,7 +47,6 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         }
 
         this.setAttribute('data-name', this.name.toLowerCase());
-        //this.el.setAttribute('aria-disabled', true);
         if (containsNew)
             this.classList.add('contains-new');
         if (right)
@@ -121,7 +120,13 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
 
         if (changed) {
             item.hidden = true;
-            item.el.classList.add('menu-item-hiding');
+            let el: HTMLElement;
+            if (item instanceof HTMLElement)
+                el = item;
+            else
+                el = item.el;
+            if (el)
+                el.classList.add('menu-item-hiding');
         }
     }
 
@@ -151,8 +156,15 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
 
         if (changed) {
             item.hidden = false;
-            if (item.hidden === false)
-                item.el.classList.remove('menu-item-hiding');
+            if (item.hidden === false) {
+                let el: HTMLElement;
+                if (item instanceof HTMLElement)
+                    el = item;
+                else
+                    el = item.el;
+                if (el)
+                    el.classList.remove('menu-item-hiding');
+            }
         }
     }
 
