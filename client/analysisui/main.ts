@@ -139,7 +139,7 @@ return (function() {
     let optionsViewInfo = createOptionsView(ui, DefaultControls, FormatDef, Format, View);
 
     let options = optionsViewInfo.options;
-    let layoutDef = new optionsViewInfo.view.layout();
+    let layoutDef = optionsViewInfo.view.layout;
     this.viewTemplate = new optionsViewInfo.view();
 
     LayoutUpdateCheck(layoutDef);
