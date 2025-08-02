@@ -127,20 +127,21 @@ export class ContentSelector extends OptionControl<ContentSelectorProperties> {
             this.tablist.innerHTML = '';
 
             for (let i = 0; i < options.length; i++) {
+                let optionTitle = this.translate(options[i].title);
                 switch (form) {
                     case 'tabs':
-                        let button = HTML.parse(`<button class="clickable" value="${options[i].name}">${options[i].title}</button>`);
+                        let button = HTML.parse(`<button class="clickable" value="${options[i].name}">${optionTitle}</button>`);
                         this.tablist.append(button);
                         break;
                     case 'radio':
                         let labelId = focusLoop.getNextAriaElementId('label');
-                        let label = HTML.parse(`<label id="${labelId}">${options[i].title}</label>`);
+                        let label = HTML.parse(`<label id="${labelId}">${optionTitle}</label>`);
                         let radio = HTML.parse(`<input class="clickable" type="radio" name="${name}" value="${options[i].name}"/>`);
                         label.prepend(radio);
                         this.tablist.append(label);
                         break;
                     default:
-                        let option = HTML.parse(`<option value="${options[i].name}">${options[i].title}</option>`);
+                        let option = HTML.parse(`<option value="${options[i].name}">${optionTitle}</option>`);
                         this.tablist.append(option);
                         break;
                 }
