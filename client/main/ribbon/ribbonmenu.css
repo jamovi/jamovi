@@ -57,7 +57,7 @@
     padding: 6px 3px;
     min-width: 74px;
     width: auto;
-    transition: 0.2s width, 0.1s opacity, .2s visibility, 0.2s background-color;
+    transition: 0.2s width, 0.1s opacity, .2s visibility, 0.2s background-color, 0.2s min-width;
     transition-delay: .01s;
     display: flex;
     flex-direction: column;
@@ -252,6 +252,7 @@
     padding-right: 0px;
     margin-left: 0px;
     margin-right: 0px;
+    min-width: 0px;
 }
 
 .jmv-ribbon-menu-heading {
