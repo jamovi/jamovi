@@ -374,25 +374,27 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
         this._context = context;
     }
 
-    cloneObject(template) {
-        let newTemplate = template;
-        if (typeof template === 'object' && template !== null) {
-            if (Array.isArray(template)) {
-                newTemplate = [];
-                for (let i = 0; i < template.length; i++)
-                    newTemplate.push(this.cloneObject(template[i]));
-            }
-            else {
-                newTemplate = { };
-                for (let prop in template) {
-                    if (prop === '_parentControl')
-                        newTemplate[prop] = template[prop];
-                    else
-                        newTemplate[prop] = this.cloneObject(template[prop]);
-                }
-            }
+
+    cloneObject(obj, seen = new Map()) {
+        if (obj === null || typeof obj !== 'object')
+            return obj;
+
+        // Preserve existing references (handle circular refs)
+        if (seen.has(obj))
+            return seen.get(obj);
+
+        // Preserve class instances (excluding plain Object)
+        if (Object.getPrototypeOf(obj) !== Object.prototype && !Array.isArray(obj))
+            return obj;
+
+        const clone = Array.isArray(obj) ? [] : {};
+        seen.set(obj, clone);
+
+        for (const key of Object.keys(obj)) {
+            clone[key] = this.cloneObject(obj[key], seen);
         }
-        return newTemplate;
+
+        return clone;
     }
 
     updateValueCell(columnInfo, dispRow: number, value) {

@@ -1,24 +1,22 @@
-
 'use strict';
 
-import SuperClass from '../common/superclass';
 
-function LayoutDef() {
+class Layout {
+    controls = [];
+    stage: (0 | 1 | 2) = 2; // 0 - release, 1 - development, 2 - proposed
+    label?: string;
 
-    this.controls = [];
-    this.stage = 2; // 0 - release, 1 - development, 2 - proposed
-    this.getTitle = function() {
+    constructor(params: any) {
+        Object.assign(this, params);
+    }
+
+    getTitle() {
         return this.label ? _(this.label) : "Undefined";
     };
-}
-
-SuperClass.create(LayoutDef);
-
-LayoutDef.extend = function(params) {
-    return function() {
-        LayoutDef.extendTo(this);
-        Object.assign(this, params);
-    };
 };
+
+const LayoutDef = {
+    extend: (params: any) => { return new Layout(params) }
+}
 
 export default LayoutDef;
