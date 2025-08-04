@@ -1,6 +1,10 @@
 
 FROM ubuntu:noble as base
+RUN apt-get update && apt-get upgrade -y
+
 FROM jamovi/jamovi-deps:2.7.1 as r-base
+
+RUN apt-get update && apt-get upgrade -y
 ENV R_VERSION 4.5.0-x64
 
 
@@ -201,7 +205,6 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     python3-minimal \
     python3-pkg-resources \
     python3-six \
-    python3-protobuf \
     libnanomsg5 \
     libboost-filesystem1.83.0 \
     libprotobuf32t64 \
