@@ -129,3 +129,7 @@
 .jmv-ribbon-button[data-name="modules"] .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-more.svg");
 }
+
+.jmv-ribbon-button[data-name="PGM"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-growth.svg");
+}
