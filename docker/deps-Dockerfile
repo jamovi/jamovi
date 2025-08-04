@@ -1,4 +1,7 @@
 FROM rstudio/r-base:4.5.0-noble AS r-base
+
+RUN apt-get update && apt-get upgrade -y
+
 ENV R_HOME /opt/R/4.5.0/lib/R
 ENV CRAN_MIRROR https://packagemanager.posit.co/cran/__linux__/noble/2025-05-25
 ENV JAMOVI_REPO https://repo.jamovi.org/cran/2025-05-25
