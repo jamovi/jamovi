@@ -75,6 +75,8 @@ interface ProcessedDatasetRR {
     data: any;
 }
 
+export type ColumnActiveChangedEvent = { start: number, end: number, dStart: number, dEnd: number, value: any };
+
 export interface Column {
     id: number;
     name: string;

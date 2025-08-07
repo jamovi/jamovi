@@ -1,76 +1,50 @@
 
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import VariableModel from './variablemodel';
 import DataVarLevelWidget from './datavarlevelwidget';
 
-const OutputVarWidget = Backbone.View.extend({
-    className: 'OutputVarWidget',
-    initialize(args) {
+class  OutputVarWidget extends HTMLElement {
+    attached: boolean = false;
+    model: VariableModel;
+    $levels: HTMLElement;
+    $levelItems: NodeListOf<Element>;
+    levelCtrls: DataVarLevelWidget[] = [];
 
-        this.attached = false;
+    constructor(model: VariableModel) {
+        super();
 
-        this.$el.empty();
-        this.$el.addClass('jmv-variable-editor-outputvarwidget');
+        this.model = model;
+        this.classList.add('jmv-variable-editor-outputvarwidget', 'OutputVarWidget');
 
-        this.$body = $('<div class="jmv-outputvarwidget-body"></div>').appendTo(this.$el);
-        this.$left = $('<div class="top-box"></div>').appendTo(this.$body);
+        let $body = HTML.parse('<div class="jmv-outputvarwidget-body"></div>');
+        this.append($body);
 
-        //this.$details = $('<div class="jmv-vareditor-connection-details"><label for="data-type">used by</label></div>').appendTo(this.$left);
-        //this.$analysisName = $('<div class="analysis-name" tabindex="0">None</div>').appendTo(this.$details);
+        let $left = HTML.parse('<div class="top-box"></div>');
+        $body.append($left);
 
-        this.$levelsCrtl = $('<div class="jmv-variable-editor-levels-control"></div>').appendTo(this.$body);
-        this.$levelsContainer = $('<div class="container"></div>').appendTo(this.$levelsCrtl);
-        this.$levelsTitle = $(`<div class="title">${_('Levels')}</div>`).appendTo(this.$levelsContainer);
-        this.$levels = $('<div class="levels"></div>').appendTo(this.$levelsContainer);
-        this.$levelItems = $();
-        this.levelCtrls = [];
+        let $levelsCrtl = HTML.parse('<div class="jmv-variable-editor-levels-control"></div>');
+        $body.append($levelsCrtl);
+
+        let $levelsContainer = HTML.parse('<div class="container"></div>');
+        $levelsCrtl.append($levelsContainer);
+
+        $levelsContainer.append(HTML.parse(`<div class="title">${_('Levels')}</div>`));
+        this.$levels = HTML.parse('<div class="levels"></div>');
+        $levelsContainer.append(this.$levels);
+
+        this.$levelItems = this.$levels.querySelectorAll('.jmv-variable-editor-level');
 
         this.model.on('change:levels', event => this._setOptions(event.changed.levels));
+    }
 
-        //this._updateConnectionDetails();
-
-    },
-    setParent(parent) {
-        this.editorWidget = parent;
-        this.analyses = parent.analyses;
-        //this._updateConnectionDetails();
-    },
-    /*_updateConnectionDetails() {
-        if ( ! this.analysis)
-            return;
-
-        let found = false;
-        for (let analysis in this.analyses) {
-            let outputs = analysis.getUsingOutputs();
-            for (let output of outputs) {
-                if (output === this.model.name) {
-                    found = true;
-                    this.connectionDetails = analysis;
-                    break;
-                }
-            }
-            if (found)
-                break;
-        }
-
-        if (found) {
-            this.$analysisName.text(this.connectionDetails.name);
-        }
-        else {
-            this.connectionDetails = null;
-            this.$analysisName.text('None');
-        }
-
-    },*/
     _setOptions(levels) {
         if ( ! this.attached)
             return;
 
         if (levels === null || levels.length === 0) {
-            this.$levels.empty();
+            this.$levels.innerHTML = '';
             this.levelCtrls = [];
         }
         else if (this.levelCtrls.length > levels.length) {
@@ -86,7 +60,7 @@ const OutputVarWidget = Backbone.View.extend({
                 if (i >= this.levelCtrls.length) {
                     levelCtrl = new DataVarLevelWidget(level, this.model, i, true);
 
-                    this.$levels.append(levelCtrl.$el);
+                    this.$levels.append(levelCtrl);
                     this.levelCtrls.push(levelCtrl);
                 }
                 else {
@@ -96,19 +70,22 @@ const OutputVarWidget = Backbone.View.extend({
             }
         }
 
-        this.$levelItems = this.$levels.find('.jmv-variable-editor-level');
-    },
+        this.$levelItems = this.$levels.querySelectorAll('.jmv-variable-editor-level');
+    }
 
     detach() {
         if ( ! this.attached)
             return;
 
         this.attached = false;
-    },
+    }
+
     attach() {
         this.attached = true;
         this._setOptions(this.model.get('levels'));
     }
-});
+}
+
+customElements.define('jmv-output-variable-editor', OutputVarWidget)
 
 export default OutputVarWidget;

@@ -1,68 +1,80 @@
 'use strict';
 
-import $ from 'jquery';
 import tarp from '../utils/tarp';
 import MissingValueList from '../vareditor/missingvaluelist';
+import VariableModel from '../vareditor/variablemodel';
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
 
-const MissingValueEditor = function(model) {
+class MissingValueEditor extends HTMLElement {
+    model: VariableModel;
+    _undoFormula: any;
+    _internalChange: boolean;
+    missingValueList: MissingValueList;
 
-    this.model = model;
-    this.$el = $('<div class="jmv-missing-value-editor"></div>');
+    constructor(model: VariableModel) {
+        super();
+        this.model = model;
+        this.classList.add('jmv-missing-value-editor');
 
-    this.title = _('Missing Values');
-    this._id = -1;
+        this.title = _('Missing Values');
+        this._id = -1;
 
-    this.refresh = function() {
+        window.addEventListener('keydown', event => {
+            if ( ! this.missingValueList.classList.contains('super-focus'))
+                return;
+
+            let undo = event.key === 'Escape';
+            if (event.key === 'Escape' || event.key === 'Enter') {
+                if (undo)
+                    this.model.set('missingValues', this._undoFormula);
+
+                tarp.hide('missings');
+            }
+        });
+
+        this._init();
+    }
+
+    refresh() {
         this.missingValueList.populate(this.model.get('missingValues'));
-        this.missingValueList.$el.find('add-missing-value').focus();
-    };
+        this.missingValueList.querySelector<HTMLElement>('add-missing-value')?.focus();
+    }
 
-    this.isAttached = function() {
-        return document.contains(this.$el[0]);
-    };
+    isAttached() {
+        return document.contains(this);
+    }
 
-    this._focusFormulaControls = function() {
-        let $contents = this.missingValueList.$el;
+    _focusFormulaControls() {
+        let $contents = this.missingValueList;
 
-        if ($contents.hasClass('super-focus'))
+        if ($contents.classList.contains('super-focus'))
             return;
 
         this._undoFormula = this.model.get('missingValues');
 
         this.model.suspendAutoApply();
-        $contents.addClass('super-focus');
+        $contents.classList.add('super-focus');
         tarp.show('missings', true, 0.1, 299).then(() => {
-            $contents.removeClass('super-focus');
+            $contents.classList.remove('super-focus');
             this.model.apply();
         }, () => {
-            $contents.removeClass('super-focus');
+            $contents.classList.remove('super-focus');
             this.model.apply();
         });
-    };
+    }
 
-    $(window).on('keydown', event => {
-        if ( ! this.missingValueList.$el.hasClass('super-focus'))
-            return;
-
-        let undo = event.key === 'Escape';
-        if (event.key === 'Escape' || event.key === 'Enter') {
-            if (undo)
-                this.model.set('missingValues', this._undoFormula);
-
-            tarp.hide('missings');
-        }
-    });
-
-    this._init = function() {
-        this.$contents = $('<div class="contents"></div>').appendTo(this.$el);
+    _init() {
+        let $contents = HTML.parse('<div class="contents"></div>');
+        this.append($contents)
 
         this.missingValueList = new MissingValueList();
-        this.$contents.append(this.missingValueList.$el);
+        $contents.append(this.missingValueList);
 
-        this.missingValueList.$el.find('add-missing-value').focus();
+        //this.missingValueList.querySelector<HTMLElement>('add-missing-value').focus();
 
-        this.missingValueList.$el.on('missing-value-removed', (event, index) => {
+        this.missingValueList.addEventListener('missing-value-removed', (event: CustomEvent<number>) => {
+            let index = event.detail;
             this._focusFormulaControls();
             let values = this.model.get('missingValues');
             let newValues = [];
@@ -76,13 +88,13 @@ const MissingValueEditor = function(model) {
             this.model.set('missingValues', newValues);
         });
 
-        this.missingValueList.$el.on('missing-values-changed', (event, index) => {
+        this.missingValueList.addEventListener('missing-values-changed', (event: CustomEvent<number>) => {
             this._focusFormulaControls();
             this._internalChange = true;
             this.model.set('missingValues', this.missingValueList.getValue());
         });
 
-        this.missingValueList.$el.on('click', (event) => {
+        this.missingValueList.addEventListener('click', (event) => {
             this._focusFormulaControls();
         });
 
@@ -107,9 +119,9 @@ const MissingValueEditor = function(model) {
             if (this.isAttached() && this.model.get('autoApply'))
                 tarp.hide('missings');
         });
-    };
+    }
+}
 
-    this._init();
-};
+customElements.define('jmv-missing-value-editor', MissingValueEditor);
 
 export default MissingValueEditor;

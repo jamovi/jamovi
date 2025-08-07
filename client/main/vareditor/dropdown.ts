@@ -1,6 +1,5 @@
 'use strict';
 
-import $ from 'jquery';
 import focusLoop from '../../common/focusloop';
 
 export interface DropdownContent extends HTMLElement {
@@ -20,7 +19,6 @@ class Dropdown extends HTMLElement {
     private _waiting: boolean = false;
     private _resolve: (() => void) | null = null;
     private _promise: Promise<void> | null = null;
-    private $$formulaWrapper: $<HTMLElement> | null = null;
     private $formula: HTMLElement | null = null;
     private $content: DropdownContent | null = null;
     private $contents: HTMLDivElement;
@@ -100,8 +98,8 @@ class Dropdown extends HTMLElement {
         this.style.minWidth = `${this.$formula.offsetWidth}px`;
     }
 
-    public show($formula: $<HTMLElement>, content: DropdownContent, wait: boolean = false): Promise<void> {
-        const formulaEl = $formula[0];
+    public show($formula: HTMLElement, content: DropdownContent, wait: boolean = false): Promise<void> {
+        const formulaEl = $formula;
 
         if (content !== this.$content) {
             if (this.$content) {
@@ -142,7 +140,6 @@ class Dropdown extends HTMLElement {
             this.$formula.removeEventListener('focusout', this._onFocusOut);
         }
 
-        this.$$formulaWrapper = $formula;
         this.$formula = formulaEl;
 
         if (this.$formula) {
@@ -180,7 +177,7 @@ class Dropdown extends HTMLElement {
     }
 
     get formula() {
-        return this.$$formulaWrapper;
+        return this.$formula;
     }
 
     get inTools() {
@@ -212,7 +209,7 @@ document.body.append(dropdownInstance);
 
 export default {
     init: () => {},
-    show: (formula: $<HTMLElement>, content: DropdownContent, wait = false) => dropdownInstance.show(formula, content, wait),
+    show: (formula: HTMLElement, content: DropdownContent, wait = false) => dropdownInstance.show(formula, content, wait),
     hide: () => dropdownInstance.hide({ data: { dropdown: dropdownInstance, check: false } }),
     updatePosition: () => dropdownInstance['_findPosition'](),
     focusedOn: () => dropdownInstance.formula,

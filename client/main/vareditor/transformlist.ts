@@ -19,7 +19,7 @@ export default class TransformList extends HTMLElement implements DropdownConten
     constructor() {
         super();
         this.id = focusLoop.getNextAriaElementId('list');
-        this.className = "jmv-transform-list";
+        this.classList.add("jmv-transform-list");
         this.setAttribute('role', 'list');
 
         this.top = HTML.parse(`<div class="top"></div>`);

@@ -20,7 +20,8 @@ import { BackstageModel, BackstageView as Backstage} from './backstage';
 import { RibbonModel, RibbonView as Ribbon, TabTypes } from './ribbon';
 import Notifications from './notifications';
 import OptionsPanel from './optionspanel';
-import VariableEditor from './variableeditor';
+import './variableeditor';
+import type { VariableEditor } from './variableeditor';
 import ActionHub from './actionhub';
 import I18n from '../common/i18n';
 
@@ -800,14 +801,15 @@ $(document).ready(async() => {
     optionspanel.setDataSetModel(dataSetModel);
     optionspanel.el.addEventListener('splitpanel-hide', () =>  window.focus() );
 
-    let editor = new VariableEditor({ el : '#variable-editor', model : dataSetModel, controller: viewController });
+    let editor = document.querySelector('#variable-editor') as VariableEditor; //new VariableEditor({ el : '#variable-editor', model : dataSetModel, controller: viewController });
+    editor.init(dataSetModel, viewController);
 
     let notifications = new Notifications(document.querySelector('#notifications'));
     instance.on( 'notification', note => notifications.notify(note));
     viewController.on('notification', note => notifications.notify(note));
     mainTable.on('notification', note => notifications.notify(note));
     ribbon.addEventListener('notification', (event: CustomEvent) => notifications.notify(event.detail));
-    editor.on('notification', note => notifications.notify(note));
+    editor.addEventListener('notification', (event: CustomEvent) => notifications.notify(event.detail));
     backstageModel.on('notification', note => notifications.notify(note));
 
     dataSetModel.on('change:edited', event => {

@@ -1,6 +1,6 @@
 'use strict';
 
-const get = function(colourIndex, alpha) {
+const get = function(colourIndex, alpha?) {
     if (alpha === undefined)
         alpha = 1;
     let base = colourIndex % 12;

@@ -1,52 +1,64 @@
 
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { ColumnType } from '../dataset';
+import VariableModel from './variablemodel';
 
-const NewVarWidget = Backbone.View.extend({
-    className: 'NewVarWidget',
-    initialize(args) {
+class NewVarWidget extends HTMLElement {
+
+    attached: boolean;
+    model: VariableModel;
+
+    constructor(model: VariableModel) {
+        super();
+
+        this.model = model;
 
         this.attached = false;
 
-        this.$el.empty();
-        this.$el.addClass('jmv-variable-new-widget');
+        this.classList.add('jmv-variable-new-widget', 'NewVarWidget');
 
-        this.$container = $('<div class="jmv-variable-new-container var-buttons"></div>').appendTo(this.$el);
+        let $container = HTML.parse('<div class="jmv-variable-new-container var-buttons"></div>');
+        this.append($container);
 
-        this.$data = $('<button class="button data-variable var-buttons-list-item var-buttons-auto-select"></button>').appendTo(this.$container);
-        this.$iconData = $('<div class="icon"</div>').appendTo(this.$data);
-        this.$data.append($(`<div class="text">${_('New data variable')}</div>`));
+        let $data = HTML.parse('<button class="button data-variable var-buttons-list-item var-buttons-auto-select"></button>');
+        $container.append($data);
+        $data.append(HTML.parse('<div class="icon"</div>'));
+        $data.append(HTML.parse(`<div class="text">${_('New data variable')}</div>`));
 
-        this.$computed = $('<button class="button computed-variable var-buttons-list-item var-buttons-auto-select"></button>').appendTo(this.$container);
-        this.$iconComputed = $('<div class="icon"</div>').appendTo(this.$computed);
-        this.$computed.append($(`<div class="text">${_('New computed variable')}</div>`));
+        let $computed = HTML.parse('<button class="button computed-variable var-buttons-list-item var-buttons-auto-select"></button>');
+        $container.append($computed);
+        $computed.append(HTML.parse('<div class="icon"</div>'));
+        $computed.append(HTML.parse(`<div class="text">${_('New computed variable')}</div>`));
 
-        this.$recoded = $('<button class="button transformed-variable var-buttons-list-item var-buttons-auto-select"></button>').appendTo(this.$container);
-        this.$iconRecoded = $('<div class="icon"</div>').appendTo(this.$recoded);
-        this.$recoded.append($(`<div class="text">${_('New transformed variable')}</div>`));
+        let $recoded = HTML.parse('<button class="button transformed-variable var-buttons-list-item var-buttons-auto-select"></button>');
+        $container.append($recoded);
+        $recoded.append(HTML.parse('<div class="icon"</div>'));
+        $recoded.append(HTML.parse(`<div class="text">${_('New transformed variable')}</div>`));
 
-        this.$data.on('click', (event) => {
-            this.model.set('columnType', 'data');
+        $data.addEventListener('click', (event) => {
+            this.model.set('columnType', ColumnType.DATA);
         });
 
-        this.$computed.on('click', (event) => {
-            this.model.set('columnType', 'computed');
+        $computed.addEventListener('click', (event) => {
+            this.model.set('columnType', ColumnType.COMPUTED);
         });
 
-        this.$recoded.on('click', (event) => {
-            this.model.set('columnType', 'recoded');
+        $recoded.addEventListener('click', (event) => {
+            this.model.set('columnType', ColumnType.RECODED);
         });
+    }
 
-    },
     detach() {
         this.attached = false;
-    },
+    }
+
     attach() {
         this.attached = true;
     }
-});
+}
+
+customElements.define('jmv-new-variable', NewVarWidget);
 
 export default NewVarWidget;

@@ -20,7 +20,7 @@ class VariableListItem extends HTMLElement {
     this.id = focusLoop.getNextAriaElementId('listitem');
 
     // Create main container div
-    this.className = 'jmv-variable-list-item';
+    this.classList.add('jmv-variable-list-item');
     this.setAttribute('role', 'listitem');
     this.setAttribute('aria-labelledby', labelId);
 

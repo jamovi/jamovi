@@ -14,6 +14,7 @@ import ContextMenu from './contextmenu';
 import Statusbar from './statusbar/statusbar';
 import { contextMenuListener } from '../common/utils';
 import _focusLoop from '../common/focusloop';
+import { ColumnActiveChangedEvent } from './dataset';
 
 
 const VariablesView = SilkyView.extend({
@@ -32,7 +33,7 @@ const VariablesView = SilkyView.extend({
         this.model.on('columnsInserted', event => this._columnsInserted(event));
         this.model.on('columnsHidden', event => this._columnsDeleted(event));
         this.model.on('columnsVisible', event => this._columnsInserted(event));
-        this.model.on('columnsActiveChanged', event => this._columnsActiveChanged(event));
+        this.model.on('columnsActiveChanged', (event: ColumnActiveChangedEvent) => this._columnsActiveChanged(event));
         this.model.on('transformsChanged', event => this._transformsChanged(event));
         this.model.on('change:filtersVisible', event => this._updateEyeButton());
 
@@ -703,7 +704,7 @@ const VariablesView = SilkyView.extend({
         this._updateFilterInfo();
         this._updateEyeButton();
     },
-    _columnsActiveChanged(event) {
+    _columnsActiveChanged(event: ColumnActiveChangedEvent) {
         this._updateFilterInfo();
     },
     _columnsDeleted(event) {

@@ -1,10 +1,9 @@
 'use strict';
 
-import $ from 'jquery';
 import { Descriptions } from '../vareditor/formulatoolbar';
 import { DropdownContent } from '../vareditor/dropdown';
 
-function insertText(el, newText) {
+function insertText(el: HTMLElement, newText: string) {
     let sel = window.getSelection();
     let range = sel.getRangeAt(0);
     let start = range.startOffset;
@@ -52,12 +51,11 @@ class Dropdown extends HTMLElement implements DropdownContent {
     private functionsTitle: HTMLDivElement;
     private functionsContent: HTMLDivElement;
     private descriptions: Descriptions;
-    private $formula: $<HTMLElement> | null = null;
     private formula: HTMLElement | null = null;
 
     constructor() {
         super();
-        this.className = 'jmv-operator-dropdown-options';
+        this.classList.add('jmv-operator-dropdown-options');
 
         this.ops = document.createElement('div');
         this.ops.className = 'ops-box';
@@ -130,13 +128,12 @@ class Dropdown extends HTMLElement implements DropdownContent {
         return target === this.functionsContent;
     }
 
-    public show(formula: $<HTMLElement>): void {
-        this.$formula = formula;
-        this.formula = formula[0];
+    public show(formula: HTMLElement): void {
+        this.formula = formula;
     }
 
-    public focusedOn(): $<HTMLElement> | null {
-        return this.$formula;
+    public focusedOn(): HTMLElement | null {
+        return this.formula;
     }
 }
 

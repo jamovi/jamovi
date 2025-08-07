@@ -2,57 +2,16 @@
 'use strict';
 
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
 import formulaToolbar from './formulatoolbar';
 import dropdown from './dropdown';
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import VariableModel from './variablemodel';
 
-function insertText(el, newText, cursorOffset = 0) {
+class ComputedVarWidget extends HTMLElement{
 
-    let sel = window.getSelection();
-    let range = sel.getRangeAt(0);
-    let start = range.startOffset;
-    let end = range.endOffset;
-    let text = el.textContent;
-    let before = text.substring(0, start);
-    let after  = text.substring(end, text.length);
-
-    if (cursorOffset === -1 && start !== end) {
-        let textSelected = text.substring(start, end);
-        el.textContent = (before + newText.substring(0, newText.length - 2) + '(' + textSelected + ')' + after);
-        sel.setBaseAndExtent(el.firstChild, start + newText.length + cursorOffset, el.firstChild, start + newText.length + textSelected.length + cursorOffset);
-    } else {
-
-        if (cursorOffset !== -1 && newText.search(/[ ~!@#$%^&*\+\-\=()\[\]{};,<>?\/\\]/) !== -1)
-            newText = '\`' + newText + '\`';
-
-        el.textContent = (before + newText + after);
-        sel.setBaseAndExtent(el.firstChild, start + newText.length + cursorOffset, el.firstChild, start + newText.length + cursorOffset);
-    }
-    el.focus();
-}
-
-function insertInto(open, close, input){
-    let val = input.textContent, s = input.selectionStart, e = input.selectionEnd;
-    if (e==s) {
-        input.textContent = val.slice(0,e) + open + close + val.slice(e);
-        input.selectionStart += close.length;
-        input.selectionEnd = e + close.length;
-    } else {
-        input.textContent = val.slice(0,s) + open + val.slice(s,e) + close + val.slice(e);
-        input.selectionStart += close.length + 1;
-        input.selectionEnd = e + close.length;
-    }
-}
-
-const ComputedVarWidget = Backbone.View.extend({
-    className: 'ComputedVarWidget',
-    initialize(args) {
-
-        this.attached = false;
-
-        this._exampleFormulas = [
+    attached: boolean = false;
+    model: VariableModel;
+    _exampleFormulas: string[] = [
             "gender == 'female'",
             "score == 10",
             "consent == 'yes'",
@@ -63,33 +22,48 @@ const ComputedVarWidget = Backbone.View.extend({
             "ROW() != 33 and ROW() != 37",
             "score > 0.5"
         ];
+    formulasetup: formulaToolbar;
+
+    $formula: HTMLInputElement;
+    $showEditor: HTMLElement;
+    $formulaMessage: HTMLElement;
+    _$wasEditingFormula: HTMLElement;
+
+    _editorClicked: boolean;
+
+    constructor(model) {
+        super();
+
+        this.model = model;
+        this.classList.add('ComputedVarWidget', 'jmv-variable-computed-widget')
 
         dropdown.init();
         this.formulasetup = new formulaToolbar(this.model.dataset);
 
-        this.$el.empty();
-        this.$el.addClass('jmv-variable-computed-widget');
+        let $methods = HTML.parse('<div class="jmv-variable-computed-methods"></div>');
+        this.append($methods);
 
-        this.$methods = $('<div class="jmv-variable-computed-methods"></div>').appendTo(this.$el);
+        let $top = HTML.parse('<div class="top"></div>');
+        $methods.append($top);
+        $top.append(HTML.parse(`<div class="item">${_('Formula')}</div>`));
 
-        this.$top = $('<div class="top"></div>').appendTo(this.$methods);
-        this.$top.append($(`<div class="item">${_('Formula')}</div>`));
+        $methods.append(HTML.parse('<div class="separator"></div>'));
 
-        this.$methods.append($('<div class="separator"></div>'));
+        let $bottom = HTML.parse('<div class="bottom"></div>');
+        $methods.append($bottom);
 
-        this.$bottom = $('<div class="bottom"></div>').appendTo(this.$methods);
-
-        this.$options = $('<div class="jmv-variable-computed-options"></div>').appendTo(this.$el);
-        this._createFormulaBox(this.$options);
+        let $options = HTML.parse('<div class="jmv-variable-computed-options"></div>');
+        this.append($options);
+        this._createFormulaBox($options);
 
         this.model.on('columnChanging', () => {
-            if (this.$formula.is(":focus") && this.model.attributes.formula !== this.$formula[0].textContent)
+            if (document.activeElement === this.$formula && this.model.attributes.formula !== this.$formula.textContent)
                 this.$formula.blur();
         });
 
-        this.$formula.blur((event) => {
+        this.$formula.addEventListener('blur', (event) => {
             if ( ! dropdown.clicked() && ! this._editorClicked) {
-                this.model.set('formula', this.$formula[0].textContent);
+                this.model.set('formula', this.$formula.textContent);
                 window.clearTextSelection();
             }
         });
@@ -99,7 +73,7 @@ const ComputedVarWidget = Backbone.View.extend({
                 dropdown.hide();
         });*/
 
-        this.$formula.on('keydown', (event) => {
+        this.$formula.addEventListener('keydown', (event: KeyboardEvent) => {
             if (event.keyCode === 13 && event.shiftKey === false) {    //enter
                 this._editorClicked = false;
                 dropdown.hide();
@@ -117,84 +91,95 @@ const ComputedVarWidget = Backbone.View.extend({
             }
         });
 
-        this.$formula.on('editor:closing', () => {
-            this.$showEditor.removeClass('is-active');
+        this.$formula.addEventListener('editor:closing', () => {
+            this.$showEditor.classList.remove('is-active');
         });
 
         this.model.on('change:formula', (event) => this._setFormula(event.changed.formula));
         this.model.on('change:formulaMessage', (event) => this._setFormulaMessage(event.changed.formulaMessage));
 
-    },
-    _createFormulaBox($parent, data) {
-        let $formulaBox = $('<div class="formula-box"></div>').appendTo($parent);
+    }
 
-        $('<div class="equal">=</div>').appendTo($formulaBox);
+    _createFormulaBox($parent: HTMLElement) {
+        let $formulaBox = HTML.parse('<div class="formula-box"></div>');
+        $parent.append($formulaBox);
 
-        this.$showEditor = $(`<button class="show-editor" aria-label="${_('Show formula editor')}" aria-controls="${this.formulasetup.id}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
+        $formulaBox.append(HTML.parse('<div class="equal">=</div>'))
 
-        this.$showEditor.on('click', (event) => {
+        this.$showEditor = HTML.parse(`<button class="show-editor" aria-label="${_('Show formula editor')}" aria-controls="${this.formulasetup.id}"><div class="down-arrow"></div></button>`);
+        $formulaBox.append(this.$showEditor);
+
+        this.$showEditor.addEventListener('click', (event) => {
             if (this._$wasEditingFormula !== this.$formula) {
                 this.formulasetup.show(this.$formula, this.model.get('name'));
                 dropdown.show(this.$formula, this.formulasetup).then(() => {
                     this._editorClicked = false;
                 });
                 //this.$formula.focus();
-                this.$showEditor.addClass('is-active');
+                this.$showEditor.classList.add('is-active');
             }
         });
 
-        this.$showEditor.on('mousedown', (event) => {
+        this.$showEditor.addEventListener('mousedown', (event: MouseEvent) => {
             this._$wasEditingFormula = dropdown.focusedOn();
             this._editorClicked = true;
         });
 
-        let $formulaPair = $('<div class="formula-pair"></div>').appendTo($formulaBox);
+        let $formulaPair = HTML.parse('<div class="formula-pair"></div>');
+        $formulaBox.append($formulaPair);
 
         let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))];
-        this.$formula = $('<div class="formula" type="text" placeholder="eg: ' + _example + '" contenteditable="true" spellcheck="false" aria-label="formula" tabindex="0"></div>').appendTo($formulaPair);
+        this.$formula = HTML.parse('<div class="formula" type="text" placeholder="eg: ' + _example + '" contenteditable="true" spellcheck="false" aria-label="formula" tabindex="0"></div>');
+        $formulaPair.append(this.$formula);
 
         document.addEventListener("selectionchange", () => {
             const sel = window.getSelection();
-            if (this.$formula && (this.$formula[0].contains(sel.anchorNode) || sel.anchorNode === this.$formula[0])) {
+            if (this.$formula && (this.$formula.contains(sel.anchorNode) || sel.anchorNode === this.$formula)) {
                 let range = sel.getRangeAt(0);
-                this.$formula.attr('sel-start', range.startOffset);
-                this.$formula.attr('sel-end', range.endOffset);
+                this.$formula.setAttribute('sel-start', range.startOffset.toString());
+                this.$formula.setAttribute('sel-end', range.endOffset.toString());
             }
         });
 
-        //focusLoop.addFocusLoop(this.$formula[0], { include: dropdown.$el[0] });
-
-        this.$formula.on('input', (event) => {
+        this.$formula.addEventListener('input', (event) => {
             dropdown.updatePosition();
         });
 
-        let $formulaMessageBox = $('<div class="formulaMessageBox""></div>').appendTo($formulaPair);
-        this.$formulaMessage = $('<div class="formulaMessage""></div>').appendTo($formulaMessageBox);
-    },
-    _setFormula(formula) {
+        let $formulaMessageBox = HTML.parse('<div class="formulaMessageBox""></div>');
+        $formulaPair.append($formulaMessageBox);
+        this.$formulaMessage = HTML.parse('<div class="formulaMessage""></div>');
+        $formulaMessageBox.append(this.$formulaMessage);
+    }
+
+    _setFormula(formula: string) {
         if ( ! this.attached)
             return;
-        this.$formula[0].textContent = formula;
-    },
-    _setFormulaMessage(formulaMessage) {
+        this.$formula.textContent = formula;
+    }
+
+    _setFormulaMessage(formulaMessage: string) {
         if ( ! this.attached)
             return;
-        this.$formulaMessage.text(formulaMessage);
-    },
+        this.$formulaMessage.innerText = formulaMessage;
+    }
+
     detach() {
         if ( ! this.attached)
             return;
 
-        this.$formula.attr('contenteditable', 'false');
+        this.$formula.setAttribute('contenteditable', 'false');
         this.attached = false;
-    },
+    }
+
     attach() {
         this.attached = true;
 
         this._setFormula(this.model.attributes.formula);
         this._setFormulaMessage(this.model.attributes.formulaMessage);
-        this.$formula.attr('contenteditable', 'true');
+        this.$formula.setAttribute('contenteditable', 'true');
     }
-});
+}
+
+customElements.define('jmv-computed-var-editor', ComputedVarWidget);
 
 export default ComputedVarWidget;

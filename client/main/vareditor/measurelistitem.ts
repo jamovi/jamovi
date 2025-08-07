@@ -19,7 +19,7 @@ class MeasureListItem extends HTMLElement {
         const labelId = focusLoop.getNextAriaElementId('label');
 
         this.id = this.id;
-        this.className = 'jmv-measure-list-item';
+        this.classList.add('jmv-measure-list-item');
         this.setAttribute('aria-labelledby', labelId);
         this.setAttribute('role', 'listitem');
         this.setAttribute('data-id', measureType);
