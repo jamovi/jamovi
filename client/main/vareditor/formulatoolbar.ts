@@ -1,11 +1,10 @@
 'use strict';
 
-import $ from 'jquery';
 import focusLoop from '../../common/focusloop';
 import DataSetViewModel from '../dataset';
 import { DropdownContent } from './dropdown';
 
-function insertText(el, newText, cursorOffset = 0, range = null, checkEscape = true) {
+function insertText(el: HTMLElement, newText: string, cursorOffset = 0, range = null, checkEscape = true) {
     
     let sel = window.getSelection();
     let start = 0;
@@ -180,8 +179,7 @@ export class Toolbar extends HTMLElement implements DropdownContent {
   private $description: HTMLDivElement;
   private $functionsContent: HTMLDivElement;
   private $varsContent: HTMLDivElement;
-  private $$formula!: $<HTMLElement>;
-  private $formula!: HTMLTextAreaElement;
+  private $formula!: HTMLDivElement;
 
   constructor(model: DataSetViewModel) {
     super();
@@ -190,7 +188,7 @@ export class Toolbar extends HTMLElement implements DropdownContent {
 
     // Main container
     this.id = focusLoop.getNextAriaElementId('tool');
-    this.className = 'jmv-formula-toolbar-options';
+    this.classList.add('jmv-formula-toolbar-options');
 
     // Ops container
     let $ops = document.createElement('div');
@@ -409,9 +407,8 @@ export class Toolbar extends HTMLElement implements DropdownContent {
     }
   }
 
-  public show($formula: $<HTMLElement>, variableName: string, useValue: boolean): void {
-    this.$$formula = $formula;
-    this.$formula = $formula[0] as HTMLTextAreaElement;
+  public show($formula: HTMLDivElement, variableName: string, useValue?: boolean): void {
+    this.$formula = $formula;
 
     this.$varsContent.innerHTML = '';
     if (useValue) {
@@ -443,8 +440,8 @@ export class Toolbar extends HTMLElement implements DropdownContent {
     }
   }
 
-  public focusedOn(): $<HTMLElement> {
-    return this.$$formula;
+  public focusedOn(): HTMLElement {
+    return this.$formula;
   }
 }
 

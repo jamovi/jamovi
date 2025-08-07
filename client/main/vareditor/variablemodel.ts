@@ -1,10 +1,6 @@
 
 'use strict';
 
-//import underscore from 'underscore';
-//import $ from 'jquery';
-//import Backbone from 'backbone';
-//Backbone.$ = $;
 import Notify from '../notification';
 import { EventMap } from '../../common/eventmap';
 import DataSetViewModel, { Column, ColumnType, DataType, MeasureType, VariableLevel } from '../dataset';
@@ -48,6 +44,8 @@ class VariableModel extends EventMap<SelectedVariable> {
     _editNote: Notify;
     _applyId: NodeJS.Timeout;
     excludedColumns: Column[];
+    _compareWithValue: boolean;
+    levelsReordered: boolean;
 
     constructor(dataset) {
         super({
@@ -168,7 +166,7 @@ class VariableModel extends EventMap<SelectedVariable> {
         return level;
     }
 
-    editLevelLabel(index, label, value) {
+    editLevelLabel(index, label) {
 
         label = label.trim();
         let levels = this.get('levels');

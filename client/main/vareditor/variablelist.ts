@@ -17,7 +17,7 @@ class VariableList extends HTMLElement implements DropdownContent {
 
         // Create main container
 
-        this.className = 'jmv-variable-list';
+        this.classList.add('jmv-variable-list');
         this.setAttribute('role', 'list');
 
         // 'None' item
@@ -77,7 +77,7 @@ class VariableList extends HTMLElement implements DropdownContent {
         }
     }
 
-    public populate(columns: Column[], excludeNone: boolean): void {
+    public populate(columns: Column[], excludeNone?: boolean): void {
         if (excludeNone)
             this.$none.classList.add('hidden');
         else

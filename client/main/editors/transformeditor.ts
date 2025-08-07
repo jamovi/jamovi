@@ -1,6 +1,5 @@
 'use strict';
 
-import $ from 'jquery';
 import opsToolbar from './operatordropdown';
 import tarp from '../utils/tarp';
 import formulaToolbar from '../vareditor/formulatoolbar';
@@ -9,216 +8,187 @@ import VariableList from '../vareditor/variablelist';
 import MeasureList from '../vareditor/measurelist';
 import ColourPalette from './colourpalette';
 import Notify from '../notification';
-import Backbone from 'backbone';
 import focusLoop from '../../common/focusloop';
-import { MeasureType } from '../dataset';
+import DataSetViewModel, { Column, MeasureType, Transform } from '../dataset';
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
-const TransformEditor = function(dataset) {
+type IsExactlyString<T> = [T] extends [string]
+    ? string extends T
+        ? true  // plain string
+        : false // string literal or enum
+    : false;
 
-    Object.assign(this, Backbone.Events);
+type StringOnly<T> = {
+    [K in keyof T as IsExactlyString<T[K]> extends true ? K : never]?: string;
+};
 
-    this.dataset = dataset;
-    this._editNote = new Notify({ duration: 3000 });
 
-    this.$el = $('<div class="jmv-transform-editor"></div>');
+type TransformDetails = { 
+    $formulaBox: HTMLElement;
+    $showEditor: HTMLElement;
+    $formulaGrid: HTMLElement;
+    _subFocusClicked: boolean;
+    _opEditClicked: boolean;
+    $focusedFormula: HTMLElement;
+    $formulas: HTMLElement[];
+    $formulaMessage: HTMLElement;
+};
 
-    this.title = _('Transform');
-    this.$icon = $('<div class="transform-colour"></div>');
+class TransformEditor extends HTMLElement {
+    model: DataSetViewModel;
+    _editNote = new Notify({ duration: 3000 });
+    $icon: HTMLElement;
+    _exampleFormulas: {s: string, a: string, b: string}[] = [
+            { s: ">", a: "2000", b: "$source" },
+            { s: "<=", a: "1000", b: "A" },
+            { s: "==", a: "5", b: "B" },
+            { s: "<", a: "17000", b: "'Male'" },
+            { s: ">=", a: "1", b: "'Early'" },
+            { s: "=", a: "'tom'", b: "'medium'" }
+        ];
+    _id: number;
+    formulasetup: formulaToolbar;
+    opsToolbar: opsToolbar;
+    measureList: MeasureList;
+    variableList: VariableList;
+    formula: string[];
+    _undoFormula: string[];
+    _focusLeaving: boolean;
+    _addingLevel: boolean;
+    _swappingItems: boolean;
+    prevStart: number;
+    _backspacePressed: boolean;
+    _editorClicked: boolean;
+    _$wasEditingFormula: HTMLElement;
+    _applyId: NodeJS.Timeout;
+    connectedColumns: Column[];
 
-    this._exampleFormulas = [
-        { s: ">", a: "2000", b: "$source" },
-        { s: "<=", a: "1000", b: "A" },
-        { s: "==", a: "5", b: "B" },
-        { s: "<", a: "17000", b: "'Male'" },
-        { s: ">=", a: "1", b: "'Early'" },
-        { s: "=", a: "'tom'", b: "'medium'" }
-    ];
+    $title: HTMLInputElement;
+    $description: HTMLElement;
+    $shortname: HTMLElement;
+    $contents: HTMLElement;
+    $options: HTMLElement;
+    $rightBox: HTMLElement;
+    $measureList: HTMLSelectElement;
+    $measureIcon: HTMLElement;
+    $viewConnectionInfo: HTMLElement;
+    _$wasEditingOpsFormula: HTMLElement;
+    
+    constructor(model: DataSetViewModel) {
+        super();
 
-    this.model = { };
+        this.model = model;
 
-    this._id = null;
+        this.classList.add('jmv-transform-editor');
 
-    this.setTransformId = function(id) {
+        this.title = _('Transform');
+        this.$icon = HTML.parse('<div class="transform-colour"></div>');
+
+        this._id = null;
+
+        this._init();
+    }
+
+    setTransformId(id: number) {
         this._id = id;
         this._populate();
-    };
+    }
 
-    this.transformId = function() {
+    transformId() {
         return this._id;
-    };
+    }
 
-    this._init = function() {
-        this.dataset.on('dataSetLoaded', this._dataSetLoaded, this);
+    _init() {
+        this.model.on('dataSetLoaded', this._dataSetLoaded, this);
 
         dropdown.init();
-        this.formulasetup = new formulaToolbar(this.dataset);
+        this.formulasetup = new formulaToolbar(this.model);
         this.opsToolbar = new opsToolbar();
 
         this.formula = [ '' ];
 
-        this.$top = $('<div class="jmv-transform-editor-top"></div>').appendTo(this.$el);
-        this.$title = $('<input class="jmv-transform-editor-widget-title" type="text" spellcheck="true" maxlength="63">').appendTo(this.$top);
-        this.$descBox = $('<div class="desc-box"></div>').appendTo(this.$top);
-        this.$description = $(`<div class="jmv-transform-editor-widget-description" type="text" spellcheck="true" placeholder="${_('Description')}" contenteditable="true" tabindex="0">`).appendTo(this.$descBox);
-        this.$shortname = $(`<div class="jmv-transform-editor-widget-shortname" type="text" spellcheck="false" placeholder="${_('Variable suffix')}" contenteditable="true" tabindex="0">`).appendTo(this.$descBox);
+        let $top = HTML.parse('<div class="jmv-transform-editor-top"></div>');
+        this.append($top);
+        this.$title = HTML.parse('<input class="jmv-transform-editor-widget-title" type="text" spellcheck="true" maxlength="63">');
+        $top.append(this.$title);
+        let $descBox = HTML.parse('<div class="desc-box"></div>');
+        $top.append($descBox);
+        this.$description = HTML.parse(`<div class="jmv-transform-editor-widget-description" type="text" spellcheck="true" placeholder="${_('Description')}" contenteditable="true" tabindex="0">`);
+        $descBox.append(this.$description);
+        this.$shortname = HTML.parse(`<div class="jmv-transform-editor-widget-shortname" type="text" spellcheck="false" placeholder="${_('Variable suffix')}" contenteditable="true" tabindex="0">`);
+        $descBox.append(this.$shortname);
 
-        this.setInputEvents = function($element, isDiv, propertyName) {
-            let _applyOnBlur = true;
-            $element.focus(() => {
-                $element.select();
-            } );
+        this.setInputEvents(this.$title, 'name');
+        this.setInputEvents(this.$description, 'description');
+        this.setInputEvents(this.$shortname, 'suffix');
 
-            $element.blur(() => {
-                if (_applyOnBlur) {
-                    let id = this._id;
-                    let values = { };
-                    if (isDiv)
-                        values[propertyName] = $element[0].textContent.trim();
-                    else
-                        values[propertyName] = $element.val().trim();
-                    this.dataset.setTransforms([{ id: id, values: values }]).catch((error) => {
-                        this._populate();
-                        this._notifyEditProblem({
-                            title: error.message,
-                            message: error.cause,
-                            type: 'error',
-                        });
-                    });
-                    window.clearTextSelection();
-                }
-                _applyOnBlur = true;
-            } );
+        this.$contents = HTML.parse('<div class="contents" tabindex="0"></div>');
+        this.append(this.$contents);
 
-            $element.keydown((event) => {
-                var keypressed = event.keyCode || event.which;
-                if (keypressed === 13) { // enter key
-                    $element.blur();
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                else if (keypressed === 27) { // escape key
-                    _applyOnBlur = false;
-                    $element.blur();
-                    let id = this._id;
-                    let value = this.dataset.getTransformById(id)[propertyName];
-                    if (isDiv)
-                        $element[0].textContent = value;
-                    else
-                        $element.val(value);
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-            });
-        };
-
-        this.setInputEvents(this.$title, false, 'name');
-        this.setInputEvents(this.$description, true, 'description');
-        this.setInputEvents(this.$shortname, true, 'suffix');
-
-        this.$contents = $('<div class="contents" tabindex="0"></div>').appendTo(this.$el);
-
-        let focusToken = focusLoop.addFocusLoop(this.$contents[0], {level: 2, exitSelector: this.$contents[0], keyToEnter: true });
+        let focusToken = focusLoop.addFocusLoop(this.$contents, {level: 2, exitSelector: this.$contents, keyToEnter: true });
         focusToken.on('focusleave', () => {
             this._focusLeaving = true;
         });
 
-        this.$contents.on('focusin', (event) => {
+        this.$contents.addEventListener('focusin', (event) => {
             if (this._focusLeaving) {
                 this._focusLeaving = false;
                 tarp.hide('recode-formula');
             }
-            else if (this.$contents[0].contains(event.relatedTarget))
+            else if (event.relatedTarget instanceof Node && this.$contents.contains(event.relatedTarget))
                 this._focusFormulaControls();
 
         });
 
-        this.$contents[0].addEventListener('focusout', (event) => {
+        this.$contents.addEventListener('focusout', (event) => {
             let ff= dropdown.focusedOn();
-            if ( !this._addingLevel && ! this.$contents[0].contains(event.relatedTarget) && (ff !== null && ! this.$contents[0].contains(ff[0])))
+            if ( !this._addingLevel && event.relatedTarget instanceof Node && ! this.$contents.contains(event.relatedTarget) && (ff !== null && ! this.$contents.contains(ff)))
                 tarp.hide('recode-formula');
         } );
 
-        this.$insertBox = $('<button class="insert-box"></button>').appendTo(this.$contents);
-        this.$insert = $('<div class="insert"></div>').appendTo(this.$insertBox);
-        $(`<div>${_('Add recode condition')}</div>`).appendTo(this.$insertBox);
+        let $insertBox = HTML.parse('<button class="insert-box"></button>');
+        this.$contents.append($insertBox);
+        let $insert = HTML.parse('<div class="insert"></div>');
+        $insertBox.append($insert)
+        $insertBox.append(HTML.parse(`<div>${_('Add recode condition')}</div>`));
 
-        /*this.$insertBox.on('keydown', (event) => {
-            if ( event.keyCode === 9 ) { //tab
-                if (event.shiftKey === false && this._nextFocus) {
-                    this._nextFocus.focus();
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                else if (event.shiftKey === true && this._nextShiftFocus) {
-                    this._nextShiftFocus.focus();
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                else if (event.shiftKey === true) {
-                    tarp.hide('recode-formula');
-                }
-
-                this._nextFocus = null;
-                this._nextShiftFocus = null;
-            }
-            else if ( event.keyCode === 13) {   //enter
-                this._createRecodeConditionUI();
-                event.preventDefault();
-                event.stopPropagation();
-            }
-        });*/
-
-        this._createRecodeConditionUI = function() {
-            this._focusFormulaControls();
-            if (this.formula.length === 1 && this.formula[0] === '$source') {
-                this.formula[0] = '';
-                this.$el.find('.formula-box.recode-else .formula').text('');
-            }
-            this.formula.splice(this.formula.length - 1, 0, '', '');
-            this._addTransformUIItem('', '', true);
-            this._updateLastFormulaTag();
-
-            setTimeout(() => {
-                let $formulas = this.$options.find('.formula');
-                $($formulas[$formulas.length-3]).focus();
-                this.$options.animate({scrollTop:this.$options[0].scrollHeight}, 'slow');
-                if ($formulas.length > 3)
-                    this.$rightBox.removeClass('hidden');
-            },0);
-        };
-
-        this.$insertBox.on('click', (event) => {
+        $insertBox.addEventListener('click', (event) => {
             this._createRecodeConditionUI();
         });
 
-        this.$insertBox.focus(() => {
+        $insertBox.addEventListener('focus', () => {
             this._focusFormulaControls();
         } );
 
 
-        this.$list = $('<div class="content-list"></div>').appendTo(this.$contents);
-        this.$options = $('<div class="jmv-transform-editor-options"></div>').appendTo(this.$list);
+        let $list = HTML.parse('<div class="content-list"></div>');
+        this.$contents.append($list);
+        this.$options = HTML.parse('<div class="jmv-transform-editor-options"></div>');
+        $list.append(this.$options);
 
-        this.$rightBox = $('<div class="right-box hidden"></div>').appendTo(this.$list);
-        let $moveup = $('<div class="move-up button"><span class="mif-arrow-up"></span></div>').appendTo(this.$rightBox);
-        let $movedown = $('<div class="move-down button"><span class="mif-arrow-down"></span></div>').appendTo(this.$rightBox);
+        this.$rightBox = HTML.parse('<div class="right-box hidden"></div>');
+        $list.append(this.$rightBox);
+        let $moveup = HTML.parse('<div class="move-up button"><span class="mif-arrow-up"></span></div>');
+        this.$rightBox.append($moveup);
+        let $movedown = HTML.parse('<div class="move-down button"><span class="mif-arrow-down"></span></div>');
+        this.$rightBox.append($movedown);
 
-        $moveup.on('mousedown', (event) => {
-            let $item = this.$options.find('.selected');
-            if ($item.length > 0)
+        $moveup.addEventListener('mousedown', (event) => {
+            let $item = this.$options.querySelector<HTMLElement>('.selected');
+            if ($item)
                 this._swapFormulaItems($item, 'up');
         });
 
-        $movedown.on('mousedown', (event) => {
-            let $item = this.$options.find('.selected');
-            if ($item.length > 0)
+        $movedown.addEventListener('mousedown', (event) => {
+            let $item = this.$options.querySelector<HTMLElement>('.selected');
+            if ($item)
                 this._swapFormulaItems($item, 'down');
         });
 
         let elements3 = this._addTransformUIItem('');
 
-        $(window).on('keydown', event => {
-            if ( ! this.$contents.hasClass('super-focus'))
+        window.addEventListener('keydown', event => {
+            if ( ! this.$contents.classList.contains('super-focus'))
                 return;
 
             let undo = event.key === 'Escape';
@@ -233,22 +203,27 @@ const TransformEditor = function(dataset) {
         });
 
 
-        this.$bottom = $('<div class="jmv-transform-editor-bottom"></div>').appendTo(this.$el);
+        let $bottom = HTML.parse('<div class="jmv-transform-editor-bottom"></div>');
+        this.append($bottom);
 
-        this.$measureBox = $('<div class="measure-box"></div>').appendTo(this.$bottom);
-        $(`<div class="transform-label">${_('Measure type')}</div>`).appendTo(this.$measureBox);
-        this.$measureList = $(`<select id="transform-measure-type">
+        let $measureBox = HTML.parse('<div class="measure-box"></div>');
+        $bottom.append($measureBox);
+        $measureBox.append(HTML.parse(`<div class="transform-label">${_('Measure type')}</div>`));
+        
+        this.$measureList = HTML.parse(`<select id="transform-measure-type">
                                     <option value="none">${_('Auto')}</option>
                                     <option value="nominal">${_('Nominal')}</option>
                                     <option value="ordinal">${_('Ordinal')}</option>
                                     <option value="continuous">${_('Continuous')}</option>
                                     <option value="id">${_('ID')}</option>
-                                </select>`).appendTo(this.$measureBox);
-        this.$measureList.val('none');
-        this.$measureIcon = $('<div class="transform-measure-icon"></div>').appendTo(this.$measureBox);
+                                </select>`);
+        $measureBox.append(this.$measureList);
+        this.$measureList.value = 'none';
+        this.$measureIcon = HTML.parse('<div class="transform-measure-icon"></div>');
+        $measureBox.append(this.$measureIcon);
 
         this.measureList = new MeasureList();
-        this.$measureList.on('mousedown', (event) => {
+        this.$measureList.addEventListener('mousedown', (event) => {
             if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList)
                 dropdown.hide();
             else
@@ -262,7 +237,7 @@ const TransformEditor = function(dataset) {
             let id = this._id;
             let measureType = event.detail;
             let values = { measureType: measureType };
-            this.dataset.setTransforms([{ id: id, values: values }]).catch((error) => {
+            this.model.setTransforms([{ id: id, values: values }]).catch((error) => {
                 this._populate();
                 this._notifyEditProblem({
                     title: error.message,
@@ -273,14 +248,17 @@ const TransformEditor = function(dataset) {
             dropdown.hide();
         });
 
-        this.$usageBox = $('<div class="usage-box"></div>').appendTo(this.$bottom);
-        this.$connectionInfo = $(`<div class="usage-label">${_('used by')}</div>`).appendTo(this.$usageBox);
-        this.$viewConnectionInfo = $('<div class="view-button"></div>').appendTo(this.$usageBox);
+        let $usageBox = HTML.parse('<div class="usage-box"></div>');
+        $bottom.append($usageBox);
+        let $connectionInfo = HTML.parse(`<div class="usage-label">${_('used by')}</div>`);
+        $usageBox.append($connectionInfo);
+        this.$viewConnectionInfo = HTML.parse('<div class="view-button"></div>');
+        $usageBox.append(this.$viewConnectionInfo);
 
         this.variableList = new VariableList();
-        this.$viewConnectionInfo.on('click', (event) => {
+        this.$viewConnectionInfo.addEventListener('click', (event) => {
             let columns = [];
-            for (let column of this.dataset.attributes.columns) {
+            for (let column of this.model.attributes.columns) {
                 if (column.transform === this._id)
                     columns.push(column);
             }
@@ -295,7 +273,7 @@ const TransformEditor = function(dataset) {
             event.stopPropagation();
         });
 
-        this.dataset.on('columnsChanged', (event) => {
+        this.model.on('columnsChanged', (event) => {
             for (let change of event.changes) {
                 if (change.transformChanged) {
                     this._populate();
@@ -304,7 +282,7 @@ const TransformEditor = function(dataset) {
             }
         });
 
-        this.dataset.on('transformsChanged', (event) => {
+        this.model.on('transformsChanged', (event) => {
             for (let change of event.changes) {
                 if (change.id === this._id) {
                     this._updateFormulas();
@@ -312,33 +290,109 @@ const TransformEditor = function(dataset) {
                 }
             }
         });
-    };
+    }
 
-    this._updateErrorMessages = function() {
-        let transform = this.dataset.getTransformById(this._id);
+    _createRecodeConditionUI() {
+        this._focusFormulaControls();
+        if (this.formula.length === 1 && this.formula[0] === '$source') {
+            this.formula[0] = '';
+            this.querySelector('.formula-box.recode-else .formula').textContent = '';
+        }
+        this.formula.splice(this.formula.length - 1, 0, '', '');
+        this._addTransformUIItem('', '', true);
+        this._updateLastFormulaTag();
 
-        let $messageBoxes = this.$options.find('.formula-message');
+        setTimeout(() => {
+            let $formulas = this.$options.querySelectorAll<HTMLElement>('.formula');
+            if ($formulas.length > 0) {
+                $formulas[$formulas.length-3].focus();
+                this.$options.scrollTo({
+                    top: this.$options.scrollHeight,
+                    behavior: 'smooth'
+                });
+                if ($formulas.length > 3)
+                    this.$rightBox.classList.remove('hidden');
+            }
+        },0);
+    }
+
+    setInputEvents($element: HTMLElement | HTMLInputElement, propertyName: keyof StringOnly<Transform>) {
+        let _applyOnBlur = true;
+        $element.addEventListener('focus', () => {
+            if ($element instanceof HTMLInputElement)
+                $element.select();
+        } );
+
+        $element.addEventListener('blur', () => {
+            if (_applyOnBlur) {
+                let id = this._id;
+                let values: Partial<Transform> = { };
+                if ($element instanceof HTMLInputElement)
+                    values[propertyName] = $element.value.trim();
+                else
+                    values[propertyName] = $element.textContent.trim();
+                    
+                this.model.setTransforms([{ id: id, values: values }]).catch((error) => {
+                    this._populate();
+                    this._notifyEditProblem({
+                        title: error.message,
+                        message: error.cause,
+                        type: 'error',
+                    });
+                });
+                window.clearTextSelection();
+            }
+            _applyOnBlur = true;
+        } );
+
+        $element.addEventListener('keydown', (event: KeyboardEvent) => {
+            var keypressed = event.keyCode || event.which;
+            if (keypressed === 13) { // enter key
+                $element.blur();
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            else if (keypressed === 27) { // escape key
+                _applyOnBlur = false;
+                $element.blur();
+                let id = this._id;
+                let value = this.model.getTransformById(id)[propertyName];
+                if ($element instanceof HTMLInputElement)
+                    $element.value = value;
+                else
+                    $element.textContent = value;
+                    
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+    }
+
+    _updateErrorMessages() {
+        let transform = this.model.getTransformById(this._id);
+
+        let $messageBoxes = this.$options.querySelectorAll('.formula-message');
         for (let i = 0; i < transform.formulaMessage.length; i++) {
             let msg = transform.formulaMessage[i];
             $messageBoxes[i].textContent = msg;
         }
-    };
+    }
 
-    this._updateFormulas = function() {
-        let transform = this.dataset.getTransformById(this._id);
+    _updateFormulas() {
+        let transform = this.model.getTransformById(this._id);
 
-        let $formula = this.$options.find('.formula');
+        let $formula = this.$options.querySelectorAll('.formula');
 
         if ($formula.length !== transform.formula.length)
             this._populate();
         else {
-            this.$title.val(transform.name);
-            this.$shortname[0].textContent = transform.suffix;
-            this.$description[0].textContent = transform.description;
-            this.$measureList.val(transform.measureType);
-            this.$measureIcon.attr('measure-type', transform.measureType);
+            this.$title.value = transform.name;
+            this.$shortname.textContent = transform.suffix;
+            this.$description.textContent = transform.description;
+            this.$measureList.value = transform.measureType;
+            this.$measureIcon.setAttribute('measure-type', transform.measureType);
 
-            let $messageBoxes = this.$options.find('.formula-message');
+            let $messageBoxes = this.$options.querySelectorAll('.formula-message');
             for (let i = 0; i < transform.formula.length; i++) {
                 let formula = transform.formula[i];
                 $formula[i].textContent = formula;
@@ -346,29 +400,29 @@ const TransformEditor = function(dataset) {
                 $messageBoxes[i].textContent = msg;
             }
         }
-    };
+    }
 
-    this._focusFormulaControls = function() {
-        if (this.$contents.hasClass('super-focus'))
+    _focusFormulaControls() {
+        if (this.$contents.classList.contains('super-focus'))
             return;
 
         this._undoFormula = this.formula.slice();
 
-        this.$contents.addClass('super-focus');
+        this.$contents.classList.add('super-focus');
         tarp.show('recode-formula', true, 0.1, 299).then(() => {
-            this.$contents.removeClass('super-focus');
+            this.$contents.classList.remove('super-focus');
             this._applyFormula();
             window.clearTextSelection();
             dropdown.hide();
         }, () => {
-            this.$contents.removeClass('super-focus');
+            this.$contents.classList.remove('super-focus');
             this._applyFormula();
             window.clearTextSelection();
             dropdown.hide();
         });
-    };
+    }
 
-    this._addTransformUIItem = function(formula1, formula2, hasTransition) {
+    _addTransformUIItem(formula1: string, formula2?: string, hasTransition?: boolean) {
         let hasCondition = formula2 !== undefined;
 
         let tag = `${_('if')} $source`;
@@ -383,7 +437,7 @@ const TransformEditor = function(dataset) {
 
         this._createSubFormula(elements, tag, hasCondition, formula1, 0);
 
-        elements.$showEditor.on('click', (event) => {
+        elements.$showEditor.addEventListener('click', (event) => {
             let $formula = null;
             this._addingLevel = true;
             /*for (let $next_formula of elements.$formulas) {
@@ -400,23 +454,23 @@ const TransformEditor = function(dataset) {
                         this._editorClicked = false;
                     });
                     //$formula.focus();
-                    elements.$showEditor.addClass('is-active');
+                    elements.$showEditor.classList.add('is-active');
                 //}
             }
             this._addingLevel = false;
         });
 
-        elements.$showEditor.on('mousedown', (event) => {
+        elements.$showEditor.addEventListener('mousedown', (event) => {
             this._$wasEditingFormula = dropdown.focusedOn() !== null ? this.formulasetup.focusedOn() : null;
         });
 
         document.addEventListener("selectionchange", () => {
             const sel = window.getSelection();
             for (let i = 0; i < elements.$formulas.length; i++) {
-                if (elements.$formulas[i] && (elements.$formulas[i][0].contains(sel.anchorNode) || sel.anchorNode === elements.$formulas[i][0])) {
+                if (elements.$formulas[i] && (elements.$formulas[i].contains(sel.anchorNode) || sel.anchorNode === elements.$formulas[i])) {
                     let range = sel.getRangeAt(0);
-                    elements.$formulas[i].attr('sel-start', range.startOffset);
-                    elements.$formulas[i].attr('sel-end', range.endOffset);
+                    elements.$formulas[i].setAttribute('sel-start', range.startOffset.toString());
+                    elements.$formulas[i].setAttribute('sel-end', range.endOffset.toString());
                     break;
                 }
             }
@@ -427,41 +481,44 @@ const TransformEditor = function(dataset) {
             this._createFormulaButtons(elements);
         }
 
-        let $items =  elements.$formulaGrid.find('.formula-list-item');
-        $($items[$items.length-1]).addClass('item-last');
+        let $items =  elements.$formulaGrid.querySelectorAll('.formula-list-item');
+        $items[$items.length-1].classList.add('item-last');
 
-        let $msgItems =  elements.$formulaGrid.find('.formula-message-box');
-        $($msgItems[$msgItems.length-1]).addClass('item-last');
+        let $msgItems =  elements.$formulaGrid.querySelectorAll('.formula-message-box');
+        $msgItems[$msgItems.length-1].classList.add('item-last');
 
 
         if (hasTransition) {
             setTimeout(() => {
-                let height = elements.$formulaGrid.outerHeight();
-                this._expandSection(elements.$formulaBox[0], height + 'px');
-                elements.$formulaBox.removeClass('hidden');
+                let height = this.outerHeight(elements.$formulaGrid);
+                this._expandSection(elements.$formulaBox, height + 'px');
+                elements.$formulaBox.classList.remove('hidden');
             }, 0);
         }
         else {
-            elements.$formulaBox.removeClass('hidden');
+            elements.$formulaBox.classList.remove('hidden');
         }
-    };
+    }
 
-    this._updateLastFormulaTag = function() {
-        let $equal = this.$options.find('.recode-else .equal');
-        let $formula = this.$options.find('.recode-else .formula');
-        let tag = '=';
-        if (this.formula.length > 1)
-            tag = _('else use');
+    _updateLastFormulaTag() {
+        let $equal = this.$options.querySelector('.recode-else .equal');
+        if ($equal) {
+            let $formula = this.$options.querySelector<HTMLElement>('.recode-else .formula');
+            let tag = '=';
+            if (this.formula.length > 1)
+                tag = _('else use');
 
-        setTimeout(() => {
-            let indent = ($equal[0].clientWidth + 1) + 'px';
-            $formula.css('text-indent', indent);
-        }, 10);
+            setTimeout(() => {
+                let indent = ($equal.clientWidth + 1) + 'px';
+                $formula.style.textIndent = indent;
+            }, 10);
 
-        $equal.html(tag);
-    };
+            
+            $equal.textContent = tag;
+        }
+    }
 
-    this._applyFormula = function() {
+    _applyFormula() {
         if (this._applyId)
             clearTimeout(this._applyId);
 
@@ -469,7 +526,7 @@ const TransformEditor = function(dataset) {
             let id = this._id;
             let values = { formula: this.formula };
             this._applyId = null;
-            this.dataset.setTransforms([{ id: id, values: values }]).catch((error) => {
+            this.model.setTransforms([{ id: id, values: values }]).catch((error) => {
                 this.formula = [];
                 this._populate();
                 this._notifyEditProblem({
@@ -479,27 +536,27 @@ const TransformEditor = function(dataset) {
                 });
             });
         }, 0);
-    };
+    }
 
-    this._createFormulaUI = function(hasTransition) {
-        this.$options.empty();
+    _createFormulaUI(hasTransition) {
+        this.$options.innerHTML = '';
         for (let i = 0; i < this.formula.length; i += 2)
             this._addTransformUIItem(this.formula[i], this.formula[i+1], hasTransition);
-    };
+    }
 
-    this._populate = function(event) {
+    _populate() {
         let id = this._id;
         if (id !== null) {
-            let transform = this.dataset.getTransformById(id);
+            let transform = this.model.getTransformById(id);
             if (transform) {
 
-                this.$icon.css('background-color', ColourPalette.get(transform.colourIndex));
+                this.$icon.style.backgroundColor = ColourPalette.get(transform.colourIndex);
 
-                this.$title.val(transform.name);
-                this.$shortname[0].textContent = transform.suffix;
-                this.$description[0].textContent = transform.description;
-                this.$measureList.val(transform.measureType);
-                this.$measureIcon.attr('measure-type', transform.measureType);
+                this.$title.value = transform.name;
+                this.$shortname.textContent = transform.suffix;
+                this.$description.textContent = transform.description;
+                this.$measureList.value = transform.measureType;
+                this.$measureIcon.setAttribute('measure-type', transform.measureType);
 
                 let updateFormula = false;
                 if ( ! this.formula || this.formula.length !== transform.formula.length)
@@ -517,60 +574,74 @@ const TransformEditor = function(dataset) {
                     this._createFormulaUI(true);
 
                 this.connectedColumns = [];
-                let columns = this.dataset.attributes.columns;
-                let count = 0;
+                let columns = this.model.attributes.columns;
                 for (let column of columns) {
                     if (column.transform === id)
                         this.connectedColumns.push(column);
                 }
-                this.$viewConnectionInfo[0].textContent = this.connectedColumns.length;
+                this.$viewConnectionInfo.textContent = this.connectedColumns.length.toString();
                 this._updateErrorMessages();
                 return;
             }
         }
 
-        this.$title.html('');
-        this.$description.html('');
-        this.$shortname.html('');
-    };
+        this.$title.innerHTML = '';
+        this.$description.innerHTML = '';
+        this.$shortname.innerHTML = '';
+    }
 
-    this._swapFormulaItems = function($item, direction) {
+    outerHeight(el: HTMLElement, includeMargin = false) {
+        let height = el.offsetHeight;
+
+        if (includeMargin) {
+            const style = getComputedStyle(el);
+            const marginTop = parseFloat(style.marginTop) || 0;
+            const marginBottom = parseFloat(style.marginBottom) || 0;
+            height += marginTop + marginBottom;
+        }
+
+        return height;
+    }
+
+    _swapFormulaItems($item: HTMLElement, direction: 'up' | 'down') {
 
         if (!this.formula || this.formula.length <= 1)
             return;
 
-        let $formula = $item.find(':focus');
-        let index = $item.index();
+        let $formula = $item.querySelector<HTMLElement>(':focus');
+        let index = [...$item.parentNode.children].indexOf($item);
 
         if ( ! this._swappingItems &&
              ! ((((index+1) * 2) >  this.formula.length) || (index === 0 && direction === 'up' ) || (((index+1) * 2) >= (this.formula.length-1) && direction === 'down'))) {
             this._swappingItems = true;
 
-            let $items = this.$options.find('.formula-box');
+            let $items = this.$options.querySelectorAll<HTMLElement>('.formula-box');
             let oIndex = index-1;
             if (direction === 'down')
                 oIndex = index+1;
 
-            let $other = $($items[oIndex]);
+            let $other = $items[oIndex];
 
-            let iHeight = $item.outerHeight(true);
-            let oHeight = $other.outerHeight(true);
+            let iHeight = this.outerHeight($item, true);
+            let oHeight = this.outerHeight($other, true);
+            const itemStyle = getComputedStyle($item);
+            const otherStyle = getComputedStyle($other);
 
-            $item.css('top', (parseFloat($item.css('top')) + (direction === 'up' ? (-oHeight) : oHeight)) + 'px');
-            $other.css('top', (parseFloat($other.css('top')) - (direction === 'up' ? (-iHeight) : iHeight)) + 'px');
+            $item.style.top = ((parseFloat(itemStyle.top)) + (direction === 'up' ? (-oHeight) : oHeight)) + 'px';
+            $other.style.top = ((parseFloat(otherStyle.top)) - (direction === 'up' ? (-iHeight) : iHeight)) + 'px';
 
-            $item.one("webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend", (event) => {
-                $item.css('top', '0px');
-                $other.css('top', '0px');
-                $other.css('transition', 'none');
-                $item.detach();
+            $item.addEventListener("transitionend", (event) => {
+                $item.style.top = '0px';
+                $other.style.top = '0px';
+                $other.style.transition = 'none';
+                $item.remove();
                 if (direction === 'up')
                     $other.before($item);
                 else
                     $other.after($item);
 
                 setTimeout(() => {
-                    $other.css('transition', '');
+                    $other.style.transition = '';
                     $formula.focus();
                     this._swappingItems = false;
 
@@ -583,21 +654,21 @@ const TransformEditor = function(dataset) {
                     this.formula[(oIndex * 2) + 0] = y1;
                     this.formula[(oIndex * 2) + 1] = y2;
                 }, 0);
-            });
+            }, { once: true });
         }
 
         setTimeout(() => {
             $formula.focus();
         }, 0);
-    };
+    }
 
-    this._dataSetLoaded = function(event) {
-        this._populate(event);
-    };
+    _dataSetLoaded() {
+        this._populate();
+    }
 
-    this._removeCondition = function($formulaBox) {
+    _removeCondition($formulaBox: HTMLElement) {
         this._focusFormulaControls();
-        let condIndex = $formulaBox.index();
+        let condIndex = [...$formulaBox.parentNode.children].indexOf($formulaBox);
         let index = condIndex * 2;
         this.formula.splice(index, 2);
         $formulaBox.remove();
@@ -605,21 +676,22 @@ const TransformEditor = function(dataset) {
         this._updateLastFormulaTag();
 
         if (this.formula.length <= 3)
-            this.$rightBox.addClass('hidden');
-    };
+            this.$rightBox.classList.add('hidden');
+    }
 
-    this._createFormulaButtons = function(elements) {
-        let $rm = $('<div class="remove-cond" data-index="0"><span class="mif-cross"></span></div>').appendTo(elements.$formulaGrid);
-        $rm.on('click', (event) => {
-            elements.$formulaBox.one("webkitTransitionEnd otransitionend oTransitionEnd msTransitionEnd transitionend", (event) => {
+    _createFormulaButtons(elements: TransformDetails) {
+        let $rm = HTML.parse('<div class="remove-cond" data-index="0"><span class="mif-cross"></span></div>');
+        elements.$formulaGrid.append($rm);
+        $rm.addEventListener('click', (event) => {
+            elements.$formulaBox.addEventListener("transitionend", (event) => {
                 this._removeCondition(elements.$formulaBox);
-            });
-            elements.$formulaBox.addClass('remove');
-            this._collapseSection(elements.$formulaBox[0]);
+            }, { once: true });
+            elements.$formulaBox.classList.add('remove');
+            this._collapseSection(elements.$formulaBox);
         });
-    };
+    }
 
-    this._collapseSection = function(element) {
+    _collapseSection(element: HTMLElement) {
         let sectionHeight = element.scrollHeight;
 
         let elementTransition = element.style.transition;
@@ -632,55 +704,57 @@ const TransformEditor = function(dataset) {
                 element.style.height = 0 + 'px';
             });
         });
-    };
+    }
 
-    this._expandSection = function(element, value) {
+    _expandSection(element: HTMLElement, value: string) {
 
-        element.setAttribute('data-expanding', true);
+        element.setAttribute('data-expanding', 'true');
         let sectionHeight = element.scrollHeight;
 
-        element.style.height = value === undefined ? sectionHeight : value;
+        element.style.height = value === undefined ? `${sectionHeight}px` : value;
 
         element.addEventListener('transitionend', (e) => {
             element.removeEventListener('transitionend', e.callee);
             element.style.height = null;
-            element.setAttribute('data-expanding', false);
+            element.setAttribute('data-expanding', 'false');
             dropdown.updatePosition();
         });
-    };
+    }
 
-    this._createFormulaBox = function($parent, isCondition, hasTransition) {
-        let $elseBox = $parent.find('.recode-else');
+    _createFormulaBox($parent: HTMLElement, isCondition: boolean, hasTransition: boolean): TransformDetails {
+        let $elseBox = $parent.querySelector('.recode-else');
         let className = 'recode-if';
         if ( ! isCondition)
             className = 'recode-else';
         if (hasTransition)
             className = className + ' hidden';
 
-        let $formulaBox = $('<div class="formula-box ' + className + '"></div>');
+        let $formulaBox = HTML.parse('<div class="formula-box ' + className + '"></div>');
 
-        if ($elseBox.length > 0) {
+        if ($elseBox) {
             if ( ! isCondition)
                 throw 'The else statement ui already exists';
 
-            $formulaBox.insertBefore($elseBox);
+            $elseBox.before($formulaBox);
         }
         else
             $parent.append($formulaBox);
 
-        let $showEditor = $(`<button class="show-editor" aria-label="${_('Show formula editor')}"><div class="down-arrow"></div></button>`).appendTo($formulaBox);
+        let $showEditor = HTML.parse(`<button class="show-editor" aria-label="${_('Show formula editor')}"><div class="down-arrow"></div></button>`);
+        $formulaBox.append($showEditor);
 
-        let $formulaGrid = $('<div class="formula-grid"></div>').appendTo($formulaBox);
+        let $formulaGrid = HTML.parse('<div class="formula-grid"></div>');
+        $formulaBox.append($formulaGrid);
 
-        return { $formulaBox,  $showEditor, $formulaGrid, _subFocusClicked: false, _opEditClicked: false };
-    };
+        return { $formulaBox,  $showEditor, $formulaGrid, _subFocusClicked: false, _opEditClicked: false, $focusedFormula: undefined, $formulas: undefined, $formulaMessage: undefined };
+    }
 
-    this._startsWithValidOps = function($formula, ignorePlaceholder?) {
+    _startsWithValidOps($formula: HTMLElement, ignorePlaceholder?: boolean) {
         let validOps = ['==', '!=', '=', '<=', '>=', '<', '>'];
 
-        let text = $formula.text().trim();
+        let text = $formula.textContent.trim();
         if (!ignorePlaceholder && text === '') {
-            text = $formula.attr('placeholder');
+            text = $formula.getAttribute('placeholder');
         }
 
         for (let i = 0; i < validOps.length; i++) {
@@ -698,8 +772,8 @@ const TransformEditor = function(dataset) {
                         amount = 0;
 
                     text = text.slice(0, count) + ' ' + text.slice(count);
-                    $formula[0].textContent = text;
-                    sel.setBaseAndExtent($formula[0].firstChild, start+amount, $formula[0].firstChild, end+amount);
+                    $formula.textContent = text;
+                    sel.setBaseAndExtent($formula.firstChild, start+amount, $formula.firstChild, end+amount);
                     this.prevStart = start+amount;
                 }
                 return validOps[i].length;
@@ -708,16 +782,16 @@ const TransformEditor = function(dataset) {
         }
 
         return 0;
-    };
+    }
 
-    this._createSubFormula = function(elements, prefix, hasOp, formula, index) {
+    _createSubFormula(elements: TransformDetails, prefix: string, hasOp: boolean, formula: string, index: number) {
 
         let $formulaBox = elements.$formulaBox;
 
         if (hasOp === undefined)
             hasOp = false;
 
-        let $formulaGrid = $formulaBox.find('.formula-grid');
+        let $formulaGrid = $formulaBox.querySelector('.formula-grid');
 
         let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))].b;
         let _sign = '';
@@ -726,13 +800,15 @@ const TransformEditor = function(dataset) {
             _sign = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))].s + ' ';
         }
 
-        let $fp = $('<div class="formula-list-item item-' + index + '" style="grid-column-start: ' + (index + 1) + '; grid-row-start: 1;"></div>').appendTo($formulaGrid);
+        let $fp = HTML.parse('<div class="formula-list-item item-' + index + '" style="grid-column-start: ' + (index + 1) + '; grid-row-start: 1;"></div>');
+        $formulaGrid.append($fp);
 
         elements.$focusedFormula = null;
         if (elements.$formulas === undefined)
             elements.$formulas = [ ];
 
-        let $formula = $('<div class="formula" tabindex="0" type="text" spellcheck="false" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" data-index="' + index + '">' + formula + '</div>').appendTo($fp);
+        let $formula = HTML.parse<HTMLDivElement>('<div class="formula" tabindex="0" type="text" spellcheck="false" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" data-index="' + index + '">' + formula + '</div>');
+        $fp.append($formula);
 
         let indexOfDollar = prefix.indexOf('$');
         if (indexOfDollar !== -1) {
@@ -741,45 +817,46 @@ const TransformEditor = function(dataset) {
             prefix = prefix.slice(0, indexOfDollar+1) + "</span>" + prefix.slice(indexOfDollar+1);
         }
 
-        let $equal = $('<div class="equal">' + prefix + '</div>').appendTo($fp);
+        let $equal = HTML.parse('<div class="equal">' + prefix + '</div>');
+        $fp.append($equal);
         setTimeout(() => {
-            let indent = ($equal[0].clientWidth + 1) + 'px';
-            $formula.css('text-indent', indent);
+            let indent = ($equal.clientWidth + 1) + 'px';
+            $formula.style.textIndent = indent;
         }, 10);
 
         elements.$formulas.push($formula);
 
-        let $opEdit = null;
+        let $opEdit: HTMLElement = null;
 
-        $formula.on('blur', (event) => {
-            this.$options.find('.selected').removeClass('selected');
-            this.formula[($formulaBox.index() * 2) + index] = $formula[0].textContent.trim();
+        $formula.addEventListener('blur', (event) => {
+            this.$options.querySelector('.selected')?.classList.remove('selected');
+            this.formula[([...$formulaBox.parentNode.children].indexOf($formulaBox) * 2) + index] = $formula.textContent.trim();
             if (hasOp && elements._opEditClicked === false)
-                $opEdit.hide();
+                $opEdit.style.display = 'none';
             elements._opEditClicked = false;
         });
 
-        $formula.on('focus', (event) => {
-            elements.$formulaBox.addClass('selected');
+        $formula.addEventListener('focus', (event) => {
+            elements.$formulaBox.classList.add('selected');
             elements.$focusedFormula = $formula;
             this._focusFormulaControls();
             if (this.formulasetup.focusedOn() !== $formula)
                 this.formulasetup.show($formula, '', true);
             if (hasOp)
-                $opEdit.show();
+                $opEdit.style.display = '';
         });
 
-        $formula.on('mousedown', (event) => {
+        $formula.addEventListener('mousedown', (event) => {
             elements._subFocusClicked = true;
         });
 
-        $formula.on('input', (event) => {
+        $formula.addEventListener('input', (event) => {
             dropdown.updatePosition();
 
             if (hasOp) {
                 let count = this._startsWithValidOps($formula);
                 if (count !== 0)
-                    $opEdit.css('width', (count+1) + 'ch');
+                    $opEdit.style.width = (count+1) + 'ch';
 
                 if (dropdown.content() === this.opsToolbar)
                     dropdown.hide();
@@ -787,16 +864,17 @@ const TransformEditor = function(dataset) {
         });
 
         if (hasOp) {
-            $opEdit = $('<div class="down-arrow">a</div>').appendTo($fp);
+            $opEdit = HTML.parse('<div class="down-arrow">a</div>');
+            $fp.append($opEdit)
             setTimeout(() => {
-                let indent = ($equal[0].clientWidth + 1) + 'px';
-                $opEdit.css('left', indent);
+                let indent = ($equal.clientWidth + 1) + 'px';
+                $opEdit.style.left = indent;
             }, 10);
-            $opEdit.css('width', _sign.length + 'ch');
-            $opEdit.hide();
+            $opEdit.style.width = _sign.length + 'ch';
+            $opEdit.style.display = 'none';
 
-            $opEdit.on('click', (event) => {
-                if (this._$wasEditingOpsFormula !== $formula || dropdown.content !== this.opsToolbar) {
+            $opEdit.addEventListener('click', (event) => {
+                if (this._$wasEditingOpsFormula !== $formula || dropdown.content() !== this.opsToolbar) {
                     this.opsToolbar.show($formula);
                     dropdown.show($formula, this.opsToolbar);
 
@@ -804,29 +882,29 @@ const TransformEditor = function(dataset) {
 
                     let count = this._startsWithValidOps($formula, true);
 
-                    if ($formula[0].firstChild)
-                        sel.setBaseAndExtent($formula[0].firstChild, 0, $formula[0].firstChild, count);
-                    $formula[0].focus();
+                    if ($formula.firstChild)
+                        sel.setBaseAndExtent($formula.firstChild, 0, $formula.firstChild, count);
+                    $formula.focus();
 
-                    $opEdit.addClass('is-active');
+                    $opEdit.classList.add('is-active');
                 }
                 event.stopPropagation();
                 event.preventDefault();
             });
 
-            $opEdit.on('mousedown', (event) => {
+            $opEdit.addEventListener('mousedown', (event) => {
                 this._$wasEditingOpsFormula = dropdown.focusedOn() !== null ? this.opsToolbar.focusedOn() : null;
                 elements._opEditClicked = true;
             });
 
-            $formula.on('editor:closing', () => {
-                $opEdit.removeClass('is-active');
-                elements.$showEditor.removeClass('is-active');
+            $formula.addEventListener('editor:closing', () => {
+                $opEdit.classList.remove('is-active');
+                elements.$showEditor.classList.remove('is-active');
             });
         }
 
-        $formula.on('focusout', (event: FocusEvent) => {
-            if (this.formulasetup.contains(event.relatedTarget))
+        $formula.addEventListener('focusout', (event: FocusEvent) => {
+            if (event.relatedTarget instanceof Node && this.formulasetup.contains(event.relatedTarget))
                 return;
 
             if (this._isRealBlur(elements)) {
@@ -835,7 +913,7 @@ const TransformEditor = function(dataset) {
             }
             elements._subFocusClicked = false;
         });
-        $formula.on('keydown', (event) => {
+        $formula.addEventListener('keydown', (event) => {
             if (event.keyCode === 8)  //backspace
                 this._backspacePressed = true;
             else
@@ -850,43 +928,26 @@ const TransformEditor = function(dataset) {
                 event.preventDefault();
                 event.stopPropagation();
             }
-
-            /*if ( event.keyCode === 9) { //tab
-                let $formulas = this.$options.find('.formula');
-                if ((event.shiftKey === false && $formulas[$formulas.length - 2] === $formula[0]) ||
-                    (event.shiftKey === true && $formulas[$formulas.length - 1] === $formula[0])) {
-                    this._nextShiftFocus = $($formulas[$formulas.length - 2]);
-                    this._nextFocus = $($formulas[$formulas.length - 1]);
-                    this.$insertBox.focus();
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-                else if (event.shiftKey === false && $formulas[$formulas.length - 1] === $formula[0]) {
-                    this._nextShiftFocus = $($formulas[$formulas.length - 1]);
-                    this._nextFocus = null;
-                    this.$insertBox.focus();
-                    event.preventDefault();
-                    event.stopPropagation();
-                }
-            }*/
         });
 
-        let $formulaMessageBox = $('<div class="formula-message-box  item-' + index + '" style="grid-column-start: ' + (index + 1) + '; grid-row-start: 2;"></div>').appendTo($formulaGrid);
-        elements.$formulaMessage = $('<div class="formula-message"></div>').appendTo($formulaMessageBox);
+        let $formulaMessageBox = HTML.parse('<div class="formula-message-box  item-' + index + '" style="grid-column-start: ' + (index + 1) + '; grid-row-start: 2;"></div>');
+        $formulaGrid.append($formulaMessageBox);
+        elements.$formulaMessage = HTML.parse('<div class="formula-message"></div>');
+        $formulaMessageBox.append(elements.$formulaMessage);
 
         return elements;
-    };
+    }
 
-    this._isRealBlur = function(elements) {
+    _isRealBlur(elements) {
         return dropdown.clicked() === false && elements._subFocusClicked === false && !this.formulasetup.contains(document.activeElement);
-    };
+    }
 
-    this._notifyEditProblem = function(details) {
+    _notifyEditProblem(details) {
         this._editNote.set(details);
-        this.trigger('notification', this._editNote);
-    };
+        this.dispatchEvent(new CustomEvent('notification', { detail: this._editNote, bubbles: true }));
+    }
+}
 
-    this._init();
-};
+customElements.define('jmv-transform-editor', TransformEditor);
 
 export default TransformEditor;

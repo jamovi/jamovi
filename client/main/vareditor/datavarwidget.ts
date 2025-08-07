@@ -1,9 +1,6 @@
 
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
 import DataVarLevelWidget from './datavarlevelwidget';
 import tarp from '../utils/tarp';
 import dropdown from './dropdown';
@@ -13,75 +10,114 @@ import _dialogs from 'dialogs';
 const dialogs = _dialogs({cancel:false});
 import focusLoop from '../../common/focusloop';
 import { s6e } from '../../common/utils';
-import { MeasureType } from '../dataset';
+import { DataType, MeasureType } from '../dataset';
+import VariableModel from './variablemodel';
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
-const DataVarWidget = Backbone.View.extend({
-    className: 'DataVarWidget',
-    initialize(args) {
+class DataVarWidget extends HTMLElement {
 
-        this.attached = false;
+    attached: boolean = false;
+    model: VariableModel;
+    _focusLeaving: boolean;
+    _addingLevel: boolean;
+
+    $left: HTMLElement;
+    $dataTypeList: HTMLSelectElement;
+    $autoType: HTMLElement;
+    $levelsCrtl: HTMLElement;
+    $addLevelButton: HTMLButtonElement;
+    $levels: HTMLElement;
+    $moveUp: HTMLButtonElement;
+    $moveDown: HTMLButtonElement;
+    $missingValueButton: HTMLElement;
+    $measureIcon: HTMLElement;
+    $measureList: HTMLSelectElement;
+
+    $levelItems: NodeListOf<Element>;
+    levelCtrls: DataVarLevelWidget[] = [];
+    selectedLevelIndex: number;
+
+    missingValueEditor: MissingValueEditor;
+    measureList: MeasureList;
+
+    constructor(model: VariableModel) {
+        super();
+
+        this.model = model;
+
+        this._clickLevel = this._clickLevel.bind(this);
 
         dropdown.init();
 
-        this.$el.empty();
-        this.$el.addClass('jmv-variable-editor-datavarwidget');
+        this.classList.add('jmv-variable-editor-datavarwidget', 'DataVarWidget');
 
-        this.$body = $('<div class="jmv-datavarwidget-body"></div>').appendTo(this.$el);
-        this.$left = $('<div class="jmv-variable-editor-widget-left"></div>').appendTo(this.$body);
+        let $body = HTML.parse('<div class="jmv-datavarwidget-body"></div>');
+        this.append($body);
+        this.$left = HTML.parse('<div class="jmv-variable-editor-widget-left"></div>');
+        $body.append(this.$left);
 
         this._createMeasureTypeListBox();
 
-        this.$dataType = $(`<div class="jmv-vareditor-datatype"></div>`).appendTo(this.$left);
-        this.$dataLabel = $(`<label for="data-type">${_('Data type')}</label>`).appendTo(this.$dataType);
-        this.$dataTypeList = $(`<select id="data-type"><option value="integer">${_('Integer')}</option><option value="decimal">${_('Decimal')}</option><option value="text">${_('Text')}</option></select>`).appendTo(this.$dataLabel);
-        this.$autoType = $(`<div class="jmv-variable-editor-autotype">${_('(auto)')}</div>`).appendTo(this.$dataType);
+        let $dataType = HTML.parse(`<div class="jmv-vareditor-datatype"></div>`);
+        this.$left.append($dataType);
+        let $dataLabel = HTML.parse(`<label for="data-type">${_('Data type')}</label>`);
+        $dataType.append($dataLabel)
+        this.$dataTypeList = HTML.parse(`<select id="data-type"><option value="integer">${_('Integer')}</option><option value="decimal">${_('Decimal')}</option><option value="text">${_('Text')}</option></select>`);
+        $dataLabel.append(this.$dataTypeList);
+        this.$autoType = HTML.parse(`<div class="jmv-variable-editor-autotype">${_('(auto)')}</div>`);
+        $dataType.append(this.$autoType);
 
 
         this._createMissingValuesCtrl();
 
-        this.$levelsCrtl = $('<div class="jmv-variable-editor-levels-control" tabindex="0"></div>').appendTo(this.$body);
-        let focusToken = focusLoop.addFocusLoop(this.$levelsCrtl[0], {level: 1, exitSelector: this.$levelsCrtl[0], keyToEnter: true });
+        this.$levelsCrtl = HTML.parse('<div class="jmv-variable-editor-levels-control" tabindex="0"></div>');
+        $body.append(this.$levelsCrtl);
+        let focusToken = focusLoop.addFocusLoop(this.$levelsCrtl, {level: 1, exitSelector: this.$levelsCrtl, keyToEnter: true });
         focusToken.on('focusleave', () => {
             this._focusLeaving = true;
         });
-        this.$addLevelButton = $(`<button class="add-level" aria-label="${_('Add new level')}"><span class="mif-plus"></span></button>`).appendTo(this.$levelsCrtl);
-        this.$levelsContainer = $('<div class="container"></div>').appendTo(this.$levelsCrtl);
-        this.$levelsTitle = $(`<div class="title">${_('Levels')}</div>`).appendTo(this.$levelsContainer);
-        this.$levels = $('<div class="levels"></div>').appendTo(this.$levelsContainer);
-        this.$levelItems = $();
-        this.levelCtrls = [];
+        this.$addLevelButton = HTML.parse(`<button class="add-level" aria-label="${_('Add new level')}"><span class="mif-plus"></span></button>`);
+        this.$levelsCrtl.append(this.$addLevelButton);
+        let $levelsContainer = HTML.parse('<div class="container"></div>');
+        this.$levelsCrtl.append($levelsContainer);
+        $levelsContainer.append(HTML.parse(`<div class="title">${_('Levels')}</div>`));
+        this.$levels = HTML.parse('<div class="levels"></div>');
+        $levelsContainer.append(this.$levels);
+        this.$levelItems =this.$levels.querySelectorAll('.jmv-variable-editor-level');
 
-        this.$move = $('<div class="jmv-variable-editor-widget-move"></div>').appendTo(this.$levelsCrtl);
-        this.$moveUp = $('<button class="jmv-variable-editor-widget-move-up"><span class="mif-arrow-up"></span></button>').appendTo(this.$move);
-        this.$moveDown = $('<button class="jmv-variable-editor-widget-move-down"><span class="mif-arrow-down"></span></button>').appendTo(this.$move);
+        let $move = HTML.parse('<div class="jmv-variable-editor-widget-move"></div>');
+        this.$levelsCrtl.append($move);
+        this.$moveUp = HTML.parse('<button class="jmv-variable-editor-widget-move-up"><span class="mif-arrow-up"></span></button>');
+        $move.append(this.$moveUp);
+        this.$moveDown = HTML.parse('<button class="jmv-variable-editor-widget-move-down"><span class="mif-arrow-down"></span></button>');
+        $move.append(this.$moveDown);
 
-
-        this.$levelsCrtl.on('focusin', (event) => {
+        this.$levelsCrtl.addEventListener('focusin', (event) => {
             if (this._focusLeaving) {
                 this._focusLeaving = false;
                 tarp.hide('levels');
             }
-            else if (this.$levelsCrtl[0].contains(event.relatedTarget))
+            else if (event.relatedTarget instanceof Node && this.$levelsCrtl.contains(event.relatedTarget))
                 this._focusLevelControls();
 
         });
 
-        this.$levelsCrtl[0].addEventListener('focusout', (event) => {
-            if ( !this._addingLevel && ! this.$levelsCrtl[0].contains(event.relatedTarget))
+        this.$levelsCrtl.addEventListener('focusout', (event) => {
+            if ( !this._addingLevel && event.relatedTarget instanceof Node && ! this.$levelsCrtl.contains(event.relatedTarget))
                 tarp.hide('levels');
         } );
 
-        this.$addLevelButton.on('click', async event => {
+        this.$addLevelButton.addEventListener('click', async event => {
             if (this.model.attributes.measureType === 'continuous' || this.model.attributes.measureType === 'id')
                 return;
 
             try {
                 this.selectedLevelIndex = this.levelCtrls.length;
 
-                this.$levelItems.removeClass('selected');
-                this.$levelsCrtl.find('.selected').removeClass('selected');
+                this.$levelItems.forEach(el => el.classList.remove('selected'));
+                this.$levelsCrtl.querySelector('.selected')?.classList.remove('selected');
 
-                let recordValue = this.model.get('dataType') !== 'text';
+                let recordValue = this.model.get('dataType') !== DataType.TEXT;
 
                 let levels = this.model.get('levels');
                 this._addingLevel = true;
@@ -89,7 +125,7 @@ const DataVarWidget = Backbone.View.extend({
                     let msg = _('Enter level value');
                     focusLoop.speakMessage(msg);
                     dialogs.prompt(msg, '', (result) => {
-                        let widget = document.body.querySelector('.dialog-widget.prompt');
+                        let widget = document.body.querySelector<HTMLElement>('.dialog-widget.prompt');
                         focusLoop.leaveFocusLoop(widget);
                         if (result === undefined)
                             reject('');
@@ -113,7 +149,7 @@ const DataVarWidget = Backbone.View.extend({
                             else {
 
                                 let existing = new Set();
-                                let getValues = (lvls, type) => {
+                                let getValues = (lvls, type?) => {
                                     if (lvls) {
                                         for (let alevel of lvls) {
                                             existing.add(alevel[type]);
@@ -143,7 +179,7 @@ const DataVarWidget = Backbone.View.extend({
                             }
                         }
                     });
-                    let widget = document.body.querySelector('.dialog-widget.prompt');
+                    let widget = document.body.querySelector<HTMLElement>('.dialog-widget.prompt');
                     focusLoop.addFocusLoop(widget, { level: 2, modal: true });
                     focusLoop.enterFocusLoop(widget);
                 });
@@ -185,10 +221,10 @@ const DataVarWidget = Backbone.View.extend({
 
                 let levelCtrl = new DataVarLevelWidget(level, this.model, this.levelCtrls.length);
 
-                this.$levels.append(levelCtrl.$el);
+                this.$levels.append(levelCtrl);
                 this.levelCtrls.push(levelCtrl);
 
-                levelCtrl.$el.on('click', this, this._clickLevel);
+                levelCtrl.addEventListener('click', this._clickLevel);
 
                 this.model.levelsReordered = true;
                 this.model.set('levels', clone);
@@ -203,18 +239,18 @@ const DataVarWidget = Backbone.View.extend({
                 }
             }
             this._addingLevel = false;
-            this.$levelItems = this.$levels.find('.jmv-variable-editor-level');
+            this.$levelItems = this.$levels.querySelectorAll('.jmv-variable-editor-level');
             setTimeout(() => {
                 this.$addLevelButton.focus();
             }, 10);
         });
 
-        this.$moveUp.on('click', event => this._moveUp());
-        this.$moveDown.on('click', event => this._moveDown());
+        this.$moveUp.addEventListener('click', event => this._moveUp());
+        this.$moveDown.addEventListener('click', event => this._moveDown());
         this.selectedLevelIndex = -1;
 
-        this.$dataTypeList.on('change', (event) => {
-            let dt = this.$dataTypeList.val();
+        this.$dataTypeList.addEventListener('change', (event) => {
+            let dt = this.$dataTypeList.value as DataType;
             this.model.set({ dataType: dt, autoMeasure: false });
         });
 
@@ -228,10 +264,8 @@ const DataVarWidget = Backbone.View.extend({
             if (this.model.get('autoApply'))
                 tarp.hide('levels');
         });
-    },
-    setParent(parent) {
-        this.editorWidget = parent;
-    },
+    }
+
     _setMissingValues(missings) {
         if ( ! this.attached)
             return;
@@ -254,59 +288,66 @@ const DataVarWidget = Backbone.View.extend({
                     label = `${ label }<span>${ s6e(part) }</span>`;
             }
         }
-        this.$missingValueButton.find('.list').html(label);
-    },
+        this.$missingValueButton.querySelector('.list').innerHTML = label;
+    }
+
     _createMissingValuesCtrl() {
         this.missingValueEditor = new MissingValueEditor(this.model);
-        this.$missingValueButton = $(`
+        this.$missingValueButton = HTML.parse(`
             <div class="missing-values">
                 <label class="label">${_('Missing values')}<button class="list" tabindex="0"></button></label>
-            </div>`).appendTo(this.$left);
-        let $list = this.$missingValueButton.find('.list');
-        $list.on('click', () => {
-            this.$el.trigger('edit:missing', this.missingValueEditor);
+            </div>`);
+        this.$left.append(this.$missingValueButton);
+        let $list = this.$missingValueButton.querySelector('.list');
+        $list.addEventListener('click', () => {
+            this.dispatchEvent(new CustomEvent('edit:missing', { detail: this.missingValueEditor, bubbles: true }));
         });
-        $list.on('keyup', (event) => {
+        $list.addEventListener('keyup', (event: KeyboardEvent) => {
             if (event.keyCode === 13) {
                 // Cancel the default action, if needed
                 event.preventDefault();
                 // Trigger the button element with a click
-                this.$el.trigger('edit:missing', this.missingValueEditor);
+                this.dispatchEvent(new CustomEvent('edit:missing', { detail: this.missingValueEditor, bubbles: true }));
               }
         });
 
-        $list.on('keypress', (event) => {
+        $list.addEventListener('keypress', (event: KeyboardEvent) => {
             if (event.key === 'Enter') {
-                this.$el.trigger('edit:missing', this.missingValueEditor);
+                this.dispatchEvent(new CustomEvent('edit:missing', { detail: this.missingValueEditor, bubbles: true }));
                 event.preventDefault();
                 event.stopPropagation();
             }
         });
-    },
+    }
+
     _createMeasureTypeListBox() {
-        this.$measureBox = $('<div class="measure-box"></div>').appendTo(this.$left);
-        this.$measureLabel = $(`<label class="label">${_('Measure type')}</label>`).appendTo(this.$measureBox);
-        this.$measureIcon = $('<div class="icon"></div>').appendTo(this.$measureBox);
-        this.$measureList = $(`<select id="type">
+        let $measureBox = HTML.parse('<div class="measure-box"></div>');
+        this.$left.append($measureBox);
+        let $measureLabel = HTML.parse(`<label class="label">${_('Measure type')}</label>`);
+        $measureBox.append($measureLabel);
+        this.$measureIcon = HTML.parse('<div class="icon"></div>');
+        $measureBox.append(this.$measureIcon);
+        this.$measureList = HTML.parse(`<select id="type">
                                     <option value="nominal">${_('Nominal')}</option>
                                     <option value="ordinal">${_('Ordinal')}</option>
                                     <option value="continuous">${_('Continuous')}</option>
                                     <option value="id">${_('ID')}</option>
-                                </select>`).appendTo(this.$measureLabel);
-        this.$measureList.val('nominal');
+                                </select>`);
+        $measureLabel.append(this.$measureList);
+        this.$measureList.value = 'nominal';
 
 
         this.measureList = new MeasureList(false);
-        this.$measureList.attr('aria-owns', this.measureList.id);
-        this.$measureList.on('mousedown', (event) => {
+        this.$measureList.setAttribute('aria-owns', this.measureList.id);
+        this.$measureList.addEventListener('mousedown', (event) => {
             if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList) {
                 dropdown.hide();
-                this.$measureList.attr('aria-expanded', false);
+                this.$measureList.setAttribute('aria-expanded', 'false');
             }
             else {
-                this.measureList.setParent(this.$measureList[0]);
+                this.measureList.setParent(this.$measureList);
                 dropdown.show(this.$measureList, this.measureList);
-                this.$measureList.attr('aria-expanded', true);
+                this.$measureList.setAttribute('aria-expanded', 'true');
             }
             event.preventDefault();
             event.stopPropagation();
@@ -317,26 +358,26 @@ const DataVarWidget = Backbone.View.extend({
             let measureType = event.detail;
             this.model.set({ measureType: measureType, autoMeasure: false });
             dropdown.hide();
-            this.$measureList.attr('aria-expanded', false);
+            this.$measureList.setAttribute('aria-expanded', 'false');
         });
-        this.$measureIcon.attr('measure-type', this.model.get('measureType'));
+        this.$measureIcon.setAttribute('measure-type', this.model.get('measureType'));
 
-        this.$measureList.on('change', event => {
-            let mt = this.$measureList.val();
+        this.$measureList.addEventListener('change', event => {
+            let mt = this.$measureList.value as MeasureType;
             this.model.set({ measureType: mt, autoMeasure: false });
         });
 
-        this.$measureList.on('keydown', event => {
+        this.$measureList.addEventListener('keydown', event => {
             if (event.key === 'Enter' || event.key === ' ') {
                 if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList) {
                     dropdown.hide();
-                    this.$measureList.attr('aria-expanded', false);
+                    this.$measureList.setAttribute('aria-expanded', 'false');
                 }
                 else
                 {
-                    this.measureList.setParent(this.$measureList[0]);
+                    this.measureList.setParent(this.$measureList);
                     dropdown.show(this.$measureList, this.measureList);
-                    this.$measureList.attr('aria-expanded', true);
+                    this.$measureList.setAttribute('aria-expanded', 'true');
                 }
                 event.preventDefault();
                 event.stopPropagation();
@@ -349,7 +390,8 @@ const DataVarWidget = Backbone.View.extend({
                 this.$measureList.focus();
             }
         });
-    },
+    }
+
     _moveUp() {
         if (this.attached === false)
             return;
@@ -368,7 +410,8 @@ const DataVarWidget = Backbone.View.extend({
         this.selectedLevelIndex--;
         this.model.levelsReordered = true;
         this.model.set('levels', clone);
-    },
+    }
+
     _moveDown() {
         if (this.attached === false)
             return;
@@ -388,63 +431,66 @@ const DataVarWidget = Backbone.View.extend({
         this.selectedLevelIndex++;
         this.model.levelsReordered = true;
         this.model.set('levels', clone);
-    },
+    }
+
     _enableDisableMoveButtons() {
         if (this.model.attributes.measureType !== 'continuous' && this.model.attributes.ids !== null /*&& this.model.attributes.ids.length === 1*/) {
             let levels = this.model.get('levels');
             let index  = this.selectedLevelIndex;
-            this.$moveUp.toggleClass('disabled', levels === null || index < 1);
-            this.$moveDown.toggleClass('disabled', levels === null || index >= levels.length - 1 || index === -1);
+            this.$moveUp.classList.toggle('disabled', levels === null || index < 1);
+            this.$moveDown.classList.toggle('disabled', levels === null || index >= levels.length - 1 || index === -1);
         }
         else {
-            this.$moveUp.addClass('disabled');
-            this.$moveDown.addClass('disabled');
+            this.$moveUp.classList.add('disabled');
+            this.$moveDown.classList.add('disabled');
         }
 
         if (this.model.attributes.measureType !== 'continuous' && this.model.attributes.ids !== null && this.model.attributes.measureType !== 'id')
-            this.$addLevelButton.removeClass('disabled');
+            this.$addLevelButton.classList.remove('disabled');
         else
-            this.$addLevelButton.addClass('disabled');
-    },
+            this.$addLevelButton.classList.add('disabled');
+    }
+
     _focusLevelControls() {
-        if (this.$levelsCrtl.hasClass('super-focus'))
+        if (this.$levelsCrtl.classList.contains('super-focus'))
             return;
 
         this.model.suspendAutoApply();
-        this.$levelsCrtl.addClass('super-focus');
+        this.$levelsCrtl.classList.add('super-focus');
         tarp.show('levels', true, 0.1, 299).then(() => {
             let $ctrl = this.$levelsCrtl;
-            $ctrl.find('.selected').removeClass('selected');
-            $ctrl.removeClass('super-focus');
+            $ctrl.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+            $ctrl.classList.remove('super-focus');
             this.model.apply();
         }, () => {
             let $ctrl = this.$levelsCrtl;
-            $ctrl.find('.selected').removeClass('selected');
-            $ctrl.removeClass('super-focus');
+            $ctrl.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+            $ctrl.classList.remove('super-focus');
             this.model.apply();
         });
-    },
-    _clickLevel(event) {
-        let self = event.data;
-        self._focusLevelControls();
-        self.$levelItems.removeClass('selected');
-        let $level = $(event.delegateTarget);
-        $level.addClass('selected');
+    }
 
-        let index = self.$levelItems.index($level);
-        self.selectedLevelIndex = index;
-        self._enableDisableMoveButtons();
-    },
-    _setOptions(dataType, measureType, levels) {
+    _clickLevel(event: Event) {
+        this._focusLevelControls();
+        this.$levelItems.forEach(el => el.classList.remove('selected'));
+        let $level = event.currentTarget as HTMLElement;
+        $level.classList.add('selected');
+
+        let index = [...this.$levelItems].indexOf($level);
+        this.selectedLevelIndex = index;
+        this._enableDisableMoveButtons();
+    }
+
+    _setOptions(dataType: DataType, measureType: MeasureType, levels) {
         if ( ! this.attached)
             return;
 
-        this.$dataTypeList.val(dataType);
-        this.$measureIcon.attr('measure-type', measureType);
-        this.$measureList.val(measureType);
+        this.$dataTypeList.value = dataType;
+        this.$measureIcon.setAttribute('measure-type', measureType);
+        this.$measureList.value = measureType;
 
         if (levels === null || levels.length === 0) {
-            this.$levels.empty();
+            this.$levels.innerHTML = '';
             this.levelCtrls = [];
         }
         else if (this.levelCtrls.length > levels.length) {
@@ -453,8 +499,8 @@ const DataVarWidget = Backbone.View.extend({
             this.levelCtrls.splice(levels.length, this.levelCtrls.length - levels.length);
         }
 
-        this.$moveUp.addClass('disabled');
-        this.$moveDown.addClass('disabled');
+        this.$moveUp.classList.add('disabled');
+        this.$moveDown.classList.add('disabled');
 
         if (levels) {
 
@@ -464,17 +510,17 @@ const DataVarWidget = Backbone.View.extend({
             if (this.selectedLevelIndex !== -1 && levels[this.selectedLevelIndex].label === null)
                 this.selectedLevelIndex = -1;
 
-            this.$levelItems.removeClass('selected');
+            this.$levelItems.forEach(el => el.classList.remove('selected'));
             for (let i = 0; i < levels.length; i++) {
                 let level = levels[i];
-                let levelCtrl = null;
+                let levelCtrl: DataVarLevelWidget = null;
                 if (i >= this.levelCtrls.length) {
                     levelCtrl = new DataVarLevelWidget(level, this.model, i);
 
-                    this.$levels.append(levelCtrl.$el);
+                    this.$levels.append(levelCtrl);
                     this.levelCtrls.push(levelCtrl);
 
-                    levelCtrl.$el.on('click', this, this._clickLevel);
+                    levelCtrl.addEventListener('click', this._clickLevel);
                 }
                 else {
                     levelCtrl = this.levelCtrls[i];
@@ -482,28 +528,31 @@ const DataVarWidget = Backbone.View.extend({
                 }
 
                 if (i === this.selectedLevelIndex)
-                    levelCtrl.$el.addClass('selected');
+                    levelCtrl.classList.add('selected');
             }
         }
 
-        this.$levelItems = this.$levels.find('.jmv-variable-editor-level');
+        this.$levelItems = this.$levels.querySelectorAll('.jmv-variable-editor-level');
 
         this._enableDisableMoveButtons();
-    },
+    }
+
     _setAutoMeasure(auto) {
         if ( ! this.attached)
             return;
         if (auto)
-            this.$autoType.show();
+            this.$autoType.style.display = '';
         else
-            this.$autoType.hide();
-    },
+            this.$autoType.style.display = 'none';
+    }
+
     detach() {
         if ( ! this.attached)
             return;
 
         this.attached = false;
-    },
+    }
+
     attach() {
         this.attached = true;
 
@@ -515,6 +564,8 @@ const DataVarWidget = Backbone.View.extend({
             this.model.get('levels'));
         this._setMissingValues(this.model.get('missingValues'));
     }
-});
+}
+
+customElements.define('jmv-data-variable-editor', DataVarWidget);
 
 export default DataVarWidget;

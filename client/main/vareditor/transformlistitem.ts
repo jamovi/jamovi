@@ -24,7 +24,7 @@ export default class TransformListItem extends HTMLElement {
         this.checked = checked;
 
         this.setAttribute('role', 'presentation');
-        this.className = "jmv-transform-list-item";
+        this.classList.add("jmv-transform-list-item");
         this.icon = HTML.parse('<div class="icon"></div>');
         this.appendChild(this.icon);
 

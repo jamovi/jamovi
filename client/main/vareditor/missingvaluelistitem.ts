@@ -1,33 +1,46 @@
 
 'use strict';
 
-import $ from 'jquery';
 import dropdown from './dropdown';
 import opsToolbar from '../editors/operatordropdown';
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
-const MissingValueListItem = function(value) {
-    this.value = value;
-    this.opsToolbar = new opsToolbar();
-    this._opEditClicked = false;
-    dropdown.init();
+class MissingValueListItem extends HTMLElement {
 
-    this.$el = $('<div class="jmv-missing-value-list-item"></div>');
+    _exampleFormulas: { s: string, a: string }[];
+    opsToolbar: opsToolbar;
+    _opEditClicked: boolean;
+    value: string;
+    _backspacePressed: boolean;
+    _$wasEditingOpsFormula: HTMLElement;
 
-    this._exampleFormulas = [
-        { s: "==", a: "'NA'" },
-        { s: "==", a: "'No response'" },
-        { s: "==", a: "-1" },
-        { s: "<", a: "0" },
-        { s: "<=", a: "-1" },
-        { s: "==", a: "99" }
-    ];
-
-    this.setValue = function(value) {
-        this.$el.find('.formula').text(value);
+    constructor(value: string) {
+        super();
         this.value = value;
-    };
+        this.opsToolbar = new opsToolbar();
+        this._opEditClicked = false;
+        dropdown.init();
 
-    this._createUI = function(elements) {
+        this.classList.add('jmv-missing-value-list-item');
+
+        this._exampleFormulas = [
+            { s: "==", a: "'NA'" },
+            { s: "==", a: "'No response'" },
+            { s: "==", a: "-1" },
+            { s: "<", a: "0" },
+            { s: "<=", a: "-1" },
+            { s: "==", a: "99" }
+        ];
+
+        this._createUI();
+    }
+
+    setValue(value: string) {
+        this.querySelectorAll('.formula').forEach(el => el.textContent = value);
+        this.value = value;
+    }
+
+    _createUI() {
 
         let formula = this.value;
         let prefix = `${_('when')} $source`;
@@ -38,9 +51,11 @@ const MissingValueListItem = function(value) {
         let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))].a;
         let _sign = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))].s + ' ';
 
-        let $fp = $('<div class="formula-list-item"></div>').appendTo(this.$el);
+        let $fp = HTML.parse('<div class="formula-list-item"></div>');
+        this.append($fp);
 
-        let $formula = $('<div class="formula" type="text" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" spellcheck="false" style="text-indent:' + indent + '">' + formula + '</div>').appendTo($fp);
+        let $formula = HTML.parse('<div class="formula" type="text" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" spellcheck="false" style="text-indent:' + indent + '">' + formula + '</div>');
+        $fp.append($formula);
 
         let indexOfDollar = prefix.indexOf('$');
         if (indexOfDollar !== -1) {
@@ -49,25 +64,26 @@ const MissingValueListItem = function(value) {
             prefix = prefix.slice(0, indexOfDollar+1) + "</span>" + prefix.slice(indexOfDollar+1);
         }
 
-        $('<div class="equal">' + prefix + '</div>').appendTo($fp);
+        $fp.append(HTML.parse('<div class="equal">' + prefix + '</div>'));
 
-        let $rm = $('<div class="remove-cond" data-index="0"><span class="mif-cross"></span></div>').appendTo($fp);
-        $rm.on('click', (event) => {
-            this.$el.trigger('removed');
+        let $rm = HTML.parse('<div class="remove-cond" data-index="0"><span class="mif-cross"></span></div>');
+        $fp.append($rm);
+        $rm.addEventListener('click', (event) => {
+            this.dispatchEvent(new CustomEvent('removed'));
         });
 
-        let $opEdit = null;
+        let $opEdit: HTMLElement = null;
 
-        $formula.on('blur', (event) => {
+        $formula.addEventListener('blur', (event) => {
             this._postCheckFormula($formula, false);
-            let value = $formula[0].textContent.trim();
+            let value = $formula.textContent.trim();
             if (value !== this.value) {
                 this.value = value;
-                this.$el.trigger('value-changed');
+                this.dispatchEvent(new CustomEvent('value-changed'));
             }
 
             if (this._opEditClicked === false)
-                $opEdit.hide();
+                $opEdit.style.display = 'none';
 
             if (this._isRealBlur())
                 dropdown.hide();
@@ -75,11 +91,11 @@ const MissingValueListItem = function(value) {
             this._opEditClicked = false;
         });
 
-        $formula.on('focus', (event) => {
-            $opEdit.show();
+        $formula.addEventListener('focus', (event) => {
+            $opEdit.style.display = '';
         });
 
-        $formula.on('input', (event) => {
+        $formula.addEventListener('input', (event) => {
             dropdown.updatePosition();
 
             if (this._backspacePressed === false)
@@ -87,48 +103,49 @@ const MissingValueListItem = function(value) {
 
             let count = this._startsWithValidOps($formula);
             if (count !== 0)
-                $opEdit.css('width', (count+1) + 'ch');
+                $opEdit.style.width = `${count+1}ch`;
 
             dropdown.hide();
         });
 
-        $opEdit = $('<div class="down-arrow">a</div>').appendTo($fp);
-        $opEdit.css('width', _sign.length + 'ch');
-        $opEdit.hide();
+        $opEdit = HTML.parse('<div class="down-arrow">a</div>');
+        $fp.append($opEdit);
+        $opEdit.style.width = `${_sign.length}ch`;
+        $opEdit.style.display = 'none';
 
-        $opEdit.on('click', (event) => {
-            if (this._$wasEditingOpsFormula !== $formula || dropdown.content !== this.opsToolbar) {
+        $opEdit.addEventListener('click', (event) => {
+            if (this._$wasEditingOpsFormula !== $formula || dropdown.content() !== this.opsToolbar) {
                 this.opsToolbar.show($formula);
                 dropdown.show($formula, this.opsToolbar);
 
                 let sel = window.getSelection();
 
-                let count = this._startsWithValidOps($formula);
+                let count = this._startsWithValidOps($formula, true);
 
-                let textNode = $formula[0].firstChild;
+                let textNode = $formula.firstChild;
                 if (textNode === null) {
                     textNode = document.createTextNode('');
-                    $formula[0].appendChild(textNode);
+                    $formula.appendChild(textNode);
                 }
                 sel.setBaseAndExtent(textNode, 0, textNode, count);
-                $formula[0].focus();
+                $formula.focus();
 
-                $opEdit.addClass('is-active');
+                $opEdit.classList.add('is-active');
             }
             event.stopPropagation();
             event.preventDefault();
         });
 
-        $opEdit.on('mousedown', (event) => {
+        $opEdit.addEventListener('mousedown', (event) => {
             this._$wasEditingOpsFormula = dropdown.focusedOn() !== null ? this.opsToolbar.focusedOn() : null;
             this._opEditClicked = true;
         });
 
-        $formula.on('editor:closing', () => {
-            $opEdit.removeClass('is-active');
+        $formula.addEventListener('editor:closing', () => {
+            $opEdit.classList.remove('is-active');
         });
 
-        $formula.on('keydown', (event) => {
+        $formula.addEventListener('keydown', (event) => {
             if (event.keyCode === 8)  //backspace
                 this._backspacePressed = true;
             else
@@ -141,19 +158,19 @@ const MissingValueListItem = function(value) {
                 //event.stopPropagation();
             }
         });
-    };
+    }
 
-    this._isRealBlur = function(elements) {
+    _isRealBlur() {
         return dropdown.clicked() === false;
-    };
+    }
 
-    this._checkFormula = function($formula) {
+    _checkFormula($formula: HTMLElement) {
         if (this._backspacePressed)
             return true;
 
         let validOps = ['==', '!=', '<=', '>=', '<', '>', '='];
 
-        let text = $formula.text().trimLeft();
+        let text = $formula.textContent.trimStart();
         if (text === '')
             return true;
 
@@ -203,16 +220,16 @@ const MissingValueListItem = function(value) {
             offsets.end += 3;
         }
 
-        if (text != $formula.text()) {
-            $formula[0].textContent = text;
-            sel.setBaseAndExtent($formula[0].firstChild, start+offsets.start, $formula[0].firstChild, end+offsets.end);
+        if (text != $formula.textContent) {
+            $formula.textContent = text;
+            sel.setBaseAndExtent($formula.firstChild, start+offsets.start, $formula.firstChild, end+offsets.end);
         }
-    };
+    }
 
-    this._postCheckFormula = function($formula, isRealTime) {   // Non realtime check is more strict
+    _postCheckFormula($formula: HTMLElement, isRealTime: boolean) {   // Non realtime check is more strict
         let validOps = ['==', '!=', '<=', '>=', '<', '>', '='];
 
-        let text = $formula.text().trimLeft();
+        let text = $formula.textContent.trimStart();
         text = text.replace(/\u00A0/gi, ' '); //\u00A0 represents a non breaking space
         if (text === '')
             return true;
@@ -315,18 +332,18 @@ const MissingValueListItem = function(value) {
                 text = `${ op } ${ value }`;
         }
 
-        if (text !== $formula.text().replace(/\u00A0/gi, ' ')) { //\u00A0 represents a non breaking space
-            $formula[0].textContent = text;
-            sel.setBaseAndExtent($formula[0].firstChild, start+offsets.start, $formula[0].firstChild, end+offsets.end);
+        if (text !== $formula.textContent.replace(/\u00A0/gi, ' ')) { //\u00A0 represents a non breaking space
+            $formula.textContent = text;
+            sel.setBaseAndExtent($formula.firstChild, start+offsets.start, $formula.firstChild, end+offsets.end);
         }
-    };
+    }
 
-    this._startsWithValidOps = function($formula) {
+    _startsWithValidOps($formula: HTMLElement, ignorePlaceholder?: boolean) {
         let validOps = ['==', '!=', '<=', '>=', '<', '>', '='];
 
-        let text = $formula.text().trim();
-        if (text === '')
-            text = $formula.attr('placeholder');
+        let text = $formula.textContent.trim();
+        if (text === '' && !ignorePlaceholder)
+            text = $formula.getAttribute('placeholder');
 
         for (let i = 0; i < validOps.length; i++) {
             if (text.startsWith(validOps[i]))
@@ -334,11 +351,9 @@ const MissingValueListItem = function(value) {
         }
 
         return 0;
-    };
+    }
+}
 
-    this._createUI();
-};
-
-
+customElements.define('jmv-missing-value-item', MissingValueListItem);
 
 export default MissingValueListItem;

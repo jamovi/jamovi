@@ -17,7 +17,7 @@ export default class MeasureList extends HTMLElement implements DropdownContent 
         this.includeAuto = includeAuto;
         this.id = focusLoop.getNextAriaElementId('list');
 
-        this.className = 'jmv-measure-list';
+        this.classList.add('jmv-measure-list');
         this.setAttribute('role', 'list');
 
         this.$middle = document.createElement('div');

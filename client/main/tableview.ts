@@ -17,6 +17,7 @@ import Statusbar from './statusbar/statusbar';
 import focusLoop from '../common/focusloop';
 
 import { s6e, contextMenuListener } from '../common/utils';
+import { ColumnActiveChangedEvent } from './dataset';
 
 const TableView = SilkyView.extend({
     className: 'tableview',
@@ -43,7 +44,7 @@ const TableView = SilkyView.extend({
         this.model.on('columnsInserted', event => this._columnsInserted(event));
         this.model.on('columnsHidden', event => this._columnsDeleted(event));
         this.model.on('columnsVisible', event => this._columnsInserted(event));
-        this.model.on('columnsActiveChanged', event => this._columnsActiveChanged(event));
+        this.model.on('columnsActiveChanged', (event: ColumnActiveChangedEvent) => this._columnsActiveChanged(event));
         this.model.on('transformsChanged', event => this._transformsChanged(event));
         this.model.on('change:vRowCount', event => this._updateHeight());
         this.model.on('change:rowCount', event => this.statusbar.updateInfoLabel('rowCount', this.model.attributes.rowCount));
@@ -431,7 +432,7 @@ const TableView = SilkyView.extend({
         let totalHeight = vRowCount * this._rowHeight;
         this.$body.css('height', totalHeight);
     },
-    _columnsActiveChanged(event) {
+    _columnsActiveChanged(event: ColumnActiveChangedEvent) {
         this._updateFilterInfo();
 
         let exclude = (elem, index) => {

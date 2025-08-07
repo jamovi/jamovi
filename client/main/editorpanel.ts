@@ -12,11 +12,13 @@ export class EditorPanel extends EventEmitter {
     contents: HTMLElement; 
     titleBox: HTMLElement;
     visible: boolean;
-    attachedItem: any;
+    attachedItem: HTMLElement;
     onBack: () => void;
 
     constructor(el: HTMLElement) {
         super();
+
+        this._notifyEditProblem = this._notifyEditProblem.bind(this);
 
         this.el = el;
         this.el.innerHTML = '';
@@ -63,7 +65,7 @@ export class EditorPanel extends EventEmitter {
             backCall();
     }
 
-    attach(item, onBack: () => void = null) {
+    attach(item: HTMLElement, onBack: () => void = null) {
 
         this.onBack = onBack;
         if (item !== null && item === this.attachedItem) {
@@ -75,26 +77,24 @@ export class EditorPanel extends EventEmitter {
         let hide = true;
 
         if (this.attachedItem) {
-            this.attachedItem.$el.detach();
+            this.attachedItem.remove();
             if (this.$icon)
-                this.$icon.detach();
+                this.$icon.remove();
             this.$icon = null;
             this.title.innerHTML = '';
-            if (this.attachedItem.off)
-                this.attachedItem.off('notification', this._notifyEditProblem, this);
+            this.attachedItem.removeEventListener('notification', this._notifyEditProblem);
             this.attachedItem = null;
         }
 
         if (item) {
-             this.contents.append(item.$el[0]);
+             this.contents.append(item);
              this.title.innerText = item.title;
              if (item.$icon) {
-                 item.$icon.prependTo(this.titleBox);
+                this.titleBox.append(item.$icon);
                  this.$icon = item.$icon;
              }
              this.attachedItem = item;
-             if (this.attachedItem.on)
-                this.attachedItem.on('notification', this._notifyEditProblem, this);
+             this.attachedItem.addEventListener('notification', this._notifyEditProblem);
              hide = false;
         }
 
