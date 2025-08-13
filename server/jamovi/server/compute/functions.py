@@ -19,6 +19,7 @@ from jamovi.server.compute import is_equal
 from .funcmeta import row_wise
 from .funcmeta import column_wise
 from .funcmeta import column_wise_no_group_by
+from .funcmeta import row_wise_with_group_by
 from .funcmeta import returns
 from .funcmeta import levels
 
@@ -321,7 +322,7 @@ def BOXCOX(index, x: float, lmbda: float = VBOXCOXLAMBDA):
         return (x ** lmbda - 1) / lmbda
 
 
-@row_wise
+@row_wise_with_group_by
 def Z(index, x: float):
     # see the transfudgifier
     return x
@@ -339,7 +340,7 @@ def MAXABSZ(index, x: float):
     return x
 
 
-@row_wise
+@row_wise_with_group_by
 def SCALE(index, x: float):
     # see the transfudgifier
     return x
