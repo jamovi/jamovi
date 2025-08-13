@@ -82,6 +82,15 @@ def row_wise(func):
     return func
 
 
+# row function decorator
+def row_wise_with_group_by(func):
+    meta = _meta(func)
+    meta.is_row_wise = True
+    meta.is_column_wise = False
+    meta.has_group_by = True
+    return func
+
+
 # column function decorator
 def column_wise(func):
     meta = _meta(func)

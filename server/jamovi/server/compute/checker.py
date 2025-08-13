@@ -78,7 +78,7 @@ class Checker(NodeVisitor):
 
         kwargs_provided = map(lambda x: x.arg, node.keywords)
         for kwarg in kwargs_provided:
-            if func.meta.is_column_wise and kwarg == 'group_by':
+            if func.meta.has_group_by and kwarg == 'group_by':
                 continue
             if kwarg not in fun_kwargs:
                 raise TypeError(_("'{}' is not an argument for {}()\n(If you're wanting to test equality, use two equal signs '==')").format(kwarg, name))
