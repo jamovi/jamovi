@@ -223,6 +223,7 @@ export class BackstageModel extends EventMap<IBackstageModel> {
             { extensions: ['sas7bdat'], description: _('SAS 7bdat {ext}', { ext: '(.sas7bdat)' }) },
             { extensions: ['xpt'], description: _('SAS xpt {ext}', { ext: '(.xpt)' }) },
             { extensions: ['dta'], description: _('Stata {ext}', { ext: '(.dta)' }) },
+            { extensions: ['qmd'], description: _('Quarto {ext}', { ext: '(.qmd)' }) },
         ];
         this._pcExportListModel.on('dataSetExportRequested', this.tryExport, this);
         this._pcExportListModel.on('dataSetOpenRequested', this.tryOpen, this);
