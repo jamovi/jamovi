@@ -13,6 +13,8 @@ import LayoutCell, { HorizontalAlignment } from './layoutcell';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import Format from './format';
 import { CtrlDef, IControlProvider, ControlType, Control } from './optionsview';
+import DefaultControls from './defaultcontrols';
+
 
 import $ from 'jquery';  // for backwards compatibility
 import { IItem } from './dragndrop';
@@ -47,7 +49,7 @@ type ColumnInfo = {
     maxHeight: number;
 };
 
-const checkParams = function<T>(params: OptionListControlProperties<T>) : OptionListControlProperties<T> {
+const checkParams = function<P extends OptionListControlProperties<U>, U = InferType<P>>(params: P) : P {
     if (params.columns === undefined) {
         let columnInfo = {
             name: "column1",
@@ -120,6 +122,12 @@ export type OptionListControlProperties<U> = GridOptionControlProperties<(U | U[
     valueFilter: ValueFilter;
     enable: boolean;
     stretchFactor: number;
+    selectable: boolean;
+    template: any;
+    templateName: string;
+
+    listItemAdded: (data) => void;
+    listItemRemoved: (data) => void;
 }
 
 const isSelectableOptionListControlProperties = function<U>(params: any): params is SelectableOptionListControlProperties<U> {
@@ -130,7 +138,7 @@ type InferType<P> = P extends OptionListControlProperties<infer A> ? A : never;
 
 export class OptionListControl<P extends OptionListControlProperties<U>, TGrid extends new () => LayoutGrid = typeof LayoutGrid, U=InferType<P>> extends OptionControl<P, (U|U[]), (U|U[])> {
    
-    static create(params: OptionListControlProperties<any> | SelectableOptionListControlProperties<any>) {
+    static create(params: OptionListControlProperties<any> | SelectableOptionListControlProperties<any>, parent) {
         checkParams(params);
         let List = null;
         if (isSelectableOptionListControlProperties(params))
@@ -142,7 +150,7 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
         if (addButtonText !== undefined && navigator.platform === 'MacIntel')
             List = HiddenScrollBarSupport(List);
 
-        return new List(params);
+        return new List(params, parent);
     }
 
     isSingleItem: boolean;
@@ -151,12 +159,11 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
     $ghostTextLabel: HTMLElement;
     addButton: HTMLElement;
     $addButton: any;
-    _animateCells = true;
     _localData: U[] = [];
     controls = [];
     _listFilter = new TargetListValueFilter();
     _context: IControlProvider = null;
-    defaultControls: {[key:string]: ControlType};
+    defaultControls: {[key:string]: ControlType<CtrlDef>};
     showHeaders: boolean;
     removeAction: RemoveAction;
     rowDataAsArray: boolean;
@@ -165,12 +172,10 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
     _realColumnInfoList: ColumnInfo[];
     declare _el: InstanceType<TGrid>;
 
-    constructor(params: P, Grid: TGrid = LayoutGrid as TGrid) {
-        super(checkParams(params));
+    constructor(params: P, parent, Grid: TGrid = LayoutGrid as TGrid) {
+        super(checkParams<P, U>(params), parent);
 
         this.setRootElement(new Grid());
-
-        this.defaultControls = params.DefaultControls;
     
         this.maxItemCount = this.getPropertyValue('maxItemCount');
         this.showHeaders = this.getPropertyValue('showColumnHeaders');
@@ -291,9 +296,8 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
 
                 if (isTarget) {
                     columnInfo.format = columnInfo.template.format;
-                    columnInfo.template._parentControl = this;
                     if (columnInfo.format === undefined) {
-                        let ctrl = new columnInfo.type(columnInfo.template);
+                        let ctrl = new columnInfo.type(columnInfo.template, this);
                         columnInfo.format = ctrl.getPropertyValue("format");
                     }
                     if ( ! columnInfo.format)
@@ -406,7 +410,7 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
         if (cell === null) {
 
             let isVirtual = columnInfo.isVirtual;
-            let params: CtrlDef = { type: this.defaultControls.Label };
+            let params: CtrlDef = { type: DefaultControls.Label };
 
             if (isVirtual !== undefined)
                 params.isVirtual = isVirtual;
@@ -497,12 +501,14 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
 
     onListItemAdded(item, index) {
         let data = { item: item, index: index };
-        this.emit("listItemAdded", data);
+        let emitter = this as OptionListControl<OptionListControlProperties<U>>;
+        emitter.emit("listItemAdded", data);
     }
 
     onListItemRemoved(item) {
         let data = { item: item };
-        this.emit("listItemRemoved", data);
+        let emitter = this as OptionListControl<OptionListControlProperties<U>>;
+        emitter.emit("listItemRemoved", data);
     }
 
     updateDisplayRow(dispRow: number, value: U, onlyVirtual?: boolean) {
@@ -1138,8 +1144,8 @@ export type SelectableOptionListControlProperties<T> = OptionListControlProperti
 }
 
 export class SelectableOptionListControl<P extends SelectableOptionListControlProperties<T>, T=InferType<P>> extends OptionListControl<P, typeof SelectableLayoutGrid, T> {
-    constructor(params: P) {
-        super(params, SelectableLayoutGrid);
+    constructor(params: P, parent) {
+        super(params, parent, SelectableLayoutGrid);
 
         this._el.fullRowSelect = this.getPropertyValue('fullRowSelect');
     }
@@ -1209,6 +1215,6 @@ export class SelectableOptionListControl<P extends SelectableOptionListControlPr
     }
 }
 
-export type SelectableOptionListControlType<T> = InstanceType<typeof SelectableOptionListControl<SelectableOptionListControlProperties<T>>>;
+export type SelectableOptionListControlType<P extends SelectableOptionListControlProperties<T>, T=InferType<P>> = InstanceType<typeof SelectableOptionListControl<P, T>>;
 
 export default OptionListControl;

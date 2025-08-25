@@ -1,5 +1,6 @@
 'use strict';
 
+import { ViewEvent } from './actions';
 import LayoutActionManager from './layoutactionmanager';
 import LayoutActionResource from './layoutactionresource';
 
@@ -19,7 +20,7 @@ export class LayoutAction {
     _listeners: EventObj[];
     _resources: { [name: string]: LayoutActionResource };
 
-    constructor(manager: LayoutActionManager, params) {
+    constructor(manager: LayoutActionManager, params: ViewEvent) {
 
         this._callback = params.execute;
 
@@ -45,7 +46,7 @@ export class LayoutAction {
             return;
 
         this._manager._executeStarted(this);
-        this._callback.call(this._manager._view.getContext(), this._manager._resources, ...args);
+        this._callback.call(this._manager._view, this._manager._resources, ...args);
         this._manager._executeEnded(this);
     }
 

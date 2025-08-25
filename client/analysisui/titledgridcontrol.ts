@@ -7,7 +7,7 @@ export class TitledGridControl<P extends GridControlProperties> extends GridCont
     _subel: HTMLElement;
 
     constructor(...args: any[]) {
-        super(args[0]);
+        super(args[0], args[args.length - 1]);
     }
 
     override getSpans() {

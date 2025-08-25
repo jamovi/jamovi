@@ -17,8 +17,8 @@ export class VariableLabel extends OptionControl<VariableLabelProperties> {
     dataSupport: RequestDataSupport;
     _updateCount = 0;
 
-    constructor(params: VariableLabelProperties) {
-        super(params);
+    constructor(params: VariableLabelProperties, parent) {
+        super(params, parent);
 
         this.dataSupport = GetRequestDataSupport(this);
 

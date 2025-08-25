@@ -29,13 +29,13 @@ export class GridCheckbox extends OptionControl<GridCheckboxProperties, boolean>
      */
     $input: any
 
-    static create(params: GridCheckboxProperties) {
+    static create(params: GridCheckboxProperties, parent) {
         let classes = createChildLayoutSupport(params, GridCheckbox);
-        return new classes(params);
+        return new classes(params, parent);
     }
 
-    constructor(params: GridCheckboxProperties) {
-        super(params);
+    constructor(params: GridCheckboxProperties, parent) {
+        super(params, parent);
 
         Icons.addSupport(this);
     

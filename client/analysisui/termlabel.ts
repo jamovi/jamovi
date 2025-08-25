@@ -16,8 +16,8 @@ export class TermLabel extends OptionControl<TermLabelProperties> {
     dataSupport: RequestDataSupport;
     _updateCount: number;
 
-    constructor(params: TermLabelProperties) {
-        super(params);
+    constructor(params: TermLabelProperties, parent) {
+        super(params, parent);
 
         this.dataSupport = GetRequestDataSupport(this);
 

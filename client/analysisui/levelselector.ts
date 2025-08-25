@@ -24,8 +24,8 @@ export class LevelSelector extends OptionControl<LevelSelectorProperties> {
     enabled = true;
     none = '- None -';
 
-    constructor(params: LevelSelectorProperties) {
-        super(params);
+    constructor(params: LevelSelectorProperties, parent) {
+        super(params, parent);
 
         this.dataSupport = GetRequestDataSupport(this);
 

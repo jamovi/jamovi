@@ -6,23 +6,29 @@ import focusLoop from '../common/focusloop';
 import { SelectableOptionListControl, SelectableOptionListControlProperties } from './optionlistcontrol';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { IItem } from './dragndrop';
+import DefaultControls from './defaultcontrols';
+import { Column, MeasureType } from '../main/dataset';
+
 
 function checkParams(params: VariablesListBoxProperties) : VariablesListBoxProperties {
     if (params.columns === undefined)
-        params.template = { type: params.DefaultControls.VariableLabel };
+        params.template = { type: DefaultControls.VariableLabel };
 
     return params;
 }
 
+type PermittedVariableType = ('continuous' | 'ordinal' | 'nominal' | 'nominaltext' | 'id' | 'numeric' | 'factor' | 'output');
+
 export type VariablesListBoxProperties = SelectableOptionListControlProperties<string> & {
     format: VariablesFormat;
+    permitted: PermittedVariableType[];
 }
 
 export class VariablesListBox extends SelectableOptionListControl<VariablesListBoxProperties> {
 
-    static create(params) {
+    static create(params, parent) {
         checkParams(params);
-        return new VariablesListBox(params);
+        return new VariablesListBox(params, parent);
     }
 
     $icons: HTMLElement = null;
@@ -33,8 +39,8 @@ export class VariablesListBox extends SelectableOptionListControl<VariablesListB
 
     dataSupport: RequestDataSupport;
 
-    constructor(params: VariablesListBoxProperties) {
-        super(checkParams(params))
+    constructor(params: VariablesListBoxProperties, parent) {
+        super(checkParams(params), parent)
 
         this.dataSupport = GetRequestDataSupport(this);
 
@@ -171,7 +177,6 @@ export class VariablesListBox extends SelectableOptionListControl<VariablesListB
     override addedContentToCell(cell) {
         super.addedContentToCell(cell);
 
-        this.on('layoutgrid.validated', () => { this.checkScrollBars(); } );
         this.el.classList.add("silky-variable-target");
         if (this.getOption() !== null)
             this._renderSuggestedIcons();
@@ -196,9 +201,8 @@ export class VariablesListBox extends SelectableOptionListControl<VariablesListB
         return allowItem;
     }
 
-    _checkPermitted(column, permitted) {
-
-        let measureType = column.measureType;
+    _checkPermitted(column: Column, permitted: PermittedVariableType[]) {
+        let measureType = column.measureType as PermittedVariableType;
         if ((column.measureType === 'nominal' || column.measureType === 'ordinal') && column.dataType === 'text')
             measureType = column.measureType + 'text';
         if (permitted.includes(measureType))

@@ -34,7 +34,7 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
     suffix: HTMLElement;
     suggestValues: HTMLElement;
     fullCtrl: HTMLElement;
-    valueId: string;
+
 
     /**
      * @deprecated Should not be used. Rather use `(property) Control.label: HTMLElement`.
@@ -61,8 +61,8 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
      */
     $fullCtrl: any;
 
-    constructor(params: GridTextboxProperties) {
-        super(params);
+    constructor(params: GridTextboxProperties, parent) {
+        super(params, parent);
 
         this.suffix = null;
         this.$suffix = null;
