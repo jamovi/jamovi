@@ -14,7 +14,8 @@ class Option {
         this._isLeaf = isLeaf;
         this._initialized = false;
 
-        this.setValue(value);
+        if (this._isLeaf)
+            this.setValue(value);
     }
 
     setProperty(property, value) {
@@ -446,8 +447,7 @@ class Group extends Option {
     constructor(template, value) {
         super(template, value, false);
 
-        if (value !== null)
-            this._createChildren(value);
+        this.setValue(value);
     }
 
     override _onGetValue() {
@@ -511,8 +511,7 @@ class ArrayOption extends Option {
     constructor(template, value) {
         super(template, value, false);
 
-        if (value !== null)
-            this._createChildren(value);
+        this.setValue(value);
     }
 
     override _onGetValue() {
