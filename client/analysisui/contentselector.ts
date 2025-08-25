@@ -25,8 +25,8 @@ export class ContentSelector extends OptionControl<ContentSelectorProperties> {
     tablist: HTMLElement;
     declare _el: LayoutGrid;
 
-    constructor(params: ContentSelectorProperties) {
-        super(params);
+    constructor(params: ContentSelectorProperties, parent) {
+        super(params, parent);
 
         this._body = null;
         this.setRootElement(new LayoutGrid());

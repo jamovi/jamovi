@@ -1,7 +1,8 @@
 'use strict';
 
-import { EventEmitter } from 'events';
+import { DefaultEventMap, EventEmitter, Listener } from 'tsee';
 import { CtrlDef } from './optionsview';
+import { ControlBaseProperties } from './controlbase';
 
 export interface IPropertyFilter<T> {
     check: (value: T) => T;
@@ -17,10 +18,14 @@ interface IProperties<T> {
     externalTrigger?: any;
 }
 
-export class PropertySupplier<P extends CtrlDef> extends EventEmitter {
+export type EventHandlers<P> = {
+    [K in keyof P as P[K] extends Listener ? `${(K & string)}` : `${(K & string)}_changed`]: (P[K] extends Listener ? P[K] : Listener);
+};
+
+export class PropertySupplier<P extends CtrlDef, E extends { } = EventHandlers<P>> extends EventEmitter<E> {
     public params: Partial<P>;
     private _propertySupplier_editting: number;
-    private _propertySupplier_eventsPending: any;
+    private _propertySupplier_eventsPending: { [key: string]: boolean };
     public properties: Partial<{ [K in keyof P]: IProperties<P[K]> }>;
 
     constructor(properties: Partial<P>) {
@@ -47,7 +52,7 @@ export class PropertySupplier<P extends CtrlDef> extends EventEmitter {
         }
     }
 
-    protected registerComplexProperty<K extends keyof P>(name: K, getter: () => P[K], setter: (value: P[K]) => void, externalTrigger) {
+    protected registerComplexProperty<K extends (keyof P & string)>(name: K, getter: () => P[K], setter: (value: P[K]) => void, externalTrigger: string) {
         if (this.properties[name] !== undefined)
             return;
 
@@ -60,7 +65,7 @@ export class PropertySupplier<P extends CtrlDef> extends EventEmitter {
             return;
 
         let properties: IProperties<P[K]> = {
-            trigger: name.toString() + "_changed",
+            trigger: (name.toString() + "_changed"),
             isDefined: defined,
             get: () => {
                 return this.properties[name].value;
@@ -106,7 +111,7 @@ export class PropertySupplier<P extends CtrlDef> extends EventEmitter {
             return value;
     }
 
-    public setPropertyValue<K extends keyof P>(property: K, value: P[K]) {
+    public setPropertyValue<K extends (keyof P & string)>(property: K, value: P[K]) {
         if (property === "name" || property === "type")
             throw "Cannot change the '" + property.toString() + "' property";
 
@@ -169,11 +174,14 @@ export class PropertySupplier<P extends CtrlDef> extends EventEmitter {
         }
     }
 
-    protected firePropertyChangedEvent<K extends keyof P>(property: K) {
+    protected firePropertyChangedEvent<K extends (keyof P & string)>(property: K) {
         if (this._propertySupplier_editting > 0)
             this._propertySupplier_eventsPending[property] = true;
-        else
-            this.emit(this.getTrigger(property));
+        else {
+            let eventName = this.getTrigger(property) as string;
+            let emitter = this as EventEmitter;
+            emitter.emit(eventName);
+        }
     }
 }
 

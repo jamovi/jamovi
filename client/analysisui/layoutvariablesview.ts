@@ -39,12 +39,10 @@ export type VariablesViewProperties = SupplierViewProperties<string> & {
 }
 
 export class LayoutVariablesView extends LayoutSupplierView<VariablesViewProperties> {
-    constructor(params: VariablesViewProperties) {
-        super(params);
+    constructor(params: VariablesViewProperties, parent) {
+        super(params, parent);
 
         this.el.classList.add('silky-options-variable-supplier-group');
-
-        this._waitingFor = 0;
     }
 
     protected override registerProperties(properties: VariablesViewProperties) {

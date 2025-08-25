@@ -139,7 +139,6 @@ export class Menu extends HTMLElement {
         const rect = el.getBoundingClientRect();
         const computedStyle = window.getComputedStyle(el);
 
-        // Include margins if needed (like `outerHeight(true)` in jQuery)
         const marginTop = parseFloat(computedStyle.marginTop);
         const marginBottom = parseFloat(computedStyle.marginBottom);
         const marginLeft = parseFloat(computedStyle.marginLeft);

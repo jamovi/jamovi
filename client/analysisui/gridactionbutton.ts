@@ -12,8 +12,8 @@ export type GridActionButtonProperties = GridOptionControlProperties<boolean> & 
 export class GridActionButton extends OptionControl<GridActionButtonProperties> {
     checkedValue: string;
 
-    constructor(params: GridActionButtonProperties) {
-        super(params);
+    constructor(params: GridActionButtonProperties, parent) {
+        super(params, parent);
         
         this.setRootElement(HTML.parse('<button class="jmv-action-button"></button>'));
 
@@ -21,7 +21,7 @@ export class GridActionButton extends OptionControl<GridActionButtonProperties> 
         this.el.setAttribute('data-horizontal-align', horizontalAlign);
     }
 
-    protected override registerProperties(properties: GridOptionControlProperties<boolean>) {
+    protected override registerProperties(properties: GridActionButtonProperties) {
         super.registerProperties(properties);
 
         this.registerSimpleProperty('format', FormatDef.bool);

@@ -1,26 +1,33 @@
 'use strict';
 
-import { GridControlProperties } from './gridcontrol';
+import GridControl, { GridControlProperties } from './gridcontrol';
 import { ControlOption } from './optionsview';
+import { isTemplateItemControl } from './templateitemcontrol';
 import TitledGridControl from './titledgridcontrol';
 
-export function createOptionControlBase(params: OptionControlBaseProperties<any>) {
-return new OptionControlBase(params);
-}
 
 export type OptionControlBaseProperties<T> = GridControlProperties & {
     value: T;
     name: string;
     isVirtual: boolean;
     valueKey: (string | number)[];
+
+    changing: (event:any) => void;
+    optionValueInserting: (event) => void;
+    optionValueInserted: (event) => void;
+    optionValueRemoving: (event) => void;
+    optionValueRemoved: (event) => void;
+    optionValueChanging: (event) => void;
+    optionValueChanged: (event) => void;
 }
 
 export class OptionControlBase<T, V, P extends OptionControlBaseProperties<T>> extends TitledGridControl<P> {
 
     option: ControlOption<T>;
+    protected valueId: string;
 
-    constructor(params: P) {
-        super(params);
+    constructor(params: P, parent) {
+        super(params, parent);
 
         this.option = null;
 
@@ -75,7 +82,8 @@ export class OptionControlBase<T, V, P extends OptionControlBaseProperties<T>> e
     setSourceValue(value: any, key=[], insert=false) {
         let event = { value: value, key: key, insert: insert, cancel: false };
 
-        this.emit('changing', event);
+        let emitter = this as OptionControlBase<T, V, OptionControlBaseProperties<T>>;
+        emitter.emit('changing', event);
 
         event.key = this.getFullKey(key);
 
@@ -117,14 +125,16 @@ export class OptionControlBase<T, V, P extends OptionControlBaseProperties<T>> e
     }
 
     onOptionValueChanging(key, data) {
-        let datas ={ key, data, cancel:false } 
-        this.emit('optionValueChanging', datas );
+        let datas ={ key, data, cancel:false };
+        let emitter = this as OptionControlBase<T, V, OptionControlBaseProperties<T>>;
+        emitter.emit('optionValueChanging', datas );
         return !datas.cancel;
     }
 
     onOptionValueChanged(key, data) {
-        let datas ={ key, data } 
-        this.emit('optionValueChanged', datas );
+        let datas ={ key, data };
+        let emitter = this as OptionControlBase<T, V, OptionControlBaseProperties<T>>;
+        emitter.emit('optionValueChanged', datas );
     }
 
     _valueInserted(key, data) {
@@ -140,12 +150,14 @@ export class OptionControlBase<T, V, P extends OptionControlBaseProperties<T>> e
 
     onOptionValueInserted(key, data) {
         let datas = { key, data };
-        this.emit('optionValueInserted', datas );
+        let emitter = this as OptionControlBase<T, V, OptionControlBaseProperties<T>>;
+        emitter.emit('optionValueInserted', datas );
     }
 
     onOptionValueInserting(key, data) {
         let datas ={ key, data, cancel: false } 
-        this.emit('optionValueInserting', datas );
+        let emitter = this as OptionControlBase<T, V, OptionControlBaseProperties<T>>;
+        emitter.emit('optionValueInserting', datas );
         return !datas.cancel;
     }
 
@@ -161,14 +173,16 @@ export class OptionControlBase<T, V, P extends OptionControlBaseProperties<T>> e
     }
 
     onOptionValueRemoving(key, data) {
-        let datas ={ key, data, cancel: false } 
-        this.emit('optionValueRemoving', datas );
+        let datas ={ key, data, cancel: false };
+        let emitter = this as OptionControlBase<T, V, OptionControlBaseProperties<T>>;
+        emitter.emit('optionValueRemoving', datas );
         return !datas.cancel;
     }
 
     onOptionValueRemoved(key, data) {
-        let datas ={ key, data } 
-        this.emit('optionValueRemoved', datas );
+        let datas ={ key, data };
+        let emitter = this as OptionControlBase<T, V, OptionControlBaseProperties<T>>;
+        emitter.emit('optionValueRemoved', datas );
     }
 
     setOption(option: ControlOption<T>, valueKey=null) {
@@ -278,14 +292,14 @@ export class OptionControlBase<T, V, P extends OptionControlBaseProperties<T>> e
         let templateInfo = this.getTemplateInfo();
         if (templateInfo !== null) {
             let prevCtrl = this;
-            let parentCtrl = this.getPropertyValue('_parentControl');
+            let parentCtrl = this._parentControl;
             while (parentCtrl !== null) {
-                if (parentCtrl.getValueKey && prevCtrl.hasProperty('itemKey')) {
+                if (parentCtrl.getValueKey && isTemplateItemControl(prevCtrl)) {
                     bKey = parentCtrl.getValueKey().concat(prevCtrl.getPropertyValue('itemKey')).concat(bKey);
                     break;
                 }
                 prevCtrl = parentCtrl;
-                parentCtrl = parentCtrl.getPropertyValue('_parentControl');
+                parentCtrl = parentCtrl._parentControl;
             }
         }
         return bKey;

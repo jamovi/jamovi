@@ -6,31 +6,51 @@ import { BorderLayoutGrid } from './layoutgridbordersupport';
 import TitledGridControl from './titledgridcontrol';
 import type { MultiContainer } from './multicontainer';
 import { GridControlProperties } from './gridcontrol';
+import { LayoutStyle } from './controlcontainer';
 
 type Constructor<T = {}> = new (...params: any[]) => T;
-
-export function createChildLayoutSupport<T extends Constructor<InstanceType<typeof TitledGridControl>>>(params: GridControlProperties, TBase: T) {
-    if (params && params.controls)
-        return ChildLayoutSupport(LayoutControl(TBase, BorderLayoutGrid));  
+type InferType<T> = T extends Constructor<TitledGridControl<infer A>> ? A : never;
+export function createChildLayoutSupport<T extends Constructor<TitledGridControl<P>>, P extends GridControlProperties = InferType<T>>(params: P, TBase: T) {
+    if (isChildSupportProperties(params))
+        return ChildLayoutSupport(LayoutControl<T,P>(TBase, BorderLayoutGrid));  
     else
         return TBase;
 }
 
-const TitledLayoutGrid = LayoutControl(TitledGridControl, BorderLayoutGrid);
+const TitledLayoutGrid = LayoutControl<Constructor<TitledGridControl<GridControlProperties & ChildSupportProperties>>>(TitledGridControl<GridControlProperties & ChildSupportProperties>, BorderLayoutGrid);
 type TitledLayoutGridType = Constructor<InstanceType<typeof TitledLayoutGrid>>;
+
+export enum ComplexLayoutStyle {
+    List = "list",
+    Inline= "inline",
+    ListInline = "list-inline",
+    InlineList = "inline-list"
+}
+
+export type ChildSupportProperties = {
+    style: ComplexLayoutStyle;
+    controls: any[];
+}
+
+export const isChildSupportProperties = function(obj: any): obj is ChildSupportProperties {
+    return obj !== null && Array.isArray(obj.controls);
+}
 
 export function ChildLayoutSupport<TBase extends TitledLayoutGridType>(Base: TBase) {
     return class extends Base {
         _body: MultiContainer;
+        _style: ComplexLayoutStyle;
+        _parentStyle: LayoutStyle;
+        _childStyle: LayoutStyle;
+        controls = [];
 
         constructor(...args: any[]) {
             super(...args);
             this._style = this.getPropertyValue('style');
-            this._styles = this._style.split('-');
-            this._parentStyle = this._styles[0];
-            this._childStyle = this._styles[this._styles.length - 1];
+            let _styles = this._style.split('-');
+            this._parentStyle = _styles[0] as LayoutStyle;
+            this._childStyle = _styles[_styles.length - 1] as LayoutStyle;
             this.el.cellStatus = true;
-            this.controls = [];
         }
 
         override renderToGrid(grid: LayoutGrid, row, column, gridOwner) {

@@ -23,8 +23,8 @@ export class LayoutCollapseView<P extends CollapseViewProperties> extends GridCo
     _bodyCell: LayoutCell;
     declare _el: LayoutGrid;
 
-    constructor(params: P) {
-        super(params);
+    constructor(params: P, parent) {
+        super(params, parent);
 
         this._collapsed = this.getPropertyValue('collapsed');
 
