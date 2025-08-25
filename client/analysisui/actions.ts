@@ -1,181 +1,18 @@
 
 'use strict';
 
+import { DataType, MeasureType } from '../main/dataset';
+import { IItem } from './dragndrop';
 import Format from './format';
 import { FormatDef, FormattedValue, VariableFormat } from './formatdef';
-import SuperClass from '../common/superclass';
+import { Control, CtrlDef } from './optionsview';
 import GetRequestDataSupport from './requestdatasupport';
 import { EventEmitter } from 'events';
 
-function View() {
-
-    GetRequestDataSupport(this);
-    EventEmitter.call(this);
-    Object.assign(this, EventEmitter.prototype);
-
-    this.workspace = {};
-    this.base = this;
-    this.flags = { loaded: true, updating: false };
-
-    this.customVariables = [];
-
-    this.setCustomVariables = function(variables) {
-        this.customVariables = variables;
-        let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
-        this.emit('customVariablesChanged', event);
-    };
-
-    this.setCustomVariable = function(name, measureType, dataType, levels) {
-        let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: false } };
-
-        let found = false;
+export const utils = {
+    checkPairsValue: (ctrl, variables) => {
         let changed = false;
-        for (let i = 0; i < this.customVariables.length; i++) {
-            if (this.customVariables[i].name === name) {
-
-                if (measureType !== this.customVariables[i].measureType) {
-                    changed = true;
-                    event.dataInfo.measureTypeChanged = true;
-                    this.customVariables[i].measureType = measureType;
-                }
-
-                if (dataType !== this.customVariables[i].dataType) {
-                    changed = true;
-                    event.dataInfo.dataTypeChanged = true;
-                    this.customVariables[i].dataType = dataType;
-                }
-
-                if (levels !== this.customVariables[i].levels) {
-                    if (levels === undefined || this.customVariables[i].levels === undefined || levels.length !== this.customVariables[i].levels.length) {
-                        changed = true;
-                        event.dataInfo.levelsChanged = true;
-                        this.customVariables[i].levels = levels;
-                    }
-                    else {
-                        for (let j = 0; j < levels.length; j++) {
-                            if (levels[j] !== this.customVariables[i].levels[j]) {
-                                changed = true;
-                                event.dataInfo.levelsChanged = true;
-                                this.customVariables[i].levels = levels;
-                                break;
-                            }
-                        }
-                    }
-                }
-                found = true;
-                break;
-            }
-        }
-
-        if (found === false) {
-            changed = true;
-            event.dataInfo.countChanged = true;
-            this.customVariables.push( { name: name, measureType: measureType, dataType: dataType, levels: levels });
-        }
-
-        if (changed)
-            this.emit('customVariablesChanged', event);
-    };
-
-    this.removeCustomVariable = function(name) {
-        let found = false;
-        for (let i = 0; i < this.customVariables.length; i++) {
-            if (this.customVariables[i].name === name) {
-                this.customVariables.splice(i, 1);
-                found = true;
-                break;
-            }
-        }
-
-        if (found) {
-            let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
-            this.emit('customVariablesChanged', event);
-        }
-    };
-
-    this.clearCustomVariables = function(name, measureType, levels) {
-        if (this.customVariables.length > 0) {
-            let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
-            this.customVariables = [];
-            this.emit('customVariablesChanged', event);
-        }
-    };
-
-
-    this._baseEvents = [
-        {
-            onEvent: 'view.remote-data-changed', execute: function(ui, data) {
-                if (this.base.remoteDataChanged) {
-                    data.sender = ui.view;
-                    data.eventName = 'remoteDataChanged';
-                    this.base.remoteDataChanged.call(this, ui, data);
-                }
-            }
-        },
-        {
-            onEvent: 'view.loaded', execute: function(ui) {
-                this.flags.loaded = true;
-                if (this.base.loaded)
-                    this.base.loaded.call(this, ui, { sender: ui.view, eventName: 'loaded' });
-            }
-        },
-        {
-            onEvent: 'view.data-initializing', execute: function(ui, event) {
-                if (event.id !== this._id) {
-                    this.base.workspace = {};
-                    if (this.base.context)
-                        this.base.context.workspace = this.base.workspace;
-                }
-                this.flags.updating = true;
-            }
-        },
-        {
-            onEvent: 'view.ready', execute: function(ui, event) {
-                this.flags.updating = false;
-                if (this.base.update && event.id !== this._id) {
-                    event.sender = ui.view;
-                    event.eventName = 'updated';
-                    this.base.update.call(this, ui, event);
-                    this._id = event.id;
-                }
-            }
-        }
-    ];
-
-    this.findChanges = function(id, current, updateWS, format, itemProperty) {
-        let oldValue = this.workspace[id];
-
-        let diff = null;
-
-        if (Array.isArray(current) || Array.isArray(oldValue)) {
-            diff = { removed: [], added: [], hasChanged: false };
-            if (oldValue !== undefined)
-                diff = this.findDifferences(oldValue, current, format, itemProperty);
-            diff.hasChanged = diff.removed.length > 0 || diff.added.length;
-        }
-        else {
-            let hasChanged = oldValue === undefined;
-            if (current === undefined)
-                hasChanged = true;
-            else if (oldValue !== undefined) {
-                if (format === undefined)
-                    hasChanged = oldValue !== current;
-                else
-                    hasChanged = format.isEqual(oldValue, current) === false;
-            }
-
-            diff = { oldValue: oldValue, newValue: current, hasChanged: hasChanged, removed: [], added: [] };
-        }
-
-        if (updateWS)
-            this.workspace[id] = current;
-
-        return diff;
-    };
-
-    this.checkPairsValue = function(ctrl, variables) {
-        let changed = false;
-        let pairs = this.cloneArray(ctrl.value());
+        let pairs = utils.clone(ctrl.value());
         if (pairs !== null && pairs.length > 0) {
             for (let i = 0; i < pairs.length; i++) {
                 let pair = pairs[i];
@@ -204,15 +41,15 @@ function View() {
             if (changed)
                 ctrl.setValue(pairs);
         }
-    };
+    },
 
-    this.checkValue = function(ctrl, valuesAtlevel, validValues, format) {
+    checkValue: (ctrl, valuesAtlevel, validValues, format) => {
         if (valuesAtlevel === true)
             valuesAtlevel = 1;
         else if (valuesAtlevel === false)
             valuesAtlevel = 0;
 
-        let value = this.clone(ctrl.value());
+        let value = utils.clone(ctrl.value());
         if (valuesAtlevel > 0 && value === null)
             value = [];
 
@@ -224,7 +61,7 @@ function View() {
 
                 let removed = false;
                 for (let i = 0; i < list.length; i++) {
-                    if (this.listContains(validValues, list[i], format) === false) {
+                    if (utils.listContains(validValues, list[i], format) === false) {
                         list.splice(i, 1);
                         i -= 1;
                         removed = true;
@@ -276,43 +113,24 @@ function View() {
                 }
             }
         }
-        else if (this.listContains(validValues, value, format) === false) {
+        else if (utils.listContains(validValues, value, format) === false) {
             value = null;
             changed = true;
         }
 
         if (changed)
             ctrl.setValue(value);
-    };
+    },
 
-    this.isReady = function() {
-        return this.flags.updating === false && this.flags.loaded;
-    };
-
-    this.initializeValue = function(option, defaultValue) {
-        let value = option.value();
-        if (value === null) {
-            option.setValue(defaultValue);
-            return true;
-        }
-
-        return false;
-    };
-
-    this.clone = function(obj, ifNull) {
+    clone: (obj: any, ifNull?: any): any => {
         let clone = JSON.parse(JSON.stringify(obj));
         if (ifNull !== undefined && clone === null)
             clone = ifNull;
 
         return clone;
-    };
+    },
 
-    // DEPRECATED! should use the 'clone' method instead.
-    this.cloneArray = function(array, ifNull) {
-        return this.clone(array, ifNull);
-    };
-
-    this.sortArraysByLength = function(arrays, itemPropertyName) {
+    sortArraysByLength: (arrays: any[], itemPropertyName?: string): boolean => {
         let changed = false;
         for (let i = 0; i < arrays.length - 1; i++) {
             let item1 = itemPropertyName === undefined ? arrays[i] : arrays[i][itemPropertyName];
@@ -332,9 +150,9 @@ function View() {
         }
 
         return changed;
-    };
+    },
 
-    this.listContains = function(list, value, format, itemPropertyName) {
+    listContains: <T>(list, value, format?: Format<T>, itemPropertyName?: string): boolean => {
         for (let i = 0; i < list.length; i++) {
             let item = itemPropertyName === undefined ? list[i] : list[i][itemPropertyName];
             if (format === undefined) {
@@ -346,12 +164,12 @@ function View() {
         }
 
         return false;
-    };
+    },
 
-    this.findDifferences = function(from, to, format, itemPropertyName) {
+    findDifferences: <T>(from: T[], to: T[], format?: Format<T>, itemPropertyName?: string): { removed: T[], added: T[] } => {
         let j = 0;
 
-        let obj = { removed: [], added: [] };
+        let obj: { removed: T[], added: T[] } = { removed: [], added: [] };
 
         if ((from === null || from === undefined) && (to === null || to === undefined))
             return obj;
@@ -366,22 +184,22 @@ function View() {
         else {
             for (j = 0; j < from.length; j++) {
                 let fromItem = itemPropertyName === undefined ? from[j] : from[j][itemPropertyName];
-                if (this.listContains(to, fromItem, format, itemPropertyName) === false)
+                if (utils.listContains(to, fromItem, format, itemPropertyName) === false)
                     obj.removed.push(from[j]);
             }
 
             for (j = 0; j < to.length; j++) {
                 let toItem = itemPropertyName === undefined ? to[j] : to[j][itemPropertyName];
-                if (this.listContains(from, toItem, format, itemPropertyName) === false)
+                if (utils.listContains(from, toItem, format, itemPropertyName) === false)
                     obj.added.push(to[j]);
             }
         }
 
         return obj;
-    };
+    },
 
-    this.getCombinations = function(values, baseList) {
-        let list = [];
+    getCombinations: <T>(values: T[], baseList?: T[][]): T[][] => {
+        let list: T[][] = [];
         if (baseList !== undefined && Array.isArray(baseList))
             list = baseList;
 
@@ -390,7 +208,7 @@ function View() {
             let value = values[i];
 
             for (let j = 0; j < listLength; j++) {
-                let newValue = this.clone(list[j]);
+                let newValue = utils.clone(list[j]);
                 newValue.push(value);
                 list.push(newValue);
             }
@@ -398,29 +216,29 @@ function View() {
         }
 
         for (let i = 0; i < list.length; i++)
-            list[i] = this.flattenList(list[i]);
+            list[i] = utils.flattenList(list[i]);
 
         return list;
-    };
+    },
 
-    this.flattenList = function(list) {
-        let flatList = [];
+    flattenList: <T>(list: T[]): T[] => {
+        let flatList: T[] = [];
         for (let value of list) {
             if (Array.isArray(value))
-                flatList = flatList.concat(this.flattenList(value));
+                flatList = flatList.concat(utils.flattenList(value));
             else
                 flatList.push(value);
         }
         return flatList;
-    };
+    },
 
-    this.getItemCombinations = function(items) {
-        let values = this.itemsToValues(items);
-        let combinations = this.getCombinations(values);
-        return this.valuesToItems(combinations, FormatDef.term);
-    };
+    getItemCombinations: (items: IItem<string>[]) => {
+        let values = utils.itemsToValues(items);
+        let combinations = utils.getCombinations(values);
+        return utils.valuesToItems<(string | string[])[]>(combinations, FormatDef.term);
+    },
 
-    this.valuesToItems = function<T>(values: T[], format: Format<T>) {
+    valuesToItems: <T>(values: T[], format: Format<T>): any[] => {
         if (values === null)
             return [];
 
@@ -433,13 +251,13 @@ function View() {
                 list.push({ value: new FormattedValue<T>(value, format) });
         }
         return list;
-    };
+    },
 
-    this.itemsToValues = function(items) {
-        let list = [];
+    itemsToValues: <T>(items: IItem<T>[]): (T | T[])[] => {
+        let list: (T | T[])[] = [];
         for (let i = 0; i < items.length; i++) {
             if (items[i].properties.power > 1) {
-                let g = [];
+                let g: T[] = [];
                 for (let h = 0; h < items[i].properties.power; h++)
                     g.push(items[i].value.raw);
 
@@ -449,100 +267,251 @@ function View() {
                 list.push(items[i].value.raw);
         }
         return list;
-    };
+    }
+};
 
-    this.getContext = function() {
-        return this.context ? this.context : this;
-    };
+export type CustomColumn = { name: string, measureType: MeasureType, dataType: DataType, levels: any[] }
 
-    window.utils = {
-        checkPairsValue: this.checkPairsValue.bind(this),
+export type ViewEvent = { 
+    execute: (...args: any[]) => void;
+    onChange?: string | string[];
+    onEvent?: string | string[];
+};
 
-        checkValue: this.checkValue.bind(this),
+export type ViewResources = { [id: string]: Control<CtrlDef> };
 
-        clone: this.cloneArray.bind(this),
+class View extends EventEmitter {
 
-        cloneArray: function() {
-            throw 'The cloneArray method has been deprecated. You should use the clone method instead';
-        },
+    // this is to maintain backwards compatibility for v2.0 and v3.0 modules
+    public static extend(params) {
+        return function() {
+            let view = this as View;
+            let errors = [];
+            if (view.handlers === undefined) { // version 2.0 modules need the utils as part of this object. This is here for backwards compatability
+                Object.assign(view, utils); 
+                return errors;
+            }
 
-        sortArraysByLength: this.sortArraysByLength.bind(this),
+            // this.handlers is created in the compiler.
+            for (let handle in view.handlers) {
+                if (view[handle] !== undefined)
+                    errors.push('The method name "' + handle + '" cannot be used as it conflicts with a method that already exists in the events base class of this analyses.');
+                else
+                    view[handle] = view.handlers[handle];
+            }
 
-        listContains: this.listContains.bind(this),
+            view.errors = errors;
 
-        findDifferences: this.findDifferences.bind(this),
-
-        getCombinations: this.getCombinations.bind(this),
-
-        flattenList: this.flattenList.bind(this),
-
-        getItemCombinations: this.getItemCombinations.bind(this),
-
-        valuesToItems: this.valuesToItems.bind(this),
-
-        itemsToValues: this.itemsToValues.bind(this)
-    };
-
-    this.createContext = function() {
-        let errors = [];
-        if (this.handlers === undefined)
-            return errors;
-
-        let context = {
-            base: this.base,
-
-            workspace: this.workspace,
-
-            flags: this.flags,
-
-            requestData: this.requestData.bind(this),
-
-            requestAction: this.requestAction.bind(this),
-
-            setCustomVariables: this.setCustomVariables.bind(this),
-
-            setCustomVariable: this.setCustomVariable.bind(this),
-
-            removeCustomVariable: this.removeCustomVariable.bind(this),
-
-            clearCustomVariables: this.clearCustomVariables.bind(this),
-
-            findChanges: this.findChanges.bind(this),
-
-            isReady: this.isReady.bind(this),
-
-            initializeValue: this.initializeValue.bind(this),
-
-            getContext: this.getContext.bind(this)
-        };
-
-        // this.handlers is created in the compiler.
-        for (let handle in this.handlers) {
-            if (context[handle] !== undefined)
-                errors.push('The method name "' + handle + '" cannot be used as it conflicts with a method that already exists in the events base class of this analyses.');
+            Object.assign(view, params);
+            if (view.events !== undefined)
+                view.events = view._baseEvents.concat(view.events);
             else
-                context[handle] = this.handlers[handle];
+                view.events = view._baseEvents;
+        };
+    }
+
+    workspace: { [id: string]: any} = { };
+    flags: { loaded: boolean, updating: boolean } = { loaded: true, updating: false };
+    private customVariables: CustomColumn[] = [];
+    handlers: { [name: string] : (...args: any[]) => void };
+    _id: number;
+    errors: string[] = [];
+
+    // for backwards compatibility with v2.0
+    events?: ViewEvent[];
+
+    _baseEvents: ViewEvent[] = [
+        {
+            onEvent: 'view.remote-data-changed', execute: (ui, data) => {
+                if (this.remoteDataChanged) {
+                    data.sender = ui.view;
+                    data.eventName = 'remoteDataChanged';
+                    this.remoteDataChanged.call(this, ui, data);
+                }
+            }
+        },
+        {
+            onEvent: 'view.loaded', execute: (ui) => {
+                this.flags.loaded = true;
+                if (this.loaded)
+                    this.loaded.call(this, ui, { sender: ui.view, eventName: 'loaded' });
+            }
+        },
+        {
+            onEvent: 'view.data-initializing', execute: (ui, event) => {
+                if (event.id !== this._id) {
+                    this.workspace = {};
+                    if (this)
+                        this.workspace = this.workspace;
+                }
+                this.flags.updating = true;
+            }
+        },
+        {
+            onEvent: 'view.ready', execute: (ui, event) => {
+                this.flags.updating = false;
+                if (this.update && event.id !== this._id) {
+                    event.sender = ui.view;
+                    event.eventName = 'updated';
+                    this.update.call(this, ui, event);
+                    this._id = event.id;
+                }
+            }
+        }
+    ];
+
+    constructor(params?) {
+        super();
+
+        // v4.0
+        if (params)
+            Object.assign(this, params);
+
+        GetRequestDataSupport(this);
+    }
+
+    remoteDataChanged?(ui, data): void;
+    loaded?(ui, event): void;
+    update?(ui, event): void;
+    creating(ui, event): void {
+        this.registerListeners(ui);
+    }
+
+    protected registerListeners(ui): void {
+
+    }
+
+    protected setCustomVariables(variables: CustomColumn[]): void {
+        this.customVariables = variables;
+        let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
+        this.emit('customVariablesChanged', event);
+    }
+
+    protected setCustomVariable(name: string, measureType: MeasureType, dataType: DataType, levels: any[]): void {
+        let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: false } };
+
+        let found = false;
+        let changed = false;
+        for (let i = 0; i < this.customVariables.length; i++) {
+            if (this.customVariables[i].name === name) {
+
+                if (measureType !== this.customVariables[i].measureType) {
+                    changed = true;
+                    event.dataInfo.measureTypeChanged = true;
+                    this.customVariables[i].measureType = measureType;
+                }
+
+                if (dataType !== this.customVariables[i].dataType) {
+                    changed = true;
+                    event.dataInfo.dataTypeChanged = true;
+                    this.customVariables[i].dataType = dataType;
+                }
+
+                if (levels !== this.customVariables[i].levels) {
+                    if (levels === undefined || this.customVariables[i].levels === undefined || levels.length !== this.customVariables[i].levels.length) {
+                        changed = true;
+                        event.dataInfo.levelsChanged = true;
+                        this.customVariables[i].levels = levels;
+                    }
+                    else {
+                        for (let j = 0; j < levels.length; j++) {
+                            if (levels[j] !== this.customVariables[i].levels[j]) {
+                                changed = true;
+                                event.dataInfo.levelsChanged = true;
+                                this.customVariables[i].levels = levels;
+                                break;
+                            }
+                        }
+                    }
+                }
+                found = true;
+                break;
+            }
         }
 
-        this.context = context;
+        if (found === false) {
+            changed = true;
+            event.dataInfo.countChanged = true;
+            this.customVariables.push( { name: name, measureType: measureType, dataType: dataType, levels: levels });
+        }
 
-        return errors;
-    };
+        if (changed)
+            this.emit('customVariablesChanged', event);
+    }
 
-    this.errors = this.createContext();
+    protected removeCustomVariable(name: string): void {
+        let found = false;
+        for (let i = 0; i < this.customVariables.length; i++) {
+            if (this.customVariables[i].name === name) {
+                this.customVariables.splice(i, 1);
+                found = true;
+                break;
+            }
+        }
+
+        if (found) {
+            let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
+            this.emit('customVariablesChanged', event);
+        }
+    }
+
+    protected clearCustomVariables() {
+        if (this.customVariables.length > 0) {
+            let event = { dataType: 'columns' , dataInfo: { measureTypeChanged: false, dataTypeChanged: false, nameChanged: false, levelsChanged: false, countChanged: true } };
+            this.customVariables = [];
+            this.emit('customVariablesChanged', event);
+        }
+    }
+
+    protected findChanges<T>(id: string, current: T | T[], updateWS: boolean, format: Format<T>, itemProperty?: string): { oldValue: T | T[], newValue: T | T[], removed: any[], added: any[], hasChanged: boolean } {
+        let oldValue = this.workspace[id] as T | T[];
+
+        let diff = null;
+
+        if (Array.isArray(current) || Array.isArray(oldValue)) {
+            diff = { removed: [], added: [], hasChanged: false };
+            if (oldValue !== undefined)
+                diff = utils.findDifferences(oldValue, current, format, itemProperty);
+            diff.hasChanged = diff.removed.length > 0 || diff.added.length;
+        }
+        else {
+            let hasChanged = oldValue === undefined;
+            if (current === undefined)
+                hasChanged = true;
+            else if (oldValue !== undefined) {
+                if (format === undefined)
+                    hasChanged = oldValue !== current;
+                else
+                    hasChanged = format.isEqual(oldValue, current) === false;
+            }
+
+            diff = { oldValue: oldValue, newValue: current, hasChanged: hasChanged, removed: [], added: [] };
+        }
+
+        if (updateWS)
+            this.workspace[id] = current;
+
+        return diff;
+    }
+
+    protected isReady() {
+        return this.flags.updating === false && this.flags.loaded;
+    }
+
+    protected initializeValue(option, defaultValue) {
+        let value = option.value();
+        if (value === null) {
+            option.setValue(defaultValue);
+            return true;
+        }
+
+        return false;
+    }
+
+    // DEPRECATED! should use the 'clone' method instead.
+    cloneArray(array, ifNull) {
+        return utils.clone(array, ifNull);
+    }
 }
-
-SuperClass.create(View);
-
-View.extend = function(params) {
-    return function() {
-        View.extendTo(this);
-        Object.assign(this, params);
-        if (this.events !== undefined)
-            this.events = this._baseEvents.concat(this.events);
-        else
-            this.events = this._baseEvents;
-    };
-};
 
 export default View;

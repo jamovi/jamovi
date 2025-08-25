@@ -7,26 +7,27 @@ import EnumPropertyFilter from './enumpropertyfilter';
 import MultiContainer from './multicontainer';
 import { GridControlProperties } from './gridcontrol';
 import { Margin } from './controlbase';
-import { IControlProvider } from './optionsview';
+import { Control, IControlProvider } from './optionsview';
+import { ComplexLayoutStyle, isChildSupportProperties } from './childlayoutsupport';
 
-export const deepRenderToGrid = function(ctrl, context: IControlProvider, toGrid: LayoutGrid, row, column, gridOwner) {
+export const deepRenderToGrid = function<P extends GridControlProperties>(ctrl: Control<P>, context: IControlProvider, toGrid: LayoutGrid, row, column, gridOwner) {
     let bodyContainers: ControlContainer[] = [];
-    let ctrlDef = ctrl.properties;
+    let ctrlDef = ctrl.params;
     if (ctrl.renderContainer)
         ctrl.renderContainer(context);
-    else if (ctrlDef.controls !== undefined) {
-        let style = ctrlDef.style === undefined ? "list" : ctrlDef.style.value;
-        let childStyle = style.split('-');
-        childStyle = childStyle[childStyle.length - 1];
+    else if (isChildSupportProperties(ctrlDef)) {
+        let style = ctrlDef.style === undefined ? ComplexLayoutStyle.List : ctrlDef.style;
+        let childStyleList = style.split('-');
+        let childStyle = childStyleList[childStyleList.length - 1] as LayoutStyle.List;
 
         let looseCtrls = [];
         let controls = ctrl.getPropertyValue('controls');
         for (let child of controls) {
             if (child.typeName === 'Content') {
-                let containerParams = { name: child.name, controls: child.controls, style: childStyle, _parentControl: ctrl };
+                let containerParams: ControlContainerProperties = { name: child.name, controls: child.controls, style: childStyle };
                 if (ctrl.getPropertyValue('stretchFactor') > 0)
                     containerParams.stretchFactor = 1;
-                let childContainer = new ControlContainer(containerParams);
+                let childContainer = new ControlContainer(containerParams, ctrl);
                 childContainer.renderContainer(context);
                 bodyContainers.push(childContainer);
             }
@@ -36,12 +37,12 @@ export const deepRenderToGrid = function(ctrl, context: IControlProvider, toGrid
         }
 
         if (looseCtrls) {
-            let containerParams = { controls: looseCtrls, style: childStyle, _parentControl: ctrl };
+            let containerParams: ControlContainerProperties = { controls: looseCtrls, style: childStyle };
 
             if (ctrl.getPropertyValue('stretchFactor') > 0)
                 containerParams.stretchFactor = 1;
             
-            let container = new ControlContainer(containerParams);
+            let container = new ControlContainer(containerParams, ctrl);
             container.renderContainer(context);
             bodyContainers.push(container);
         }
@@ -52,7 +53,7 @@ export const deepRenderToGrid = function(ctrl, context: IControlProvider, toGrid
 
     if (bodyContainers.length > 0) {
         if (ctrl.setBody) {
-            let body = new MultiContainer({ _parentControl: ctrl }, bodyContainers);
+            let body = new MultiContainer({ }, bodyContainers, ctrl);
             if (ctrl.getPropertyValue('stretchFactor') > 0) {
                 body.setPropertyValue('stretchFactor', 1);
             }
@@ -77,15 +78,18 @@ export type ControlContainerProperties = GridControlProperties & {
     margin?: Margin;
     name?: string;
     labelSource?: string;
+    controls: any[];
 }
 
 export class ControlContainer<P extends ControlContainerProperties = ControlContainerProperties, TGrid extends new () => BorderLayoutGrid = typeof BorderLayoutGrid> extends TitledGridControl<P> {
 
     controls: any[] = [];
     declare _el: InstanceType<TGrid>;
+    labelSourceCtrl: Control<any>;
+    gridEntryPosition: {row: number, column: number };
 
-    constructor(params: P, Grid: TGrid = BorderLayoutGrid as TGrid) {
-        super(params);
+    constructor(params: P, parent, Grid: TGrid = BorderLayoutGrid as TGrid) {
+        super(params, parent);
         this.setRootElement(new Grid());
 
         this.el.editable = true;

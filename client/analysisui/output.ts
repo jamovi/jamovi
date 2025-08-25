@@ -15,13 +15,13 @@ export class OutputControl extends OptionControl<OutputControlProperties> {
     label: HTMLElement;
     data: {value:boolean, vars: string[]};
 
-    static create(params) {
+    static create(params: OutputControlProperties, parent) {
         let classes = createChildLayoutSupport(params, OutputControl);
-        return new classes(params);
+        return new classes(params, parent);
     }
 
-    constructor(params: OutputControlProperties) {
-        super(params);
+    constructor(params: OutputControlProperties, parent) {
+        super(params, parent);
 
         this._subel = HTML.parse('<div class="silky-option-checkbox silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"></div>');
 

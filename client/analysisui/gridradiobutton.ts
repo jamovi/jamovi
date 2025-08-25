@@ -25,13 +25,13 @@ export class GridRadioButton extends OptionControl<GridOptionControlProperties<s
      */
     $input: any
 
-    static create(params: GridComboboxProperties) {
+    static create(params: GridOptionControlProperties<string>, parent) {
         let classes = createChildLayoutSupport(params, GridRadioButton);
-        return new classes(params);
+        return new classes(params, parent);
     }
 
-    constructor(params: GridComboboxProperties) {
-        super(params);
+    constructor(params: GridOptionControlProperties<string>, parent) {
+        super(params, parent);
     
         this._subel = HTML.parse('<div role="presentation" class="silky-option-radio silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"><label></label></div>');
         if (this.el === undefined)

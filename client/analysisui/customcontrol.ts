@@ -5,12 +5,16 @@ import { GridControl, GridControlProperties } from './gridcontrol';
 import GetRequestDataSupport from './requestdatasupport';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
-export class CustomControl extends GridControl<GridControlProperties> {
+type CustomControlProperties = GridControlProperties & {
+    update: () => void;
+};
+
+export class CustomControl extends GridControl<CustomControlProperties> {
     observer: MutationObserver;
     timeoutId: NodeJS.Timeout;
 
-    constructor(params: GridControlProperties) {
-        super(params);
+    constructor(params: CustomControlProperties, parent) {
+        super(params, parent);
 
         GetRequestDataSupport(this);
 

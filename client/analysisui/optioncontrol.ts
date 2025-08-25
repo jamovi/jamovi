@@ -4,25 +4,31 @@ import OptionControlBase, { OptionControlBaseProperties } from './optioncontrolb
 import EnumPropertyFilter from './enumpropertyfilter';
 import { ControlOption } from './optionsview';
 import { GridControlProperties } from './gridcontrol';
-import { ComplexLayoutStyle } from './layoutgroupview';
+import { ChildSupportProperties, ComplexLayoutStyle } from './childlayoutsupport';
 
-export type OptionControlProperties<T> = OptionControlBaseProperties<T> & {
+export type OptionControlProperties<T> = ChildSupportProperties & OptionControlBaseProperties<T> &  {
     optionName: string;
     optionPart: string;
     enable: boolean;
     label: string;
     defaultValue: T;
-    style: ComplexLayoutStyle;
+}
+
+enum OverrideMode { 
+    LOCAL_PUSH = 'localPush',
+    LOCAL_OVERRIDE = 'localOverride'
 }
 
 type InferType<T> = T extends OptionControlProperties<infer A> ? A : never;
 export class OptionControl<P extends OptionControlProperties<T>, V=InferType<P>, T=InferType<P>> extends OptionControlBase<T,V,P> {
 
-    constructor(params: P) {
-        super(params);
+    //_optProperties: { optPropertyName: string | number | symbol, overrideName: string | number | symbol, mode: OverrideMode }[];
+
+    constructor(params: P, parent) {
+        super(params, parent);
     }
 
-    protected override registerProperties(properties) {
+    protected override registerProperties(properties: P) {
         super.registerProperties(properties);
 
         this.registerSimpleProperty('optionName', null);
@@ -37,7 +43,7 @@ export class OptionControl<P extends OptionControlProperties<T>, V=InferType<P>,
     override onPropertyChanged<K extends keyof P>(propertyName: K)  {
         super.onPropertyChanged(propertyName);
         for (let overridePropertyInfo of this._optProperties) {
-            if (overridePropertyInfo.mode === 'localPush' && propertyName === overridePropertyInfo.overrideName) {
+            if (overridePropertyInfo.mode === OverrideMode.LOCAL_PUSH && propertyName === overridePropertyInfo.overrideName) {
                 let option = this.getOption();
                 let properties = this.properties[overridePropertyInfo.overrideName];
                 option.setProperty(overridePropertyInfo.optPropertyName, properties.value, this.getFullKey(), this.getPropertyValue('optionPart'));
@@ -73,7 +79,7 @@ export class OptionControl<P extends OptionControlProperties<T>, V=InferType<P>,
             optPropertyName = overrideName;
 
         if (mode === null)
-            mode = optPropertyName === overrideName ? 'localPush' : 'localOverride';
+            mode = optPropertyName === overrideName ? OverrideMode.LOCAL_PUSH : OverrideMode.LOCAL_OVERRIDE;
 
         this.registerSimpleProperty(overrideName, null);
         this._optProperties.push({ optPropertyName: optPropertyName, overrideName: overrideName, mode: mode });

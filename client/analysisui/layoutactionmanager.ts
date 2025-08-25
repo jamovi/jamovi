@@ -1,16 +1,33 @@
 
+import View, { ViewEvent, ViewResources } from './actions';
 import LayoutAction from './layoutaction';
+import { Control, CtrlDef } from './optionsview';
+
+type BindingPart = {
+    bindFunction: (ui: ViewResources) => any;
+    startIndex: number;
+    inverted: boolean;
+    endIndex: number;
+    sourceNames: string[];
+    logic?: 'and' | 'or';
+}
+ const isBindingPart = (obj: any): obj is BindingPart => {
+    return obj !== null && typeof obj === 'object' && typeof (obj as any).bindFunction === 'function';
+};
 
 export class LayoutActionManager {
-    constructor(view) {
+    _view: View;
+    _resources: ViewResources = { };
+    _actions: LayoutAction[] = [];
+    _directActions: { [key: string]: LayoutAction[] } = { };
+    _bindingActions: { [key: string]: LayoutAction[] } = { };
+    _executingActions: number = 0;
+    _initializingData: number = 0;
+    _initialised: boolean = false;
+
+    constructor(view: View) {
 
         this._view = view;
-        this._actions = [];
-        this._directActions = { };
-        this._resources = { };
-        this._executingActions = 0;
-        this._initializingData = 0;
-        this._initialised = false;
 
         this._bindingActions = {};
         if (Array.isArray(this._view.events)) {
@@ -68,10 +85,10 @@ export class LayoutActionManager {
 
     onExecutingStateChanged?(state: boolean): void;
 
-    bindActionParams(target, targetProperty, bindData) {
+    bindActionParams(target, targetProperty: string, bindData): ViewEvent {
         return {
             onChange: bindData.sourceNames,
-            execute: (ui) => {
+            execute: (ui: ViewResources) => {
                 let value = bindData.bindFunction(ui);
                 if (bindData.inverted)
                     value = !value;
@@ -80,7 +97,7 @@ export class LayoutActionManager {
         };
     }
 
-    _resolveBindCode(syntax, startIndex) {
+    _resolveBindCode(syntax: string, startIndex: number): BindingPart {
         let start = startIndex+1;
         let open = 1;
         let end = -1;
@@ -97,7 +114,7 @@ export class LayoutActionManager {
             }
         }
 
-        let sourceNames = [];
+        let sourceNames: string[] = [];
         if (end !== -1) {
             code = syntax.substring(start, end);
             sourceNames = Array.from(new Set([...code.matchAll(/ui\['(.*?)'\]/g)].map(m => m[1])));  // finds all options used by snippet
@@ -106,7 +123,7 @@ export class LayoutActionManager {
             console.log("WARNING: Code binding close } is missing.");
 
         return {
-            bindFunction: new Function('ui', code),
+            bindFunction: new Function('ui', code) as ((ui: ViewResources) => any),
             startIndex: startIndex,
             inverted: false,
             endIndex: end === -1 ? syntax.length - 1 : end,
@@ -114,13 +131,12 @@ export class LayoutActionManager {
         };
     }
 
-    _resolveBindPart(syntax, startIndex) {
+    _resolveBindPart(syntax: string, startIndex: number): BindingPart {
 
-        let sourceName = null;
+        let sourceName: string = null;
         let compareValue = null;
         let stage = "option";
         let valueStart = -1;
-
 
         let inverted = syntax[startIndex] === '!';
         let beginOffset = 0;
@@ -172,22 +188,22 @@ export class LayoutActionManager {
             console.log("WARNING: Cannot bind to '" + sourceName + "'. It does not exist.");
         }
 
-        let sourceNames = [];
+        let sourceNames: string[] = [];
         if ( ! failed) {
             sourceNames = [sourceName];
-            if (compareValue !== null && compareValue.bindFunction !== undefined)
+            if (isBindingPart(compareValue))
                 sourceNames = this._arrayUnique(sourceNames.concat(compareValue.sourceNames));
         }
 
         return {
-            bindFunction: (ui) => {
+            bindFunction: (ui: ViewResources) => {
                 let value = null;
                 if (failed === false)
                     value = ui[sourceName].value();
 
                 if (compareValue !== null) {
                     let cValue = compareValue;
-                    if (compareValue.bindFunction !== undefined) {
+                    if (isBindingPart(compareValue)) {
                         cValue = compareValue.bindFunction(ui);
                     }
                     value = value == cValue;
@@ -222,7 +238,7 @@ export class LayoutActionManager {
         return -1;
     }
 
-    _resolveBinding(syntax, startIndex) {
+    _resolveBinding(syntax, startIndex): BindingPart {
 
         let parts = [];
 
@@ -232,7 +248,7 @@ export class LayoutActionManager {
         if (inverted)
             beginOffset += 1;
 
-        let partData = null;
+        let partData: BindingPart = null;
         let endIndex = startIndex;
         let failed = false;
         for (let i = startIndex + beginOffset; i < syntax.length; i++) {
@@ -341,14 +357,16 @@ export class LayoutActionManager {
         }
     }
 
-    addAction(params) {
+    addAction(params: ViewEvent) {
         let action = new LayoutAction(this, params);
         this._actions.push(action);
         if (this._initialised)
             action.initialize();
     }
 
-    addDirectAction(resourceId, params, isBinding) {
+    
+
+    addDirectAction(resourceId: string, params: ViewEvent, isBinding?: boolean) {
         if (this._directActions[resourceId] === undefined)
             this._directActions[resourceId] = [];
 
@@ -365,7 +383,7 @@ export class LayoutActionManager {
             action.initialize();
     }
 
-    removeDirectActions(resourceId) {
+    removeDirectActions(resourceId: string) {
         let actions = this._directActions[resourceId];
         if (actions === undefined)
             return;
@@ -380,15 +398,15 @@ export class LayoutActionManager {
             delete this._bindingActions[resourceId];
     }
 
-    addResource(name, resource) {
-        let resId = null;
+    addResource(name, resource: Control<CtrlDef>) {
+        let resId: number = null;
         if (name === null && resource.hasProperty && resource.hasProperty('controlID'))
             resId = resource.getPropertyValue('controlID');
 
         if (name === null && resId === null)
             throw 'If a resource does not have an id, it then requires a name.';
 
-        let useId = name === null ? '{' + resId + '}' : name;
+        let useId: string = name === null ? `{${resId}}` : name;
 
         if (this._resources[useId] !== undefined)
             throw "The following resource id is already in use: " + useId;
@@ -420,7 +438,7 @@ export class LayoutActionManager {
         if (events !== null && Array.isArray(events)) {
             for (let i = 0; i < events.length; i++) {
                 let execute = events[i].execute;
-                let params = JSON.parse(JSON.stringify(events[i]));
+                let params: ViewEvent = JSON.parse(JSON.stringify(events[i]));
                 params.execute = execute;
 
                 if ((typeof params.execute === 'function') === false)
@@ -455,7 +473,7 @@ export class LayoutActionManager {
                     if (prop.binding !== undefined) {
                         let resolvedBindData = this._resolveBinding(prop.binding.trim(), 0);
                         let params = this.bindActionParams(resource, property, resolvedBindData);
-                        this.addDirectAction(resId, params, true);
+                        this.addDirectAction(resId.toString(), params, true);
                         params.execute(this._resources);
                         hasNewActions = true;
                     }
@@ -525,7 +543,7 @@ export class LayoutActionManager {
         }
 
         if (this._view.creating)
-            this._view.creating.call(this._view.getContext(), this._resources, { sender: panel, eventName: 'creating' });
+            this._view.creating(this._resources, { sender: panel, eventName: 'creating' });
     }
 
     initializeAll() {

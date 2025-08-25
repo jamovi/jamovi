@@ -3,6 +3,19 @@
 import EnumPropertyFilter from './enumpropertyfilter';
 import I18nSupport from './i18nsupport';
 import { CtrlDef, Control } from './optionsview';
+import { EventHandlers } from './propertysupplier';
+
+type IsExactlyStringNullable<T> = 
+  // Remove undefined and null from T to get U
+  [Exclude<T, undefined | null>] extends [string]
+    ? [string] extends [Exclude<T, undefined | null>]
+      ? true
+      : false
+    : false;
+
+export type StringKeys<T> = {
+  [K in keyof T]: IsExactlyStringNullable<T[K]> extends true ? K : never;
+}[keyof T];
 
 export enum Margin {
     Small = "small",
@@ -14,21 +27,19 @@ export enum Margin {
 export type ControlBaseProperties = CtrlDef & {
     stage: 0 | 1 | 2;  //0 - release, 1 - development, 2 - proposed
     margin: Margin;
+
+    disposing: () => void;  
 }
 
-export type StringKeys<T> = {
-  [K in keyof T]: T[K] extends string ? K : never;
-}[keyof T];
-
-export class ControlBase<P extends ControlBaseProperties> extends I18nSupport<P> implements Control<P> {
+export class ControlBase<P extends ControlBaseProperties = ControlBaseProperties> extends I18nSupport<P> implements Control<P> {
     isDisposed: boolean;
+    _parentControl: any;
 
-    constructor(params: P) {
+    constructor(params: P, parentControl) {
         super(params);
 
-        if (params._parentControl === undefined)
-            throw "Every control requires '_parentControl to be assigned.'";
-    
+        this._parentControl = parentControl;
+
         this.isDisposed = false;
     }
 
@@ -44,7 +55,7 @@ export class ControlBase<P extends ControlBaseProperties> extends I18nSupport<P>
         if (this.hasProperty('_templateInfo'))
             return this.getPropertyValue('_templateInfo');
 
-        let parent = this.getPropertyValue('_parentControl');
+        let parent = this._parentControl;
         if (parent === null)
             return null;
 
@@ -69,11 +80,11 @@ export class ControlBase<P extends ControlBaseProperties> extends I18nSupport<P>
     }
 
     onDisposed() {
-        this.emit('disposing');
+        (this as ControlBase).emit('disposing');
     }
 
     getTranslatedProperty<K extends StringKeys<P>>(property: K): string {
-        let value = this.getPropertyValue(property);
+        let value = this.getPropertyValue(property) as string;
         if (value !== null && value !== undefined && typeof value != 'string') {
             throw 'Not a valid property to translate';
         }

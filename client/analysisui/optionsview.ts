@@ -5,10 +5,11 @@ import { ControlContainer } from './controlcontainer';
 import DefaultControls from './defaultcontrols';
 import Opt from './option';
 import { applyMagicEventsForCtrl as ApplyMagicEventsForCtrl } from './applymagicevents';
-import { EventEmitter } from 'events';
+import { DefaultEventMap, EventEmitter } from 'tsee';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import Options from './options';
-import PropertySupplier from './propertysupplier';
+import PropertySupplier, { EventHandlers } from './propertysupplier';
+import LayoutActionManager from './layoutactionmanager';
 
 export class ControlOption<T> {
     options: Options;
@@ -105,7 +106,7 @@ export class ControlOption<T> {
             this.options.endEdit();
     }
 
-    insertValueAt(value, key, eventParams) {
+    insertValueAt(value, key, eventParams?) {
         if (this.isVirtual)
             this.source.insertValueAt(value, key);
         else
@@ -119,7 +120,7 @@ export class ControlOption<T> {
             this.options.removeOptionValue(this.source, key, eventParams);
     }
 
-    setValue(value, key, eventParams) {
+    setValue(value, key, eventParams?) {
         if (this.isVirtual)
             this.source.setValue(value, key);
         else
@@ -166,13 +167,13 @@ export interface IControlProvider {
 }
 
 interface ControlFactory<P extends CtrlDef> {
-    new (params: P): Control<P>;
-    create: (def: P) => Control<P>;
+    new (params: P, parent: any): Control<P>;
+    create: (def: P, parent: any) => Control<P>;
 }
 
 interface ControlClass<P extends CtrlDef> {
-    new (params: P): Control<P>;
-    create?: (params: P) => Control<P>;
+    new (params: P, parent: any): Control<P>;
+    create?: (params: P, parent: any) => Control<P>;
 } 
 
 interface IControl {
@@ -187,20 +188,21 @@ interface IControl {
     setOption?: (option: ControlOption<any>, valueKey?) => void;
     setI18nSource?: (source: { translate: (key: string) => string }) => void;
     //params: any;
+    [key: string]: any;
+    //DefaultControls?: {[key: string]: ControlType<CtrlDef>};
 } 
 
 export interface ISingleCellControl {
     el: HTMLElement;
 }
 
-export type Control<P extends CtrlDef> = IControl & EventEmitter & PropertySupplier<P>;
+export type Control<P extends CtrlDef> = IControl & EventEmitter<EventHandlers<P>> & PropertySupplier<P>;
 
 export type ControlType<P extends CtrlDef> = ControlClass<P> | ControlFactory<P>;
 
 interface CtrlDefBase {
-    name?: string;
     [key: string]: any;
-    DefaultControls?: {[key: string]: ControlType<CtrlDef>};
+    //DefaultControls?: {[key: string]: ControlType<CtrlDef>};
 };
 
 interface TypeCtrlDef extends CtrlDefBase {
@@ -213,16 +215,21 @@ interface ParentCtrlDef extends CtrlDefBase {
     type?: ControlClass<CtrlDef>;
 };
 
-export type CtrlDef = (TypeCtrlDef | ParentCtrlDef) & {
+export type CtrlDef = /*(TypeCtrlDef | ParentCtrlDef) &*/ {
+    name?: string;
+    controlID?: number;
     isVirtual: boolean;
     stage: 0 | 1 | 2;
     optionName?: string;
+    controls?: any[];
+    type?: ControlClass<CtrlDef>;
+    _templateInfo? : any;
 };
 
 export interface IOptionsViewModel { 
     options: Options, 
     ui: any, 
-    actionManager: any, 
+    actionManager: LayoutActionManager, 
     currentStage: number; 
 }
 
@@ -252,8 +259,7 @@ export class OptionsView extends EventEmitter implements IControlProvider {
         if (layoutDef.stage <= this.model.currentStage) {
             this.layoutActionManager = this.model.actionManager;
 
-            layoutDef._parentControl = null;
-            let layoutGrid = new ControlContainer(layoutDef);
+            let layoutGrid = new ControlContainer(layoutDef, null);
             layoutGrid.el.classList.add('top-level');
             //layoutGrid.setMinimumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
             //layoutGrid.setMaximumWidth(this.$el.width() - layoutGrid.getScrollbarWidth());
@@ -264,9 +270,9 @@ export class OptionsView extends EventEmitter implements IControlProvider {
                 let option = options._list[i];
                 let name = option.params.name;
                 if (this.layoutActionManager.exists(name) === false) {
-                    let ctrlDef = { name: name, typeName: '_hiddenOption', _parentControl: null };
+                    let ctrlDef = { name: name, typeName: '_hiddenOption' };
                     ApplyMagicEventsForCtrl(ctrlDef, this.layoutActionManager._view);
-                    let backgroundOption = new OptionControlBase(ctrlDef);
+                    let backgroundOption = new OptionControlBase(ctrlDef, null);
                     backgroundOption.setOption(this._getOption(name));
                     this.layoutActionManager.addResource(name, backgroundOption);
                 }
@@ -376,9 +382,6 @@ export class OptionsView extends EventEmitter implements IControlProvider {
 
         let name = uiDef.name === undefined ? null :  uiDef.name;
 
-        uiDef.DefaultControls = DefaultControls;
-        uiDef._parentControl = parent;
-
         let templateInfo = uiDef._templateInfo;
         if (uiDef._templateInfo === undefined)
             templateInfo = parent.getTemplateInfo();
@@ -394,9 +397,9 @@ export class OptionsView extends EventEmitter implements IControlProvider {
         uiDef.controlID = this._nextControlID++;
         let ctrl: Control<P> = null;
         if (uiDef.type.create)
-            ctrl = uiDef.type.create(uiDef) as Control<P>;
+            ctrl = uiDef.type.create(uiDef, parent) as Control<P>;
         else
-            ctrl = new uiDef.type(uiDef) as Control<P>;
+            ctrl = new uiDef.type(uiDef, parent) as Control<P>;
 
         if (ctrl === null)
             throw "shouldn't get here";

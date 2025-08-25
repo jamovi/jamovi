@@ -1,11 +1,12 @@
 'use strict';
 
-import $ from 'jquery';
+import $ from 'jquery'; // for backwards compatibility
 
 import ControlBase, { ControlBaseProperties, Margin } from './controlbase';
 import LayoutCell, { ICellContentsItem } from './layoutcell';
 import EnumPropertyFilter from './enumpropertyfilter';
 import LayoutGrid from './layoutgrid';
+import { isTemplateItemControlProperties } from './templateitemcontrol';
 
 export interface IRenderReturnData { height: number, width: number, cell?: LayoutCell };
 
@@ -52,8 +53,8 @@ export class GridControl<T extends GridControlProperties> extends ControlBase<T>
      */
     _$el: any;
 
-    constructor(params: T) {
-        super(params);
+    constructor(params: T, parent) {
+        super(params, parent);
         
         this._fabricatedItem = false;
 
@@ -146,7 +147,7 @@ export class GridControl<T extends GridControlProperties> extends ControlBase<T>
             if (this.createItem)
                 this.createItem();
 
-            if (this.hasProperty('itemKey')) {
+            if (isTemplateItemControlProperties(this.params)) {
                 let templateName = this.getTemplateInfo().templateName;
                 if (templateName !== undefined)
                     this.el.classList.add('item-template', templateName);
@@ -166,7 +167,7 @@ export class GridControl<T extends GridControlProperties> extends ControlBase<T>
             //LayoutGrid.extendTo(this);
             wrapper.classList.add('silky-layout-grid');
             wrapper.classList.add('multi-cell-wrapper');
-            if (this.hasProperty('itemKey')) {
+            if (isTemplateItemControlProperties(this.params)) {
                 let templateName = this.getTemplateInfo().templateName;
                 if (templateName !== undefined)
                     wrapper.classList.add('item-template ' + templateName);

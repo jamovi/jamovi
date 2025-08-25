@@ -7,8 +7,6 @@
 import { Future } from './utils/common';
 
 import events from 'events';
-import $ from 'jquery';
-
 
 const etron = window.electronAPI || {};
 
@@ -108,9 +106,16 @@ export const navigate = etron.navigate || function(instanceId) {
 };
 
 export const version = etron.version || new Promise((resolve, reject) => {
-    $.ajax('/version', { dataType: 'text'})
+    fetch('/version').then(response => {
+        if (!response.ok)
+            throw new Error(`HTTP error! status: ${response.status}`);
+        return response.text();
+    }).then(data => resolve(data.trim())).catch(reject);
+
+
+    /*$.ajax('/version', { dataType: 'text'})
         .done(data => resolve(data.trim()))
-        .fail(reject);
+        .fail(reject);*/
 });
 
 export const nameAndVersion = etron.nameAndVersion || version.then(version => {

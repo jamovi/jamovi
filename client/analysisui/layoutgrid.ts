@@ -5,8 +5,8 @@ import GridControl, { GridControlProperties } from './gridcontrol';
 import LayoutCell, { ICellProperties, ICellContentsItem } from './layoutcell';
 
 type Constructor<T = {}> = new (...params: any[]) => T;
-
-export function LayoutControl<P extends GridControlProperties, TBase extends Constructor<InstanceType<typeof GridControl<P>>>, TGrid extends new () => LayoutGrid = typeof LayoutGrid>(Base: TBase, Grid: TGrid = LayoutGrid as TGrid) {
+type InferType<T> = T extends Constructor<GridControl<infer A>> ? A : never;
+export function LayoutControl<T extends Constructor<GridControl<P>>, P extends GridControlProperties = InferType<T>, TGrid extends new () => LayoutGrid = typeof LayoutGrid>(Base: T, Grid: TGrid = LayoutGrid as TGrid) {
     return class extends Base {
 
         declare _el: InstanceType<TGrid>;

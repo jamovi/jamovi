@@ -12,8 +12,13 @@ class rmafcItem extends LayoutGrid {
     $label: HTMLInputElement;
     levelButtons: HTMLElement[];
     $items: HTMLInputElement[];
+    parent: RMAnovaFactorsControl;
+    isFirst: boolean;
+    _topIndex: number = -1;
+    data: { label: string, levels: string[] };
+    enterPressed: number;
 
-    constructor(parent, data, isFirst, isLast) {
+    constructor(parent: RMAnovaFactorsControl, data, isFirst, isLast) {
         super();
         //LayoutGrid.extendTo(this);
 
@@ -32,7 +37,7 @@ class rmafcItem extends LayoutGrid {
         this.listenForCompleteRemove(this.$closeButton);
 
         let levels = [];
-        let label = this.parent.translate('RM Factor {0}').replace('{0}', index + 1);
+        let label = this.parent.translate('RM Factor {0}').replace('{0}', (index + 1).toString());
         let isEmpty = true;
         if (this.data !== undefined && this.data !== null) {
             label = this.data.label;
@@ -87,15 +92,15 @@ class rmafcItem extends LayoutGrid {
         }
     }
 
-    intToRoman(number) {
+    intToRoman(number: number): string {
         let text;
         if (number > 3999)
             throw "Can not convert to roman numeral. Number to large.";
 
-        text  = [ '', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'][parseInt(number) % 10];
-        text = [ '', 'X', 'XX', 'XXX', 'XL', 'L', 'LX', 'LXX', 'LXXX', 'XC'][parseInt(number / 10) % 10] + text;
-        text = [ '', 'C', 'CC', 'CCC', 'CD', 'D', 'DC', 'DCC', 'DCCC', 'CM'][parseInt(number / 100) % 10] + text;
-        text = [ '', 'M', 'MM', 'MMM'][parseInt(number / 1000) % 10] + text;
+        text  = [ '', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'][number % 10];
+        text = [ '', 'X', 'XX', 'XXX', 'XL', 'L', 'LX', 'LXX', 'LXXX', 'XC'][(number / 10) % 10] + text;
+        text = [ '', 'C', 'CC', 'CCC', 'CD', 'D', 'DC', 'DCC', 'DCCC', 'CM'][(number / 100) % 10] + text;
+        text = [ '', 'M', 'MM', 'MMM'][(number / 1000) % 10] + text;
 
         return text;
     }
@@ -161,7 +166,7 @@ class rmafcItem extends LayoutGrid {
                     $t.blur();
             };
             $t.addEventListener('blur', () => { document.removeEventListener('mousedown', blurCall); });
-            $t.focus(() => {
+            $t.addEventListener('focus', () => {
                 setTimeout(() => { document.addEventListener('mousedown', blurCall); }, 0);
                 $t.select();
             });
@@ -313,7 +318,7 @@ class rmafcItem extends LayoutGrid {
         let value = $item.value.trim();
         let index = parseInt($item.dataset.index);
         if (value === '')
-            value = this.parent.translate('RM Factor {0}').replace('{0}', (index+1));
+            value = this.parent.translate('RM Factor {0}').replace('{0}', (index+1).toString());
 
         let checked = this.parent.checkItemLabel(value, index);
         if (checked !== value) {
@@ -342,22 +347,21 @@ type RMAnovaFactorsControlProperties = GridControlProperties & OptionControlProp
 
 export class RMAnovaFactorsControl extends OptionControl<RMAnovaFactorsControlProperties> {
     
-    static create(params: RMAnovaFactorsControlProperties) {
+    static create(params: RMAnovaFactorsControlProperties, parent) {
         if (navigator.platform === 'MacIntel') {
             const Base = HiddenScrollBarSupport(RMAnovaFactorsControl);
-            return new Base(params);
+            return new Base(params, parent);
         }
         else
-            return new RMAnovaFactorsControl(params);
+            return new RMAnovaFactorsControl(params, parent);
     }
     
     data: RMAnovaFactorsControlDataType = [];
     declare _el: LayoutGrid;
-    _animateCells = true;
     items: rmafcItem[] = [];
 
-    constructor(params: RMAnovaFactorsControlProperties) {
-        super(params);
+    constructor(params: RMAnovaFactorsControlProperties, parent) {
+        super(params, parent);
 
         this.setRootElement(new LayoutGrid());
 
@@ -410,7 +414,7 @@ export class RMAnovaFactorsControl extends OptionControl<RMAnovaFactorsControlPr
         }
     }
 
-    onItemChanged(item) {
+    onItemChanged() {
         this.setValue(this.data);
     }
 

@@ -6,8 +6,8 @@ import LayoutVariablesView, { VariablesViewProperties } from './layoutvariablesv
 
 export class OutputSupplier extends LayoutVariablesView {
 
-    constructor(params: VariablesViewProperties) {
-        super(params);
+    constructor(params: VariablesViewProperties, parent) {
+        super(params, parent);
     }
 
     protected override registerProperties(properties) {

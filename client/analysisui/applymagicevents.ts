@@ -1,9 +1,10 @@
+import View, { ViewEvent } from "./actions";
 
 export const applyMagicEvents = function (layout, template) {
     findMagicEvents(layout, 'view', template);
 };
 
-export const applyMagicEventsForCtrl = function (ctrl, template, name?: string) {
+export const applyMagicEventsForCtrl = function (ctrl, template: View, name?: string) {
     if (name === undefined)
         name = ctrl.name;
 
@@ -29,7 +30,7 @@ export const applyMagicEventsForCtrl = function (ctrl, template, name?: string) 
                         if (events[eventName] !== undefined)
                             continue;
 
-                        let event = {};
+                        let event: ViewEvent = {};
                         if (eventName === "change")
                             event.execute = template.handlers[handler];
                         else {

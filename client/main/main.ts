@@ -1,6 +1,6 @@
 'use strict';
 
-import $ from 'jquery';
+import $ from 'jquery';  //only here because of the .ready()
 
 import host from './host';
 
@@ -42,6 +42,8 @@ import { IShowDialogOptions } from './host';
 import './infobox';
 
 import keyboardJS  from 'keyboardjs';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+
 
 
 window._ = I18n._;
@@ -218,7 +220,6 @@ window.addEventListener('popstate', function () {
 
 
 $(document).ready(async() => {
-    //window.$body = $('body');
     if (navigator.platform === 'Win32')
         document.body.classList.add('windows');
     else if (navigator.platform == 'MacIntel')
@@ -360,9 +361,9 @@ $(document).ready(async() => {
 
     if (host.isElectron && navigator.platform === 'Win32') {
 
-        $('#close-button').on('click', event => host.closeWindow());
-        $('#min-button').on('click', event => host.minimizeWindow());
-        $('#max-button').on('click', event => host.maximizeWindow());
+        document.querySelector('#close-button').addEventListener('click', event => host.closeWindow());
+        document.querySelector('#min-button').addEventListener('click', event => host.minimizeWindow());
+        document.querySelector('#max-button').addEventListener('click', event => host.maximizeWindow());
     }
 
     document.oncontextmenu = function() { return false; };
@@ -499,9 +500,9 @@ $(document).ready(async() => {
     resultsView.setAttribute('aria-live', 'polite');
     resultsPanel.append(resultsView);
 
-    let $mainTable = $('#main-table');
-    $mainTable.attr('role', 'region');
-    $mainTable.attr('aria-label', 'Spreadsheet');
+    let $mainTable = document.querySelector('#main-table');
+    $mainTable.setAttribute('role', 'region');
+    $mainTable.setAttribute('aria-label', 'Spreadsheet');
 
     instance.on('change:selectedAnalysis', function(event) {
         if ('selectedAnalysis' in event.changed) {
@@ -593,11 +594,11 @@ $(document).ready(async() => {
         }
     };
 
-    let $fileName = $('.header-file-name');
+    let $fileName = document.querySelector('.header-file-name');
     instance.on('change:title', function(event) {
         if ('title' in event.changed) {
             let title = event.changed.title;
-            $fileName.text(title);
+            $fileName.textContent = title;
             document.title = title;
         }
     });
@@ -606,8 +607,8 @@ $(document).ready(async() => {
 
     splitPanel.render();
 
-    let $spreadsheet = $('<div id="spreadsheet"></div>');
-    let $variablesList = $('<div id="variablelist"></div>');
+    let $spreadsheet = HTML.parse('<div id="spreadsheet"></div>');
+    let $variablesList = HTML.parse('<div id="variablelist"></div>');
     $mainTable.append($spreadsheet);
     $mainTable.append($variablesList);
 
@@ -664,7 +665,7 @@ $(document).ready(async() => {
     });
 
     resultsView.addEventListener('analysisLostFocus', (event) => {
-        $(window).focus();
+        window.focus();
     });
 
     resultsView.addEventListener('activeFormatChanged', (event: CustomEvent) => {

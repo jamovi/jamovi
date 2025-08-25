@@ -37,7 +37,7 @@ export class VariablesFormat extends Format<string[]> {
         return value;
     }
 
-    isValid(raw: any): boolean {
+    override isValid(raw: any): boolean {
         return Array.isArray(raw);
     }
 
@@ -61,7 +61,7 @@ export class VariablesFormat extends Format<string[]> {
         return true;
     }
 
-    isEmpty(raw: string[]) {
+    override isEmpty(raw: string[]) {
         return raw === null || raw.length === 0;
     }
 }
@@ -84,15 +84,15 @@ export class VariableFormat extends Format<string> {
         return value;
     }
 
-    isValid(raw: any) : boolean {
+    override isValid(raw: any) : boolean {
         return (typeof raw === 'string') || Array.isArray(raw);
     }
 
-    isEqual(raw1: string, raw2: string): boolean {
+    override isEqual(raw1: string, raw2: string): boolean {
         return raw1 === raw2;
     }
 
-    isEmpty(raw: string): boolean {
+    override isEmpty(raw: string): boolean {
         return raw === null;
     }
 
@@ -186,15 +186,15 @@ export class TermFormat extends Format<string[]> {
         return "test";
     }
 
-    isValid(raw: any) : boolean {
+    override isValid(raw: any) : boolean {
         return this._validateItem(raw, 0);
     }
 
-    isEqual(raw1: string | string[], raw2: string | string[]): boolean {
+    override isEqual(raw1: string | string[], raw2: string | string[]): boolean {
         return this._areItemsEqual(raw1, raw2);
     }
 
-    isEmpty(raw: string[]): boolean {
+    override isEmpty(raw: string[]): boolean {
         return raw === null;
     }
 
@@ -361,15 +361,15 @@ export class NumberFormat extends Format<number> {
         return parseFloat(value);
     }
 
-    isValid(raw: any): boolean {
+    override isValid(raw: any): boolean {
         return ! (isNaN(raw) || typeof(raw) !== 'number');
     }
 
-    isEmpty(raw: number): boolean {
+    override isEmpty(raw: number): boolean {
         return raw === null;
     }
 
-    isEqual(raw1: number, raw2: number): boolean {
+    override isEqual(raw1: number, raw2: number): boolean {
         return raw1 === raw2;
     }
 }
@@ -388,15 +388,15 @@ export class BooleanFormat extends Format<boolean> {
         return value === 'true';
     }
 
-    isValid(raw: any) {
+    override isValid(raw: any) {
         return typeof(raw) === 'boolean';
     }
 
-    isEmpty(raw: boolean) {
+    override isEmpty(raw: boolean) {
         return raw === null;
     }
 
-    isEqual(raw1: boolean, raw2: boolean) {
+    override isEqual(raw1: boolean, raw2: boolean) {
         return raw1 === raw2;
     }
 }
@@ -415,15 +415,15 @@ export class StringFormat extends Format<string> {
         return value;
     }
 
-    isValid(raw: any) {
+    override isValid(raw: any) {
         return typeof(raw) === 'string';
     }
 
-    isEmpty(raw: string) {
+    override isEmpty(raw: string) {
         return raw === null;
     }
 
-    isEqual(raw1: string, raw2: string) {
+    override isEqual(raw1: string, raw2: string) {
         return raw1 === raw2;
     }
 }
@@ -446,15 +446,15 @@ export class OutputFormat extends Format<OutputType> {
         return { value: value === 'true', vars: [] };
     }
 
-    isValid(raw: any) {
+    override isValid(raw: any) {
         return raw === null || (typeof(raw) === 'object' && typeof(raw.value) === 'boolean');
     }
 
-    isEmpty(raw: OutputType) {
+    override isEmpty(raw: OutputType) {
         return raw === null || raw.vars.length === 0;
     }
 
-    isEqual(raw1: OutputType, raw2: OutputType) {
+    override isEqual(raw1: OutputType, raw2: OutputType) {
         if (raw1 === null && raw2 === null)
             return true;
 

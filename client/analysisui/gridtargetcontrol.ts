@@ -2,7 +2,7 @@
 
 import $ from 'jquery';  // for backwards compatibility
 
-import OptionListControl, { ICellInfo, SelectableOptionListControl, SelectableOptionListControlProperties, SelectableOptionListControlType } from './optionlistcontrol';
+import OptionListControl, { ICellInfo, SelectableOptionListControl, SelectableOptionListControlProperties } from './optionlistcontrol';
 import GridControl, { GridControlProperties } from './gridcontrol';
 import { FormatDef, FormattedValue } from './formatdef';
 import DragNDrop from './dragndrop';
@@ -22,9 +22,9 @@ import { IControlProvider } from './optionsview';
 
 import A11y from '../common/focusloop';
 
-type OptionListControlType<U> = InstanceType<typeof OptionListControl<U>>;
+type OptionListControlType<U> = InstanceType<typeof OptionListControl<TargetListControlProperties<U>>>;
 
-export type SupplierTargetList<U> = SelectableOptionListControlType<U> & SupplierTarget<U>;
+export type SupplierTargetList<U> = SelectableOptionListControl<TargetListControlProperties<U>> & SupplierTarget<U>;
 
 enum ItemDropBehaviour {
     Overwrite = 'overwrite',
@@ -34,9 +34,12 @@ enum ItemDropBehaviour {
 
 type TargetListControlProperties<U> = SelectableOptionListControlProperties<U> & {
     itemDropBehaviour: ItemDropBehaviour
+
+    dropoverflow: (source, overflowItems) => void;
+    preprocess: (data) => void;
 }
 
-const TargetListSupport = function<U>(list: SelectableOptionListControlType<U>, parent: GridTargetContainer<U>) : SupplierTargetList<U> {
+const TargetListSupport = function<U>(list: SelectableOptionListControl<TargetListControlProperties<U>>, parent: GridTargetContainer<U>) : SupplierTargetList<U> {
 
     let checkDropBehaviour = () => {
         let dropBehaviour = list.getPropertyValue('itemDropBehaviour');
@@ -232,7 +235,7 @@ const TargetListSupport = function<U>(list: SelectableOptionListControlType<U>, 
         },
 
         dropTargetElement: () : HTMLElement => {
-            let parent = list.getPropertyValue('_parentControl');
+            let parent = list._parentControl;
             let dropArea = list.el;
             while (parent !== null) {
                 let isTargetChain = false;
@@ -241,7 +244,7 @@ const TargetListSupport = function<U>(list: SelectableOptionListControlType<U>, 
                 else
                     break;
 
-                parent = parent.getPropertyValue('_parentControl');
+                parent = parent._parentControl;
             }
             return dropArea;
         },
@@ -312,6 +315,10 @@ const TargetListSupport = function<U>(list: SelectableOptionListControlType<U>, 
     return supplierTarget;
 }
 
+function isPossibleSupplierTargetList<U>(obj: any): obj is SelectableOptionListControl<TargetListControlProperties<U>> {
+    return obj !== null && obj instanceof SelectableOptionListControl && obj.hasProperty('isTarget') && obj.getPropertyValue('isTarget');
+}
+
 function isSupplierTargetList<U>(obj: any): obj is SupplierTargetList<U> {
     return obj && obj.dragDropManager && obj.dragDropManager instanceof DragNDrop;
 }
@@ -338,6 +345,8 @@ export type GridTargetContainerProperties = GridControlProperties & {
     style: LayoutStyle;
     dropOverflow: DropOverflow;
     transferAction: TransferActionType;
+
+    changing: (event: any) => void;
 }
 
 type LayoutSupplierViewType<U> = InstanceType<typeof LayoutSupplierView<SupplierViewProperties<U>>>;
@@ -360,23 +369,24 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
     _targetDoubleClickDetectObj = null;
     _supplierDoubleClickDetect = 0;
     _normalAction: TransferAction<U>;
+    labelId: string;
+    _supplierDoubleClickDetectObj: EventTarget;
 
     /**
      * @deprecated Should not be used. Rather use `(property) Control.label: HTMLElement`.
      */
     $label: any;
 
-    constructor(params: GridTargetContainerProperties) {
-        super(params);
+    constructor(params: GridTargetContainerProperties, parent) {
+        super(params, parent);
 
         let containerParams: ControlContainerProperties = {
-            _parentControl: this,
             controls: this.getPropertyValue('controls'),
             style: this.getPropertyValue('style'),
             stretchFactor: 1
         };
 
-        this.container = new ControlContainer(containerParams);
+        this.container = new ControlContainer(containerParams, this);
 
         this.targetGrid = null;
 
@@ -428,7 +438,7 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
             this.setButtonsMode(this.gainOnClick); // update aria tags
     }
 
-    removeListBox(listbox: SelectableOptionListControlType<U>) {
+    removeListBox<P extends SelectableOptionListControlProperties<U>>(listbox: SelectableOptionListControl<P, U>) {
         if (isSupplierTargetList<U>(listbox)) {
             for (let i = 0; i < this.targetGrids.length; i++) {
                 if (this.targetGrids[i] === listbox) {
@@ -480,26 +490,21 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
         return null;
     }
 
-    addListBox(listbox: SelectableOptionListControlType<U>) {
+    addListBox(listbox: SelectableOptionListControl<SelectableOptionListControlProperties<U>>) {
         
         listbox.el.setCellBorders(listbox._columnInfoList.length > 1 ? 'columns' : null);
 
         listbox.on('listItemAdded', (data) => {
             let {item, index} = data;
             this.searchForListControls(item);
-
-            //return baseFunction.call(listbox, item, index);
         });
 
         listbox.on('listItemRemoved', (data) => {
             let {item} = data;
             this.searchForListControls(item, true);
-
-            //return baseFunction.call(listbox, item);
         });
 
-        let isTarget = listbox.hasProperty('isTarget') && listbox.getPropertyValue('isTarget');
-        if (isTarget === false) {
+        if (isPossibleSupplierTargetList(listbox) === false) {
             if (this.targetGrid === null) {
                 listbox.setFocus();
             }
@@ -522,8 +527,7 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
             });
         }
         else {
-
-            TargetListSupport<U>(listbox, this);
+            TargetListSupport<U>(listbox , this);
 
             if (isSupplierTargetList<U>(listbox)) {
 
@@ -548,7 +552,7 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
                 listbox.el.classList.add('silky-target-list');
 
                 let dropOverflow = this.getPropertyValue('dropOverflow');
-                if (dropOverflow !== 'discard') {
+                if (dropOverflow !== DropOverflow.Discard) {
                     listbox.on('dropoverflow', (source, overflowItems) => {
                         let found = false;
                         for (let i = 0; i < this.targetGrids.length; i++) {
@@ -1107,7 +1111,7 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
         }
     }
 
-    _doubleClickDetect(event) {
+    _doubleClickDetect(event: MouseEvent) {
         if (this._supplier.isMultiTarget())
             return;
 
@@ -1153,7 +1157,7 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
 
     searchForListControls(container, removing=false) {
         if (container instanceof SelectableOptionListControl) {
-            let selectableContainer = container as SelectableOptionListControlType<U>;
+            let selectableContainer = container as SelectableOptionListControl<SelectableOptionListControlProperties<U>>;
             if (removing)
                 this.removeListBox(selectableContainer);
             else
@@ -1202,7 +1206,7 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
                 new ToolbarButton({ title: '', name: 'normal', size: 'small', classes: 'jmv-variable-transfer' })
             ];
 
-            if (transferAction === 'interactions' || this.populateTransferActions) {
+            if (transferAction === TransferActionType.Interactions || this.populateTransferActions) {
                 let transferActionItems = [
                     new ToolbarButton({ title: s_('Interaction'), name: 'interaction', hasIcon: false, resultFormat: FormatDef.term }),
                     new ToolbarGroup({ title: s_('Interactions'), name: 'interactions', orientation: 'vertical', items: [
@@ -1264,6 +1268,8 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
 
         return { height: 2, width: 2 };
     }
+
+    protected populateTransferActions?(): (ToolbarButton | ToolbarGroup)[];
 }
 
 export default GridTargetContainer;

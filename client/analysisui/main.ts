@@ -2,7 +2,7 @@
 
 'use strict';
 
-import $ from 'jquery';
+import $ from 'jquery'; // for backwards compatibility
 
 import _Framesg from 'framesg';
 let Framesg = _Framesg;
@@ -10,20 +10,17 @@ if ('default' in Framesg) // this import is handled differently between browseri
     Framesg = Framesg.default;
 
 import Options from './options';
-import OptionsView from './optionsview';
+import OptionsView, { IOptionsViewModel } from './optionsview';
 import ui from './layoutdef';
 import Format from './format';
 import { FormatDef } from './formatdef';
 import DefaultControls from './defaultcontrols';
 import LayoutUpdateCheck from './layoutupdatecheck';
-import View from './actions';
-import GridTargetControl from './gridtargetcontrol';
-import GridControl from './gridcontrol';
-import OptionControl from './optioncontrol';
+import View, { utils } from './actions';
 import LayoutActionManager from './layoutactionmanager';
-import GetRequestDataSupport from './requestdatasupport';
 import { applyMagicEvents as ApplyMagicEvents } from './applymagicevents';
 import Keyboard from '../common/focusloop';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 import I18n from "../common/i18n";
 
@@ -107,12 +104,115 @@ let dataResources = { columns: [] };
 
 document.oncontextmenu = function () { return false; };
 
-const Analysis = function(def: string, i18nDef, jamoviVersion, id) {
+type i18nData = {
+    code: string;
+    domain: string;
+    locale_data: {
+        messages: {
+            [key: string] : string[];
+        }
+    }
+}
 
-    this.id = id;
+class Analysis {
+    View: OptionsView;
+    model: IOptionsViewModel;
+    i18n: i18nData;
+    id: number;
+    viewTemplate: View;
 
-    this.i18n = i18nDef;
-    this.translate = (key: string): string => {
+    constructor(def: string, i18nDef: i18nData, jamoviVersion, id: number) {
+
+        this.id = id;
+
+        this.i18n = i18nDef;
+
+        this.translate = this.translate.bind(this);
+        window._ = this.translate.bind(this);
+
+        const createOptionsView = new Function('ui', 'DefaultControls', 'FormatDef', 'Format', 'View', 'utils', `
+    return (function() {
+        const module = {};
+        const exports = {};
+        let result = (function () {
+            ${def}
+            return typeof module.exports !== 'undefined' ? module.exports : window.module;
+        })();
+        return result;
+    })();
+    `);
+
+        let optionsViewInfo = createOptionsView(ui, DefaultControls, FormatDef, Format, View, utils);
+
+        let options = optionsViewInfo.options;
+        let layoutDef = optionsViewInfo.view.layout;
+        
+        if (optionsViewInfo.createView)
+            this.viewTemplate = new optionsViewInfo.createView();
+        else {
+            // backwards compatible for v2.0 and v3.0
+            this.viewTemplate = new View();
+            optionsViewInfo.view.call(this.viewTemplate);
+        }
+
+        LayoutUpdateCheck(layoutDef);
+
+        if (this.viewTemplate.handlers)
+            ApplyMagicEvents(layoutDef, this.viewTemplate);
+
+        this.getTitle = layoutDef.getTitle.bind(layoutDef);
+
+        if (this.viewTemplate.errors.length > 0) {
+            this.errors = this.viewTemplate.errors;
+            this.inError = true;
+            console.log(this.viewTemplate.errors);
+        }
+        else {
+            this.inError = false;
+            this.viewTemplate.setRequestedDataSource(this);
+
+            this.viewTemplate.on("customVariablesChanged", (event) => {
+                setTimeout(() => {
+                    this.dataChanged(event);
+                }, 0);
+            });
+
+            let actionManager = new LayoutActionManager(this.viewTemplate);
+            let optionsManager = new Options(options, this.translate);
+            actionManager.onExecutingStateChanged = function(state) {
+                if (state)
+                    optionsManager.beginEdit();
+                else
+                    optionsManager.endEdit();
+            };
+
+            this.model = { options: optionsManager, ui: layoutDef, actionManager: actionManager, currentStage: 0 };
+
+            this.View = new OptionsView(this.model);
+            this.View.$el = $(this.View.el);  // to maintain backwards compatibility with older modules.
+
+            this.View.setRequestedDataSource(this);
+            this.View.setI18nSource(this);
+        }
+    }
+
+    requestData(requestId, data) {
+        return requestData(requestId, data);
+    }
+
+    requestAction(requestType, data) {
+        return requestAction(requestType, data);
+    }
+
+    dataChanged(data) {
+        this.View.dataChanged(data);
+        if (this.viewTemplate.onDataChanged)
+            this.viewTemplate.onDataChanged(data);
+    }
+
+    getTitle?(): string;
+
+    translate(key: string): string {
         if (key === null || key === undefined || key.trim() === '' || ! this.i18n)
             return key;
 
@@ -121,108 +221,30 @@ const Analysis = function(def: string, i18nDef, jamoviVersion, id) {
             return key;
         else
             return value[0];
-    };
-    window._ = this.translate.bind(this);
-
-    const createOptionsView = new Function('ui', 'DefaultControls', 'FormatDef', 'Format', 'View', `
-return (function() {
-    const module = {};
-    const exports = {};
-    let result = (function () {
-        ${def}
-        return typeof module.exports !== 'undefined' ? module.exports : window.module;
-    })();
-    return result;
-})();
-`);
-
-    let optionsViewInfo = createOptionsView(ui, DefaultControls, FormatDef, Format, View);
-
-    let options = optionsViewInfo.options;
-    let layoutDef = optionsViewInfo.view.layout;
-    this.viewTemplate = new optionsViewInfo.view();
-
-    LayoutUpdateCheck(layoutDef);
-
-    if (this.viewTemplate.handlers)
-        ApplyMagicEvents(layoutDef, this.viewTemplate);
-
-    this.getTitle = layoutDef.getTitle.bind(layoutDef);
-
-    if (this.viewTemplate.errors.length > 0) {
-        this.errors = this.viewTemplate.errors;
-        this.inError = true;
-        console.log(this.viewTemplate.errors);
-    }
-    else {
-        this.inError = false;
-        this.viewTemplate.setRequestedDataSource(this);
-
-        this.viewTemplate.on("customVariablesChanged", (event) => {
-            setTimeout(() => {
-                this.dataChanged(event);
-            }, 0);
-        });
-
-        let actionManager = new LayoutActionManager(this.viewTemplate);
-        let optionsManager = new Options(options, this.translate);
-        actionManager.onExecutingStateChanged = function(state) {
-            if (state)
-                optionsManager.beginEdit();
-            else
-                optionsManager.endEdit();
-        };
-
-        this.model = { options: optionsManager, ui: layoutDef, actionManager: actionManager, currentStage: 0 };
-
-        this.View = new OptionsView(this.model);
-        this.View.$el = $(this.View.el);  // to maintain backwards compatibility with older modules.
-
-        this.View.setRequestedDataSource(this);
-        this.View.setI18nSource(this);
-
-        this.requestData = function(requestId, data) {
-            return requestData(requestId, data);
-        };
-
-        this.requestAction = function(requestType, data) {
-            return requestAction(requestType, data);
-        };
-
-        this.dataChanged = function(data) {
-            this.View.dataChanged(data);
-            if (this.viewTemplate.onDataChanged)
-                this.viewTemplate.onDataChanged(data);
-        };
-
-
     }
 };
 
 let analysis = null;
-let _analysisResources = null;
-let $header = null;
-let $hide = null;
 
 
 
-$(document).ready(function() {
+document.addEventListener('DOMContentLoaded', function() {
 
     if (navigator.platform === 'Win32')
-        $('body').addClass('windows');
+        document.body.classList.add('windows');
     else if (navigator.platform === 'MacIntel')
-        $('body').addClass('mac');
+        document.body.classList.add('mac');
     else if (navigator.platform.startsWith('Linux'))
-        $('body').addClass('linux');
+        document.body.classList.add('linux');
     else
-        $('body').addClass('other');
+        document.body.classList.add('other');
 
     if (navigator.userAgent.toLowerCase().indexOf(' electron/') > -1)
-        $('body').addClass('electron');
+        document.body.classList.add('electron');
 
-    $(document).mousedown(this, mouseDown);
-    $(document).mouseup(this, mouseUp);
-    $(document).mousemove(this, mouseMove);
+    document.addEventListener('mousedown', mouseDown);
+    document.addEventListener('mouseup', mouseUp);
+    document.addEventListener('mousemove', mouseMove);
 
     parentFrame.send('frameDocumentReady', null);
 });
@@ -235,9 +257,9 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
 
     window.jamoviVersion = jamoviVersion;
 
-    let $hide = $('.silky-sp-back-button');
-    $hide.attr('title', s_('Hide options'));
-    $hide.on('click', function(event) {
+    let $hide = document.querySelector('.silky-sp-back-button');
+    $hide.setAttribute('title', s_('Hide options'));
+    $hide.addEventListener('click', () => {
         closeOptions();
     });
 
@@ -257,10 +279,10 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
     
     Keyboard.enterFocusLoop(optionsBlock);
 
-    let $optionsBlock = $('.jmv-options-block');
-    let $title = $('.silky-options-title');
+    let $optionsBlock = document.querySelector('.jmv-options-block');
+    let $title = document.querySelector('.silky-options-title');
     if (def.error) {
-        $title.empty();
+        $title.innerHTML = '';
         $title.append(def.error);
     }
     else {
@@ -271,7 +293,7 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
             analysis = new Analysis(def, i18nDef, jamoviVersion, id);
 
             let title = analysis.getTitle();
-            $title.empty();
+            $title.innerHTML = '';
             $title.append(title);
 
             if (analysis.errors) {
@@ -279,20 +301,20 @@ function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
                 for (let error of analysis.errors) {
                     errors += `<div class="error"><div class="error-icon"></div><span>${ error }<span></div>\n`;
                 }
-                let $errorList = $(`<div class="jmv-options-error-list"'>
+                let $errorList = HTML.parse(`<div class="jmv-options-error-list"'>
                     <div class="title">Option panel errors</div>
                     <div class="list">
                         ${ errors }
                     </div>
                     </div>`);
-                $optionsBlock.find('.placeholder-options').remove();
+                $optionsBlock.querySelectorAll('.placeholder-options')?.forEach(el => el.remove());
                 $optionsBlock.append($errorList);
             }
             else {
                 $optionsBlock.append(analysis.View.el);
                 analysis.View.render();
                 
-                $optionsBlock.find('.placeholder-options').remove();
+                $optionsBlock.querySelectorAll('.placeholder-options')?.forEach(el => el.remove());
 
                 analysis.model.options.on('options.valuesForServer', onValuesForServerChanges);
             }
@@ -304,8 +326,8 @@ function setTitle(title) {
     if (analysis.inError)
         return;
 
-    let $title = $('.silky-options-title');
-    $title.empty();
+    let $title = document.querySelector('.silky-options-title');
+    $title.innerHTML = '';
 
     let original = analysis.getTitle();
     if (title === null || title.trim() === '')

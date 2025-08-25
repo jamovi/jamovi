@@ -1,10 +1,12 @@
 'use strict';
 
 
-class Layout {
+export class Layout {
     controls = [];
     stage: (0 | 1 | 2) = 2; // 0 - release, 1 - development, 2 - proposed
     label?: string;
+
+    handlers: { [handle: string]: (...args: any[]) => void };
 
     constructor(params: any) {
         Object.assign(this, params);

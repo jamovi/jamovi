@@ -11,8 +11,8 @@ export class MultiContainer extends GridControl<GridControlProperties> {
     _namedContainers: { [name: string ]: ControlContainer };
     _visibleContainer: ControlContainer;
 
-    constructor(params: GridControlProperties, containers: ControlContainer[]) {
-        super(params);
+    constructor(params: GridControlProperties, containers: ControlContainer[], parent) {
+        super(params, parent);
 
         this._containers = containers;
 

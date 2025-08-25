@@ -75,6 +75,8 @@ export type SupplierViewProperties<U> = ControlContainerProperties & {
     label: string;
     format: Format<any>;
     higherOrders: boolean;
+
+    update: () => void;
 }
 
 type InferType<T> = T extends SupplierViewProperties<infer A> ? A : never;
@@ -82,7 +84,7 @@ type InferType<T> = T extends SupplierViewProperties<infer A> ? A : never;
 export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferType<P>> extends ControlContainer<P, typeof SupplierLayoutGrid> implements IDragDropTarget<U> {
     
     dragDropManager: DragNDrop<U>;
-    _targets: { [key: string]: SupplierTarget<U> };
+    _targets: { [key: string]: SupplierTarget<U> } = { };
     _items: ISupplierItem<U>[] = [];
     baseLayout: LayoutGrid;
     supplier: SelectableLayoutGrid;
@@ -90,9 +92,17 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
     $searchButton: HTMLElement;
     $searchInput: HTMLInputElement;
     dataSupport: RequestDataSupport;
+    blockFilterProcess: boolean = false;
+    _persistentItems: boolean;
+    _higherOrder: boolean;
+    _targetCount: number = 0;
+    _targetFocusMethods: { [id: string]: () => void } = { };
+    enableSearch: (value: boolean) => void;
+    searchEnabled: boolean;
+    searchingInProgress: NodeJS.Timeout;
     
-    constructor(params: P) {
-        super(params, SupplierLayoutGrid);
+    constructor(params: P, parent) {
+        super(params, parent, SupplierLayoutGrid);
 
         this.dragDropManager = new DragNDrop(this);
         this.dataSupport = GetRequestDataSupport(this);
@@ -102,17 +112,11 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
     
         this.el.classList.add('silky-options-supplier-group');
         this.el.classList.add('silky-control-margin-' + this.getPropertyValue('margin'));
-    
-        this._targets = {};
-        this._targetCount = 0;
-        this._targetFocusMethods = {};
 
         this.gridEntryPosition = {
             row: 0,
             column: 1
         };
-
-        this.blockFilterProcess = false;
     }
 
     protected override registerProperties(properties) {
@@ -158,7 +162,8 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
 
         this.el.classList.remove('initialising');
 
-        this.emit('value_changed');
+        let emitter = this as LayoutSupplierView<SupplierViewProperties<U>>;
+        emitter.emit('value_changed');
     }
 
     getList() {
@@ -182,7 +187,8 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
     }
 
     update() {
-        this.emit('update');
+        let emitter = this as LayoutSupplierView<SupplierViewProperties<U>>;
+        emitter.emit('update');
     }
 
     onPopulate() {
@@ -242,7 +248,7 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
                 let $powerValueItem = cell.content.querySelector<HTMLElement>('.power-box .value');
                 if ($powerValueItem)
                     $powerValueItem.innerText = '1';
-                let item: IItem = cell.item as IItem;
+                let item: IItem<U> = cell.item as IItem<U>;
                 if (item)
                     item.properties.power = 1;
             }
@@ -260,7 +266,6 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
 
         this.supplier.classList.add('silky-layout-grid', 'multi-item', 'silky-variable-supplier');
         this.supplier.stretchEndCells = false;
-        this.supplier._animateCells = true;
 
         //this.ignoreTransform = true;
         let cell = this.baseLayout.addCell(0, nextRow, this.supplier);
@@ -290,7 +295,7 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
         searchCell.setStretchFactor(1);
         searchCell.makeSticky();
 
-        this.enableSearch = (value) => {
+        this.enableSearch = (value: boolean) => {
             this.searchEnabled = value;
 
             $search.style.marginTop = '';

@@ -1,7 +1,7 @@
 'use strict';
 
 import { CtrlDef } from './optionsview';
-import { PropertySupplier } from './propertysupplier';
+import {  PropertySupplier } from './propertysupplier';
 
 export class I18nSupport<P extends CtrlDef> extends PropertySupplier<P> {
         

@@ -27,8 +27,8 @@ export class GridCombobox extends OptionControl<GridComboboxProperties> {
      */
     $input: any
     
-    constructor(params: GridComboboxProperties) {
-        super(params);
+    constructor(params: GridComboboxProperties, parent) {
+        super(params, parent);
 
         this.label = null;
         this.$label = null;

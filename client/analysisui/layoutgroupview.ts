@@ -3,7 +3,7 @@
 
 import TitledGridControl from './titledgridcontrol';
 import OptionControl, { OptionControlProperties } from './optioncontrol';
-import createChildLayoutSupport from './childlayoutsupport';
+import createChildLayoutSupport, { ChildSupportProperties, ComplexLayoutStyle } from './childlayoutsupport';
 import EnumPropertyFilter from './enumpropertyfilter';
 import { FormatDef, StringFormat } from './formatdef';
 import Icons from './iconsupport';
@@ -13,15 +13,8 @@ import { GridControlProperties, VerticalAlignment } from './gridcontrol';
 import { Margin } from './controlbase';
 import { Control, CtrlDef } from './optionsview';
 
-export enum ComplexLayoutStyle {
-    List = "list",
-    Inline= "inline",
-    ListInline = "list-inline",
-    InlineList = "inline-list"
-}
 
-export type LabelControlProperties = GridControlProperties & {
-    style: ComplexLayoutStyle;
+export type LabelControlProperties = ChildSupportProperties & GridControlProperties & {
     margin: Margin;
     format: StringFormat;
     heading: boolean;
@@ -33,22 +26,22 @@ const isOptionedLabelParams = function(params: LabelControlProperties | Optioned
 }
 
 export class LabelControl extends TitledGridControl<LabelControlProperties> {
-    static create(params: (LabelControlProperties | OptionedLabelControlProperties)): Control<CtrlDef> {
+    static create(params: (LabelControlProperties | OptionedLabelControlProperties), parent): Control<CtrlDef> {
         if (isOptionedLabelParams(params)) {
             const LabelClass = createChildLayoutSupport(params, OptionLabelControl);
-            return new LabelClass(params);
+            return new LabelClass(params, parent);
         }
         else {
             const LabelClass = createChildLayoutSupport(params, LabelControl);
-            return new LabelClass(params);
+            return new LabelClass(params, parent);
         }
     }
 
     icons: HTMLElement;
     style: string;
 
-    constructor(params: LabelControlProperties) {
-        super(params);
+    constructor(params: LabelControlProperties, parent) {
+        super(params, parent);
 
         this.registerSimpleProperty("label", "");
 
@@ -144,8 +137,8 @@ export class OptionLabelControl extends OptionControl<OptionedLabelControlProper
     icons: HTMLElement;
     style: string;
 
-    constructor(params: OptionedLabelControlProperties) {
-        super(params);
+    constructor(params: OptionedLabelControlProperties, parent) {
+        super(params, parent);
 
 
         Icons.addSupport(this);
