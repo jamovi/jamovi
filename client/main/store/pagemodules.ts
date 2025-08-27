@@ -4,73 +4,109 @@
 
 'use strict';
 
-import $ from 'jquery';
 import Markjs from 'mark.js';
-import Backbone from 'backbone';
-Backbone.$ = $;
 
 import Notify from '../notification';
 import Version from '../utils/version';
 import ProgressStream from '../utils/progressstream';
 import _focusLoop from '../../common/focusloop';
 import selectionLoop from '../../common/selectionloop';
+import { ModulesBase } from '../modules';
+import Settings from '../settings';
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
+type ModulePageOptions = {
+    settings: Settings;
+    modules: ModulesBase;
+}
 
-const PageModules = Backbone.View.extend({
-    className: 'PageModules',
-    initialize: function() {
+class PageModules extends HTMLElement {
+    model: ModulePageOptions;
+    modules: ModulesBase
+    settings: Settings
+    marker: Markjs;
+    _events: ProgressStream<{type: 'refresh'}, {type: 'refresh'}>;
+    $message: HTMLElement;
+    $search: HTMLInputElement;
+    $body: HTMLElement;
+    $content: HTMLElement;
+    $error: HTMLElement;
 
+    $uninstall: NodeListOf<HTMLButtonElement>
+    $install: NodeListOf<HTMLButtonElement>
+    $visibility: NodeListOf<HTMLButtonElement>
+    $modules: NodeListOf<HTMLElement>
+
+    searchingInProgress: NodeJS.Timeout;
+
+    constructor(model: ModulePageOptions) {
+        super();
+        this.model = model;
+
+        this._uninstallClicked = this._uninstallClicked.bind(this);
+        this._installClicked = this._installClicked.bind(this);
+        this._visibilityClicked = this._visibilityClicked.bind(this);
+
+        this.classList.add('PageModules');
         this.modules = this.model.modules;
         this.settings = this.model.settings;
 
         this.settings.on('change:permissions_library_show_hide', () => this._triggerRefresh());
         this.settings.on('change:permissions_library_add_remove', () => this._triggerRefresh());
 
-        this.$el.addClass('jmv-store-page-installed');
+        this.classList.add('jmv-store-page-installed');
 
-        this.$el.attr('role', 'tabpanel');
+        this.setAttribute('role', 'tabpanel');
 
-        this.marker = new Markjs(this.$el[0]);
+        this.marker = new Markjs(this);
 
         this._moduleEnter = this._moduleEnter.bind(this);
         this._moduleLeave = this._moduleLeave.bind(this);
         this._moduleKeyDown = this._moduleKeyDown.bind(this);
 
-        this.$message    = $('<div class="jmv-store-message"><div class="icon"></div><div class="text"></div></div>').appendTo(this.$el);
+        this.$message    = HTML.parse('<div class="jmv-store-message"><div class="icon"></div><div class="text"></div></div>');
+        this.append(this.$message);
 
-        let $searchBox = $('<div class="store-page-searchbox"><div class="search-icon"></div></div>').appendTo(this.$el);
-        let searchAriaLabel = this.$el.hasClass('jmv-store-page-store') ? _('Search available modules') : _('Search installed modules');
-        this.$search    = $(`<input class="search-text" type="text" spellcheck="true" placeholder="${_('Search')}" aria-label="${searchAriaLabel}"></input>`).appendTo($searchBox);
-        this.$body    = $('<div class="jmv-store-body"></div>').appendTo(this.$el);
-        this.$content = $(`<div class="jmv-store-content" aria-label="${_('Modules')}"></div>`).appendTo(this.$body);
-        this.$loading = $('<div class="jmv-store-loading"></div>').appendTo(this.$body);
+        let $searchBox = HTML.parse('<div class="store-page-searchbox"><div class="search-icon"></div></div>');
+        this.append($searchBox);
+        let searchAriaLabel = this.classList.contains('jmv-store-page-store') ? _('Search available modules') : _('Search installed modules');
+        this.$search    = HTML.parse(`<input class="search-text" type="text" spellcheck="true" placeholder="${_('Search')}" aria-label="${searchAriaLabel}"></input>`);
+        $searchBox.append(this.$search);
+        this.$body    = HTML.parse('<div class="jmv-store-body"></div>');
+        this.append(this.$body);
+        this.$content = HTML.parse(`<div class="jmv-store-content" aria-label="${_('Modules')}"></div>`);
+        this.$body.append(this.$content);
+        this.$body.append(HTML.parse('<div class="jmv-store-loading"></div>'));
         let progressLabelId = _focusLoop.getNextAriaElementId('label');
-        this.$installing = $(`<div class="jmv-store-installing" role="progressbar" aria-labelledby="${progressLabelId}" aria-valuenow="0"><h2 id="${progressLabelId}">Installing</h2><div class="jmv-store-progress"><div class="jmv-store-progress-bar"></div></div><div class="jmv-store-installing-description">Installing module</div><!--button class="jmv-store-cancel">Cancel</button--></div>`).appendTo(this.$body);
-        this.$error   = $('<div class="jmv-store-error" aria-hidden="true" style="display:none;"><h2 class="jmv-store-error-message"></h2><div class="jmv-store-error-cause"></div><button class="jmv-store-error-retry">Retry</button></div>').appendTo(this.$body);
+        const $installing = HTML.parse(`<div class="jmv-store-installing" role="progressbar" aria-labelledby="${progressLabelId}" aria-valuenow="0"><h2 id="${progressLabelId}">Installing</h2><div class="jmv-store-progress"><div class="jmv-store-progress-bar"></div></div><div class="jmv-store-installing-description">Installing module</div><!--button class="jmv-store-cancel">Cancel</button--></div>`);
+        this.$body.append($installing);
+        this.$error   = HTML.parse('<div class="jmv-store-error" aria-hidden="true" style="display:none;"><h2 class="jmv-store-error-message"></h2><div class="jmv-store-error-cause"></div><button class="jmv-store-error-retry">Retry</button></div>');
+        this.$body.append(this.$error);
 
-        this.moduleSelection = new selectionLoop('modules', this.$content[0], true);
+        const moduleSelection = new selectionLoop('modules', this.$content);
 
-        this.$content.on('focus', (event) => {
-            let visibleItems = this.$content.find('.jmv-store-module:not(.hide-module)');
+        this.$content.addEventListener('focus', (event) => {
+            let visibleItems = this.$content.querySelectorAll('.jmv-store-module:not(.hide-module)');
             if (visibleItems.length > 0)
-                this.moduleSelection.highlightElement(visibleItems[0]);
+                moduleSelection.highlightElement(visibleItems[0]);
         })
 
-        this.$errorMessage = this.$error.find('.jmv-store-error-message');
-        this.$errorCause   = this.$error.find('.jmv-store-error-cause');
-        this.$errorRetry   = this.$error.find('.jmv-store-error-retry');
+        const $errorMessage = this.$error.querySelector('.jmv-store-error-message');
+        const $errorCause   = this.$error.querySelector('.jmv-store-error-cause');
+        const $errorRetry   = this.$error.querySelector('.jmv-store-error-retry');
 
-        this.$progressbar = this.$installing.find('.jmv-store-progress-bar');
+        const $progressbar = $installing.querySelector<HTMLElement>('.jmv-store-progress-bar');
 
         this.modules.on('change:modules', this._triggerRefresh, this);
         this.modules.on('moduleVisibilityChanged', this._triggerRefresh, this);
 
-        this.$modules = $();
-        this.$uninstall = $();
-        this.$install = $();
-        this.$visibility = $();
+        this.$modules = this.$content.querySelectorAll('.jmv-store-module');
 
-        this.$search.on('input', (event) => {
+        this.$uninstall = this.$content.querySelectorAll<HTMLButtonElement>('.jmv-store-module-button[data-op="remove"]');
+        this.$install = this.$content.querySelectorAll<HTMLButtonElement>('.jmv-store-module-button[data-op="install"], .jmv-store-module-button[data-op="update"]');
+        this.$visibility = this.$content.querySelectorAll<HTMLButtonElement>('.jmv-store-module-button[data-op="show"], .jmv-store-module-button[data-op="hide"]');
+
+        this.$search.addEventListener('input', (event) => {
             if (this.searchingInProgress)
                 clearTimeout(this.searchingInProgress);
 
@@ -80,50 +116,50 @@ const PageModules = Backbone.View.extend({
             }, 600);
         });
 
-        this.$search.on('focus', (event) => {
+        this.$search.addEventListener('focus', (event) => {
             this.$search.select();
         });
 
         this.modules.on('change:status', () => {
-            this.$el.attr('data-status', this.modules.attributes.status);
+            this.setAttribute('data-status', this.modules.attributes.status);
         });
 
         this.modules.on('change:error', () => {
             let error = this.modules.attributes.error;
 
             if (error) {
-                this.$error.attr('aria-hidden', 'false');
-                this.$error[0].style.display = '';
+                this.$error.setAttribute('aria-hidden', 'false');
+                this.$error.style.display = '';
 
                 _focusLoop.speakMessage(_('Library error'));
                 _focusLoop.speakMessage(error.cause);
                 _focusLoop.speakMessage(error.message);
 
-                this.$errorMessage.text(error.message);
-                this.$errorCause.text(error.cause);
+                $errorMessage.textContent = error.message;
+                $errorCause.textContent  = error.cause;
             }
             else {
-                this.$error.attr('aria-hidden', 'true');
-                this.$error[0].style.display = 'none';
+                this.$error.setAttribute('aria-hidden', 'true');
+                this.$error.style.display = 'none';
             }
         });
 
         this.modules.on('change:progress', () => {
             let progress = this.modules.attributes.progress;
-            let pc = parseInt(100 * progress[0] / progress[1]);
-            this.$installing.attr('aria-valuenow', pc);
-            this.$progressbar.css('width', '' + pc + '%');
+            let pc = (100 * progress[0] / progress[1]).toString();
+            $installing.setAttribute('aria-valuenow', pc);
+            $progressbar.style.width = `${pc}%`;
         });
 
         this.modules.on('change:message', () => {
             this._updateMessage();
         });
 
-        this.$errorRetry.on('click', () => {
+        $errorRetry.addEventListener('click', () => {
             this.modules.retrieve();
     });
 
-        this._events = new ProgressStream();
+        this._events = new ProgressStream<{type: 'refresh'}, {type: 'refresh'}>();
 
         (async () => {
             // event dispatcher
@@ -134,39 +170,42 @@ const PageModules = Backbone.View.extend({
         })();
 
         this._triggerRefresh();
-    },
+    }
+
     _triggerRefresh() {
         this._events.setProgress({ type: 'refresh' });
-    },
+    }
+
     stopListening() {
         // technically not necessary, because this is never remove()d
         this._events.resolve();
-        Backbone.View.prototype.stopListening(this, arguments);
-    },
+        //Backbone.View.prototype.stopListening(this, arguments);
+    }
+
     _updateMessage() {
         let message = this.modules.attributes.message;
         if ( ! message) {
-            let addRemove = this.settings.getSetting('permissions_library_add_remove');
+            let addRemove = this.settings.getSetting('permissions_library_add_remove', false);
             if (addRemove === false)
                 message = _('Installing modules is not available on your plan');
         }
 
         if (message) {
-            let $text = this.$message.find('.text');
-            $text.text(message);
-            this.$message.addClass('show');
+            let $text = this.$message.querySelector('.text');
+            $text.textContent = message;
+            this.$message.classList.add('show');
         }
         else {
-            this.$message.removeClass('show');
+            this.$message.classList.remove('show');
         }
-    },
+    }
 
     markHTML() {
-        let searchValue = this.$search.val().toLowerCase().trim();
+        let searchValue = this.$search.value.toLowerCase().trim();
         this.marker.unmark({
             done: () => {
                 if (searchValue != '') {
-                    this.$el.find('.jmv-store-module').addClass('hide-module');
+                    this.querySelectorAll('.jmv-store-module').forEach(el => { el.classList.add('hide-module') });;
                     let regex = new RegExp(`\\b${searchValue}`, 'gi');
                     this.marker.markRegExp(regex, {
                         each: (element) => {
@@ -178,20 +217,20 @@ const PageModules = Backbone.View.extend({
                     });
                 }
                 else
-                    this.$el.find('.jmv-store-module').removeClass('hide-module');
+                    this.querySelectorAll('.jmv-store-module').forEach(el => {el.classList.remove('hide-module')});
             }
         });
-    },
+    }
 
     async _refresh() {
 
-        this.$uninstall.off();
-        this.$visibility.off();
-        this.$install.off();
+        this.$uninstall.forEach(el => el.removeEventListener('click', this._uninstallClicked));
+        this.$visibility.forEach(el => el.removeEventListener('click', this._visibilityClicked));
+        this.$install.forEach(el => el.removeEventListener('click', this._installClicked));
 
-        let scrollTop = this.$body.scrollTop();
+        let scrollTop = this.$body.scrollTop;
 
-        this.$content.find('.jmv-store-module').addClass('to-be-removed');
+        this.$content.querySelectorAll('.jmv-store-module').forEach(el => el.classList.add('to-be-removed'));
 
         this._updateMessage();
 
@@ -293,77 +332,90 @@ const PageModules = Backbone.View.extend({
                 </div>`;
 
 
-            let $module = this.$content.find(`.jmv-store-module[data-name=${ module.name }]`);
-            if ($module.length === 0) {
-                $module = $(html);
-                $module.appendTo(this.$content);
+            let $module = this.$content.querySelector(`.jmv-store-module[data-name=${ module.name }]`);
+            if ($module === null) {
+                $module = HTML.parse(html);
+                this.$content.append($module);
             }
             else {
-                $module.off('keyup', this._moduleEnter);
-                $module.off('keydown', this._moduleKeyDown);
-                $module.removeClass('to-be-removed');
-                $module[0].outerHTML = html;
+                $module.removeEventListener('keyup', this._moduleEnter);
+                $module.removeEventListener('keydown', this._moduleKeyDown);
+                $module.classList.remove('to-be-removed');
+                $module.outerHTML = html;
             }
-            $module = this.$content.find(`.jmv-store-module[data-name=${ module.name }]`); 
-            $module.on('keydown', this._moduleKeyDown);
-            $module.on('keyup', this._moduleEnter);  // must be key up otherwise the internal buttons are clicked on key up after focus is moved
+            $module = this.$content.querySelector(`.jmv-store-module[data-name=${ module.name }]`); 
+            $module.addEventListener('keydown', this._moduleKeyDown);
+            $module.addEventListener('keyup', this._moduleEnter);  // must be key up otherwise the internal buttons are clicked on key up after focus is moved
 
-            $module.find('a').attr('tabindex', '-1');
+            $module.querySelectorAll('a').forEach(el => el.setAttribute('tabindex', '-1'));
         }
 
-        this.$content.find('.to-be-removed').remove();
+        this.$content.querySelectorAll('.to-be-removed').forEach(el => el.remove());
 
         this.markHTML();
 
-        this.$uninstall = this.$content.find('.jmv-store-module-button[data-op="remove"]');
-        this.$install = this.$content.find('.jmv-store-module-button[data-op="install"], .jmv-store-module-button[data-op="update"]');
-        this.$visibility = this.$content.find('.jmv-store-module-button[data-op="show"], .jmv-store-module-button[data-op="hide"]');
-        this.$modules   = this.$content.children();
+        this.$uninstall = this.$content.querySelectorAll<HTMLButtonElement>('.jmv-store-module-button[data-op="remove"]');
+        this.$install = this.$content.querySelectorAll<HTMLButtonElement>('.jmv-store-module-button[data-op="install"], .jmv-store-module-button[data-op="update"]');
+        this.$visibility = this.$content.querySelectorAll<HTMLButtonElement>('.jmv-store-module-button[data-op="show"], .jmv-store-module-button[data-op="hide"]');
+        this.$modules = this.$content.querySelectorAll('.jmv-store-module');
 
-        this.$uninstall.on('click', event => this._uninstallClicked(event));
-        this.$install.on('click', event => this._installClicked(event));
-        this.$visibility.on('click', event => this._visibilityClicked(event));
+        this.$uninstall.forEach(el => el.addEventListener('click', this._uninstallClicked));
+        this.$install.forEach(el => el.addEventListener('click', this._installClicked));
+        this.$visibility.forEach(el => el.addEventListener('click', this._visibilityClicked));
 
         this.$content.focus();
-        this.$body.scrollTop(scrollTop);
+        this.$body.scrollTop = scrollTop;
 
-    },
-    _moduleLeave(event) {
-        if (!event.currentTarget.contains(event.relatedTarget)) {
-            $(event.target).find('[tabindex]').attr('tabindex', '-1');
-            event.target.removeEventListener('focusout', this._moduleLeave);
-        }
-        
-    },
-    _moduleEnter(event) {
-        if (event.keyCode === 13) {
-            if (event.currentTarget === event.target) {
-                event.target.addEventListener('focusout', this._moduleLeave);
-                let $buttons = $(event.target).find('[tabindex]');
-                $buttons.attr('tabindex', '0');
-                $buttons[0].focus();
+    }
+
+    _moduleLeave(event: MouseEvent) {
+        if (event.target instanceof HTMLElement && event.currentTarget instanceof HTMLElement) {
+        if (event.relatedTarget instanceof Node && !event.currentTarget.contains(event.relatedTarget)) {
+                event.target.querySelectorAll('[tabindex]').forEach(el => el.setAttribute('tabindex', '-1'));
+                event.target.removeEventListener('focusout', this._moduleLeave);
             }
-            event.stopPropagation();
+        }
+    }
+
+    _moduleEnter(event: KeyboardEvent) {
+        if (event.target instanceof HTMLElement) {
+            if (event.keyCode === 13) {
+                if (event.currentTarget === event.target) {
+                    event.target.addEventListener('focusout', this._moduleLeave);
+                    let $buttons = event.target.querySelectorAll<HTMLButtonElement>('[tabindex]');
+                    $buttons.forEach(el => el.setAttribute('tabindex', '0'));
+                    $buttons[0].focus();
+                }
+                event.stopPropagation();
+            }
         }
         
-    },
+    }
+
     _moduleKeyDown(event) {
         if (event.keyCode === 13) {
             event.stopPropagation();
         }
-    },
-    _installClicked(event) {
-        let $target = $(event.target);
-        let path = $target.attr('data-path');
-        let name = $target.attr('data-name');
-        this._install(path, name);
-    },
-    _visibilityClicked(event) {
-        let $target = $(event.target);
-        let name = $target.attr('data-name');
-        this.modules.toggleModuleVisibility(name);
-    },
-    _install(path, name) {
+    }
+
+    _installClicked(event: MouseEvent) {
+        if (event.target instanceof HTMLElement) {
+            let $target = event.target;
+            let path = $target.getAttribute('data-path');
+            let name = $target.getAttribute('data-name');
+            this._install(path, name);
+        }
+    }
+
+    _visibilityClicked(event: MouseEvent) {
+        if (event.target instanceof HTMLElement) {
+            let $target = event.target;
+            let name = $target.getAttribute('data-name');
+            this.modules.toggleModuleVisibility(name);
+        }
+    }
+
+    _install(path: string, name: string) {
         _focusLoop.speakMessage(_('Installing {module}', { module: name }));
         return this.modules.install(path)
             .then(() => {
@@ -383,15 +435,19 @@ const PageModules = Backbone.View.extend({
                  });
                  this.$search.focus();
             });
-    },
-    _uninstallClicked(event) {
-        let $target = $(event.target);
-        let moduleName = $target.attr('data-name');
-        let response = window.confirm(_('Really uninstall {m}?', {m:moduleName}), _('Confirm uninstall'));
-        if (response)
-            this._uninstall(moduleName);
-    },
-    _uninstall(moduleName) {
+    }
+
+    _uninstallClicked(event: MouseEvent) {
+        if (event.target instanceof HTMLElement) {
+            let $target = event.target;
+            let moduleName = $target.getAttribute('data-name');
+            let response = window.confirm(_('Really uninstall {m}?', {m:moduleName}));
+            if (response)
+                this._uninstall(moduleName);
+        }
+    }
+
+    _uninstall(moduleName: string) {
         this.modules.uninstall(moduleName)
             .then(ok => {
                 this._notify({
@@ -410,10 +466,13 @@ const PageModules = Backbone.View.extend({
                 });
                 this.$search.focus();
             });
-    },
-    _notify(note) {
-        this.trigger('notification', new Notify(note));
     }
-});
+
+    _notify(note) {
+        this.dispatchEvent(new CustomEvent('notification', { detail: new Notify(note), bubbles: true }));
+    }
+}
+
+customElements.define('jmv-modules', PageModules);
 
 export default PageModules;

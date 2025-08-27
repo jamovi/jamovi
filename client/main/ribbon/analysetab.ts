@@ -27,11 +27,11 @@ export class AnalyseTab extends RibbonTab {
 
         this.modules.on('moduleVisibilityChanged', this._onModuleVisibilityChanged, this);
 
-        let storeElement = HTML.create('div', { class: 'jmv-store' });
-        document.body.append(storeElement);
-        this.store = new Store({ el : storeElement, model : model });
-        this.store.on('notification', note => {
-            this.emit('notification', note);
+        this.store = new Store(model);
+        this.store.classList.add('jmv-store');
+        document.body.append(this.store);
+        this.store.addEventListener('notification', (event: CustomEvent) => {
+            this.emit('notification', event.detail);
          });
 
         this.populate();

@@ -42,7 +42,7 @@ export class ProgressStream<P, R> implements AsyncIterable<P>, PromiseLike<R> {
         }
     }
 
-    resolve(result) {
+    resolve(result?: R) {
         this._progress_prom.catch(() => {});
         this._reject_progress();
         this._resolve_result(result);
