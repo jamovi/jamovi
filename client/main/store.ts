@@ -4,144 +4,164 @@
 
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
-import util from 'util';
-
 import PageModules from './store/pagemodules';
 import PageSideload  from './store/pagesideload';
 import tarp from './utils/tarp';
 import focusLoop from '../common/focusloop';
 import selectionLoop from '../common/selectionloop';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import Instance from './instance';
 
-const Store = Backbone.View.extend({
-    className: 'Store',
-    initialize: function() {
+class Store extends HTMLElement {
 
-        this.$el.addClass('jmv-store');
-        this.$el.attr('tabindex', '-1');
+    $highlight: HTMLElement;
+    model: Instance;
+    _selectedIndex: number;
+    $tabs: NodeListOf<HTMLElement>;
+    $pages: NodeListOf<HTMLElement>;
 
-        focusLoop.addFocusLoop(this.$el[0], { level: 2, closeHandler: this.hide.bind(this), modal: true, exitKeys: ['Escape'] });
+    constructor(model: Instance) {
+        super();
 
-        this.$header = $('<div class="jmv-store-header"></div>').appendTo(this.$el);
+        this.model = model;
+        this.classList.add('Store');
+        this.classList.add('jmv-store');
+        this.setAttribute('tabindex', '-1');
 
-        this.$close = $(`<button class="jmv-store-button-close" aria-label="${_('Hide library')}"><span class="mif-arrow-up"></span></button>`).appendTo(this.$header);
+        focusLoop.addFocusLoop(this, { level: 2, closeHandler: this.hide.bind(this), modal: true, exitKeys: ['Escape'] });
 
-        this.$close.on('click', event => {
+        const $header = HTML.parse('<div class="jmv-store-header"></div>');
+        this.append($header);
+
+        const $close = HTML.parse(`<button class="jmv-store-button-close" aria-label="${_('Hide library')}"><span class="mif-arrow-up"></span></button>`);
+        $header.append($close);
+
+        $close.addEventListener('click', event => {
             this.hide();
         });
 
-        this.$tabContainer = $('<div class="jmv-store-tab-container"></div>').appendTo(this.$el);
-        //this.$tabContainer.on('click', event => this._tabClicked(event));
+        const $tabContainer = HTML.parse('<div class="jmv-store-tab-container"></div>');
+        this.append($tabContainer);
 
-        this.tabSelection = new selectionLoop('store-tabs', this.$tabContainer[0], true);
+        const tabSelection = new selectionLoop('store-tabs', $tabContainer);
 
-        this.tabSelection.on('selected-index-changed', (data) => {
-            let $target = $(data.target);
-            let $tab = $target.closest(this.$tabs);
-            if ($tab.length === 0)
+        tabSelection.on('selected-index-changed', (data) => {
+            let $target = data.target as HTMLElement;
+            let $tab = $target.closest(".jmv-store-tab");
+            if ($tab === undefined)
                 return;
-            let index = this.$tabs.index($tab);
-            this._setSelected(index);
+            this._setSelected(parseInt($tab.getAttribute('data-index')));
         });
 
+        let i = 0;
         for (let tab of [
             { name: 'installed', title: _('Installed') },
             { name: 'store', title: _('Available') },
             { name: 'sideload', title: _('Sideload')} ]) {
 
-            let $tab = $(util.format('<div class="jmv-store-tab store-tabs-list-item store-tabs-auto-select" data-tab="%s" tabindex="-1" role="tab"><div class="jmv-store-tab-inner">%s</div></div>', tab.name, tab.title));
-            $tab.appendTo(this.$tabContainer);
+            let $tab = HTML.parse(`<div class="jmv-store-tab store-tabs-list-item store-tabs-auto-select" data-tab="${tab.name}" data-index="${i++}" tabindex="-1" role="tab"><div class="jmv-store-tab-inner">${tab.title}</div></div>`);
+            $tabContainer.append($tab);
         }
 
-        this.$tabs = this.$tabContainer.children();
+        this.$tabs = $tabContainer.querySelectorAll<HTMLElement>(".jmv-store-tab");
 
-        this.$highlight = $('<div class="jmv-store-tab-highlight"></div>').appendTo(this.$tabContainer);
+        this.$highlight = HTML.parse('<div class="jmv-store-tab-highlight"></div>');
+        $tabContainer.append(this.$highlight);
 
-        this.$pageContainer = $('<div class="jmv-store-page-container"></div>').appendTo(this.$el);
-
-        this.$pageInst  = $('<div class="jmv-store-page jmv-store-page-installed left" aria-hidden="true"></div>').appendTo(this.$pageContainer);
-        this.$pageStore = $('<div class="jmv-store-page jmv-store-page-store" aria-hidden="true"></div>').appendTo(this.$pageContainer);
-        this.$pageSideload = $('<div class="jmv-store-page jmv-store-page-sideload right" aria-hidden="true"></div>').appendTo(this.$pageContainer);
+        const $pageContainer = HTML.parse('<div class="jmv-store-page-container"></div>');
+        this.append($pageContainer)
 
         let settings = this.model.settings();
 
-        this.pageInst = new PageModules({ el: this.$pageInst, model: { settings: settings, modules: this.model.modules() } });
-        this.pageInst.on('notification', note => this.trigger('notification', note));
+        const pageInst = new PageModules({ settings: settings, modules: this.model.modules() });
+        pageInst.classList.add('jmv-store-page', 'jmv-store-page-installed', 'right');
+        pageInst.setAttribute('aria-hidden', 'true');
+        $pageContainer.append(pageInst);
 
         settings.on('change:permissions_library_browseable', () => {
             let browseable = settings.getSetting('permissions_library_browseable', true);
             if (browseable) {
-                this.pageStore = new PageModules({ el: this.$pageStore, model: { settings: settings, modules: this.model.modules().available() } });
-                this.pageStore.on('notification', note => this.trigger('notification', note));
+                const pageStore = new PageModules({ settings: settings, modules: this.model.modules().available() });
+                pageStore.classList.add('jmv-store-page', 'jmv-store-page-store', 'right');
+                pageStore.setAttribute('aria-hidden', 'true');
+                $pageContainer.append(pageStore);
             }
             else {
-                this.$pageStore.append($(`<div class="mode-msg">${_('The jamovi library is not available to your session.')}</div>`));
+                const $pageStore = HTML.parse('<div class="jmv-store-page jmv-store-page-store" aria-hidden="true"></div>');
+                $pageContainer.append($pageStore);
+                $pageStore.append(HTML.parse(`<div class="mode-msg">${_('The jamovi library is not available to your session.')}</div>`));
             }
-            this.$pages = this.$pageContainer.children();
+            this.$pages = $pageContainer.querySelectorAll<HTMLElement>('.jmv-store-page');
         });
 
         settings.on('change:permissions_library_side_load', () => {
             let sideLoad = settings.getSetting('permissions_library_side_load', false);
             if (sideLoad) {
-                this.pageSideload = new PageSideload({ el: this.$pageSideload, model: this.model.modules() } );
-                this.pageSideload.on('notification', note => this.trigger('notification', note));
-                this.pageSideload.on('close', () => this.hide());
+                const pageSideload = new PageSideload( this.model.modules());
+                pageSideload.classList.add('jmv-store-page', 'jmv-store-page-sideload', 'right');
+                pageSideload.setAttribute('aria-hidden', 'true');
+                $pageContainer.append(pageSideload);
+                pageSideload.addEventListener('close', () => this.hide());
             }
             else {
-                this.$pageSideload.append($(`<div class="mode-msg">${_('Side-loading modules is not available.')}</div>`));
+                const $pageSideload = HTML.parse('<div class="jmv-store-page jmv-store-page-sideload right" aria-hidden="true"></div>');
+                $pageContainer.append($pageSideload);
+                $pageSideload.append(HTML.parse(`<div class="mode-msg">${_('Side-loading modules is not available.')}</div>`));
             }
-            this.$pages = this.$pageContainer.children();
+            this.$pages = $pageContainer.querySelectorAll<HTMLElement>('.jmv-store-page');
         });
 
         this._selectedIndex = null;
-    },
-    _setSelected: function(index) {
+    }
+
+    _setSelected(index) {
 
         this._selectedIndex = index;
-        this.$tabs.removeClass('selected');
-        this.$tabs.attr('aria-selected', false);
-        let $selected = $(this.$tabs[index]);
-        $selected.addClass('selected');
-        $selected.attr('aria-selected', true);
+        this.$tabs.forEach(el => el.classList.remove('selected'));
+        this.$tabs.forEach(el => el.setAttribute('aria-selected', 'false'));
+        let $selected = this.$tabs[index];
+        $selected.classList.add('selected');
+        $selected.setAttribute('aria-selected', 'true');
         $selected.focus();
 
-        let css = $selected.position();
-        css.width = $selected.width();
-        css.height = $selected.height();
+        const css = {
+            left: $selected.offsetLeft + "px",
+            top: $selected.offsetTop + "px",
+            width: $selected.offsetWidth + "px",
+            height: $selected.offsetHeight + "px",
+        }
 
-        this.$highlight.css(css);
+        Object.assign(this.$highlight.style, css);
 
-        let $selectedPage = $(this.$pages[index]);
         for (let i = 0; i < this.$pages.length; i++) {
-            let $page = $(this.$pages[i]);
+            let $page = this.$pages[i] as HTMLElement;
             if (i < index) {
-                $page.removeClass('right');
-                $page.addClass('left');
-                $page.css('visibility', 'hidden');
-                $page.attr('aria-hidden', 'true');
+                $page.classList.remove('right');
+                $page.classList.add('left');
+                $page.style.visibility = 'hidden';
+                $page.setAttribute('aria-hidden', 'true');
             }
             else if (i > index) {
-                $page.removeClass('left');
-                $page.addClass('right');
-                $page.css('visibility', 'hidden');
-                $page.attr('aria-hidden', 'true');
+                $page.classList.remove('left');
+                $page.classList.add('right');
+                $page.style.visibility = 'hidden';
+                $page.setAttribute('aria-hidden', 'true');
             }
             else {
-                $page.removeClass('right');
-                $page.removeClass('left');
-                $page.css('visibility', 'visible');
-                $page.attr('aria-hidden', 'false');
+                $page.classList.remove('right');
+                $page.classList.remove('left');
+                $page.style.visibility = 'visible';
+                $page.setAttribute('aria-hidden', 'false');
             }
         }
-    },
+    }
 
-    visible: function() {
-        return this.$el.hasClass('visible');
-    },
-    show: function(tab) {
-        this.$el.addClass('visible');
+    visible() {
+        return this.classList.contains('visible');
+    }
+
+    show(tab) {
+        this.classList.add('visible');
         if (tab !== undefined)
             setTimeout(() => this._setSelected(tab), 100);
         else if (this._selectedIndex === null)
@@ -149,13 +169,16 @@ const Store = Backbone.View.extend({
         tarp.show('store', false, 0.3);
         let modules = this.model.modules();
         modules.available().retrieve();
-        focusLoop.enterFocusLoop(this.$el[0]);
-    },
-    hide: function() {
-        focusLoop.leaveFocusLoop(this.$el[0]);
-        this.$el.removeClass('visible');
+        focusLoop.enterFocusLoop(this);
+    }
+
+    hide() {
+        focusLoop.leaveFocusLoop(this);
+        this.classList.remove('visible');
         tarp.hide('store');
     }
-});
+}
+
+customElements.define('jmv-store', Store);
 
 export default Store;

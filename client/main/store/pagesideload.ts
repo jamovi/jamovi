@@ -4,25 +4,31 @@
 
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
-
 import host from '../host';
+import { Modules } from '../modules';
 import Notify from '../notification';
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
-const PageSideload = Backbone.View.extend({
-    className: 'PageSideload',
-    initialize() {
+class PageSideload extends HTMLElement {
+    model: Modules;
+    $body: HTMLElement;
+    $drop: HTMLButtonElement;
 
-        this.$el.addClass('jmv-store-page-sideload');
-        this.$el.attr('role', 'tabpanel');
-        this.$body = $('<div class="jmv-store-body"></div>').appendTo(this.$el);
-        this.$drop = $('<button class="jmv-store-page-installed-drop" tabindex="-1"><span class="mif-file-upload"></span></button>')
-            .appendTo(this.$body)
-            .on('click', event => this._dropClicked());
-    },
-    async _dropClicked(event) {
+    constructor(model: Modules) {
+        super();
+
+        this.model = model;
+        this.classList.add('PageSideload');
+        this.classList.add('jmv-store-page-sideload');
+        this.setAttribute('role', 'tabpanel');
+        this.$body = HTML.parse('<div class="jmv-store-body"></div>');
+        this.append(this.$body);
+        this.$drop = HTML.parse<HTMLButtonElement>('<button class="jmv-store-page-installed-drop" tabindex="-1"><span class="mif-file-upload"></span></button>');
+        this.$body.append(this.$drop);
+        this.$drop.addEventListener('click', event => this._dropClicked());
+    }
+
+    async _dropClicked() {
         if (host.isElectron) {
 
             let filters = [ { name: _('jamovi modules'), extensions: ['jmo']} ];
@@ -41,24 +47,28 @@ const PageSideload = Backbone.View.extend({
 
             this.$drop.focus();
         }
-    },
+    }
+
     _installSuccess() {
-        this.trigger('notification', new Notify({
+        this.dispatchEvent(new CustomEvent('notification', { detail: new Notify({
             title: _('Module installed successfully'),
             message: '',
             duration: 3000,
             type: 'success'
-        }));
-        this.trigger('close');
-    },
+        }), bubbles: true}));
+        this.dispatchEvent(new CustomEvent('close'));
+    }
+
     _installFailure(error) {
-        this.trigger('notification', new Notify({
+        this.dispatchEvent(new CustomEvent('notification', { detail: new Notify({
             message: error.message,
             title: _('Unable to install module'),
             duration: 4000,
             type: 'error'
-        }));
-    },
-});
+        }), bubbles: true}));
+    }
+}
+
+customElements.define('jmv-sideload', PageSideload);
 
 export default PageSideload;

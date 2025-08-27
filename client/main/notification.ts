@@ -4,7 +4,7 @@
 import { EventMap } from '../common/eventmap';
 
 
-type NotifyData = {
+export type NotifyData = {
         id : number,
         title : string,
         message : string | null,
