@@ -1,5 +1,5 @@
 export class HTMLElementCreator {
-    public static create(tag='div', attributes={}, ...children: Array<string | HTMLElement>) {
+    public static create<K extends keyof HTMLElementTagNameMap>(tag: K ='div' as K, attributes={}, ...children: Array<string | HTMLElement>) : HTMLElementTagNameMap[K] {
         let element = document.createElement(tag);
         for (let attribute in attributes) {
             let value = attributes[attribute];

@@ -20,7 +20,7 @@ export class Action extends EventMap<IActionModel> {
             });
     }
 
-    do(source) {
+    do(source?) {
         if (this._direct) {
             for (let call of this._direct) {
                 call(source);
@@ -47,12 +47,12 @@ export class Action extends EventMap<IActionModel> {
 
 class ActionHub {
 
-    _actions = { };
+    _actions: { [name: string]: Action } = { };
 
     constructor() {
     }
 
-    get(actionName) {
+    get(actionName: string) {
         let action = this._actions[actionName];
         if (action === undefined) {
             action = new Action();
@@ -61,7 +61,7 @@ class ActionHub {
         return action;
     }
 
-    setDetails(actionName, name, description) {
+    setDetails(actionName: string, name: string, description: string) {
         let action = this.get(actionName);
         action.attributes.name = name;
         action.attributes.description = description;

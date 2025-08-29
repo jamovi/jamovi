@@ -94,7 +94,7 @@ export class ContextMenu extends EventEmitter { // this is constructed at the bo
         this.show(ContextMenus.createFilterRowMenuItems(), x, y);
     }
 
-    showVariableMenu(x:number, y:number, plural, noData) {
+    showVariableMenu(x:number, y:number, plural, noData?) {
         this.show(ContextMenus.createVariableMenuItems(plural, noData), x, y);
     }
 
@@ -102,7 +102,7 @@ export class ContextMenu extends EventEmitter { // this is constructed at the bo
         this.show(ContextMenus.createAppendVariableMenuItems(), x, y, anchor);
     }
 
-    showFilterMenu(x:number, y:number, noData) {
+    showFilterMenu(x:number, y:number, noData?) {
         this.show(ContextMenus.createFilterMenuItems(noData), x, y);
     }
 

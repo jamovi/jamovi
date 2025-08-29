@@ -25,7 +25,6 @@ export class RibbonButton extends HTMLButtonElement implements RibbonItem {
         size:       //'small', 'medium', 'large', 'huge' [default: medium]
         right:      //Is the button docked to the right? [default: false]
         icon:       //svg to have as an icon
-        el:        //jquery element. Will create if not defined.
         class:       //define a type so styling can be customised. It will be added as class attribute.
     }
     */

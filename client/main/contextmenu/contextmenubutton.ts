@@ -26,7 +26,6 @@ export class ContextMenuButton extends HTMLButtonElement implements RibbonItem {
         eventData:  //Data shared on events
         useActionHub: //Should actionHub be called using the menu item name
         enabled:    //initial enabled state
-        $el:        //jquery element. Will create if not defined.
     }
     */
 
