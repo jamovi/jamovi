@@ -1,58 +1,68 @@
 
 'use strict';
 
-import $ from 'jquery';
 import ActionHub from '../actionhub';
+import { StatusbarItemProperties } from './statusbar';
 
-const StatusbarButton = function(name, properties) {
+class StatusbarButton extends HTMLButtonElement {
+    _name: string = null;
+    _properties: StatusbarItemProperties;
 
-    this.$el =  $('<button class="jmv-statusbar-button" tabindex="0"></button>');
+    constructor() {
+        super();
+    }
 
-    this.name = name;
+    setName(name: string, properties: StatusbarItemProperties) {
+        this._name = name;
+        this._properties = properties;
+    }
 
-    this.$el.attr('data-name', this.name.toLowerCase());
-    this.$el.attr('aria-disabled', true);
-    if (properties && properties.label) 
-        this.$el.attr('aria-label', properties.label);
-
-    this.$el.on('click', event => this._clicked(event));
-    this.$el.keydown((event) => {
-        if (event.keyCode == 13 || event.keyCode == 32) {
-            this._clicked(event);
-        }
-    });
-
-    this.setEnabled = function(enabled) {
-        if (enabled)
-            this.$el.removeAttr('aria-disabled');
+    connectedCallback() {
+        if (this._name === null)
+            this._name = this.getAttribute('data-name');
         else
-            this.$el.attr('aria-disabled', true);
-    };
+            this.setAttribute('data-name', this._name.toLowerCase());
 
-    this._clicked = function(event) {
+        this.classList.add('jmv-statusbar-button');
+        this.tabIndex = 0;
+        this.setAttribute('aria-disabled', 'true');
+        if (this._properties && this._properties.label) 
+            this.setAttribute('aria-label', this._properties.label);
 
-        let $target = $(event.target);
-        if ($target.closest(this.$menu).length !== 0)
-            return;
+        let action = ActionHub.get(this._name);
+        this.setEnabled(action.get('enabled'));
+        action.on('change:enabled', (event) => {
+            this.setEnabled(event.changed.enabled);
+        });
 
-        let action = ActionHub.get(this.name);
+        this.addEventListener('click', event => this._clicked(event));
+        this.addEventListener('keydown', (event: KeyboardEvent) => {
+            if (event.keyCode == 13 || event.keyCode == 32) {
+                this._clicked(event);
+            }
+        });
+    }
 
-        if ( ! action.attributes.enabled)
-            ; // do nothing
-        else {
+    setEnabled(enabled: boolean) {
+        if (enabled)
+            this.removeAttribute('aria-disabled');
+        else
+            this.setAttribute('aria-disabled', 'true');
+    }
+
+    _clicked(event: Event) {
+        let action = ActionHub.get(this._name);
+
+        if (action.attributes.enabled) {
             action.do();
-            this.$el.trigger('menuActioned');
+            this.dispatchEvent(new CustomEvent('menuActioned'));
         }
 
         event.stopPropagation();
         event.preventDefault();
-    };
-
-    let action = ActionHub.get(name);
-    this.setEnabled(action.get('enabled'));
-    action.on('change:enabled', (event) => {
-        this.setEnabled(event.changed.enabled);
-    });
+    }
 };
+
+customElements.define('jmv-statusbar-button', StatusbarButton, { extends: 'button' });
 
 export default StatusbarButton;

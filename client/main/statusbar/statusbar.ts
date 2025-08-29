@@ -1,28 +1,38 @@
 'use strict';
 
-import $ from 'jquery';
 import StatusbarButton from './statusbarbutton';
+import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
-const Statusbar = function() {
+export type StatusbarItemProperties = { dock?: 'left' | 'right', value? : any, label?: string };
+export type StatusbarItem = { $el: HTMLElement, properties: StatusbarItemProperties };
 
-    let html = `<div class="jmv-status-bar" role="region" aria-label="${_('Data status bar')}">
-                    <div class="left-dock" role="presentation">
+class Statusbar extends HTMLElement {
+
+    _infoLabels: { [id: string]: StatusbarItem };
+
+    constructor() {
+        super();
+        this.classList.add('jmv-status-bar');
+        this.setAttribute('role', 'region');
+        this.setAttribute('aria-label', _('Data status bar'));
+        let html = `<div class="left-dock" role="presentation">
                     </div>
                     <div class="right-dock" role="presentation">
-                    </div>
-                </div>`;
-    this.$el = $(html);
+                    </div>`;
+        this.innerHTML = html;
 
-    this.$el.on('dblclick', event => this._dblclicked(event));
+        this.addEventListener('dblclick', event => this._dblclicked(event));
 
-    this._infoLabels = {};
+        this._infoLabels = {};
 
-    this._dblclicked = function(event) {
+    }
+    
+    _dblclicked(event: MouseEvent) {
         event.stopPropagation();
         event.preventDefault();
-    };
+    }
 
-    this.addElement = function(id, $element, properties) {
+    addElement(id: string, $element: HTMLElement, properties: StatusbarItemProperties) : StatusbarItem {
         if (properties === undefined)
             properties = { };
 
@@ -32,39 +42,42 @@ const Statusbar = function() {
         let item = { $el: $element, properties: properties };
         this._infoLabels[id] = item;
 
-        let $el = this.$el.find('.' + properties.dock + '-dock');
+        let $el = this.querySelector('.' + properties.dock + '-dock');
         $el.append($element);
 
         return item;
-    };
+    }
 
-    this.addInfoLabel = function(id, properties) {
+    addInfoLabel(id: string, properties: StatusbarItemProperties) {
         if (properties === undefined)
             properties = { value: '' };
 
         let html = '<div class="jmv-status-bar-info-item" data-id="' + id + '">' + (properties.label === undefined ? properties.value : (properties.label + ' ' + properties.value)) + '</div>';
 
-        this.addElement(id, $(html), properties);
-    };
+        this.addElement(id, HTML.parse(html), properties);
+    }
 
-    this.updateInfoLabel = function(id, value) {
+    updateInfoLabel(id: string, value: any) {
         let item = this._infoLabels[id];
         if (item.properties.value != value) {
             item.properties.value = value;
-            item.$el.text((item.properties.label === undefined ? item.properties.value : (item.properties.label + ' ' + item.properties.value)));
+            item.$el.textContent = (item.properties.label === undefined ? item.properties.value : (item.properties.label + ' ' + item.properties.value));
         }
-    };
+    }
 
-    this.removeInfoLabel = function(id) {
+    removeInfoLabel(id: string) {
         let item = this._infoLabels[id];
         item.$el.remove();
         delete this._infoLabels[id];
-    };
+    }
 
-    this.addActionButton = function(name, properties) {
-        let button = new StatusbarButton(name, properties);
-        this.addElement(name, button.$el, properties);
-    };
-};
+    addActionButton(name: string, properties: StatusbarItemProperties) {
+        let button = new StatusbarButton();
+        button.setName(name, properties);
+        this.addElement(name, button, properties);
+    }
+}
+
+customElements.define('jmv-statusbar', Statusbar);
 
 export default Statusbar;

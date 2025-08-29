@@ -11,14 +11,24 @@ import ActionHub from './actionhub';
 
 import focusLoop from '../common/focusloop';
 import { EventEmitter } from 'tsee';
-import DataSetViewModel, { ColumnType } from './dataset';
-import Selection from './selection';
+import DataSetViewModel, { Column, ColumnType, MeasureType } from './dataset';
+import Selection, { ISelection } from './selection';
+
+export type DataSetView = HTMLElement & {
+    selectionIncludesHidden?: boolean;
+    onEditingVarChanged?: (columns: Column[]) => void;
+    onViewControllerFocus?: () => void;
+    getFocusControl: () => HTMLElement;
+    _notEditingKeyPress: (event: KeyboardEvent) => void;
+}
 
 class ViewController extends EventEmitter {
     model: DataSetViewModel;
     selection: Selection;
     _editNote: Notify;
-
+    focusedOn: DataSetView;
+    _modifiedFromSelection: boolean;
+    _views: { [name: string]: { view: DataSetView, options: { title: string } }} = { };
     constructor(model, selection) {
         super();
 
@@ -34,7 +44,7 @@ class ViewController extends EventEmitter {
         });
 
         this.model.on('change:editingVar', event => {
-            if (this.model._modifiedFromSelection)
+            if (this._modifiedFromSelection)
                 return;
 
             let now  = this.model.getEditingColumns(! this.selection.hiddenIncluded);
@@ -73,23 +83,23 @@ class ViewController extends EventEmitter {
 
         ActionHub.get('insertRow').on('request', this._insertRows, this);
         ActionHub.get('appendRow').on('request', this._appendRows, this);
-        ActionHub.get('appendVar').on('request', () => this._appendColumn('data'));
-        ActionHub.get('appendComputed').on('request', () => this._appendColumn('computed'));
-        ActionHub.get('appendRecoded').on('request', () => this._appendColumn('recoded'));
-        ActionHub.get('appendOutput').on('request', () => this._appendColumn('output'));
+        ActionHub.get('appendVar').on('request', () => this._appendColumn(ColumnType.DATA));
+        ActionHub.get('appendComputed').on('request', () => this._appendColumn(ColumnType.COMPUTED));
+        ActionHub.get('appendRecoded').on('request', () => this._appendColumn(ColumnType.RECODED));
+        ActionHub.get('appendOutput').on('request', () => this._appendColumn(ColumnType.OUTPUT));
 
-        ActionHub.get('insertVar').on('request', () => this._insertFromSelectedColumns((item, column) => { item.columnType = 'data'; }, 'left'));
-        ActionHub.get('insertComputed').on('request', () => this._insertFromSelectedColumns((item, column) => { item.columnType = 'computed'; }, 'left'));
-        ActionHub.get('insertRecoded').on('request', () => this._insertFromSelectedColumns((item, column) => { item.columnType = 'recoded'; }, 'left'));
-        ActionHub.get('insertOutput').on('request', () => this._insertFromSelectedColumns((item, column) => { item.columnType = 'output'; }, 'left'));
+        ActionHub.get('insertVar').on('request', () => this._insertFromSelectedColumns((item, column) => { item.columnType = ColumnType.DATA; }, 'left'));
+        ActionHub.get('insertComputed').on('request', () => this._insertFromSelectedColumns((item, column) => { item.columnType = ColumnType.COMPUTED; }, 'left'));
+        ActionHub.get('insertRecoded').on('request', () => this._insertFromSelectedColumns((item, column) => { item.columnType = ColumnType.RECODED; }, 'left'));
+        ActionHub.get('insertOutput').on('request', () => this._insertFromSelectedColumns((item, column) => { item.columnType = ColumnType.OUTPUT; }, 'left'));
         ActionHub.get('compute').on('request', () => {
             this._insertFromSelectedColumns((item, column) => {
-                item.columnType = 'computed';
+                item.columnType = ColumnType.COMPUTED;
             }, 'right');
         });
         ActionHub.get('transform').on('request', () => {
             this._insertFromSelectedColumns((item, column) => {
-                item.columnType = 'recoded';
+                item.columnType = ColumnType.RECODED;
                 item.parentId = column.id;
             }, 'right');
         });
@@ -240,9 +250,9 @@ class ViewController extends EventEmitter {
         let oldSubSelections = this.selection.subSelections;
 
         let selections = [];
-        let selection = { };
+        let selection: ISelection = null;
         for (let column of columns) {
-            if (selection.colNo !== undefined) {
+            if (selection !== null) {
                 if (column.index === selection.columnEnd + 1) {
                     selection.columnEnd += 1;
                     if (column.dIndex === selection.right + 1) {
@@ -251,11 +261,11 @@ class ViewController extends EventEmitter {
                 }
                 else {
                     selections.push(selection);
-                    selection = { };
+                    selection = null;
                 }
             }
 
-            if (selection.colNo === undefined) {
+            if (selection === null) {
                 selection = {
                     rowNo: 0,
                     top: 0,
@@ -273,10 +283,10 @@ class ViewController extends EventEmitter {
 
         try {
             await this.selection.setSelections(selection, selections);
-            await new Promise((resolve, reject) => {
+            await new Promise<void>((resolve, reject) => {
 
                     let cb = (result) => {
-                        let widget = document.body.querySelector('.dialog-widget.confirm');
+                        let widget = document.body.querySelector<HTMLElement>('.dialog-widget.confirm');
                         focusLoop.leaveFocusLoop(widget);
                         if (result)
                             resolve();
@@ -288,7 +298,7 @@ class ViewController extends EventEmitter {
                     let msg = n_(`Delete column '{columnName}'?`, 'Delete {n} columns?', columns.length, {columnName : column.name, n: columns.length });
                     focusLoop.speakMessage(msg)
                     dialogs.confirm(msg, cb);
-                    let widget = document.body.querySelector('.dialog-widget.confirm');
+                    let widget = document.body.querySelector<HTMLElement>('.dialog-widget.confirm');
                     focusLoop.addFocusLoop(widget, { level: 2, modal: true });
                     focusLoop.enterFocusLoop(widget);
                 });
@@ -328,10 +338,10 @@ class ViewController extends EventEmitter {
 
         try {
             await this.selection.setSelections(selections[0], selections.slice(1));
-            await new Promise((resolve, reject) => {
+            await new Promise<void>((resolve, reject) => {
 
                 let cb = (result) => {
-                    let widget = document.body.querySelector('.dialog-widget.confirm');
+                    let widget = document.body.querySelector<HTMLElement>('.dialog-widget.confirm');
                     focusLoop.leaveFocusLoop(widget);
                     if (result)
                         resolve();
@@ -342,7 +352,7 @@ class ViewController extends EventEmitter {
                 let msg = n_('Delete row {index}?', 'Delete {n} rows?', rowCount, { index: selections[0].top+1, n: rowCount });
                 focusLoop.speakMessage(msg);
                 dialogs.confirm(msg, cb);
-                let widget = document.body.querySelector('.dialog-widget.confirm');
+                let widget = document.body.querySelector<HTMLElement>('.dialog-widget.confirm');
                 focusLoop.addFocusLoop(widget, { level: 2, modal: true });
                 focusLoop.enterFocusLoop(widget);
             });
@@ -465,10 +475,7 @@ class ViewController extends EventEmitter {
             let cells = await this.model.requestCells(this.selection);
             let values = cells.data[0].values;
             values = values.map(col => col.map(cell => cell.value));
-            let data = { };
-
-            data.text = csvifyCells(values);
-            data.html = htmlifyCells(values);
+            let data = { text: csvifyCells(values), html: htmlifyCells(values) };
 
             await host.copyToClipboard(data);
             this._notifyCopying();
@@ -482,13 +489,13 @@ class ViewController extends EventEmitter {
         }
     }
 
-    registerView(name, view, options) {
+    registerView(name: string, view: DataSetView, options: { title: string }) {
         this._views[name] = { view, options };
     }
 
-    focusView(name) {
+    focusView(name: string) {
         if (this.focusedOn)
-            this.focusedOn.$el.attr('aria-hidden', true);
+            this.focusedOn.setAttribute('aria-hidden', 'true');
 
         this.focusedOn = this._views[name].view;
 
@@ -502,7 +509,7 @@ class ViewController extends EventEmitter {
         if (this.focusedOn) {
             if (this._views[name].options.title)
                 focusLoop.speakMessage(this._views[name].options.title);
-            this.focusedOn.$el.attr('aria-hidden', false);
+            this.focusedOn.setAttribute('aria-hidden', 'false');
             focusLoop.setDefaultFocusControl(this.focusedOn.getFocusControl());
             
         }
@@ -561,12 +568,12 @@ class ViewController extends EventEmitter {
             ids = ids.filter((id) => { return this.model.getColumnById(id).columnType === greatest.column.columnType; });
 
 
-        this.model._modifiedFromSelection = true;
+        this._modifiedFromSelection = true;
         this.model.set('editingVar', ids);
-        this.model._modifiedFromSelection = false;
+        this._modifiedFromSelection = false;
     }
 
-    _notEditingKeyPress(event) {
+    _notEditingKeyPress(event: KeyboardEvent) {
 
         if (this.focusedOn._notEditingKeyPress && this.focusedOn._notEditingKeyPress(event))
             return;
@@ -611,14 +618,14 @@ class ViewController extends EventEmitter {
             rowCount += range.rowCount;
         }
         try {
-            let n = await new Promise((resolve, reject) => {
+            let n = await new Promise<number>((resolve, reject) => {
                 if (this.selection.subSelections.length > 0)
                     resolve(-1);
                 else {
                     let msg = _('Insert how many rows?');
                     focusLoop.speakMessage(msg);
                     dialogs.prompt(msg, this.selection.bottom - this.selection.top + 1, (result) => {
-                        let widget = document.body.querySelector('.dialog-widget.prompt');
+                        let widget = document.body.querySelector<HTMLElement>('.dialog-widget.prompt');
                         focusLoop.leaveFocusLoop(widget);
                         if (result === undefined)
                             reject('cancelled by user');
@@ -628,7 +635,7 @@ class ViewController extends EventEmitter {
                         else
                             resolve(n);
                     });
-                    let widget = document.body.querySelector('.dialog-widget.prompt');
+                    let widget = document.body.querySelector<HTMLElement>('.dialog-widget.prompt');
                     focusLoop.addFocusLoop(widget, { level: 2, modal: true });
                     focusLoop.enterFocusLoop(widget);
                 }
@@ -658,11 +665,11 @@ class ViewController extends EventEmitter {
 
     async _appendRows() {
         try {
-            let n = await new Promise((resolve, reject) => {
+            let n = await new Promise<number>((resolve, reject) => {
                 let msg = _('Append how many rows?');
                 focusLoop.speakMessage(msg);
                 dialogs.prompt(msg, '1', (result) => {
-                    let widget = document.body.querySelector('.dialog-widget.prompt');
+                    let widget = document.body.querySelector<HTMLElement>('.dialog-widget.prompt');
                     focusLoop.leaveFocusLoop(widget);
                     if (result === undefined)
                         reject('cancelled by user');
@@ -673,7 +680,7 @@ class ViewController extends EventEmitter {
                         resolve(n);
 
                 });
-                let widget = document.body.querySelector('.dialog-widget.prompt');
+                let widget = document.body.querySelector<HTMLElement>('.dialog-widget.prompt');
                 focusLoop.addFocusLoop(widget, { level: 2, modal: true });
                 focusLoop.enterFocusLoop(widget);
             });
@@ -693,7 +700,7 @@ class ViewController extends EventEmitter {
         }
     }
 
-    findFirstVisibleColumn(index) {
+    findFirstVisibleColumn(index?: number) {
         if (index === undefined)
             index = 0;
         let column = this.model.getColumn(index);
@@ -704,23 +711,23 @@ class ViewController extends EventEmitter {
         return column;
     }
 
-    async _appendColumn(columnType) {
+    async _appendColumn(columnType: ColumnType) {
         try {
             let rowNo = this.selection.rowNo;
             let colNo = this.model.visibleRealColumnCount();
             let column = this.model.getColumn(colNo, true);
 
             let args;
-            if (columnType === 'data')
-                args = { name: '', columnType: 'data', measureType: 'nominal' };
-            else if (columnType === 'computed')
-                args = { name: '', columnType: 'computed', measureType: 'continuous' };
-            else if (columnType === 'recoded')
-                args = { name: '', columnType: 'recoded', measureType: 'nominal' };
-            else if (columnType === 'output')
-                args = { name: '', columnType: 'output', measureType: 'continuous' };
+            if (columnType === ColumnType.DATA)
+                args = { name: '', columnType: ColumnType.DATA, measureType: MeasureType.NOMINAL };
+            else if (columnType === ColumnType.COMPUTED)
+                args = { name: '', columnType: ColumnType.COMPUTED, measureType: MeasureType.CONTINUOUS };
+            else if (columnType === ColumnType.RECODED)
+                args = { name: '', columnType: ColumnType.RECODED, measureType: MeasureType.NOMINAL };
+            else if (columnType === ColumnType.OUTPUT)
+                args = { name: '', columnType: ColumnType.OUTPUT, measureType: MeasureType.CONTINUOUS };
             else
-                args = { name: '', columnType: 'none', measureType: 'nominal' };
+                args = { name: '', columnType: ColumnType.NONE, measureType: MeasureType.NOMINAL };
 
             await this.model.changeColumn(column.id, args);
             await this.selection.setSelection(rowNo, colNo);
@@ -737,11 +744,11 @@ class ViewController extends EventEmitter {
         }
     }
 
-    _onColumnAppended(colNo) {
+    _onColumnAppended(colNo: number) {
         this.emit('columnAppended', colNo);
     }
 
-    async _insertFromSelectedColumns(itemConstruction, direction) {
+    async _insertFromSelectedColumns(itemConstruction: (props: any, column: Column) => void, direction: 'right' | 'left') {
         if (direction === undefined)
             direction = 'right';
 
@@ -754,7 +761,7 @@ class ViewController extends EventEmitter {
         for (let block of blocks) {
             for (let i = 0; i < block.right - block.left + 1; i++) {
                 let column = this.model.getColumn(block.left + i, ! hiddenIncluded);
-                if (column.columnType === 'none')
+                if (column.columnType === ColumnType.NONE)
                     emptyIds.push(column.id);
                 else {
                     let props = { index: block[direction] + (direction === 'right' ? 1 : 0) };

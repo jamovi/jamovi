@@ -22,7 +22,7 @@ export class ToolbarGroup extends EventEmitter {
         title:          //Title to be displayed by the group. Make '' for not title but leave space or null for no title and no space.
         orientation:    //How are the contents displayed 'vertical' or 'horizontal' (default)
         right:          //Is the button docked to the right? [default: false]
-        el:            //jquery element. Will create if missing.
+        el:            //element. Will create if missing.
         items:          //Array of menu items. Not needed, can use 'addItem'.
     }
     */

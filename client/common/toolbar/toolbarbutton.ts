@@ -76,7 +76,7 @@ export class ToolbarButton extends EventEmitter {
         tabName:    //Tab in which the button lives (namespace). Will add if not specified.
         size:       //'small', 'medium', 'large', 'huge' [default: medium]
         right:      //Is the button docked to the right? [default: false]
-        $el:        //jquery element. Will create if not defined.
+        el:        //element. Will create if not defined.
     }
     */
 

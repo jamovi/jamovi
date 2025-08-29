@@ -4,23 +4,92 @@
 
 'use strict';
 
-import $ from 'jquery';
 import ColourPalette from './editors/colourpalette';
-import Backbone from 'backbone';
-Backbone.$ = $;
 
-import SilkyView from './view';
 import ContextMenu from './contextmenu';
 import Statusbar from './statusbar/statusbar';
 import { contextMenuListener } from '../common/utils';
 import _focusLoop from '../common/focusloop';
-import { ColumnActiveChangedEvent } from './dataset';
+import DataSetViewModel, { Column, ColumnActiveChangedEvent } from './dataset';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import ViewController, { DataSetView } from './viewcontroller';
+import Selection, { ISelection } from './selection';
+
+type VaraibleRow = {
+    column: Column;
+    $elements: NodeListOf<HTMLElement>;
+    $select: HTMLInputElement;
+    $name: HTMLDivElement;
+    $description: HTMLDivElement;
+    $editableTexts: NodeListOf<HTMLDivElement>;
+    $dot: HTMLElement;
+    nameReadOnly: boolean;
+    editableTimer?: NodeJS.Timeout;
+}
+
+function cloneMouseEvent(e: MouseEvent, overrides: MouseEventInit = {}): MouseEvent {
+  return new MouseEvent(e.type, {
+    bubbles: e.bubbles,
+    cancelable: e.cancelable,
+    composed: e.composed,
+    view: e.view,
+    detail: e.detail,
+    screenX: e.screenX,
+    screenY: e.screenY,
+    clientX: e.clientX,
+    clientY: e.clientY,
+    ctrlKey: e.ctrlKey,
+    shiftKey: e.shiftKey,
+    altKey: e.altKey,
+    metaKey: e.metaKey,
+    button: e.button,
+    buttons: e.buttons,
+    relatedTarget: e.relatedTarget,
+    ...overrides, // apply your changes here
+  });
+}
 
 
-const VariablesView = SilkyView.extend({
-    className: 'variablesview',
-    initialize(options) {
-        this.selectionModel = null;
+class VariablesView extends HTMLElement  implements DataSetView {
+    model: DataSetViewModel;
+    statusbar: Statusbar;
+    controller: ViewController;
+    selection: Selection;
+
+    $body: HTMLElement;
+    $container: HTMLElement;
+    $search: HTMLInputElement;
+
+    searchingInProgress: NodeJS.Timeout;
+    _selectionChanging: NodeJS.Timeout;
+    _topIndex: number;
+    internalBluring: boolean;
+    internalFocus: boolean;
+    _dblClicked: boolean;
+    _focusing: boolean;
+    _editingColumn: Column;
+    _mouseDownClicked: boolean;
+    _delayClear: boolean;
+    _dragging: boolean;
+    selectionIncludesHidden: boolean;
+
+    rows: VaraibleRow[];
+    selectedRows: VaraibleRow[];
+    _clickRangeList: ISelection[];
+    _clickRange: ISelection;
+
+
+    constructor(controller: ViewController, model: DataSetViewModel) {
+        super();
+
+        this.model = model;
+        this.controller = controller;
+
+        this.textElementFocus = this.textElementFocus.bind(this);
+        this.textElementBlur = this.textElementBlur.bind(this);
+        this.textElementKeyDown = this.textElementKeyDown.bind(this);
+
+        this.classList.add('variablesview');
 
         this.rows = [ ];
         this.selectedRows = [];
@@ -37,12 +106,12 @@ const VariablesView = SilkyView.extend({
         this.model.on('transformsChanged', event => this._transformsChanged(event));
         this.model.on('change:filtersVisible', event => this._updateEyeButton());
 
-        this.$el.addClass('jmv-variablesview');
-        this.$el.attr('role', 'region');
-        this.$el.attr('aria-label', `${_('Variables List View')}`);
-        this.$el.attr('aria-hidden', true);
+        this.classList.add('jmv-variablesview');
+        this.setAttribute('role', 'region');
+        this.setAttribute('aria-label', `${_('Variables List View')}`);
+        this.setAttribute('aria-hidden', 'true');
 
-        this.$el.html(`
+        this.innerHTML = `
             <div class="jmv-variables-searchbox" role="presentation">
                 <div class="image"></div>
                 <input type="search" class="search" placeholder="${_('Search variables')}"  aria-description="${_('Search variables')}"></input>
@@ -51,10 +120,10 @@ const VariablesView = SilkyView.extend({
                 <div class="jmv-variables-body" role="listbox" aria-label="Variables List" aria-multiselectable="true" tabindex="0">
 
                 </div>
-            </div>`);
+            </div>`;
 
         this.statusbar = new Statusbar();
-        this.$el.append(this.statusbar.$el);
+        this.append(this.statusbar);
         this.statusbar.addInfoLabel('editStatus', { dock: 'left', value: _('Ready') });
         this.statusbar.addActionButton('editFilters', { dock: 'left' });
         this.statusbar.addActionButton('toggleFilterVisible', { dock: 'left' });
@@ -62,19 +131,26 @@ const VariablesView = SilkyView.extend({
         this.statusbar.addInfoLabel('columnCount', { dock: 'right', label: _('Variables'), value: 0 });
         this.statusbar.addInfoLabel('selectedCount', { dock: 'right', label: _('Selected'), value: 0 });
 
-        this.$body      = this.$el.find('.jmv-variables-body');
-        this.$container = this.$el.find('.jmv-variables-container');
+        this.$body      = this.querySelector('.jmv-variables-body');
+        this.$container = this.querySelector('.jmv-variables-container');
 
-        let $newVariable = $('<div class="add-new-variable"><span class="mif-plus"></span></div>');
+        let $newVariable = HTML.parse('<div class="add-new-variable"><span class="mif-plus"></span></div>');
         this.$container.append(this._createCell($newVariable, 0, 1, 'new-variable', false, 4));
 
-        $newVariable.on('click', (event) => {
-            ContextMenu.showAppendVariableMenu($newVariable.offset().left + $newVariable.outerWidth(false) + 10, $newVariable.offset().top + $newVariable.outerHeight(false) - 10, 'right');
+        $newVariable.addEventListener('click', (event) => {
+            const rect = $newVariable.getBoundingClientRect();
+
+            const left = rect.left + window.scrollX;
+            const top = rect.top + window.scrollY;
+            const width = rect.width;
+            const height = rect.height;
+
+            ContextMenu.showAppendVariableMenu(left + width + 10, top + height - 10, 'right');
         });
 
-        this.$search      = this.$el.find('.search');
+        this.$search = this.querySelector('.search');
 
-        this.$search.on('input', (event) => {
+        this.$search.addEventListener('input', (event) => {
             if (this.searchingInProgress)
                 clearTimeout(this.searchingInProgress);
             
@@ -86,18 +162,18 @@ const VariablesView = SilkyView.extend({
             }, 600);
         });
 
-        this.$search.on('focus', () => {
+        this.$search.addEventListener('focus', () => {
             this.$search.select();
         });
 
-        this.$body.on('mouseleave', (event) => {
-            this.$body.find('.cell.hovering').removeClass('hovering');
+        this.$body.addEventListener('mouseleave', (event) => {
+            this.$body.querySelectorAll('.cell.hovering').forEach(el => el.classList.remove('hovering'));
         });
 
-        contextMenuListener(this.$el[0], (event) => {
+        contextMenuListener(this, (event) => {
             let element = document.elementFromPoint(event.clientX, event.clientY);
-            let $view = $(element).closest('.jmv-variables-container');
-            if ($view.length > 0) {
+            let $view = element.closest('.jmv-variables-container');
+            if ($view) {
                 let colNo = this.selection === null ? 0 : this.selection.getColumnStart();
                 let column = this.model.getColumn(colNo);
                 if (column !== null && column.columnType === 'filter')
@@ -108,9 +184,8 @@ const VariablesView = SilkyView.extend({
             }
         });
 
-        this.controller = options.controller;
         this.controller.registerView('variables', this, { title: _('Variables View') });
-        this.selection = options.controller.selection;
+        this.selection = this.controller.selection;
         this.selectionIncludesHidden = true;
 
         this.selection.registerChangeEventHandler((oldSel, silent, ignoreTabStart) => {
@@ -130,49 +205,53 @@ const VariablesView = SilkyView.extend({
             }
         });
 
-        $(document).on('mousemove', event => this._mouseMove(event));
-        $(document).on('mouseup', event => this._mouseUp(event));
-    },
+        document.addEventListener('mousemove', event => this._mouseMove(event));
+        document.addEventListener('mouseup', event => this._mouseUp(event));
+    }
+
     getFocusControl() {
-        return this.$body[0];
-    },
-    _selectRow(row, editable) {
+        return this.$body;
+    }
+
+    _selectRow(row: VaraibleRow, editable: boolean = false) {
         this.selectedRows.push(row);
 
         let $row = row.$elements;
-        $row.addClass('selected');
-        row.$select.prop('checked', true);
-        row.$select.attr('aria-checked', true);
+        $row.forEach(el => el.classList.add('selected'));
+        row.$select.checked = true;
+        row.$select.setAttribute('aria-checked', 'true');
 
         if (this.controller.focusedOn === this)
             _focusLoop.speakMessage(`${row.column.name} ${row.column.measureType} ${row.column.dataType}`);
 
         if (editable && ! row.editableTimer) {
             row.editableTimer = setTimeout(function () {
-                row.$editableTexts.attr('contenteditable', true);
+                row.$editableTexts.forEach(el => el.setAttribute('contenteditable', 'true'));
                 if (row.nameReadOnly === false)
-                    row.$name.attr('placeholder', _('Enter name'));
-                row.$description.attr('placeholder', _('Enter description'));
+                    row.$name.setAttribute('placeholder', _('Enter name'));
+                row.$description.setAttribute('placeholder', _('Enter description'));
                 row.editableTimer = null;
             }, 10);
         }
-    },
+    }
+
     _clearRowSelections() {
         for (let row of this.selectedRows) {
             let $row = row.$elements;
-            row.$editableTexts.removeAttr('contenteditable');
-            row.$name.removeAttr('placeholder');
-            row.$description.removeAttr('placeholder');
-            row.$select.prop('checked', false);
-            row.$select.attr('aria-checked', false);
-            $row.removeClass('selected');
+            row.$editableTexts.forEach(el => el.removeAttribute('contenteditable'));
+            row.$name.removeAttribute('placeholder');
+            row.$description.removeAttribute('placeholder');
+            row.$select.checked = false;
+            row.$select.setAttribute('aria-checked', 'false');
+            $row.forEach(el => el.classList.remove('selected'));
             if (row.editableTimer) {
                 clearTimeout(row.editableTimer);
                 row.editableTimer = null;
             }
         }
         this.selectedRows = [];
-    },
+    }
+
     _updateRowSelections() {
         this.selectedRows = [];
 
@@ -207,7 +286,7 @@ const VariablesView = SilkyView.extend({
         }
 
         return selectedCount;
-    },
+    }
 
     _selectionChanged() {
         if (this._selectionChanging)
@@ -216,9 +295,9 @@ const VariablesView = SilkyView.extend({
         this._selectionChanging = setTimeout(() => {
 
             let editingIds = this.model.get('editingVar');
-            let editingColumn = null;
-            if (editingIds !== null)
-                editingColumn = this.model.getColumnById(editingIds[0]);
+            //let editingColumn: Column = null;
+            //if (editingIds !== null)
+            //    editingColumn = this.model.getColumnById(editingIds[0]);
 
             if (editingIds !== null /*&& (editingColumn.columnType === 'filter' && editingColumn.hidden)*/) {
                 let columns = this._currentSelectionToColumns();
@@ -232,39 +311,42 @@ const VariablesView = SilkyView.extend({
 
             this._selectionChanging = null;
         }, 0);
-    },
+    }
+
     _currentSelectionToColumns() {
         return this.selectedRows.map(row => row.column);
-    },
+    }
+
     _updateEyeButton() {
         if (this.model.get('filtersVisible'))
-            this.statusbar.$el.find('.jmv-statusbar-button[data-name=togglefiltervisible]').addClass('hide-filter-columns');
+            this.statusbar.querySelector('.jmv-statusbar-button[data-name="togglefiltervisible"]')?.classList.add('hide-filter-columns');
         else
-            this.statusbar.$el.find('.jmv-statusbar-button[data-name=togglefiltervisible]').removeClass('hide-filter-columns');
-    },
+            this.statusbar.querySelector('.jmv-statusbar-button[data-name="togglefiltervisible"]')?.classList.remove('hide-filter-columns');
+    }
+
     _updateFilterInfo() {
         let count = this.model.filterCount(true);
         this.statusbar.updateInfoLabel('activeFilters', count);
         if (count === 0)
-            this.statusbar.$el.find('.jmv-statusbar-button[data-name=editfilters]').addClass('gray');
+            this.statusbar.querySelector('.jmv-statusbar-button[data-name="editfilters"]')?.classList.add('gray');
         else
-            this.statusbar.$el.find('.jmv-statusbar-button[data-name=editfilters]').removeClass('gray');
-    },
+            this.statusbar.querySelector('.jmv-statusbar-button[data-name="editfilters"]')?.classList.remove('gray');
+    }
 
-    _applyColumnData($element, column, index) {
-        $element.attr('data-id', column.id);
-        $element.attr('data-index', index);
-        $element.attr('data-datatype', column.dataType);
-        $element.attr('data-columntype', column.columnType);
-        $element.attr('data-measuretype', column.measureType);
-        $element.attr('data-fmlaok', this._isColumnOk(column) ? '1' : '0');
-        $element.attr('data-active', column.active);
-        $element.attr('data-hidden', column.hidden);
+    _applyColumnData($element: HTMLElement, column: Column, index: number) {
+        $element.setAttribute('data-id', column.id.toString());
+        $element.setAttribute('data-index', index.toString());
+        $element.setAttribute('data-datatype', column.dataType);
+        $element.setAttribute('data-columntype', column.columnType);
+        $element.setAttribute('data-measuretype', column.measureType);
+        $element.setAttribute('data-fmlaok', this._isColumnOk(column) ? '1' : '0');
+        $element.setAttribute('data-active', column.active.toString());
+        $element.setAttribute('data-hidden', column.hidden.toString());
 
         return $element;
-    },
+    }
 
-    _isColumnOk(column) {
+    _isColumnOk(column: Column) {
         let ok = column.formulaMessage === '';
         if (ok && column.transform !== 0) {
             let transform = this.model.getTransformById(column.transform);
@@ -278,38 +360,38 @@ const VariablesView = SilkyView.extend({
             }
         }
         return ok;
-    },
+    }
 
-    _createColumnResizer(gridIndex) {
-        let $resizer = $(`<div class="resizer"  style="grid-area: 1 / ${ gridIndex } / -1 / span 1;"></div>`);
+    _createColumnResizer(gridIndex: number) {
+        let $resizer = HTML.parse(`<div class="resizer"  style="grid-area: 1 / ${ gridIndex } / -1 / span 1;"></div>`);
 
         return $resizer;
-    },
+    }
 
-    _createRow(column, row) {
-        let $measureType = $('<div  role="none" class="measure-box"><div class="measure-type-icon"></div>');
+    _createRow(column: Column, row: number) {
+        let $measureType = HTML.parse('<div  role="none" class="measure-box"><div class="measure-type-icon"></div>');
 
         if (column.columnType === 'computed' || column.columnType === 'recoded' || column.columnType === 'output') {
-            let $dot = $('</div><div class="dot"></div>');
+            let $dot = HTML.parse('</div><div class="dot"></div>');
             this._updateColumnColour(column, $dot);
             $measureType.append($dot);
         }
 
         let labelId = _focusLoop.getNextAriaElementId('label');
 
-        let $name = $(`<div  role="none" id="${ labelId }" class="name text" data-property="name" data-columnindex="${column.index}" tabindex="0">${ column.name }</div>`);
+        let $name = HTML.parse<HTMLDivElement>(`<div role="none" id="${ labelId }" class="name text" data-property="name" data-columnindex="${column.index}" tabindex="0">${ column.name }</div>`);
         if (column.columnType === 'filter')
-            $name.addClass('readonly');
-        this._addTextEvents($name, 'name', column);
+            $name.classList.add('readonly');
+        this._addTextEvents($name);
 
-        let $desc = $(`<div role="none" class="description text" data-property="description" data-columnindex="${column.index}" tabindex="0">${ column.description }</div>`);
-        this._addTextEvents($desc, 'description', column);
+        let $desc = HTML.parse<HTMLDivElement>(`<div role="none" class="description text" data-property="description" data-columnindex="${column.index}" tabindex="0">${ column.description }</div>`);
+        this._addTextEvents($desc);
 
         let colNo = column.index;
 
         let editingIds = this.model.get('editingVar');
 
-        let $select = $(`<input role="option" aria-labelledby="${ labelId }" type="checkbox" data-index="${colNo}" class="select" tabindex="-1"></input>`);
+        let $select = HTML.parse<HTMLInputElement>(`<input role="option" aria-labelledby="${ labelId }" type="checkbox" data-index="${colNo}" class="select" tabindex="-1"></input>`);
         this._addSelectEvents($select);
 
         this.$body.append(this._applyColumnData(this._createCell($select, row, 1, '', true), column, colNo));
@@ -317,9 +399,9 @@ const VariablesView = SilkyView.extend({
         this.$body.append(this._applyColumnData(this._createCell($name, row, 3, '', true), column, colNo));
         this.$body.append(this._applyColumnData(this._createCell($desc, row, 4, '', true), column, colNo));
 
-        let $elements = this.$el.find(`.cell[data-index=${colNo}]`);
-        let $editableTexts = $elements.find('.text:not(.readonly)');
-        let $dot = $elements.find(`.dot`);
+        let $elements = this.querySelectorAll<HTMLElement>(`.cell[data-index="${colNo}"]`);
+        let $editableTexts = this.querySelectorAll<HTMLDivElement>(`.cell[data-index="${colNo}"] .text:not(.readonly)`);
+        let $dot = this.querySelector<HTMLElement>(`.cell[data-index="${colNo}"] .dot`);
 
         this.rows[colNo] = {
             column: column,
@@ -331,23 +413,23 @@ const VariablesView = SilkyView.extend({
             $dot: $dot,
             nameReadOnly: column.columnType === 'filter'
         };
-    },
+    }
 
     _updateList() {
         this._clearRowSelections();
 
         let columnCount = this.model.get('columnCount');
-        this.$body.empty();
+        this.$body.innerHTML = '';
 
         this.rows = [];
 
-        let $measureTypeHeader = $('<div style="width:10px;"></div>');
-        let $nameHeader = $(`<div>${_('Name')}</div>`);
-        let $descHeader = $(`<div>${_('Description')}</div>`);
-        let $selectHeader =$('<input type="checkbox" class="select-header-checkbox"></input>');
+        let $measureTypeHeader = HTML.parse('<div style="width:10px;"></div>');
+        let $nameHeader = HTML.parse(`<div>${_('Name')}</div>`);
+        let $descHeader = HTML.parse(`<div>${_('Description')}</div>`);
+        let $selectHeader = HTML.parse<HTMLInputElement>('<input type="checkbox" class="select-header-checkbox"></input>');
 
-        $selectHeader.on('change', (event) => {
-            if ($selectHeader.prop("checked"))
+        $selectHeader.addEventListener('change', (event) => {
+            if ($selectHeader.checked)
                 this.selection.selectAll();
             else
                 this.selection.setSelection(0, this.selection.getColumnStart(), true);
@@ -364,7 +446,7 @@ const VariablesView = SilkyView.extend({
         for (let colNo = 0; colNo < columnCount; colNo++) {
             let column = this.model.getColumn(colNo, false);
 
-            let searchText = this.$search.val().toLowerCase();
+            let searchText = this.$search.value.toLowerCase();
             if (searchText !== '' && ! column.name.toLowerCase().includes(searchText) && ! column.description.toLowerCase().includes(searchText))
                 continue;
 
@@ -379,7 +461,7 @@ const VariablesView = SilkyView.extend({
         }
 
         if (row === 2) {
-            this.$body.append($(`<div class="msg">${_('No variables match your query.')}</div>`));
+            this.$body.append(HTML.parse(`<div class="msg">${_('No variables match your query.')}</div>`));
             this.statusbar.updateInfoLabel('selectedCount', 0);
         }
         else {
@@ -387,180 +469,187 @@ const VariablesView = SilkyView.extend({
             this.statusbar.updateInfoLabel('selectedCount', selectedCount);
         }
 
-        this.$body.css( { 'grid-template-rows': `repeat(${row}, auto)` });
+        this.$body.style.gridTemplateRows = `repeat(${row}, auto)`;
         this.statusbar.updateInfoLabel('columnCount', finalColumnCount);
-    },
-    _getRowByIndex(index) {
+    }
+
+    _getRowByIndex(index: number) {
         return this.rows[index];
-    },
+    }
+
     _getRowById(id) {
         for (let rowIndex in this.rows) {
             let row = this.rows[rowIndex];
             if (row.column.id === id)
                 return row;
         }
-    },
+    }
 
-    async textElementFocus(event) {
-        let self = event.data;
-        let $el = $(event.target);
-        if ($el[0].hasAttribute('contenteditable') === false) {
-            self.internalBluring = true;
-            $el.blur();
-            return;
-        }
-
-        if (self.internalFocus === false) {
-            self.internalBluring = true;
-            $el.blur();
-
-            if (self._focusing)
-                return;
-
-            self._focusing = true;
-
-            await new Promise((resolve) => setTimeout(resolve, 300));
-
-            if (self._dblClicked) {
-                self._dblClicked = null;
-                self._focusing = false;
+    async textElementFocus(event: Event) {
+        if (event.target instanceof HTMLElement) {
+            let $el = event.target;
+            if ($el.hasAttribute('contenteditable') === false) {
+                this.internalBluring = true;
+                $el.blur();
                 return;
             }
-            else {
-                self.internalFocus = true;
-                self._focusing = false;
-                $el.focus();
-                return;
+
+            if (this.internalFocus === false) {
+                this.internalBluring = true;
+                $el.blur();
+
+                if (this._focusing)
+                    return;
+
+                this._focusing = true;
+
+                await new Promise((resolve) => setTimeout(resolve, 300));
+
+                if (this._dblClicked) {
+                    this._dblClicked = null;
+                    this._focusing = false;
+                    return;
+                }
+                else {
+                    this.internalFocus = true;
+                    this._focusing = false;
+                    $el.focus();
+                    return;
+                }
+            }
+        
+
+            this.internalFocus = false;
+
+            document.execCommand('selectAll', false, null);
+            let column = this._getRowByIndex(parseInt($el.getAttribute('data-columnindex'))).column;
+            this._editingColumn = column;
+        }
+    }
+
+    textElementBlur(event: Event) {
+        if (event.target instanceof HTMLElement) {
+            let $el = event.target;
+            let propertyName = $el.getAttribute('data-property');
+            if (this.internalBluring === false) {
+                let data = { };
+                data[propertyName] = $el.textContent;
+                let column = this._getRowByIndex(parseInt($el.getAttribute('data-columnindex'))).column;
+                if (column[propertyName] !== data[propertyName])
+                    this.model.changeColumn(column.id, data);
+                window.clearTextSelection();
+                this._editingColumn = null;
+            }
+            this.internalBluring = false;
+        }
+    }
+
+    textElementKeyDown(event: KeyboardEvent) {
+        if (event.target instanceof HTMLElement) {
+            let $el = event.target;
+            let propertyName = $el.getAttribute('data-property');
+            let column = this._getRowByIndex(parseInt($el.getAttribute('data-columnindex'))).column;
+            var keypressed = event.keyCode || event.which;
+            if (keypressed === 13) { // enter key
+                $el.blur();
+                let columnCount = this.model.get('columnCount');
+                let index = column.index;
+                if (event.shiftKey) {
+                    if (column.index > 0)
+                        index = index - 1;
+                    else
+                        index = columnCount - 1;
+                }
+                else {
+                    if (column.index < columnCount - 1)
+                        index = index + 1;
+                    else
+                        index = 0;
+                }
+
+                this.selection.setSelection(0, index, true);
+                setTimeout(() => {
+                    const el = this.querySelector<HTMLInputElement>(`.selected > .${ propertyName }.text`);
+                    el.focus();
+                    el.select();
+                }, 10);
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            else if (keypressed === 27) { // escape key
+                $el.textContent = column[propertyName];
+                $el.blur();
+                event.preventDefault();
+                event.stopPropagation();
             }
         }
+    }
 
-        self.internalFocus = false;
+    _addTextEvents($element: HTMLDivElement) {
 
-        let propertyName = $el.attr('data-property');
-        document.execCommand('selectAll', false, null);
-        let column = self._getRowByIndex(parseInt($el.attr('data-columnindex'))).column;
-        self._editingColumn = column;
-    },
+        $element.addEventListener('focus', this.textElementFocus);
 
-    textElementBlur(event) {
-        let self = event.data;
-        let $el = $(event.target);
-        let propertyName = $el.attr('data-property');
-        if (self.internalBluring === false) {
-            let data = { };
-            data[propertyName] = $el.text();
-            let column = self._getRowByIndex(parseInt($el.attr('data-columnindex'))).column;
-            if (column[propertyName] !== data[propertyName])
-                self.model.changeColumn(column.id, data);
-            window.clearTextSelection();
-            self._editingColumn = null;
-        }
-        self.internalBluring = false;
-    },
+        $element.addEventListener('blur', this.textElementBlur);
 
-    textElementKeyDown(event) {
-        let self = event.data;
-        let $el = $(event.target);
-        let propertyName = $el.attr('data-property');
-        let column = self._getRowByIndex(parseInt($el.attr('data-columnindex'))).column;
-        var keypressed = event.keyCode || event.which;
-        if (keypressed === 13) { // enter key
-            $el.blur();
-            let columnCount = self.model.get('columnCount');
-            let index = column.index;
-            if (event.shiftKey) {
-                if (column.index > 0)
-                    index = index - 1;
-                else
-                    index = columnCount - 1;
-            }
-            else {
-                if (column.index < columnCount - 1)
-                    index = index + 1;
-                else
-                    index = 0;
-            }
+        $element.addEventListener('keydown', this.textElementKeyDown);
+    }
 
-            self.selection.setSelection(0, index, true);
-            setTimeout(() => {
-                self.$el.find(`.selected > .${ propertyName }.text`).focus().select();
-            }, 10);
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        else if (keypressed === 27) { // escape key
-            $el.text(column[propertyName]);
-            $el.blur();
-            event.preventDefault();
-            event.stopPropagation();
-        }
-    },
-
-    _addTextEvents($element) {
-
-        $element.focus(this, this.textElementFocus);
-
-        $element.blur(this, this.textElementBlur);
-
-        $element.keydown(this, this.textElementKeyDown);
-    },
-    _updateColumnColour(column, $dot) {
+    _updateColumnColour(column, $dot: HTMLElement) {
         if (column.columnType === 'recoded') {
             let transform = this.model.getTransformById(column.transform);
             if (transform) {
-                $dot.removeClass('no-transform');
-                $dot.css('background-color', ColourPalette.get(transform.colourIndex));
-                $dot.attr('title', 'Transform: ' + transform.name);
+                $dot.classList.remove('no-transform');
+                $dot.style.backgroundColor = ColourPalette.get(transform.colourIndex);
+                $dot.setAttribute('title', 'Transform: ' + transform.name);
             }
             else {
-                $dot.addClass('no-transform');
-                $dot.css('background-color', '#acacac');
-                $dot.attr('title', 'Transform: None');
+                $dot.classList.add('no-transform');
+                $dot.style.backgroundColor = '#acacac';
+                $dot.setAttribute('title', 'Transform: None');
             }
         }
         else if (column.columnType === 'computed') {
-            $dot.css('background-color', '#515151');
-            $dot.attr('title', 'Computed variable');
+            $dot.style.backgroundColor = '#515151';
+            $dot.setAttribute('title', 'Computed variable');
         }
-    },
-    _addSelectEvents($checkbox) {
-        $checkbox.on('change', event => {
-            event.ctrlKey = true;
-            event.shiftKey = false;
-            event.button = 0;
-            let colNo = parseInt($checkbox.attr('data-index'));
-            this._mouseDown(event, colNo);
-            this._mouseUp(event);
+    }
+
+    _addSelectEvents($checkbox: HTMLInputElement) {
+        $checkbox.addEventListener('change', (event: MouseEvent) => {
+            let cloneEvent = cloneMouseEvent(event, { ctrlKey: true, metaKey: true, shiftKey: false, button: 0 })
+            let colNo = parseInt($checkbox.getAttribute('data-index'));
+            this._mouseDown(cloneEvent, colNo);
+            this._mouseUp(cloneEvent);
         });
 
-        $checkbox.on('mousedown', event => {
+        $checkbox.addEventListener('mousedown', event => {
             event.stopPropagation();
             event.preventDefault();
         });
 
-        $checkbox.on('mouseup', event => {
+        $checkbox.addEventListener('mouseup', event => {
             event.stopPropagation();
             event.preventDefault();
         });
-    },
+    }
 
-    _createCell($contents, row, column, classes, hasEvents, columnSpan) {
+    _createCell($contents: HTMLElement, row: number, column: number, classes: string, hasEvents: boolean, columnSpan=1) {
         if (columnSpan ===undefined)
             columnSpan = 1;
-        let $cell = $(`<div role="none" class="cell ${ classes }" style="grid-area: ${ row } / ${ column } / span 1 / span ${ columnSpan };"></div>`);
+        let $cell = HTML.parse(`<div role="none" class="cell ${ classes }" style="grid-area: ${ row } / ${ column } / span 1 / span ${ columnSpan };"></div>`);
         if (hasEvents) {
-            $cell.on('mouseover', event => {
-                this.$body.find('.cell.hovering').removeClass('hovering');
-                let id = parseInt($cell.attr('data-id'));
+            $cell.addEventListener('mouseover', event => {
+                this.$body.querySelectorAll('.cell.hovering').forEach(el => el.classList.remove('hovering'));
+                let id = parseInt($cell.getAttribute('data-id'));
                 let $row = this._getRowById(id).$elements;
-                $row.addClass('hovering');
+                $row.forEach(el => el.classList.add('hovering'));
             });
-            $cell.on('mousedown', event => {
-                let colNo = parseInt($cell.attr('data-index'));
+            $cell.addEventListener('mousedown', event => {
+                let colNo = parseInt($cell.getAttribute('data-index'));
                 this._mouseDown(event, colNo);
             });
-            $cell.on('dblclick', event => {
-                let id = parseInt($cell.attr('data-id'));
+            $cell.addEventListener('dblclick', event => {
+                let id = parseInt($cell.getAttribute('data-id'));
                 if (this._editingColumn && this._editingColumn.id === id)
                     return;
 
@@ -571,9 +660,9 @@ const VariablesView = SilkyView.extend({
         $cell.append($contents);
 
         return $cell;
-    },
+    }
 
-    _mouseDown(event, colNo) {
+    _mouseDown(event: MouseEvent, colNo: number) {
         this._mouseDownClicked = true;
         this._clickRange = null;
         this._clickRangeList = null;
@@ -627,7 +716,7 @@ const VariablesView = SilkyView.extend({
                 colNo = range.start;
             }
 
-            let searchText = this.$search.val();
+            let searchText = this.$search.value;
             if (searchText && left + 1 < right) {
                 this._clickRangeList = [];
                 let s = null;
@@ -660,19 +749,19 @@ const VariablesView = SilkyView.extend({
              if (noChange === false && this._delayClear === false)
                 this.selection.setSelections(this._clickRange, this._clickRangeList);
          }
-    },
+    }
 
-    _mouseUp(event) {
+    _mouseUp(event: MouseEvent) {
         if (this.controller.focusedOn !== this)
             return;
 
         if ( ! this._mouseDownClicked && event.button === 2) {
             let element = document.elementFromPoint(event.clientX, event.clientY);
-            let $element = $(element);
+            let $element = element;
             let $cell = $element.closest('.cell');
             let index = this.model.get('columnCount');
-            if ($cell.length !== 0)
-                index = parseInt($cell.attr('data-index'));
+            if ($cell)
+                index = parseInt($cell.getAttribute('data-index'));
             this._mouseDown(event, index);
         }
 
@@ -681,14 +770,14 @@ const VariablesView = SilkyView.extend({
             this.selection.setSelections(this._clickRange, this._clickRangeList);
         }
         else if (! this._dragging)
-            this.selection.resolveSelectionList(this.$el);
+            this.selection.resolveSelectionList(this);
         this._delayClear = false;
         this._dragging = false;
 
         this._mouseDownClicked = false;
-    },
+    }
 
-    _mouseMove(event) {
+    _mouseMove(event: MouseEvent) {
         if (this.controller.focusedOn !== this)
             return;
 
@@ -696,25 +785,29 @@ const VariablesView = SilkyView.extend({
             this._delayClear = false;
             this._dragging = true;
         }
-    },
+    }
 
     _dataSetLoaded() {
         this._updateList();
 
         this._updateFilterInfo();
         this._updateEyeButton();
-    },
+    }
+
     _columnsActiveChanged(event: ColumnActiveChangedEvent) {
         this._updateFilterInfo();
-    },
+    }
+
     _columnsDeleted(event) {
         this._updateList();
         this._updateFilterInfo();
-    },
+    }
+
     _transformsChanged(event) {
 
 
-    },
+    }
+
     _columnsChanged(event) {
 
         for (let i = 0; i < event.changes.length; i++) {
@@ -727,27 +820,27 @@ const VariablesView = SilkyView.extend({
 
             if (row) {
                 if (change.nameChanged)
-                    row.$name.text(change.name);
+                    row.$name.innerText = change.name;
 
                 if (change.descriptionChanged)
-                    row.$description.text(row.column.description);
+                    row.$description.innerText = row.column.description;
 
                 if (change.measureTypeChanged)
-                    row.$elements.attr('data-measuretype', row.column.measureType);
+                    row.$elements.forEach(el => el.setAttribute('data-measuretype', row.column.measureType));
 
                 if (change.transformChanged)
                     this._updateColumnColour(row.column, row.$dot);
             }
         }
-    },
+    }
 
-    _columnsInserted(event, ignoreSelection) {
-        this.$search.val('');
+    _columnsInserted(event) {
+        this.$search.value = '';
         this._updateFilterInfo();
         this._updateList();
-    },
+    }
 
-    _notEditingKeyPress(event) {
+    _notEditingKeyPress(event: KeyboardEvent) {
         if (event.altKey)
             return;
 
@@ -798,6 +891,8 @@ const VariablesView = SilkyView.extend({
                 break;
         }
     }
-});
+}
+
+customElements.define('jmv-variablesview', VariablesView);
 
 export default VariablesView;

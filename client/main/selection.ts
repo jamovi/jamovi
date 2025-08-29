@@ -1,7 +1,7 @@
 'use strict';
 
 import { EventEmitter } from "tsee";
-import DataSetViewModel, { Column } from "./dataset";
+import DataSetViewModel, { Column, ColumnType, ProcessedDatasetRR } from "./dataset";
 
 interface IRange {
     start: number;
@@ -10,22 +10,40 @@ interface IRange {
     pos: number;
 }
 
-interface ISelection {
-    rowNo: number;
-    colNo: number;
+export interface RowBlock { rowStart: number, rowCount: number };
+
+interface ColumnBlock { columnStart: number, columnCount: number };
+
+export interface Block extends RowBlock, ColumnBlock {
+    clear: boolean;
+    values: (string | null | number)[][];
+}
+
+interface IRowsSelection {
     top: number;
     bottom: number;
+}
+
+interface IColumnSelection {
     left: number;
     right: number;
+}
+
+export type IAreaSelection =  IRowsSelection & IColumnSelection;
+
+export interface ISelection extends IAreaSelection {
+    rowNo: number;
+    colNo: number;
+
     colFocus?: number;
     rowFocus?: number;
 
-    columnStart: number;
-    columnEnd: number;
+    columnStart?: number;
+    columnEnd?: number;
     columnFocus?: number;
-    columnPos: number;
+    columnPos?: number;
 
-    _calcKey: string;
+    _calcKey?: string;
 }
 
 class Selection extends EventEmitter implements ISelection {
@@ -47,8 +65,9 @@ class Selection extends EventEmitter implements ISelection {
     _calcKey: string = '';
     hiddenIncluded: boolean = false;
     _selectionNegative: boolean = false;
+    subSelections: ISelection[];
 
-    _handlers: ((oldSel, silent, ignoreTabStart) => Promise<any>)[];
+    _handlers: ((oldSel: ISelection, silent: boolean, ignoreTabStart: boolean) => (Promise<void> | void))[];
 
 
     constructor(model) {
@@ -76,7 +95,7 @@ class Selection extends EventEmitter implements ISelection {
             return { start: selection.left, end: selection.right, focus: selection.colFocus, pos: selection.colNo };
     }
 
-    _getRange(selection) {
+    _getRange(selection?: ISelection) {
         if (selection === undefined)
             selection = this;
 
@@ -86,11 +105,11 @@ class Selection extends EventEmitter implements ISelection {
             return { start: selection.left, end: selection.right, focus: selection.colFocus, pos: selection.colNo };
     }
 
-    applyKey(selection, syncHidden) {
+    applyKey(selection: ISelection, syncHidden?: boolean) {
         selection._calcKey = this.compileKey(selection, syncHidden);
     }
 
-    compileKey(selection, syncHidden) {
+    compileKey(selection: ISelection, syncHidden?: boolean) {
         if (syncHidden === undefined)
             syncHidden = ! this.hiddenIncluded;
 
@@ -100,7 +119,7 @@ class Selection extends EventEmitter implements ISelection {
             return `${ selection.left } : ${ selection.right } : ${ selection.colFocus } : ${ selection.colNo } : false`;
     }
 
-    legitimise(selection, sync) {
+    legitimise(selection: ISelection, sync:boolean = false) {
         if (selection === undefined)
             selection = this;
 
@@ -149,7 +168,7 @@ class Selection extends EventEmitter implements ISelection {
             this._clipSelection(selection);
     }
 
-    getColumnStart(selection) {
+    getColumnStart(selection?: ISelection) {
         if (selection === undefined)
             selection = this;
 
@@ -158,7 +177,7 @@ class Selection extends EventEmitter implements ISelection {
         return selection.columnStart;
     }
 
-    getColumnEnd(selection) {
+    getColumnEnd(selection?: ISelection) {
         if (selection === undefined)
             selection = this;
 
@@ -167,7 +186,7 @@ class Selection extends EventEmitter implements ISelection {
         return selection.columnEnd;
     }
 
-    getColumnPos(selection) {
+    getColumnPos(selection?: ISelection) {
         if (selection === undefined)
             selection = this;
 
@@ -189,7 +208,7 @@ class Selection extends EventEmitter implements ISelection {
         return true;
     }
 
-    createRange(start, end, pos, focus) {
+    createRange(start: number, end: number, pos: number, focus?: number) : ISelection {
         let startColumn = this.model.getColumn(start);
         let endColumn = this.model.getColumn(end);
         let posColumn = this.model.getColumn(pos);
@@ -257,7 +276,7 @@ class Selection extends EventEmitter implements ISelection {
             }
         }
 
-        let newSelection = {
+        let newSelection: ISelection = {
             left: left,
             right: right,
             colNo: colNo,
@@ -285,7 +304,7 @@ class Selection extends EventEmitter implements ISelection {
         return newSelection;
     }
 
-    clone() {
+    clone(): ISelection {
         return {
             rowNo: this.rowNo,
             colNo: this.colNo,
@@ -303,7 +322,7 @@ class Selection extends EventEmitter implements ISelection {
         };
     }
 
-    _assign(range) {
+    _assign(range: ISelection) {
         if (range.rowNo !== undefined)
             this.rowNo = range.rowNo;
         if (range.colNo !== undefined)
@@ -360,7 +379,7 @@ class Selection extends EventEmitter implements ISelection {
             rowFocus: rowNo }, clearSelectionList ? [] : null);
     }
 
-    _clipSelection(selection) {
+    _clipSelection(selection: ISelection) {
         let changed = false;
         for (let prop in selection) {
             if (selection[prop] < 0) {
@@ -422,7 +441,7 @@ class Selection extends EventEmitter implements ISelection {
         return changed;
     }
 
-    registerChangeEventHandler(handler: (oldSel, silent, ignoreTabStart) => Promise<any>) {
+    registerChangeEventHandler(handler: (oldSel: ISelection, silent: boolean, ignoreTabStart: boolean) => (Promise<void> | void)) {
         this._handlers.push(handler);
     }
 
@@ -434,7 +453,7 @@ class Selection extends EventEmitter implements ISelection {
         this.emit('subselectionChanged');
     }
 
-    setSelections(mainSelection, subSelections, silent?: boolean, ignoreTabStart?: boolean) {
+    setSelections(mainSelection: ISelection, subSelections?: ISelection[], silent?: boolean, ignoreTabStart?: boolean) {
 
         if (mainSelection)
             this.legitimise(mainSelection, true);
@@ -458,8 +477,8 @@ class Selection extends EventEmitter implements ISelection {
         return this._onSelectionChanged(mainSelection, silent, ignoreTabStart);
     }
 
-    _onSelectionChanged(range, silent: boolean, ignoreTabStart: boolean) {
-        let oldSel = this.clone();
+    _onSelectionChanged(range: ISelection, silent: boolean, ignoreTabStart: boolean) {
+        let oldSel: ISelection = this.clone();
 
         this._assign(range);
         if (range.rowFocus === undefined)
@@ -479,27 +498,27 @@ class Selection extends EventEmitter implements ISelection {
         return Promise.all(promises);
     }
 
-    addNewSelectionToList(range, type) {
+    addNewSelectionToList(range: ISelection, type?: 'negative' | 'addition') {
         this.legitimise(range, true);
 
         this._selectionNegative = type === 'negative';
 
-        let prevSel = this.clone();
+        let prevSel: ISelection = this.clone();
         this.subSelections.unshift(prevSel);
         this._onSelectionAppend(prevSel, this._selectionNegative);
 
         this._onSelectionChanged(range, false, false);
     }
 
-    _onSelectionAppend(prevSel, subtract) {
+    _onSelectionAppend(prevSel: ISelection, subtract) {
         this.emit('selectionAppended', prevSel, subtract);
     }
 
     selectionToColumnBlocks() {
         let range = this._getRange();
-        let blocks = [{ left: range.start, right: range.end }];
+        let blocks: IColumnSelection[] = [{ left: range.start, right: range.end }];
 
-        let tryApply = (selection, index) => {
+        let tryApply = (selection: {left: number, right: number }, index?: number) => {
             let absorbed = false;
             let modified = false;
             for (let i = 0; i < blocks.length; i++) {
@@ -549,12 +568,12 @@ class Selection extends EventEmitter implements ISelection {
             tryApply({ left: range.start, right: range.end });
         }
 
-        blocks.sort((a,b) => a.start - b.start);
+        blocks.sort((a,b) => a.left - b.left);
 
         return blocks;
     }
 
-    cellInSelection(rowNo, colNo) {
+    cellInSelection(rowNo: number, colNo: number) {
         let range = this._getRange(this);
         if ((rowNo >= this.top || this.top === -1) && (rowNo <= this.bottom || this.bottom === -1) &&
              colNo >= range.start && colNo <= range.end) {
@@ -571,7 +590,7 @@ class Selection extends EventEmitter implements ISelection {
         return false;
     }
 
-    isFullColumnSelectionClick(colNo) {
+    isFullColumnSelectionClick(colNo: number) {
         let range = this._getRange(this);
         let check = false;
         if (colNo >= range.start && colNo <= range.end)
@@ -600,7 +619,7 @@ class Selection extends EventEmitter implements ISelection {
         return range.start === 0 && range.end === this.model.attributes.columnCount - 1;
     }
 
-    isFullRowSelectionClick(rowNo) {
+    isFullRowSelectionClick(rowNo: number) {
         let check = false;
         if (rowNo >= this.top && rowNo <= this.bottom) {
             let range = this._getRange(this);
@@ -632,7 +651,7 @@ class Selection extends EventEmitter implements ISelection {
     }
 
     currentSelectionToColumns() {
-        let columnsObj = {};
+        let columnsObj: { [id: number]: Column} = {};
 
         let range = this._getRange(this);
         for (let c = range.start; c <= range.end; c++) {
@@ -648,7 +667,7 @@ class Selection extends EventEmitter implements ISelection {
             }
         }
 
-        let columns = [];
+        let columns: Column[] = [];
         for (let id in columnsObj)
             columns.push(columnsObj[id]);
 
@@ -658,7 +677,7 @@ class Selection extends EventEmitter implements ISelection {
     }
 
     currentSelectionToRowBlocks() {
-        let blocks = [];
+        let blocks: RowBlock[] = [];
         this.updateColumnDataBlocks(blocks, this);
 
         for (let selection of this.subSelections)
@@ -667,7 +686,7 @@ class Selection extends EventEmitter implements ISelection {
         return blocks;
     }
 
-    updateColumnDataBlocks(blocks, selection, index) {
+    updateColumnDataBlocks(blocks: RowBlock[], selection: IRowsSelection & { _block?: RowBlock }, index?: number) {
         if (blocks.length === 0)
             blocks.push({ rowStart: selection.top, rowCount: selection.bottom - selection.top + 1 });
         else {
@@ -719,10 +738,10 @@ class Selection extends EventEmitter implements ISelection {
         }
     }
 
-    convertAreaDataToSelections(data) {
-        let selections = [];
+    convertAreaDataToSelections(data: Block[]) {
+        let selections: ISelection[] = [];
         for (let block of data)
-            selections.push({top: block.rowStart, bottom: block.rowStart + block.rowCount - 1, left: block.columnStart, right: block.columnStart + block.columnCount - 1 });
+            selections.push({top: block.rowStart, bottom: block.rowStart + block.rowCount - 1, left: block.columnStart, right: block.columnStart + block.columnCount - 1, rowNo: undefined, colNo: undefined });
 
         if (selections.length > 0) {
             selections[0].rowNo = selections[0].top;
@@ -731,7 +750,7 @@ class Selection extends EventEmitter implements ISelection {
         return selections;
     }
 
-    _rangesOverlap(range1, range2) {
+    _rangesOverlap(range1: ISelection, range2: ISelection) {
         let verticalOverlap = ((range1.top < range2.top && range1.bottom < range2.top) || (range1.top > range2.bottom && range1.bottom > range2.bottom)) === false;
 
         let r1 = this._getRange(range1);
@@ -740,7 +759,7 @@ class Selection extends EventEmitter implements ISelection {
         return verticalOverlap && horizontalOverlap;
     }
 
-    rangeOverlaps(range) {
+    rangeOverlaps(range: ISelection) {
         let overlap = this._rangesOverlap(this, range);
         if (overlap === false) {
             for (let i = 0; i < this.subSelections.length; i++) {
@@ -785,46 +804,50 @@ class Selection extends EventEmitter implements ISelection {
 
                 let toAdd = [];
                 if (top > 0) {
-                    let topSelection = {
+                    let topSelection: ISelection = {
                         top:   subSel.top,
                         bottom: subSel.top + top - 1,
                         left:  subSel.left,
-                        right: subSel.right };
-                    topSelection.rowNo = topSelection.top;
-                    topSelection.colNo = topSelection.left;
+                        right: subSel.right,
+                        rowNo: subSel.top,
+                        colNo: subSel.left
+                     };
                     toAdd.push(topSelection);
                 }
 
                 if (bottom > 0) {
-                    let bottomSelection = {
+                    let bottomSelection: ISelection = {
                         top:   subSel.bottom - bottom + 1,
                         bottom: subSel.bottom,
                         left:  subSel.left,
-                        right: subSel.right };
-                    bottomSelection.rowNo = bottomSelection.top;
-                    bottomSelection.colNo = bottomSelection.left;
+                        right: subSel.right,
+                        rowNo: subSel.bottom - bottom + 1,
+                        colNo: subSel.left
+                    };
                     toAdd.push(bottomSelection);
                 }
 
                 if (left > 0) {
-                    let leftSelection = {
+                    let leftSelection: ISelection = {
                         top:   subSel.top + top,
                         bottom: subSel.bottom - bottom,
                         left:  subSel.left,
-                        right: subSel.left + left - 1 };
-                    leftSelection.rowNo = leftSelection.top;
-                    leftSelection.colNo = leftSelection.left;
+                        right: subSel.left + left - 1,
+                        rowNo: subSel.top + top,
+                        colNo: subSel.left
+                    };
                     toAdd.push(leftSelection);
                 }
 
                 if (right > 0) {
-                    let rightSelection = {
+                    let rightSelection: ISelection = {
                         top:   subSel.top + top,
                         bottom: subSel.bottom - bottom,
                         left:  subSel.right - right + 1,
-                        right: subSel.right };
-                    rightSelection.rowNo = rightSelection.top;
-                    rightSelection.colNo = rightSelection.left;
+                        right: subSel.right,
+                        rowNo: subSel.top + top,
+                        colNo: subSel.right - right + 1
+                     };
                     toAdd.push(rightSelection);
                 }
 
@@ -850,7 +873,7 @@ class Selection extends EventEmitter implements ISelection {
         return true;
     }
 
-    moveCursor(direction, extend, ignoreTabStart) {
+    moveCursor(direction: 'left' | 'right' | 'up' | 'down', extend: boolean = false, ignoreTabStart: boolean = false) {
 
         let range = this.clone();
         let rowNo = range.rowNo;
@@ -1046,7 +1069,7 @@ class Selection extends EventEmitter implements ISelection {
                         scrollDown = true;
                     }
                     else {
-                        rowNo = this.model.attributes.rRowCount - 1;
+                        rowNo = this.model.attributes.rowCount - 1;
                     }
                     range.top    = rowNo;
                     range.bottom = rowNo;
@@ -1068,20 +1091,20 @@ class Selection extends EventEmitter implements ISelection {
         columns.sort((a, b) => a.index - b.index);
 
         let selections = [];
-        let selection = { };
+        let selection: ISelection = null
         for (let column of columns) {
-            if (selection.colNo !== undefined) {
+            if (selection !== null) {
                 if (column.dIndex === selection.right + 1) {
                     selection.right += 1;
                     selection.columnEnd = column.index;
                 }
                 else {
                     selections.push(selection);
-                    selection = { };
+                    selection = null;
                 }
             }
 
-            if (selection.colNo === undefined) {
+            if (selection === null) {
                 selection = {
                     rowNo: rowNo,
                     top: rowNo,
@@ -1100,8 +1123,8 @@ class Selection extends EventEmitter implements ISelection {
         this.setSelections(selection, selections, silent, ignoreTabStart);
     }
 
-    undoRedoDataToSelection(events) {
-        let selections = [];
+    undoRedoDataToSelection(events: ProcessedDatasetRR) {
+        let selections: ISelection[] = [];
         if (events.dataWrite && events.dataWrite.data.length > 0) {
             for (let i = 0; i < events.dataWrite.data.length; i++) {
                 let range = events.dataWrite.data[i];
@@ -1120,7 +1143,7 @@ class Selection extends EventEmitter implements ISelection {
         else if (events.insertData && events.insertData.ids.length > 0) {
             for (let i = 0; i < events.insertData.ids.length; i++) {
                 let column = this.model.getColumnById(events.insertData.ids[i]);
-                if (column.columnType === 'none')
+                if (column.columnType === ColumnType.NONE)
                     continue;
 
                 let merged = false;
@@ -1155,7 +1178,7 @@ class Selection extends EventEmitter implements ISelection {
         }
         else if (events.rowData.rowsDeleted.length > 0 || events.rowData.rowsInserted.length > 0) {
             let rowDataList = events.rowData.rowsDeleted.concat(events.rowData.rowsInserted);
-            let blocks = [];
+            let blocks: RowBlock[] = [];
             for (let i = 0; i < rowDataList.length; i++) {
                 let rowData = rowDataList[i];
                 this.updateColumnDataBlocks(blocks, { top: rowData.rowStart, bottom: rowData.rowStart + rowData.count - 1 });
@@ -1176,7 +1199,7 @@ class Selection extends EventEmitter implements ISelection {
         }
         if (selections.length === 0 && events.data && events.data.changes) {
             for (let change of events.data.changes) {
-                if (change.dIndex === -1 || (change.created && change.columnType === 'none') || (change.deleted && change.columnType === 'none'))
+                if (change.dIndex === -1 || (change.created && change.columnType === ColumnType.NONE) || (change.deleted && change.columnType === ColumnType.NONE))
                     continue;
 
                 if ( ! change.deleted && (change.columnTypeChanged ||
@@ -1226,7 +1249,7 @@ class Selection extends EventEmitter implements ISelection {
     }
 
     selectAll() {
-        let range = {
+        let range: ISelection = {
             rowNo: 0,
             colNo: 0,
             left: 0,
@@ -1254,15 +1277,14 @@ class Selection extends EventEmitter implements ISelection {
         this.applyValuesToSelection(selections, null);
     }
 
-    applyValuesToSelection(selections, value) {
+    applyValuesToSelection(selections: IAreaSelection[], value: string | number | ((col: number, row: number) => (string | number))) {
         if (value === undefined)
             value = null;
 
         let dataset = this.model;
-        let data = [];
-        let valueIsFunc = typeof value === 'function';
+        let data: Block[] = [];
         for (let selection of selections) {
-            let clippedSel = selection;
+            let clippedSel: IAreaSelection = selection;
             if (value === null) {
                 if (selection.top > dataset.attributes.rowCount - 1)
                     continue;
@@ -1276,18 +1298,18 @@ class Selection extends EventEmitter implements ISelection {
                 clippedSel = { top: Math.max(0, selection.top), bottom: Math.min(dataset.attributes.vRowCount - 1, selection.bottom), left: Math.max(0, selection.left), right: Math.min(dataset.attributes.vColumnCount - 1, selection.right)};
             }
 
-            let block = { rowStart: clippedSel.top, rowCount: clippedSel.bottom - clippedSel.top + 1, columnStart: clippedSel.left, columnCount: clippedSel.right - clippedSel.left + 1, clear: value === null };
+            let block: Block = { rowStart: clippedSel.top, rowCount: clippedSel.bottom - clippedSel.top + 1, columnStart: clippedSel.left, columnCount: clippedSel.right - clippedSel.left + 1, clear: value === null, values: undefined };
             if (block.clear)
                 block.values = [];
             else {
-                let values = new Array(block.columnCount);
+                let values: (number | string)[][] = new Array(block.columnCount);
                 block.values = values;
                 for (let c = 0; c < block.columnCount; c++) {
-                    if (valueIsFunc) {
-                        let cells = new Array(block.rowCount);
+                    if (typeof value === 'function') {
+                        let cells: (number | string)[] = new Array(block.rowCount);
                         for (let r = 0; r < block.rowCount; r++)
-                            cells[r] = valueIsFunc(block.columnStart + c, block.rowStart + r);
-                        values[c] = values;
+                            cells[r] = value(block.columnStart + c, block.rowStart + r);
+                        values[c] = cells;
                     }
                     else
                         values[c] = new Array(block.rowCount).fill(value);

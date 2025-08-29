@@ -1,6 +1,7 @@
 'use strict';
 
 import { EventMap } from "../common/eventmap";
+import { Block, IAreaSelection, ISelection, RowBlock } from "./selection";
 
 enum TransformAction {
     CREATE = 0,
@@ -67,13 +68,34 @@ interface ColumnCellRange {
     end: number;
 }
 
-interface ProcessedDatasetRR {
-    rowData: any;
-    cellsChanged: any;
-    dataWrite: any;
-    insertData: { ids: any, indices: any };
-    data: any;
+interface DatasetRowBlock {
+    rowStart: number;
+    count: number;
 }
+
+interface DatasetChange {
+    dIndex: number;
+    created: boolean;
+    deleted: boolean;
+    columnType: ColumnType;
+    columnTypeChanged: boolean;
+    measureTypeChanged: boolean;
+    dataTypeChanged: boolean;
+    levelNameChanges: any[];
+    formulaChanged: boolean;
+    nameChanged: boolean;
+    hiddenChanged: boolean;
+}
+
+export interface ProcessedDatasetRR {
+    rowData: { rowsDeleted: DatasetRowBlock[], rowsInserted: DatasetRowBlock[] };
+    cellsChanged: any;
+    dataWrite: { data: Block[] };
+    insertData: { ids: number[], indices: any };
+    data: { changed: string[], changes: DatasetChange[] };
+}
+
+export type ColumnEvent = { ids: number[], indices: {dIndex: number, index: number}[] };
 
 export type ColumnActiveChangedEvent = { start: number, end: number, dStart: number, dEnd: number, value: any };
 
@@ -107,7 +129,7 @@ export interface Column {
     outputAnalysisId: number;
 }
 
-interface Viewport {
+export interface Viewport {
     top: number;
     bottom: number;
     left: number;
@@ -1218,7 +1240,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
         return outputData;
     }
 
-    _clumpPropertyChanges(changes, property, value) {
+    _clumpPropertyChanges(changes, property: string, value) {
         let valueRanges = [];
         let hIndex = -1;
         for (let change of changes) {
@@ -1628,6 +1650,9 @@ class DataSetViewModel extends DataSetModel<DataSetViewModelData & DataSetModelD
             }
         }
 
+        if (viewport.left < 0)
+            viewport.left = 0;
+
         this.attributes.viewport = viewport;
     }
 
@@ -1653,7 +1678,7 @@ class DataSetViewModel extends DataSetModel<DataSetViewModelData & DataSetModelD
         return null;
     }
 
-    setViewport(viewport) {
+    setViewport(viewport: Viewport) {
 
         let nCols = viewport.right - viewport.left + 1;
         let nRows = viewport.bottom - viewport.top + 1;
@@ -1675,7 +1700,7 @@ class DataSetViewModel extends DataSetModel<DataSetViewModelData & DataSetModelD
             this.readCells(viewport);
     }
 
-    reshape(left, top, right, bottom) {
+    reshape(left: number, top: number, right: number, bottom: number) {
 
         // console.log("reshape : " + JSON.stringify({left:left,top:top,right:right,bottom:bottom}));
 
@@ -1772,7 +1797,7 @@ class DataSetViewModel extends DataSetModel<DataSetViewModelData & DataSetModelD
         this.trigger("viewportChanged");
     }
 
-    readCells(viewport) {
+    readCells(viewport: IAreaSelection) {
         this.requestCells(viewport).then(dataInfo => {
             this.setCells(dataInfo);
         }).done();
@@ -1844,7 +1869,7 @@ class DataSetViewModel extends DataSetModel<DataSetViewModelData & DataSetModelD
         return { data, filterData, rowNums };
     }
 
-    requestCells(viewport) {
+    requestCells(viewport: IAreaSelection) {
         let coms = this.attributes.coms;
         let cellsRequest = new coms.Messages.DataSetRR();
         cellsRequest.incData = true;
@@ -1868,14 +1893,14 @@ class DataSetViewModel extends DataSetModel<DataSetViewModelData & DataSetModelD
         });
     }
 
-    changeCells(data, cbHtml, selection, selectionList) {
+    changeCells(data: string | Block[], cbHtml?, selection?: IAreaSelection, selectionList?: IAreaSelection[]) {
         let coms = this.attributes.coms;
         let cellsRequest = new coms.Messages.DataSetRR();
         cellsRequest.op = coms.Messages.GetSet.SET;
         cellsRequest.incData = true;
 
         if (typeof(data) === 'string') {
-            let createBlock = (sel) => {
+            let createBlock = (sel: IAreaSelection) => {
                 let blockPB = new coms.Messages.DataSetRR.DataBlock();
                 blockPB.columnStart = sel.left;
                 blockPB.rowStart = sel.top;

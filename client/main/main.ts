@@ -607,18 +607,18 @@ $(document).ready(async() => {
 
     splitPanel.render();
 
-    let $spreadsheet = HTML.parse('<div id="spreadsheet"></div>');
-    let $variablesList = HTML.parse('<div id="variablelist"></div>');
-    $mainTable.append($spreadsheet);
-    $mainTable.append($variablesList);
-
     let selection = new Selection(dataSetModel);
     let viewController = new ViewController(dataSetModel, selection);
-    let mainTable   = new TableView({el : '#spreadsheet', model : dataSetModel, controller: viewController });
+
+    let mainTable = new TableView(dataSetModel, viewController);
+    mainTable.id = 'spreadsheet';
+    $mainTable.append(mainTable);
 
     viewController.focusView('spreadsheet');
 
-    let variablesTable = new VariablesView({ el: '#variablelist', model: dataSetModel, controller: viewController });
+    let variablesTable = new VariablesView(viewController, dataSetModel);
+    variablesTable.id = 'variablelist';
+    $mainTable.append(variablesTable);
 
     backstageModel.on('change:activated', function(event) {
         if ('activated' in event.changed) {
@@ -631,7 +631,7 @@ $(document).ready(async() => {
     });
 
     splitPanel.addEventListener('form-changed', () => {
-        mainTable.$el.trigger('resized');
+        mainTable.dispatchEvent(new CustomEvent('resized'));
     });
 
  
@@ -808,7 +808,7 @@ $(document).ready(async() => {
     let notifications = new Notifications(document.querySelector('#notifications'));
     instance.on( 'notification', note => notifications.notify(note));
     viewController.on('notification', note => notifications.notify(note));
-    mainTable.on('notification', note => notifications.notify(note));
+    mainTable.addEventListener('notification', (event: CustomEvent) => notifications.notify(event.detail));
     ribbon.addEventListener('notification', (event: CustomEvent) => notifications.notify(event.detail));
     editor.addEventListener('notification', (event: CustomEvent) => notifications.notify(event.detail));
     backstageModel.on('notification', note => notifications.notify(note));
