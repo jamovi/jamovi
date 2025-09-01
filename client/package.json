@@ -13,11 +13,10 @@
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-node-resolve": "^16.0.1",
-    "@vitejs/plugin-vue": "^6.0.0",
+    "@vitejs/plugin-vue": "^6.0.1",
     "backbone": "^1.6.1",
     "beepbeep": "^1.3.0",
     "browserify": "^17.0.1",
-    "chai": "^5.2.1",
     "clipboard-js": "^0.3.6",
     "dialogs": "https://codeload.github.com/jonathon-love/dialogs/tar.gz/refs/tags/v1",
     "element-resize-detector": "^1.2.4",
@@ -29,14 +28,14 @@
     "jshint": "^2.13.6",
     "katex": "^0.16.22",
     "keyboardjs": "2.7.0",
-    "less": "^4.3.0",
+    "less": "^4.4.1",
     "mark.js": "8.11.1",
     "mathquill": "^0.10.1-a",
     "mocha": "^11.7.1",
-    "npm": "^11.4.2",
+    "npm": "^11.5.2",
     "onchange": "^7.1.0",
     "preprocessify": "^1.0.1",
-    "protobufjs": "5.0.1",
+    "protobufjs": "5.0.3",
     "q": "^1.5.1",
     "quill": "^1.3.7",
     "quill-delta-to-html": "^0.12.1",
@@ -44,7 +43,7 @@
     "tsee": "^1.3.4",
     "uglifyify": "^5.0.2",
     "underscore": "^1.13.7",
-    "vite": "^7.0.4",
-    "vue": "^3.5.17"
+    "vite": "^7.1.3",
+    "vue": "^3.5.20"
   }
 }
