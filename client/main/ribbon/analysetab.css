@@ -130,6 +130,6 @@
     background-image: url("../../assets/analysis-more.svg");
 }
 
-.jmv-ribbon-button[data-name="PGM"] .jmv-ribbon-button-icon {
+.jmv-ribbon-button[data-name="growth"] .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-growth.svg");
 }
