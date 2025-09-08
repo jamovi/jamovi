@@ -3,7 +3,7 @@
 
 // determine the number of decimal places that the column needs to be formatted to
 
-export const determFormat = function(values, type, format, settings, maxNS, minNS) {
+export const determFormat = function(values, type, format, settings, maxNS?, minNS?) {
 
     if (format === undefined)
         format = '';

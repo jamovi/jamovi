@@ -1,16 +1,110 @@
 'use strict';
 
-import { Model as TableModel, View as TableView } from './table';
-import { Model as GroupModel, View as GroupView } from './group';
-import { Model as ImageModel, View as ImageView } from './image';
-import { Model as ArrayModel, View as ArrayView } from './array';
+import { ITableElementData, Model as TableModel, View as TableView } from './table';
+import { GroupElementData, Model as GroupModel, View as GroupView, IGroupElementData } from './group';
+import { IImageElementData, Model as ImageModel, View as ImageView } from './image';
+import { Model as ArrayModel, View as ArrayView, IArrayElementData } from './array';
 import { Model as SyntaxModel, View as SyntaxView } from './syntax';
-import { Model as HtmlModel, View as HtmlView } from './html';
+import { HTMLElementData, Model as HtmlModel, View as HtmlView } from './html';
 
-import { NoticeModel, NoticeView } from './notice';
+import { INoticeElementData, Model as NoticeModel, NoticeView } from './notice';
+import { ElementData, ElementModel, Model, View } from './element';
+
+export enum AnalysisStatus {
+    ANALYSIS_NONE = 0,
+    ANALYSIS_INITED = 1,
+    ANALYSIS_RUNNING = 2,
+    ANALYSIS_COMPLETE = 3,
+    ANALYSIS_ERROR = 4,
+    ANALYSIS_RENDERING = 5
+}
+
+export interface IElement {
+    type: 'table' | 'group' | 'image' | 'array' | 'preformatted' | 'html' | 'notice';
+    name: string;
+    title: string;
+    status: AnalysisStatus;
+    error: { message: string, cause: string };
+    refs: string[];
+    visible: 0 | 1 | 2 | 3;
+    stale: boolean;
+}
 
 
-export const createItem = function(element, options, $el, level, parent, mode, devMode, fmt, refTable ) {
+export interface ITableElement extends IElement {
+    type: 'table';
+    table: ITableElementData;
+}
+
+const isTable = function(obj: IElement): obj is ITableElement {
+    return obj && obj.type === 'table';
+}
+
+
+export interface IImageElement extends IElement {
+    type: 'image';
+    image: IImageElementData;
+}
+
+const isImage = function(obj: IElement): obj is IImageElement {
+    return obj && obj.type === 'image';
+}
+
+
+export interface IArrayElement extends IElement {
+    type: 'array';
+    array: IArrayElementData;
+}
+
+export const isArray = function(obj: IElement): obj is IArrayElement {
+    return obj && obj.type === 'array';
+}
+
+
+export interface IGroupElement extends IElement {
+    type: 'group';
+    group: IGroupElementData;
+}
+
+export const isGroup = function(obj: IElement): obj is IGroupElement {
+    return obj && obj.type === 'group';
+}
+
+
+export interface IPreformattedElement extends IElement {
+    type: 'preformatted';
+    preformatted: string;
+    stale: boolean;
+}
+
+export const isPreformatted = function(obj: IElement): obj is IPreformattedElement {
+    return obj && obj.type === 'preformatted';
+}
+
+
+export interface IHtmlElement extends IElement {
+    type: 'html';
+    html: HTMLElementData;
+    stale: boolean;
+}
+
+export const isHtml = function(obj: IElement): obj is IHtmlElement {
+    return obj && obj.type === 'html';
+}
+
+
+export interface INoticeElement extends IElement {
+    type: 'notice';
+    notice: INoticeElementData;
+    stale: boolean;
+}
+
+export const isNotice = function(obj: IElement): obj is INoticeElement {
+    return obj && obj.type === 'notice';
+}
+
+
+export const createItem = function(element: IElement, options, level: number, parent: View, mode: string = 'rich', devMode, fmt, refTable ) {
 
     if (level === undefined)
         level = 1;
@@ -18,28 +112,36 @@ export const createItem = function(element, options, $el, level, parent, mode, d
         mode = 'rich';
 
     let model;
-    let view;
+    let view: View = null;
 
-    if (element.type === 'table') {
-        model = new TableModel({
-            name: element.name,
-            title: element.title,
-            element: element.table,
-            status: element.status,
-            error: element.error,
-            refs: element.refs,
-            options: options,
-            refTable: refTable });
-        view = new TableView({
-            el: $el,
-            model: model,
-            update: updateItem,
-            level: level,
-            parent: parent,
-            mode: mode,
-            fmt: fmt });
+    let viewParams: ElementData = {
+        update: updateItem,
+        level: level,
+        parent: parent,
+        mode: mode,
+        fmt: fmt,
+        devMode: devMode,
+        create: createItem
+    };
+
+    let modelParams: ElementModel = {
+        name : element.name,
+        title : element.title,
+        status: element.status,
+        error: element.error,
+        stale: element.stale,
+        refs: element.refs,
+        options: options,
+        refTable: refTable,
+        element: undefined
+    };
+
+    if (isTable(element)) {
+        modelParams.element = element.table;
+        model = new TableModel(modelParams);
+        view = new TableView(model, viewParams);
     }
-    else if (element.type === 'group') {
+    else if (isGroup(element)) {
 
         let visible;
 
@@ -57,51 +159,22 @@ export const createItem = function(element, options, $el, level, parent, mode, d
         }
 
         if (visible) {
-            model = new GroupModel({
-                name: element.name,
-                title: element.title,
-                element: element.group,
-                status: element.status,
-                error: element.error,
-                refs: element.refs,
-                options: options,
-                refTable: refTable });
-            view = new GroupView({
-                el: $el,
-                model: model,
-                create: createItem,
-                update: updateItem,
-                level: level,
-                isEmptyAnalysis: parent.isEmptyAnalysis === undefined ? false : parent.isEmptyAnalysis,
-                hasTitle: parent.hasTitle === undefined ? true : parent.hasTitle,
-                parent: parent,
-                mode: mode,
-                devMode: devMode,
-                fmt: fmt });
+            modelParams.element = element.group;
+            model = new GroupModel(modelParams);
+            
+            let params: GroupElementData = { ...viewParams, isEmptyAnalysis: parent.isEmptyAnalysis === undefined ? false : parent.isEmptyAnalysis, hasTitle: parent.hasTitle === undefined ? true : parent.hasTitle };
+            view = new GroupView(model, params);
         }
         else {
             view = null;
         }
     }
-    else if (element.type === 'image') {
-        model = new ImageModel({
-            name: element.name,
-            title: element.title,
-            element: element.image,
-            status: element.status,
-            error: element.error,
-            refs: element.refs,
-            options: options,
-            refTable: refTable });
-        view = new ImageView({
-            el: $el,
-            model: model,
-            update: updateItem,
-            level: level,
-            parent: parent,
-            mode: mode });
+    else if (isImage(element)) {
+        modelParams.element = element.image;
+        model = new ImageModel(modelParams);
+        view = new ImageView(model, viewParams);
     }
-    else if (element.type === 'array') {
+    else if (isArray(element)) {
 
         let visible = false;
 
@@ -114,102 +187,44 @@ export const createItem = function(element, options, $el, level, parent, mode, d
         }
 
         if (visible) {
-            model = new ArrayModel({
-                name: element.name,
-                title: element.title,
-                element: element.array,
-                status: element.status,
-                error: element.error,
-                refs: element.refs,
-                options: options,
-                refTable: refTable });
-            view = new ArrayView({
-                el: $el,
-                model: model,
-                create: createItem,
-                update: updateItem,
-                level: level,
-                parent: parent,
-                mode: mode,
-                fmt: fmt });
+            modelParams.element = element.array;
+            model = new ArrayModel(modelParams);
+            view = new ArrayView(model, viewParams);
         }
         else {
             view = null;
         }
     }
-    else if (element.type === 'preformatted') {
-        model = new SyntaxModel({
-            name : element.name,
-            title : element.title,
-            element : element.preformatted,
-            status: element.status,
-            error: element.error,
-            stale: element.stale,
-            refs: element.refs,
-            options: options,
-            refTable: refTable });
-        view = new SyntaxView({
-            el: $el,
-            model: model,
-            update: updateItem,
-            level: level,
-            parent: parent,
-            mode: mode });
+    else if (isPreformatted(element)) {
+        modelParams.element = element.preformatted;
+        model = new SyntaxModel(modelParams);
+        view = new SyntaxView(model, viewParams);
     }
-    else if (element.type === 'html') {
-        model = new HtmlModel({
-            name : element.name,
-            title : element.title,
-            element : element.html,
-            status: element.status,
-            error: element.error,
-            stale: element.stale,
-            refs: element.refs,
-            options: options,
-            refTable: refTable });
-        view = new HtmlView({
-            el: $el,
-            model: model,
-            update: updateItem,
-            level: level,
-            parent: parent,
-            mode: mode });
+    else if (isHtml(element)) {
+        modelParams.element = element.html;
+        model = new HtmlModel(modelParams);
+        view = new HtmlView(model, viewParams);
     }
-    else if (element.type === 'notice') {
-        model = new NoticeModel({
-            name : element.name,
-            title : element.title,
-            element : element.notice,
-            status: element.status,
-            error: element.error,
-            stale: element.stale,
-            refs: element.refs,
-            options: options,
-            refTable: refTable });
-        view = new NoticeView({
-            el: $el,
-            model: model,
-            update: updateItem,
-            level: level,
-            parent: parent,
-            mode: mode });
+    else if (isNotice(element)) {
+        modelParams.element = element.notice;
+        model = new NoticeModel(modelParams);
+        view = new NoticeView(model, viewParams);
     }
 
     return view;
 };
-
-const updateItem = function(item, element, options, level, mode, devMode, fmt, refTable ) {
+type InferType<T> = T extends Model<infer A> ? A : never;
+const updateItem = function<V extends View<M, T>, M extends Model<T>, T extends ElementModel = InferType<M>> (item: V, element: IElement, options, level: number, mode: string, devMode, fmt, refTable ) {
 
     if (level === undefined)
         level = 1;
     if (mode === undefined)
         mode = 'rich';
 
-    let model = item.model;
     let view = item;
 
-    if (element.type === 'table') {
-
+    if (isTable(element) && view instanceof TableView) {
+        let model = view.model;
         model.attributes.name = element.name;
         model.attributes.title = element.title;
         model.attributes.element = element.table;
@@ -226,7 +241,7 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
         view.mode = mode;
         view.fmt = fmt;
     }
-    else if (element.type === 'group') {
+    else if (isGroup(element)) {
 
         let visible;
 
@@ -243,8 +258,8 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
             }
         }
 
-        if (visible) {
-
+        if (visible && view instanceof GroupView) {
+            let model = view.model;
             model.attributes.name = element.name;
             model.attributes.title = element.title;
             model.attributes.element = element.group;
@@ -262,8 +277,8 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
         else
             return false;
     }
-    else if (element.type === 'image') {
-
+    else if (isImage(element) && view instanceof ImageView) {
+        let model = view.model;
         model.attributes.name = element.name;
         model.attributes.title = element.title;
         model.attributes.element = element.image;
@@ -276,7 +291,7 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
         view.level = level;
         view.mode = mode;
     }
-    else if (element.type === 'array') {
+    else if (isArray(element)) {
 
         let visible = false;
 
@@ -288,8 +303,8 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
                 visible = true;
         }
 
-        if (visible) {
-
+        if (visible && view instanceof ArrayView) {
+            let model = view.model;
             model.attributes.name = element.name;
             model.attributes.title = element.title;
             model.attributes.element = element.array;
@@ -307,8 +322,8 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
             return false;
         }
     }
-    else if (element.type === 'preformatted') {
-
+    else if (isPreformatted(element) && view instanceof SyntaxView) {
+        let model = view.model;
         model.attributes.name = element.name;
         model.attributes.title = element.title;
         model.attributes.element = element.preformatted;
@@ -322,8 +337,8 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
         view.level = level;
         view.mode = mode;
     }
-    else if (element.type === 'html') {
-
+    else if (isHtml(element) && view instanceof HtmlView) {
+        let model = view.model;
         model.attributes.name = element.name;
         model.attributes.title = element.title;
         model.attributes.element = element.html;
@@ -337,8 +352,8 @@ const updateItem = function(item, element, options, level, mode, devMode, fmt, r
         view.level = level;
         view.mode = mode;
     }
-    else if (element.type === 'notice') {
-
+    else if (isNotice(element) && view instanceof NoticeView) {
+        let model = view.model;
         model.attributes.name = element.name;
         model.attributes.title = element.title;
         model.attributes.element = element.notice;

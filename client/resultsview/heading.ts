@@ -1,42 +1,57 @@
 
 'use strict';
 
-import $ from 'jquery';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { AnnotationAction, IAnnotation } from './annotations';
 
-export class Heading {
+export class Heading extends HTMLElement implements IAnnotation {
+    $heading: HTMLHeadingElement;
+
+    attached: boolean;
+    suffix: string;
+    path: string;
+    address: string[];
+    originalHeading: string;
+    isFocused: boolean;
+
+    finaliseBlur: NodeJS.Timeout;
+    level: number;
+
     constructor(address, text) {
+        super();
 
         this._keyDownEvent.bind(this);
         this.initialise(address, text);
     }
 
-    initialise(address, text) {
+    initialise(address: string[], text: string) {
         this.suffix = 'heading';
         this.path = `${ address.join('/') }:heading`;
         this.address = address;
         this.isFocused = false;
-        this.lastSelection = null;
         this.originalHeading = text;
 
-        this.$el = $(`<div class="jmv-editable-header" tabindex="0" aria-label="${_(`Analysis Heading - {title}`, {title: text})}" role="textbox" aria-roledescription="Press enter to edit">
-                        <h1 contenteditable spellcheck="false" tabindex="-1">${ text }</h1>
-                      </div>`
-                    );
+        this.classList.add('jmv-editable-header');
+        this.tabIndex = 0;
+        this.ariaLabel = _(`Analysis Heading - {title}`, {title: text});
+        this.role = 'textbox';
+        this.ariaDescription = _('Press enter to edit');
 
-        this._host = this.$el[0];
-        this.$heading = this.$el.find('h1');
+        this.$heading = HTML.parse(`<h1 contenteditable spellcheck="false" tabindex="-1">${ text }</h1>`);
+        this.append(this.$heading);
 
-        this._host.addEventListener('keydown', (event) => {
+
+        this.addEventListener('keydown', (event) => {
             if (event.code === 'Enter') {
-                this.$heading[0].focus();
+                this.$heading.focus();
                 event.preventDefault();
             }
         });
 
-        this._focusEvent = this._focused.bind(this);
-        this._blurEvent = this._blurred.bind(this);
-        this._inputEvent = this._textChanged.bind(this);
-        this._pointerDownEvent = this._pointerDown.bind(this);
+        this._focused = this._focused.bind(this);
+        this._blurred = this._blurred.bind(this);
+        this._textChanged = this._textChanged.bind(this);
+        this._pointerDown = this._pointerDown.bind(this);
 
         this.attach();
     }
@@ -58,7 +73,7 @@ export class Heading {
         }
 
         if (event.keyCode === 27 && event.shiftKey === false) {    //esc
-            $(this).blur();
+            this.blur();
             event.preventDefault();
             event.stopPropagation();
         }
@@ -68,11 +83,11 @@ export class Heading {
         if (this.attached)
             return;
 
-        this.$heading[0].addEventListener('focus', this._focusEvent);
-        this.$heading[0].addEventListener('pointerdown', this._pointerDownEvent);
-        this.$heading[0].addEventListener('blur', this._blurEvent);
-        this.$heading[0].addEventListener('input', this._inputEvent);
-        this.$heading[0].addEventListener('keydown', this._keyDownEvent);
+        this.$heading.addEventListener('focus', this._focused);
+        this.$heading.addEventListener('pointerdown', this._pointerDown);
+        this.$heading.addEventListener('blur', this._blurred);
+        this.$heading.addEventListener('input', this._textChanged);
+        this.$heading.addEventListener('keydown', this._keyDownEvent);
 
         this.attached = true;
     }
@@ -81,35 +96,31 @@ export class Heading {
         if ( ! this.attached)
             return;
 
-        this.$heading[0].removeEventListener('focus', this._focusEvent);
-        this.$heading[0].removeEventListener('pointerdown', this._pointerDownEvent);
-        this.$heading[0].removeEventListener('blur', this._blurEvent);
-        this.$heading[0].removeEventListener('input', this._inputEvent);
-        this.$heading[0].removeEventListener('keydown', this._keyDownEvent);
+        this.$heading.removeEventListener('focus', this._focused);
+        this.$heading.removeEventListener('pointerdown', this._pointerDown);
+        this.$heading.removeEventListener('blur', this._blurred);
+        this.$heading.removeEventListener('input', this._textChanged);
+        this.$heading.removeEventListener('keydown', this._keyDownEvent);
 
         if (this.isFocused) {
             this.isFocused = false;
-            this._host.classList.remove('focused');
-            let text = this.$heading.text();
+            this.classList.remove('focused');
+            let text = this.$heading.innerText;
             let edited = text === this.originalHeading;
             this._headingChanged();
             this.finaliseBlur = null;
             this._fireEvent('annotation-lost-focus');
         }
 
-        this.$el.detach();
+        this.remove();
         this.setup(0);
         this.attached = false;
     }
 
-    setup(level) {
-        this.$el.attr('level', level);
+    setup(level: number) {
+        this.setAttribute('level', level.toString());
 
         this.level = level;
-    }
-
-    getContents() {
-        return this.editor.getContents();
     }
 
     setContents(contents) {
@@ -120,11 +131,11 @@ export class Heading {
         else
             newText = contents;
 
-        let text = this.$heading.text();
+        let text = this.$heading.innerText;
         if (newText !== text) {
-            this.$heading.text(newText);
+            this.$heading.innerText = newText;
 
-            text = this.$heading.text();
+            text = this.$heading.innerText;
             let edited = text === this.originalHeading;
 
             this._headingChanged();
@@ -140,20 +151,20 @@ export class Heading {
     }
 
     isEdited() {
-        let text = this.$heading.text();
+        let text = this.$heading.innerText;
         return text !== this.originalHeading;
     }
 
     _textChanged(event) {
         if (this.isEdited())
-            this._host.classList.add('edited');
+            this.classList.add('edited');
         else
-            this._host.classList.remove('edited');
+            this.classList.remove('edited');
         this._fireEvent('annotation-changed');
     }
 
     _getSelection() {
-        var el = this.$heading[0];
+        var el = this.$heading;
         var range = document.createRange();
         var sel = window.getSelection();
         range.setStart(el.childNodes[2], 5);
@@ -164,11 +175,11 @@ export class Heading {
 
     _headingChanged() {
 
-        this.$el.attr('aria-label', _('Analysis Heading - {title}', {title: this.$heading.text()}));
+        this.setAttribute('aria-label', _('Analysis Heading - {title}', { title: this.$heading.innerText }));
         if (this.isEdited())
-            this._host.classList.add('edited');
+            this.classList.add('edited');
         else
-            this._host.classList.remove('edited');
+            this.classList.remove('edited');
     }
 
     _blurred(e) {
@@ -178,16 +189,16 @@ export class Heading {
         this.finaliseBlur = setTimeout(() => {
             this.isFocused = false;
 
-            let text = this.$heading.text();
+            let text = this.$heading.innerText;
             if (text.trim() === '')
-                this.$heading.text(this.originalHeading);
+                this.$heading.innerText = this.originalHeading;
 
             this._headingChanged();
 
             this.storeContents();
 
             this.finaliseBlur = null;
-            this._host.classList.remove('focused');
+            this.classList.remove('focused');
             this._fireEvent('annotation-lost-focus');
         }, 300);
     }
@@ -195,7 +206,7 @@ export class Heading {
     storeContents() {
         let contents = null;
         if (this.isEdited())
-            contents = this.$heading.text();
+            contents = this.$heading.innerText;
 
         window.setParam(this.address, { 'heading': contents });
 
@@ -213,27 +224,27 @@ export class Heading {
         let focusedList = document.getElementsByClassName('had-focus');
         for (let focused of focusedList)
             focused.classList.remove('had-focus');
-        this._host.classList.add('had-focus');
-        this._host.classList.add('focused');
+        this.classList.add('had-focus');
+        this.classList.add('focused');
 
         this._fireEvent('annotation-editing');
     }
 
-    focus(text) {
+    setfocus(text?: string) {
 
         this.$heading.focus();
 
-        if (text !== undefined && text !== '' && this.isEmpty()) {
-            this.$heading.text(text);
+        if (text !== undefined && text !== '') {
+            this.$heading.innerText = text;
             if (text !== this.originalHeading) {
-                this._host.classList.add('edited');
+                this.classList.add('edited');
             }
         }
     }
 
     refocus() {
         if (this.hasFocus() === false)
-            this.focus();
+            this.setfocus();
     }
 
     blur() {
@@ -241,15 +252,15 @@ export class Heading {
     }
 
     hasFocus() {
-        return document.activeElement === this.$heading[0] || (this.isFocused === true && this.finaliseBlur === null);
+        return document.activeElement === this.$heading || (this.isFocused === true && this.finaliseBlur === null);
     }
 
-    _fireEvent(name, data) {
+    _fireEvent(name: string, data?: any) {
         let event = new CustomEvent(name, {
           bubbles: true,
           detail: { headingData: data }
         });
-        this._host.dispatchEvent(event);
+        this.dispatchEvent(event);
     }
 
     _fireFormatEvent() {
@@ -257,7 +268,7 @@ export class Heading {
           bubbles: true,
           detail: { annotationId: this.id, annotationType: 'heading', isEditable: false, annotationData: null }
         });
-        this._host.dispatchEvent(event);
+        this.dispatchEvent(event);
     }
 
     cancelBlur() {
@@ -268,10 +279,10 @@ export class Heading {
     }
 
     getHTML() {
-        return `<h1>${ this.$el.text() }</h1>`;
+        return `<h1>${ this.innerText }</h1>`;
     }
 
-    processToolbarAction(action) {
+    processToolbarAction(action: AnnotationAction) {
         this.refocus();
         this.cancelBlur();
 
@@ -294,5 +305,7 @@ export class Heading {
         }
     }
 }
+
+customElements.define('jmv-results-heading', Heading);
 
 export default Heading;

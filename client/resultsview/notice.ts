@@ -1,80 +1,99 @@
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
-
-import Elem from './element';
+import Elem, { ElementData, ElementModel } from './element';
 
 import i18n from '../common/i18n';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { AnalysisStatus } from './create';
 
+export enum NoticeType {
+    WARNING1 = 1,
+    WARNING2 = 2,
+    INFO = 3,
+    ERROR = 4
+}
 
-export const NoticeModel = Elem.Model.extend({
-    defaults : {
-        name: 'name',
-        title: '(no title)',
-        element: { },
-        error: null,
-        status: 'complete',
-        stale: false,
-        options: { },
+export interface INoticeElementData {
+    type: NoticeType,
+    content: string
+}
+
+export class Model extends Elem.Model<ElementModel<INoticeElementData>> {
+    constructor(data?: ElementModel<INoticeElementData>) {
+        super(data || 
+            {
+                name: 'name',
+                title: '(no title)',
+                element: { type: NoticeType.INFO, content: '' },
+                error: null,
+                status: AnalysisStatus.ANALYSIS_COMPLETE,
+                stale: false,
+                options: { },
+            }
+        );
     }
-});
+}
 
 
-export const NoticeView = Elem.View.extend({
-    initialize: function(data) {
+export class NoticeView extends Elem.View<Model> {
+    constructor(model: Model, data: ElementData) {
+        super(model, data)
 
-        Elem.View.prototype.initialize.call(this, data);
+        this._handleLinkClick = this._handleLinkClick.bind(this);
 
-        this.$el.addClass('jmv-results-notice');
+        this.classList.add('jmv-results-notice');
 
-        let $html = $('<div class="notice-box"><div class="icon"></div><div class="content"></div></div>');
+        let $html = HTML.parse('<div class="notice-box"><div class="icon"></div><div class="content"></div></div>');
         this.addContent($html);
 
-        if (this.model === null)
-            this.model = new NoticeModel();
-
         this.render();
-    },
-    type: function() {
+    }
+
+    type() {
         return 'Notice';
-    },
-    label: function() {
+    }
+
+    label() {
         return _('Notice');
-    },
-    render: function() {
+    }
+
+    render() {
 
         let doc = this.model.attributes.element;
 
-        let $icon = this.$el.find('.icon');
-        $icon.removeClass('info error warning');
+        let $icon = this.querySelector('.icon');
+        $icon.classList.remove('info', 'error', 'warning-1', 'warning-2');
         switch (doc.type) {
             case 1:
-                $icon.addClass('warning-1');
+                $icon.classList.add('warning-1');
                 break;
             case 2:
-                $icon.addClass('warning-2');
+                $icon.classList.add('warning-2');
                 break;
             case 3:
-                $icon.addClass('info');
+                $icon.classList.add('info');
                 break;
             case 4:
-                $icon.addClass('error');
+                $icon.classList.add('error');
                 break;
         }
 
-        let $content = this.$el.find('.content');
-        this.$el.find('a[href]').off('click');
+        let $content = this.querySelector('.content');
+        this.querySelectorAll('a[href]').forEach(el => el.removeEventListener('click', this._handleLinkClick));
 
         const content = i18n.__(doc.content, { prefix: '<strong>', postfix: '</strong>' });
-        $content.html(content);
+        $content.innerHTML = content;
 
-        this.$el.find('a[href]').on('click', (event) => this._handleLinkClick(event));
-    },
-    _handleLinkClick(event) {
-        let href = $(event.target).attr('href');
-        window.openUrl(href);
-    },
-});
+        this.querySelectorAll('a[href]').forEach(el => el.addEventListener('click', this._handleLinkClick));
+    }
+
+    _handleLinkClick(event: Event) {
+        if (event.target instanceof HTMLElement) {
+            let href = event.target.getAttribute('href');
+            window.openUrl(href);
+        }
+    }
+}
+
+customElements.define('jmv-results-notice', NoticeView);
 

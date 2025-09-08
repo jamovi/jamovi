@@ -1,7 +1,5 @@
 'use strict';
 
-import $ from 'jquery';  //only here because of the .ready()
-
 import host from './host';
 
 import * as auth from './auth/auth';
@@ -50,6 +48,12 @@ window._ = I18n._;
 window.n_ = I18n._n;
 window.A11y = Keyboard;
 
+function ready(fn: () => void) {
+    if (document.readyState !== 'loading')
+        fn();
+    else
+        document.addEventListener('DOMContentLoaded', fn);
+}
 
 (async function() {
 
@@ -219,7 +223,7 @@ window.addEventListener('popstate', function () {
 });
 
 
-$(document).ready(async() => {
+ready(async() => {
     if (navigator.platform === 'Win32')
         document.body.classList.add('windows');
     else if (navigator.platform == 'MacIntel')

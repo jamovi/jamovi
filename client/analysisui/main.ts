@@ -26,6 +26,13 @@ import I18n from "../common/i18n";
 
 window.s_ = I18n._;
 
+function ready(fn: () => void) {
+    if (document.readyState !== 'loading')
+        fn();
+    else
+        document.addEventListener('DOMContentLoaded', fn);
+}
+
 const frameCommsApi = {
     setOptionsDefinition: loadAnalysis,
 
@@ -224,11 +231,11 @@ class Analysis {
     }
 };
 
-let analysis = null;
+let analysis: Analysis = null;
 
 
 
-document.addEventListener('DOMContentLoaded', function() {
+ready(() => {
 
     if (navigator.platform === 'Win32')
         document.body.classList.add('windows');
@@ -333,9 +340,10 @@ function setTitle(title) {
     if (title === null || title.trim() === '')
         title = original;
 
-    if (title !== original)
-        title = `${ title }<div class="sub-title">${ original }</div>`;
+
     $title.append(title);
+    if (title !== original)
+        $title.append(HTML.parse(`<div class="sub-title">${ original }</div>`));
 }
 
 function updateOptions(values) {

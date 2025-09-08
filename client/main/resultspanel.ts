@@ -1241,7 +1241,7 @@ class ResultsPanel extends EventDistributor {
                 continue;
 
             let attr = resources.$container.getAttribute('data-selected');
-            if (attr !== undefined && attr !== 'false') {
+            if (attr !== undefined && attr !== null && attr !== 'false') {
                 resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
                 break;
             }

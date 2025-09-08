@@ -1,88 +1,113 @@
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
 
-import Annotations from './annotations';
+import Annotations, { IAnnotation } from './annotations';
 
-import Elem from './element';
+import Elem, { ElementModel, View as Element, ElementData, CollectionView } from './element';
 import b64 from '../common/utils/b64';
 import _focusLoop from '../common/focusloop';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { AnalysisStatus, IElement } from './create';
+import { Item } from './itemtracker';
+import Annotation from './annotation';
 
-export const Model = Elem.Model.extend({
-    defaults : {
-        name:  'name',
-        title: '(no title)',
-        element : {
-            elements : [ ],
-            layout : 0, // flat
-        },
-        error: null,
-        status: 'complete',
-        options: { },
-    },
-    initialize: function() {
+
+export interface IArrayElementData {
+    elements : IElement[ ],
+    layout : 0 | 1, // flat
+    hideHeadingOnlyChild?: boolean,
+    header?: IElement;
+    hasHeader?: boolean
+}
+
+export class Model extends Elem.Model<ElementModel<IArrayElementData>> {
+    constructor(data?: ElementModel<IArrayElementData>) {
+
+    super(data || {
+            name:  'name',
+            title: '(no title)',
+            element : {
+                elements : [ ],
+                layout : 0, // flat
+            },
+            error: null,
+            status: AnalysisStatus.ANALYSIS_COMPLETE,
+            options: { },
+            stale: false
+        });
     }
-});
+}
 
-export const View = Elem.View.extend({
-    initialize: function(data) {
+export class View extends CollectionView<Model> {
 
-        Elem.View.prototype.initialize.call(this, data);
+    $container: HTMLElement;
+    $select: HTMLSelectElement;
+    hasSelect: boolean;
+    _children: Element[];
+    $title: HTMLHeadingElement;
+    
+    create: (element: IElement, options, level: number, parent: View, mode: string, devMode, fmt, refTable ) => Element;
+
+    hoTag: string;
+    hcTag: string;
+
+    constructor(model: Model, data: ElementData) {
+        super(model, data);
 
         this.create = data.create;
         this.level = data.level;
-        this.children = [ ];
-        this.$$children = [ ];
-        this.mode = data.mode;
-        this.fmt = data.fmt;
+        this._children = [ ];
+        
 
         this.hoTag = '<h'  + (this.level+1) + ' class="jmv-results-array-heading">';
         this.hcTag = '</h' + (this.level+1) + '>';
 
-        this.$el.addClass('jmv-results-array');
-        this.$el.attr('role', 'group');
+        this.classList.add('jmv-results-array');
+        this.setAttribute('role', 'group');
 
         if (this.model === null)
-            this.model = new ArrayModel();
+            this.model = new Model();
 
         this.updateSelect();
 
-        this.$container = $('<div class="jmv-results-array-container"></div>');
+        this.$container = HTML.parse('<div class="jmv-results-array-container"></div>');
         this.addContent(this.$container);
 
         this.render();
-    },
+    }
+
     _selectEvent(event) {
-        let select = this.$select[0];
-        let item = select[select.selectedIndex];
+        let select = this.$select;
+        let item = select[select.selectedIndex] as HTMLOptionElement;
         let name = atob(item.value);
 
         window.setParam(this.address(), { 'selected': name });
 
-        for (let $child of this.$$children) {
-            if ($child[0].dataset.name === item.value)
-                $child[0].dataset.active = true;
+        for (let $child of this._children) {
+            if ($child.dataset.name === item.value)
+                $child.dataset.active = 'true';
             else
-                delete $child[0].dataset.active;
+                delete $child.dataset.active;
         }
-    },
-    type: function() {
+    }
+
+    type() {
         return 'Group';
-    },
-    label: function() {
+    }
+
+    label() {
         return _('Group');
-    },
-    get: function(address) {
+    }
+
+    get(address: string[]) {
         if (address.length === 0)
             return this;
 
         let name = address[0];
 
-        for (let child of this.children) {
+        for (let child of this._children) {
             if (child.model.attributes.name === name) {
-                if (address.length > 1)
+                if (address.length > 1 && child instanceof CollectionView)
                     return child.get(address.slice(1));
                 else
                     return child;
@@ -90,56 +115,59 @@ export const View = Elem.View.extend({
         }
 
         return null;
-    },
-    hasAnnotations: function() {
+    }
+
+    hasAnnotations() {
         return this.model.attributes.title !== '' && ( ! this.model.attributes.element.hideHeadingOnlyChild || this.model.attributes.element.elements.length > 1);
-    },
-    updateSelect: function() {
+    }
+
+    updateSelect() {
         if (this.model.attributes.element.layout === 1) // list select
-            this.$el.addClass('jmv-results-array-listselect');
+            this.classList.add('jmv-results-array-listselect');
         else
-            this.$el.removeClass('jmv-results-array-listselect');
+            this.classList.remove('jmv-results-array-listselect');
 
         if (this.model.attributes.element.hideHeadingOnlyChild &&
             this.model.attributes.element.elements.length < 2)
-                this.$el.addClass('jmv-results-array-hideheading');
+                this.classList.add('jmv-results-array-hideheading');
         else
-            this.$el.removeClass('jmv-results-array-hideheading');
+            this.classList.remove('jmv-results-array-hideheading');
 
         let lastHasSelect = this.hasSelect;
         this.hasSelect = false;
 
         if (this.$select)
-            this.$select.detach();
+            this.$select.remove();
 
         if ( ! this.$title) {
-            this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).prependTo(this.$el);
-            this.labelId = _focusLoop.getNextAriaElementId('label');
-            this.$title.attr('id', this.labelId);
-            this.$el.attr('aria-labelledby', this.labelId);
+            this.$title = HTML.parse(this.hoTag + this.model.attributes.title + this.hcTag);
+            this.prepend(this.$title);
+            const labelId = _focusLoop.getNextAriaElementId('label');
+            this.$title.setAttribute('id', labelId);
+            this.setAttribute('aria-labelledby', labelId);
         }
         else
-            this.$title.text(this.model.attributes.title);
+            this.$title.textContent = this.model.attributes.title;
         if (this.model.attributes.element.layout === 1) {
             this.hasSelect = true;
             if ( ! this.$select) {
-                this.$select = $('<select></select>');
-                this.$select.on('change', (event) => {
+                this.$select = document.createElement("select");
+                this.$select.addEventListener('change', (event) => {
                     this._selectEvent(event);
                 });
             }
         }
 
         if (this.hasSelect)
-            this.$select.appendTo(this.$title);
+            this.$title.append(this.$select);
 
-    },
+    }
 
-    render: function() {
+    render() {
 
-        this.children = [ ];
+        this._children = [ ];
 
-        Elem.View.prototype.render.call(this);
+        super.render();
 
         this.updateSelect();
 
@@ -149,7 +177,7 @@ export const View = Elem.View.extend({
 
         if (this.$title) {
             if ( ! this.model.attributes.title)
-                this.$title.empty();
+                this.$title.innerHTML = '';
         }
 
         let selected;
@@ -177,7 +205,7 @@ export const View = Elem.View.extend({
                 level = this.level-2;
         }
 
-        let current = null;
+        let current: Item = null;
         if (this.hasAnnotations() && this.model.attributes.element.layout !== 1)
             current = this._includeAnnotation(current, this.address().join('/'), this, true, _('{title} Initial Annotation', {title:this.model.attributes.title}));
 
@@ -204,8 +232,7 @@ export const View = Elem.View.extend({
 
                 if (current.updated() || current.update(updateData)) {
                     let child = current.item;
-                    this.children.push(child);
-                    this.$$children.push(current.$el);
+                    this._children.push(child);
                     promises.push(child.ready);
                 }
             }
@@ -214,7 +241,7 @@ export const View = Elem.View.extend({
 
 
         if (this.hasSelect)
-            this.$select.empty();
+            this.$select.innerHTML = '';
         for (let element of elements) {
             if (element.visible === 1 || element.visible === 3)
                 continue;
@@ -243,8 +270,7 @@ export const View = Elem.View.extend({
                 continue;
 
             let child = current.item;
-            this.children.push(child);
-            this.$$children.push(current.$el);
+            this._children.push(child);
             promises.push(child.ready);
 
             let name = element.name;
@@ -253,13 +279,13 @@ export const View = Elem.View.extend({
             let selectedAttr = '';
             if (selected === name) {
                 selectedAttr = 'selected';
-                current.$el[0].dataset.active = true;
+                current.item.dataset.active = 'true';
             }
             else
-                current.$el[0].removeAttribute('data-active');
+                current.item.removeAttribute('data-active');
 
             if (this.hasSelect)
-                $('<option value="' + b64.enc(name) + '" ' + selectedAttr + '>' + title + '</option>').appendTo(this.$select);
+                this.$select.append(HTML.parse('<option value="' + b64.enc(name) + '" ' + selectedAttr + '>' + title + '</option>'));
 
 
             if ((! child.hasAnnotations || child.hasAnnotations()) && this.model.attributes.element.layout !== 1 && element.name)
@@ -267,7 +293,8 @@ export const View = Elem.View.extend({
         }
 
         this.ready = Promise.all(promises);
-    },
+    }
+
     createElementTitle(element) {
         switch (element.type) {
             case 'table':
@@ -281,51 +308,59 @@ export const View = Elem.View.extend({
             default:
                 return _('Annotation for item {name}', {name: element.title }); 
         }
-    },
-    _includeItem(current, childAddress, element, options, level) {
+    }
+
+    _includeItem(current, childAddress, element: IElement, options, level) {
         return this.layout.include(childAddress + ':item:' + element.type, () => {
-            let $el = $('<div></div>');
-            let child = this.create(element, options, $el, level+1, this, this.mode, undefined, this.fmt, this.model.attributes.refTable);
+            let child = this.create(element, options, level+1, this, this.mode, undefined, this.fmt, this.model.attributes.refTable);
             if (child !== null) {
-                $el.addClass('hidden');
+                child.classList.add('hidden');
                 if (current === null)
-                    this.$container[0].prepend($el[0]);
+                    this.$container.prepend(child);
                 else
-                    $el.insertAfter(current.$el);
+                    current.item.after(child);
 
                 setTimeout(() => {
-                    $el.removeClass('hidden');
+                    child.classList.remove('hidden');
                 }, 200);
             }
             return child;
         });
-    },
-    _includeAnnotation(current, childAddress, item, isTop, title) {
+    }
+
+    _includeAnnotation(current: Item, childAddress: string, item: View, isTop: boolean, title: string) {
         let suffix = isTop ? 'topText' : 'bottomText';
         let control = this.layout.include(childAddress + ':' + suffix, (annotation) => {
-            if (annotation)
-                Annotations.activate(annotation, this.level);
+            if (annotation) {
+                if (annotation instanceof Annotation)
+                    Annotations.activate(annotation, this.level);
+                else
+                    throw new Error('Address being used for a non annotation.');
+            }
             else
-                annotation = Annotations.create(item.address(), suffix, this.level, { title });
+                annotation = Annotations.create(item.address(), suffix, this.level, title);
 
             if (isTop)
-                this.$container[0].prepend(annotation.$el[0]);
+                this.$container.prepend(annotation);
             else
-                annotation.$el.insertAfter(current.$el);
+                current.item.after(annotation);
 
             return annotation;
         });
         control.update();
         return control;
-    },
+    }
+
     _sendEvent(event) {
         if (this.parent !== null && event.type === 'menu' && event.data.entries.length > 0) {
-            if (event.data.entries[0].type === 'Group' && (this.children.length < 2 || this.model.attributes.element.layout !== 0))
+            if (event.data.entries[0].type === 'Group' && (this._children.length < 2 || this.model.attributes.element.layout !== 0))
                 event.data.entries.shift(); // discard
         }
 
         Elem.View.prototype._sendEvent.call(this, event);
-    },
-});
+    }
+}
+
+customElements.define('jmv-results-array', View);
 
 export default { Model, View };

@@ -404,18 +404,18 @@ class TableView extends HTMLElement implements DataSetView {
 
     _updateEyeButton() {
         if (this.model.get('filtersVisible'))
-            this.statusbar.querySelector('.jmv-statusbar-button[data-name=togglefiltervisible]')?.classList.add('hide-filter-columns');
+            this.statusbar.querySelector('.jmv-statusbar-button[data-name="togglefiltervisible"]')?.classList.add('hide-filter-columns');
         else
-            this.statusbar.querySelector('.jmv-statusbar-button[data-name=togglefiltervisible]')?.classList.remove('hide-filter-columns');
+            this.statusbar.querySelector('.jmv-statusbar-button[data-name="togglefiltervisible"]')?.classList.remove('hide-filter-columns');
     }
 
     _updateFilterInfo() {
         let count = this.model.filterCount(true);
         this.statusbar.updateInfoLabel('activeFilters', count);
         if (count === 0)
-            this.statusbar.querySelector('.jmv-statusbar-button[data-name=editfilters]')?.classList.add('gray');
+            this.statusbar.querySelector('.jmv-statusbar-button[data-name="editfilters"]')?.classList.add('gray');
         else
-            this.statusbar.querySelector('.jmv-statusbar-button[data-name=editfilters]')?.classList.remove('gray');
+            this.statusbar.querySelector('.jmv-statusbar-button[data-name="editfilters"]')?.classList.remove('gray');
     }
 
     setActive(active: boolean) {
@@ -2654,7 +2654,7 @@ class TableView extends HTMLElement implements DataSetView {
 
         //this.viewRange      = v;
         this.viewOuterRange = { top : oTop,   bottom : oBot,   left : oLeft,      right : oRight };
-        this.viewport    = { top : topRow, bottom : botRow, left : leftColumn, right : rightColumn };
+        this.viewport = { top : topRow, bottom : botRow, left : leftColumn, right : rightColumn };
 
         //console.log("view");
         //console.log(this.viewport);
@@ -2796,7 +2796,6 @@ class TableView extends HTMLElement implements DataSetView {
                 for (let i = 0; i < nCols; i++) {
 
                     let colNo = o.right + i + 1;
-                    let left  = this._lefts[colNo];
                     let column = this.model.getColumn(colNo, true);
                     let $column = this.$columns[colNo];
                     let $header = this.$headers[colNo];
@@ -2815,7 +2814,6 @@ class TableView extends HTMLElement implements DataSetView {
             }
             else if (n.right < o.right) {  // delete columns from the right
                 let nCols = o.right - n.right;
-                let count = this.$columns.length;
                 for (let i = 0; i < nCols; i++) {
                     let $column = this.$columns[o.right - i];
                     let $header = this.$headers[o.right - i];
@@ -2833,7 +2831,6 @@ class TableView extends HTMLElement implements DataSetView {
                 for (let i = 0; i < nCols; i++) {
 
                     let colNo = n.left + i;
-                    let left  = this._lefts[colNo];
                     let column = this.model.getColumn(colNo, true);
                     let $column = this.$columns[colNo];
                     let $header = this.$headers[colNo];
@@ -2852,7 +2849,6 @@ class TableView extends HTMLElement implements DataSetView {
             }
             else if (n.left > o.left) {  // delete columns from the left
                 let nCols = n.left - o.left;
-                let count = this.$columns.length;
                 for (let i = 0; i < nCols; i++) {
                     let $column = this.$columns[o.left + i];
                     let $header = this.$headers[o.left + i];
