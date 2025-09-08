@@ -328,7 +328,7 @@ input, [contenteditable], [contenteditable] * {
 td.jmv-results-table-cell,
 th[scope=row].jmv-results-table-cell,
 th[scope=rowgroup].jmv-results-table-cell {
-    padding: 2px 8px ;
+    padding: 4px 8px ;
     white-space: nowrap ;
     vertical-align: top;
 }
