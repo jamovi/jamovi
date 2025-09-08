@@ -332,7 +332,7 @@ class PageModules extends HTMLElement {
                 </div>`;
 
 
-            let $module = this.$content.querySelector(`.jmv-store-module[data-name=${ module.name }]`);
+            let $module = this.$content.querySelector(`.jmv-store-module[data-name="${ module.name }"]`);
             if ($module === null) {
                 $module = HTML.parse(html);
                 this.$content.append($module);
@@ -343,7 +343,7 @@ class PageModules extends HTMLElement {
                 $module.classList.remove('to-be-removed');
                 $module.outerHTML = html;
             }
-            $module = this.$content.querySelector(`.jmv-store-module[data-name=${ module.name }]`); 
+            $module = this.$content.querySelector(`.jmv-store-module[data-name="${ module.name }"]`); 
             $module.addEventListener('keydown', this._moduleKeyDown);
             $module.addEventListener('keyup', this._moduleEnter);  // must be key up otherwise the internal buttons are clicked on key up after focus is moved
 
