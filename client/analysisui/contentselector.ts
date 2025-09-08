@@ -166,7 +166,7 @@ export class ContentSelector extends OptionControl<ContentSelectorProperties> {
             let form = this.getPropertyValue('form');
             switch (form) {
                 case 'radio':
-                    let element = this.tablist.querySelector<HTMLInputElement>(`[value=${value}]`);
+                    let element = this.tablist.querySelector<HTMLInputElement>(`[value="${value}"]`);
                     if (element)
                         element.checked = true;
                     break;
@@ -176,7 +176,7 @@ export class ContentSelector extends OptionControl<ContentSelectorProperties> {
                     selectedTabs.forEach(el => {
                         el.classList.remove('selected-tab');
                     });
-                    let tab = this.tablist.querySelector<HTMLInputElement>(`[value=${value}]`);
+                    let tab = this.tablist.querySelector<HTMLInputElement>(`[value="${value}"]`);
                     if (tab)
                         tab.classList.add('selected-tab');
                     break;
