@@ -2,7 +2,8 @@
 import re
 import os.path as path
 from tempfile import TemporaryFile
-import pkg_resources
+import certifi
+
 
 from functools import partial
 from asyncio import create_task
@@ -50,10 +51,7 @@ class DownloadInfo:
 
 class Download:
     def __init__(self):
-        self._chain_path = pkg_resources.resource_filename(__name__, 'resources/chain.pem')
-        if not path.isfile(self._chain_path):
-            self._chain_path = None
-
+        self._chain_path = certifi.where()
         self._client = AsyncHTTPClient(max_body_size=512 * 1024 * 1024)
 
     def download(self, url, io=None):
