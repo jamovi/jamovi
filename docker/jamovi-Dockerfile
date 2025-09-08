@@ -2,7 +2,7 @@
 FROM ubuntu:noble as base
 RUN apt-get update && apt-get upgrade -y
 
-FROM jamovi/jamovi-deps:2.7.1 as r-base
+FROM jamovi/jamovi-deps:2.7.6 as r-base
 
 RUN apt-get update && apt-get upgrade -y
 ENV R_VERSION 4.5.0-x64
