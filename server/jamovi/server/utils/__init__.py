@@ -1,6 +1,11 @@
 
 # flake8: noqa
 
+import os.path
+import ssl
+
+import certifi
+
 from .csvparser import CSVParser
 from .htmlparser import HTMLParser
 
@@ -9,10 +14,6 @@ from .nulllog import NullLog
 from .latexify import latexify
 from .stream import ProgressStream
 from .describe import describe_datasetrr
-
-import os.path
-import ssl
-import pkg_resources
 
 
 def int32(value):
@@ -61,7 +62,5 @@ context = None
 def ssl_context():
     global context
     if context is None:
-        chain_path = pkg_resources.resource_filename(__name__, '../resources/chain.pem')
-        if os.path.isfile(chain_path):
-            context = ssl.create_default_context(cafile=chain_path)
+        context = ssl.create_default_context(cafile=certifi.where())
     return context

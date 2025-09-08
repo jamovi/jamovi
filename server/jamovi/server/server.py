@@ -35,7 +35,6 @@ from tempfile import TemporaryDirectory
 from shutil import rmtree
 
 import logging
-import pkg_resources
 import threading
 import asyncio
 from asyncio import create_task
@@ -58,24 +57,22 @@ if access_key is None:
 
 class SingleFileHandler(RequestHandler):
 
-    def initialize(self, path, is_pkg_resource=False, mime_type=None, extra_headers={}):
+    _path: str
+    _mime_type: str | None
+    _extra_headers: dict[str, str]
+
+    def initialize(self, path, mime_type=None, extra_headers=None):
         self._path = path
-        self._is_pkg_resource = is_pkg_resource
         self._mime_type = mime_type
-        self._extra_headers = extra_headers
+        self._extra_headers = extra_headers or { }
 
     def get(self):
         if self._mime_type is not None:
             self.set_header('Content-Type', self._mime_type)
-        self.set_extra_headers(self._path)
-        if self._is_pkg_resource:
-            with pkg_resources.resource_stream(__name__, self._path) as file:
-                content = file.read()
-                self.write(content)
-        else:
-            with open(self._path, 'rb') as file:
-                content = file.read()
-                self.write(content)
+        self.set_extra_headers(self._extra_headers)
+        with open(self._path, 'rb') as file:
+            content = file.read()
+            self.write(content)
 
     def set_extra_headers(self, path):
         for key, value in self._extra_headers.items():
