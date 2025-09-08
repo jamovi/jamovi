@@ -7,12 +7,13 @@ window.katex = katex;
 import Quill from 'quill';
 import hljs from 'highlight.js';
 
-import $ from 'jquery';
 const Parchment = Quill.import('parchment');
 const TextBlot = Quill.import('blots/text');
 
 import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 import _focusLoop from '../common/focusloop';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { AnnotationAction, IAnnotation } from './annotations';
 
 //////////////////////////////////////////////////////////////////////////////
 // Needed to fix an issue with how quill interacts with highlightjs
@@ -21,6 +22,8 @@ import _focusLoop from '../common/focusloop';
 let _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 const CodeBlock = Quill.import('formats/code-block');
 class NewCodeBlock extends CodeBlock {
+    static className = 'ql-syntax';
+
     replaceWith(block) {
         this.domNode.textContent = this.domNode.textContent;
         this.attach();
@@ -29,12 +32,15 @@ class NewCodeBlock extends CodeBlock {
         this.scroll.update('silent');
     }
 }
-NewCodeBlock.className = 'ql-syntax';
 Quill.register(NewCodeBlock, true);
 ///////////////////////////////////////////////////////////////////////////////
 
 const Embed = Quill.import('blots/embed');
 class FormulaBlot extends Embed {
+    static blotName = 'formula';
+    static className = 'ql-formula';
+    static tagName = 'SPAN';
+
     static create(value) {
         let node = super.create(value);
         if (typeof value === 'string') {
@@ -59,41 +65,70 @@ class FormulaBlot extends Embed {
         domNode.addEventListener('click', this.clickHandler);
     }
 
-    clickHandler(event) {
-        $(this.domNode).trigger('formula-clicked', this);
+    clickHandler(event: MouseEvent) {
+        this.domNode.dispatchEvent(new CustomEvent('formula-clicked', { detail: this, bubbles: true }));
     }
 }
-FormulaBlot.blotName = 'formula';
-FormulaBlot.className = 'ql-formula';
-FormulaBlot.tagName = 'SPAN';
-
 Quill.register(FormulaBlot, true);
 
-const Annotation = function(address, suffix, title) {
+class Annotation extends HTMLElement implements IAnnotation {
 
-    this.initialise = function(address, suffix) {
+    path: string;
+    address: string[];
+    suffix: string;
+    isFocused: boolean;
+    attached: boolean;
+
+    _editor: HTMLElement;
+    _editorBox: HTMLElement;
+    ql_editor: HTMLElement;
+    _transferElement: HTMLElement;
+
+    finaliseBlur: NodeJS.Timeout;
+    selectionClearTimeOut: NodeJS.Timeout;
+
+    lastSelection: {index: number,  length: number };
+    level: number;
+
+    blotToRemove: any;
+
+    editor: Quill;
+
+    constructor(address, suffix, title) {
+        super();
+
+        this.initialise(address, suffix, title);
+    }
+
+    initialise(address: string[], suffix: string, title: string) {
         this.path = address.join('/') + ':' + suffix;
         this.address = address;
         this.suffix = suffix;
         this.isFocused = false;
         this.lastSelection = null;
 
-        this.$el = $(`<div class="jmv-annotation body" tabindex="0" role="region" aria-roledescription="${title}" aria-description="${_('Press enter to edit')}">
-            <div class="editor-box">
-                <div class="editor jmv-note-theme"></div>
-            </div>
-        </div>`);
+        this.classList.add('jmv-annotation', 'body');
+        this.tabIndex = 0;
+        this.role = 'region';
+        this.ariaRoleDescription = title;
+        this.ariaDescription = _('Press enter to edit');
 
-        this.$el.on('formula-clicked', (event, blot) => {
+        
+        this.innerHTML = `<div class="editor-box">
+                <div class="editor jmv-note-theme"></div>
+            </div>`;
+
+        this.addEventListener('formula-clicked', (event: CustomEvent) => {
+            let blot = event.detail;
             let index = blot.offset(this.editor.scroll);
             this.editor.setSelection(index);
-            let $blot = $(blot.domNode);
+            let $blot = blot.domNode;
             this.blotToRemove = blot;
-            this.editor.theme.tooltip.edit('formula', $blot.attr('data-value'));
+            this.editor.theme.tooltip.edit('formula', $blot.getAttribute('data-value'));
         });
 
-        this._editor = this.$el[0].querySelector('.editor');
-        this._editorBox = this.$el[0].querySelector('.editor-box');
+        this._editor = this.querySelector('.editor');
+        this._editorBox = this.querySelector('.editor-box');
 
         this.editor = new Quill(this._editor, {
             modules: {
@@ -116,7 +151,7 @@ const Annotation = function(address, suffix, title) {
             key: 'Escape'
         }, (range, context) => {
             //this.editor.blur();
-            this._host.focus();
+            this.focus();
         });
         
 
@@ -142,40 +177,38 @@ const Annotation = function(address, suffix, title) {
             event.preventDefault();
         });
 
-        let $formulaHelp = $(`<a class="ql-help" rel="noopener noreferrer" target="_blank" href="https://katex.org/docs/supported.html" style="margin-left: 20px;">${_('Help')}</a>`);
-        $formulaHelp.on('click', (event) => {
+        let $formulaHelp = HTML.parse<HTMLLinkElement>(`<a class="ql-help" rel="noopener noreferrer" target="_blank" href="https://katex.org/docs/supported.html" style="margin-left: 20px;">${_('Help')}</a>`);
+        $formulaHelp.addEventListener('click', (event) => {
             window.openUrl('https://katex.org/docs/supported.html');
             event.stopPropagation();
             event.preventDefault();
         });
 
-        this.editor.theme.tooltip.root.append($formulaHelp[0]);
+        this.editor.theme.tooltip.root.append($formulaHelp);
 
         this.editor.theme.tooltip.textbox.addEventListener('focus', (event) => this.cancelBlur());
-        $(this.editor.theme.tooltip.textbox).attr('placeholder', _('Enter your URL here'));
+        this.editor.theme.tooltip.textbox.setAttribute('placeholder', _('Enter your URL here'));
 
-        this._host = this.$el[0];
-        this._body = this.$el[0];
-
-        this._host.addEventListener('keydown', (event) => {
+        this.addEventListener('keydown', (event) => {
             if (event.code === 'Enter') {
                 this.ql_editor.focus();
                 event.preventDefault();
             }
         });
 
-        this.ql_editor = this._body.querySelector('.ql-editor');
+        this.ql_editor = this.querySelector('.ql-editor');
         this.ql_editor.setAttribute('tabindex', '-1');
         this.ql_editor.setAttribute('role', 'document');
         this.ql_editor.setAttribute('aria-label', `${_('Annotation')}`);
-        this.ql_editor.addEventListener('keydown', (event) => {
+        this.ql_editor.addEventListener('keydown', (event: KeyboardEvent) => {
             if (event.code === 'Tab') {
                 event.stopPropagation();
             }
         });
 
         this.ql_editor.addEventListener('focusout', (event) => {
-            this._transferElement = event.relatedTarget;
+            if (event.relatedTarget instanceof HTMLElement)
+                this._transferElement = event.relatedTarget;
         });
         this.ql_editor.addEventListener('focusin', (event) => {
             this._transferElement = null;
@@ -186,24 +219,24 @@ const Annotation = function(address, suffix, title) {
         this._backgroundClicked = this._backgroundClicked.bind(this);
         this._event = this._event.bind(this);
 
-        this._focusEvent = this._focused.bind(this);
-        this._pointerDownEvent = this._pointerDown.bind(this);
-        this._blurEvent = this._blur.bind(this);
+        this._focused = this._focused.bind(this);
+        this._pointerDown = this._pointerDown.bind(this);
+        this._blur = this._blur.bind(this);
 
         this.attach();
-    };
+    }
 
-    this.compareAddress = function(address, suffix) {
+    compareAddress(address: string[], suffix: string) {
         let path = address.join('/') + ':' + suffix;
         return this.path === path;
-    };
+    }
 
-    this._pointerDown = function(event) {
+    _pointerDown(event) {
         if (event.button !== 0)
             event.preventDefault();
-    };
+    }
 
-    this._blur = function (event) {
+    _blur(event) {
         if (!this.selectionClearTimeOut) {
             this.selectionClearTimeOut = setTimeout(() => {
                 _focusLoop.pauseFocusControl(this._transferElement);
@@ -212,63 +245,63 @@ const Annotation = function(address, suffix, title) {
                 _focusLoop.resumeFocusControl();
             }, 10);
         }
-    };
+    }
 
-    this.attach = function() {
+    attach() {
         if (this.attached)
             return;
 
-        this.ql_editor.addEventListener('focus', this._focusEvent);
-        this.ql_editor.addEventListener('pointerdown', this._pointerDownEvent);
-        this._host.addEventListener('click', this._backgroundClicked);
+        this.ql_editor.addEventListener('focus', this._focused);
+        this.ql_editor.addEventListener('pointerdown', this._pointerDown);
+        this.addEventListener('click', this._backgroundClicked);
 
         this.editor.on('editor-change', this._event);
-        this.editor.root.addEventListener('blur', this._blurEvent);
+        this.editor.root.addEventListener('blur', this._blur);
 
         this.attached = true;
-    };
+    }
 
-    this.detach = function() {
+    detach() {
         if ( ! this.attached)
             return;
 
-        this.ql_editor.removeEventListener('focus', this._focusEvent);
-        this.ql_editor.removeEventListener('pointerdown', this._pointerDownEvent);
-        this._host.removeEventListener('click', this._backgroundClicked);
+        this.ql_editor.removeEventListener('focus', this._focused);
+        this.ql_editor.removeEventListener('pointerdown', this._pointerDown);
+        this.removeEventListener('click', this._backgroundClicked);
 
         this.editor.off('editor-change', this._event);
 
-        this.editor.root.removeEventListener('blur', this._blurEvent);
+        this.editor.root.removeEventListener('blur', this._blur);
 
         if (this.isFocused) {
             this.isFocused = false;
-            this._host.classList.remove('focused');
+            this.classList.remove('focused');
             let length = this.editor.getLength();
             if (length <= 1)
-                this._host.classList.remove('edited');
+                this.classList.remove('edited');
             else
-                this._host.classList.add('edited');
+                this.classList.add('edited');
 
             this.finaliseBlur = null;
             this._fireEvent('annotation-lost-focus');
         }
 
-        this.$el.detach();
+        this.remove();
         this.setup(0);
         this.attached = false;
-    };
+    }
 
-    this.setup = function(level) {
-        this.$el.attr('level', level);
+    setup(level: number) {
+        this.setAttribute('level', level.toString());
 
         this.level = level;
-    };
+    }
 
-    this.getContents = function() {
+    getContents() {
         return this.editor.getContents();
-    };
+    }
 
-    this.setContents = function(contents) {
+    setContents(contents) {
         if (contents === null)
             this.editor.setContents([]);
         else
@@ -276,17 +309,17 @@ const Annotation = function(address, suffix, title) {
 
         let length = this.editor.getLength();
         if (length <= 1)
-            this._host.classList.remove('edited');
+            this.classList.remove('edited');
         else
-             this._host.classList.add('edited');
-    };
+             this.classList.add('edited');
+    }
 
-    this.isEmpty = function() {
+    isEmpty() {
         let length = this.editor.getLength();
         return length <= 1;
-    };
+    }
 
-    this._event = function(eventName, range, oldRange, source) {
+    _event(eventName, range, oldRange, source) {
         if (eventName === 'selection-change') {
 
             if (range === null) {
@@ -301,9 +334,9 @@ const Annotation = function(address, suffix, title) {
         if (eventName === 'text-change' && source === 'user') {
             this._fireEvent('annotation-changed');
         }
-    };
+    }
 
-    this._blurred = function(e) {
+    _blurred() {
         if (this.isFocused === false || this.finaliseBlur)
             return;
 
@@ -311,21 +344,21 @@ const Annotation = function(address, suffix, title) {
             this.isFocused = false;
             let length = this.editor.getLength();
             if (length <= 1) {
-                this._host.classList.remove('edited');
-                this._host.addEventListener('click', this._backgroundClicked);
+                this.classList.remove('edited');
+                this.addEventListener('click', this._backgroundClicked);
             }
             else
-                this._host.classList.add('edited');
+                this.classList.add('edited');
 
             this.storeContents();
 
             this.finaliseBlur = null;
-            this._host.classList.remove('focused');
+            this.classList.remove('focused');
             this._fireEvent('annotation-lost-focus');
         }, 300);
-    };
+    }
 
-    this.storeContents = function() {
+    storeContents() {
         let contents = null;
         if (this.isEmpty() === false)
             contents = this.getContents();
@@ -333,18 +366,18 @@ const Annotation = function(address, suffix, title) {
         let data = { };
         data[this.suffix] = contents;
         window.setParam(this.address, data);
-    };
+    }
 
-    this.deactivate = function() {
+    deactivate() {
         this.detach();
         return false;
-    };
+    }
 
-    this.activate = function() {
+    activate() {
         this.attach();
-    };
+    }
 
-    this.update = function() {
+    update() {
         if (this.isFocused)
             return true;
 
@@ -355,9 +388,9 @@ const Annotation = function(address, suffix, title) {
             this.setContents(null);
 
         return true;
-    };
+    }
 
-    this._focused = function(e) {
+    _focused(e) {
         this.cancelBlur();
 
         if (this.isFocused === true)
@@ -367,51 +400,51 @@ const Annotation = function(address, suffix, title) {
         let focusedList = document.getElementsByClassName('had-focus');
         for (let focused of focusedList)
             focused.classList.remove('had-focus');
-        this._host.classList.add('had-focus');
-        this._host.classList.add('focused');
-        this._host.classList.add('edited');
+        this.classList.add('had-focus');
+        this.classList.add('focused');
+        this.classList.add('edited');
         this._fireEvent('annotation-editing');
-    };
+    }
 
-    this._backgroundClicked = function(e) {
-        this.focus();
-    };
+    _backgroundClicked(e) {
+        this.setFocus();
+    }
 
-    this.focus = function(text) {
+    setFocus(text?: string) {
 
-        this._host.removeEventListener('click', this._backgroundClicked);
-        this._host.classList.add('edited');
+        this.removeEventListener('click', this._backgroundClicked);
+        this.classList.add('edited');
         this.editor.focus();
 
         if (text !== undefined && text !== '' && this.isEmpty())
             this.editor.insertText(0, text, { });
-    };
+    }
 
-    this.refocus = function() {
+    refocus() {
         if (this.hasFocus() === false)
-            this.focus();
+            this.setFocus();
 
         this.editor.setSelection(this.lastSelection);
-    };
+    }
 
-    this.blur = function() {
+    blur() {
         this.editor.blur();
-    };
+    }
 
-    this.hasFocus = function() {
+    hasFocus() {
         return this.editor.hasFocus() || (this.isFocused === true && this.finaliseBlur === null);
-    };
+    }
 
-    this._fireEvent = function(name, data) {
-        let annotationId = this._host.getAttribute('aid');
+    _fireEvent(name: string, data?: any) {
+        let annotationId = this.getAttribute('aid');
         let event = new CustomEvent(name, {
           bubbles: true,
           detail: { annotationId: this.id, annotationType: 'standard', isEditable: true, annotationData: data }
         });
-        this._host.dispatchEvent(event);
-    };
+        this.dispatchEvent(event);
+    }
 
-    this.cancelBlur = function() {
+    cancelBlur() {
         if (this.finaliseBlur) {
             clearTimeout(this.finaliseBlur);
             this.finaliseBlur = null;
@@ -421,9 +454,9 @@ const Annotation = function(address, suffix, title) {
             clearTimeout(this.selectionClearTimeOut);
             this.selectionClearTimeOut = null;
         }
-    };
+    }
 
-    this.getHTML = function() {
+    getHTML() {
 
         if (this.isEmpty())
             return '';
@@ -437,9 +470,9 @@ const Annotation = function(address, suffix, title) {
         let html = converter.convert();
 
         return html;
-    };
+    }
 
-    this.processToolbarAction = function (action) {
+    processToolbarAction(action: AnnotationAction) {
         if (action.type === 'authentication') {
             this.cancelBlur();
             return;
@@ -499,9 +532,10 @@ const Annotation = function(address, suffix, title) {
                 }
                 break;
         }
-    };
+    }
 
-    this.initialise(address, suffix);
-};
+}
+
+customElements.define('jmv-annotation', Annotation);
 
 export default Annotation;

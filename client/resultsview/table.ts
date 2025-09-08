@@ -1,12 +1,11 @@
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
 import { determFormat, format } from '../common/formatting';
 import focusLoop from '../common/focusloop';
 
-import Elem from './element';
+import Elem, { ElementModel } from './element';
+import { AnalysisStatus } from './create';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 const SUPSCRIPTS = ["\u1D43", "\u1D47", "\u1D48", "\u1D49", "\u1DA0", "\u1D4D", "\u02B0", "\u2071",
                 "\u02B2", "\u1D4F", "\u02E1", "\u1D50", "\u207F", "\u1D52", "\u1D56", "\u02B3", "\u02E2",
@@ -49,20 +48,136 @@ const createSortTransform = function(column, dir) {
     return trans;
 };
 
-export const Model = Elem.Model.extend({
-    defaults : {
-        name:  'name',
-        title: '(no title)',
-        element : {
-            columns : [ ]
-        },
-        error: null,
-        status: 'complete',
-        asText: null,
-        sortedCells : [ ],
-        sortTransform: [ ],
-        options: { },
-    },
+enum CellValueOther {
+    MISSING = 0,
+    NOT_A_NUMBER = 1
+}
+
+interface ITableCell {
+    cellType: 'i' | 'd' | 's' | 'o';
+
+    format: number; // bit field
+
+    // 1 = begin group
+    // 2 = end group
+    // 4 = negative (red highlight)
+
+    footnotes: string[];
+    symbols: string[];
+    sortKey: number;
+}
+
+interface IntegerCell extends ITableCell {
+    i: number;
+}
+
+const isIntegerCell = function(obj: ITableCell) : obj is IntegerCell {
+    return obj && obj.cellType === 'i';
+}
+
+interface NumberCell extends ITableCell {
+    d: number;
+}
+
+const isNumberCell = function(obj: ITableCell) : obj is NumberCell {
+    return obj && obj.cellType === 'd';
+}
+
+interface StringCell extends ITableCell {
+    s: string;
+}
+
+const isStringCell = function(obj: ITableCell) : obj is StringCell {
+    return obj && obj.cellType === 's';
+}
+
+interface OtherCell extends ITableCell {
+    o: CellValueOther;
+}
+
+const isOtherCell = function(obj: ITableCell) : obj is OtherCell {
+    return obj && obj.cellType === 'o';
+}
+
+enum Visible {
+    DEFAULT_YES = 0,
+    DEFAULT_NO = 1,
+    YES = 2,
+    NO = 3
+}
+
+interface ITableColumn {
+    name: string;
+    title: string;
+    type: string;
+    format: string;
+    superTitle: string;
+    combineBelow: boolean;
+
+    cells: ITableCell[];
+
+    sortable: boolean;
+    hasSortKeys: boolean;
+    visible: Visible;
+}
+
+interface TableNote {
+    key: string;
+    note: string;
+    init: boolean;
+}
+
+interface TableSort {
+    sortBy: string;
+    sortDesc: boolean;
+}
+
+export interface ITableElementData {
+    columns : ITableColumn[];
+    rowNames: string[];
+    swapRowsColumns: boolean;
+    notes: TableNote[];
+    asText: string;
+    rowSelect: string;
+    rowSelected: number;
+    sortSelect: string;
+    sortSelected: TableSort;
+}
+
+export interface TableModel extends ElementModel<ITableElementData> {
+    //asText: string,
+    sortedCells? : ITableCell[][ ],
+    sortTransform?: number[ ]
+}
+
+export class Model extends Elem.Model<TableModel> {
+    constructor(data?: TableModel) {
+        super(data || {
+            name:  'name',
+            title: '(no title)',
+            element : {
+                columns : [ ],
+                rowNames: [],
+                swapRowsColumns: false,
+                notes: [],
+                asText: '',
+                rowSelect: '',
+                rowSelected: 0,
+                sortSelect: '',
+                sortSelected: null
+            },
+            error: null,
+            status: AnalysisStatus.ANALYSIS_COMPLETE,
+            //asText: null,
+            sortedCells : [ ],
+            sortTransform: [ ],
+            options: { },
+            stale: false,
+        });
+
+        this.initialize();
+    }
+
     initialize() {
 
         let table = this.attributes.element;
@@ -78,7 +193,7 @@ export const Model = Elem.Model.extend({
         } else {
 
             if (cells.length > 0 && cells[0].length > 0) {
-                let trans = new Array(cells[0].length);
+                let trans: number[] = new Array(cells[0].length);
                 for (let i = 0; i < trans.length; i++)
                     trans[i] = i;
                 this.set('sortTransform', trans);
@@ -86,7 +201,8 @@ export const Model = Elem.Model.extend({
 
             this.set('sortedCells', cells);
         }
-    },
+    }
+
     sort(by, dir) {
 
         let table = this.attributes.element;
@@ -120,63 +236,85 @@ export const Model = Elem.Model.extend({
         this.set('sortedCells', newColumns);
 
         window.setOption(table.sortSelect, { sortBy: by, sortDesc: dir === 'desc' });
-    },
-});
+    }
+}
 
-const isVis = function(column) {
+const isVis = function(column: ITableColumn) {
     return column.visible === 0 || column.visible === 2;
 };
 
-export const View = Elem.View.extend({
-    initialize(data) {
+export class View extends Elem.View<Model> {
+    $table: HTMLTableElement;
+    $titleCell: HTMLTableCaptionElement;
+    $tableHeader: HTMLTableSectionElement;
+    $titleText: HTMLSpanElement;
+    $status: HTMLDivElement;
+    $columnHeaderRow: HTMLTableRowElement;
+    $columnHeaderRowSuper: HTMLTableRowElement | null;
+    $tableBody: HTMLTableSectionElement;
+    $tableFooter: HTMLTableSectionElement;
+    _ascButtons: NodeListOf<Element>;
+    _descButtons: NodeListOf<Element>;
+    _trs: NodeListOf<Element>;
 
-        Elem.View.prototype.initialize.call(this, data, true);
+    constructor(model: Model, data) {
+        super(model, data, true);
 
-        this.$el.addClass('jmv-results-table');
 
-        if (this.model === null)
-            this.model = new TableModel();
+        this.onSortClick = this.onSortClick.bind(this);
+        this.onRowSelect = this.onRowSelect.bind(this);
+
+        this.classList.add('jmv-results-table');
 
         let table = this.model.attributes.element;
 
-        this._ascButtons = $();
-        this._descButtons = $();
-        this._trs = $();
-
         let rowSelectable = table.rowSelect ? ' row-selectable' : '';
 
-        let titleId = focusLoop.getNextFocusId('label');
-        this.$table = $(`<table aria-labelledby="${titleId}" class="jmv-results-table-table${rowSelectable}"></table>`);
+        let titleId = focusLoop.getNextAriaElementId('label');
+        this.$table = HTML.parse(`<table aria-labelledby="${titleId}" class="jmv-results-table-table${rowSelectable}"></table>`);
 
         this.addContent(this.$table);
 
-        this.$titleCell = $('<caption class="jmv-results-table-title-cell" scope="col" colspan="1"></caption>').prependTo(this.$table);
-        this.$tableHeader = $('<thead></thead>').appendTo(this.$table);
+        this.$titleCell = HTML.parse('<caption class="jmv-results-table-title-cell" scope="col" colspan="1"></caption>');
+        this.$table.prepend(this.$titleCell);
+        this.$tableHeader = HTML.parse('<thead></thead>');
+        this.$table.append(this.$tableHeader);
 
-        this.$titleText = $(`<span id="${titleId}" class="jmv-results-table-title-text"></span>`).appendTo(this.$titleCell);
-        this.$status = $('<div class="jmv-results-table-status-indicator"></div>').appendTo(this.$titleCell);
+        this.$titleText = HTML.parse(`<span id="${titleId}" class="jmv-results-table-title-text"></span>`);
+        this.$titleCell.append(this.$titleText);
+        this.$status = HTML.parse('<div class="jmv-results-table-status-indicator"></div>');
+        this.$titleCell.append(this.$status);
 
-        this.$columnHeaderRow = $('<tr class="jmv-results-table-header-row-main"></tr>').appendTo(this.$tableHeader);
+        this.$columnHeaderRow = HTML.parse('<tr class="jmv-results-table-header-row-main"></tr>');
+        this.$tableHeader.append(this.$columnHeaderRow);
 
-        this.$tableBody   = $('<tbody></tbody>').appendTo(this.$table);
-        this.$tableFooter = $('<tfoot></tfoot>').appendTo(this.$table);
+        this.$tableBody   = HTML.parse('<tbody></tbody>');
+        this.$table.append(this.$tableBody);
+        this.$tableFooter = HTML.parse('<tfoot></tfoot>');
+        this.$table.append(this.$tableFooter);
+
+        this._ascButtons = this.$tableHeader.querySelectorAll('button.sort-asc');
+        this._descButtons = this.$tableHeader.querySelectorAll('button.sort-desc');
+        this._trs = this.$tableBody.querySelectorAll('tr');
 
         this.model.on('change:sortedCells', () => this.render());
         this.refs._refTable.addEventListener('changed', () => this.render());
 
-        this.setFocusElement(this.$table[0]);
+        this.setFocusElement(this.$table);
         this.render();
-    },
+    }
 
     type() {
         return 'Table';
-    },
+    }
+
     label() {
         return _('Table');
-    },
+    }
+
     render() {
 
-        Elem.View.prototype.render.call(this);
+        super.render();
 
         let table = this.model.attributes.element;
         let columns = table.columns;
@@ -185,21 +323,21 @@ export const View = Elem.View.extend({
         let fnIndices = { };
         let footnotes = [ ];
 
-        this._ascButtons.off();
-        this._descButtons.off();
-        this._trs.off();
+        this._ascButtons.forEach(el => el.removeEventListener('click', this.onSortClick));
+        this._descButtons.forEach(el => el.removeEventListener('click', this.onSortClick));
+        this._trs.forEach(el => el.removeEventListener('click', this.onRowSelect));
 
         if (this.model.attributes.status === 1)
-            this.$el.addClass('jmv-results-status-inited');
+            this.classList.add('jmv-results-status-inited');
         else if (this.model.attributes.status === 2)
-            this.$el.addClass('jmv-results-status-running');
+            this.classList.add('jmv-results-status-running');
         else {
-            this.$el.removeClass('jmv-results-status-inited');
-            this.$el.removeClass('jmv-results-status-running');
+            this.classList.remove('jmv-results-status-inited');
+            this.classList.remove('jmv-results-status-running');
         }
 
         if (this.model.attributes.title)
-            this.$titleText.text(this.model.attributes.title);
+            this.$titleText.innerText = this.model.attributes.title;
 
         let columnCount = 0;
         let rowCount = 0;
@@ -276,7 +414,7 @@ export const View = Elem.View.extend({
 
                 let sourceCell = sourceCells[rowNo];
 
-                let cell = { value : null, type: sourceColumn.type, superTitle: sourceColumn.superTitle, colIndex: sourceColNo, classes : rowFormat, sups : '' };
+                let cell = { value : null, type: sourceColumn.type, superTitle: sourceColumn.superTitle, colIndex: sourceColNo, classes : rowFormat, sups : '', visible: isVis(sourceColumn), beginGroup: false, combineBelow: false };
 
                 if (sourceCell.format & Format.NEGATIVE)
                     cell.classes += ' jmv-results-table-cell-negative';
@@ -286,8 +424,6 @@ export const View = Elem.View.extend({
 
                 if ((sourceCell.format & Format.BEGIN_GROUP) === Format.BEGIN_GROUP)
                     cell.beginGroup = true;
-
-                cell.visible = isVis(sourceColumn);
 
                 if (sourceColumn.combineBelow)
                     cell.combineBelow = true;
@@ -306,24 +442,25 @@ export const View = Elem.View.extend({
                     cell.sups += SUPSCRIPTS[index];
                 }
 
-                switch (sourceCell.cellType) {
-                case 'i':
+                if (isIntegerCell(sourceCell)) {
                     cell.value = sourceCell.i;
-                    break;
-                case 'd':
+                }
+                else if (isNumberCell(sourceCell)) {
                     let value = format(sourceCell.d, formattings[colNo]);
                     value = value.replace(/-/g , "\u2212").replace(/ /g,'<span style="visibility: hidden ;">0</span>');
                     cell.value = value;
-                    break;
-                case 's':
+                }
+                else if (isStringCell(sourceCell)) {
                     cell.value = sourceCell.s;
-                    break;
-                case 'o':
-                    if (sourceCell.o == 2)
-                        cell.value = 'NaN';
-                    else
+                }
+                else if (isOtherCell(sourceCell)) {
+                    if (sourceCell.o === CellValueOther.MISSING)
                         cell.value = '.';
-                    break;
+                    else
+                        cell.value = 'NaN';
+                }
+                else {
+                    throw new Error('Unknow cell type.');
                 }
 
                 cell.classes += this.makeFormatClasses(sourceColumn);
@@ -509,9 +646,11 @@ export const View = Elem.View.extend({
                 }
             }
 
-            if ( ! this.$columnHeaderRowSuper)
-                this.$columnHeaderRowSuper = $('<tr class="jmv-results-table-header-row-super"></tr>').prependTo(this.$tableHeader);
-            this.$columnHeaderRowSuper.html(html);
+            if ( ! this.$columnHeaderRowSuper) {
+                this.$columnHeaderRowSuper = HTML.parse('<tr class="jmv-results-table-header-row-super"></tr>');
+                this.$tableHeader.prepend(this.$columnHeaderRowSuper);
+            }
+            this.$columnHeaderRowSuper.innerHTML = html;
         }
         else if (this.$columnHeaderRowSuper) {
             this.$columnHeaderRowSuper.remove();
@@ -536,37 +675,37 @@ export const View = Elem.View.extend({
                     else
                         asc = 'sorted-asc';
                 }
-                sortStuff = ' <button aria-label="Sort Column - Ascending" class="' + asc + '" data-name="' + head.name + '"></button><button class="' + desc + '" aria-label="Sort Column - decending" data-name="' + head.name + '"></button>';
+                sortStuff = `<button aria-label="Sort Column - Ascending" class="${asc}" data-name="${head.name}" data-sort="asc"></button><button class="${desc}" aria-label="Sort Column - decending" data-name="${head.name}" data-sort="desc"></button>`;
             }
             html += '<th scope="col" class="jmv-results-table-cell' + classes + '">' + content + sortStuff + '</th>';
         }
 
-        this.$columnHeaderRow.html(html);
+        this.$columnHeaderRow.innerHTML = html;
 
         if (cells.header.length === 0) {
-            this.$titleCell.attr('colspan', 1);
-            this.$titleCell.attr('scope', 'col');
+            this.$titleCell.setAttribute('colspan', '1');
+            this.$titleCell.setAttribute('scope', 'col');
             return;
         }
 
         let nPhysCols = cells.header.length;
 
         if (cells.body.length === 0 || cells.body[0].length === 0) {
-            this.$titleCell.attr('colspan', nPhysCols);
+            this.$titleCell.setAttribute('colspan', nPhysCols.toString());
             if (nPhysCols > 1)
-                this.$titleCell.attr('scope', 'colgroup');
+                this.$titleCell.setAttribute('scope', 'colgroup');
             else
-                this.$titleCell.attr('scope', 'col');
+                this.$titleCell.setAttribute('scope', 'col');
 
-            this.$tableBody.html('<tr><td colspan="' + nPhysCols + '">&nbsp;</td></tr>');
+            this.$tableBody.innerHTML = '<tr><td colspan="' + nPhysCols + '">&nbsp;</td></tr>';
             return;
         }
 
-        this.$titleCell.attr('colspan', nPhysCols);
+        this.$titleCell.setAttribute('colspan', nPhysCols.toString());
         if (nPhysCols > 1)
-            this.$titleCell.attr('scope', 'colgroup');
+            this.$titleCell.setAttribute('scope', 'colgroup');
         else
-            this.$titleCell.attr('scope', 'col');
+            this.$titleCell.setAttribute('scope', 'col');
 
         html = '';
 
@@ -632,7 +771,7 @@ export const View = Elem.View.extend({
             html += '<tr class="content-row' + selected + '">' + rowHtml + '</tr>';
         }
 
-        this.$tableBody.html(html);
+        this.$tableBody.innerHTML = html;
 
         html = '';
 
@@ -643,45 +782,59 @@ export const View = Elem.View.extend({
             html += `<tr><td colspan="${ nPhysCols }">${ SUPSCRIPTS[i] } ${ footnotes[i] }</td></tr>`;
 
         //html += `<tr><td colspan="${ nPhysCols }"></td></tr>`;
-        this.$tableFooter.html(html);
+        this.$tableFooter.innerHTML = html;
 
         if (this.refs.hasVisibleContent()) {
-            let $refsRow = $(`<tr class="jmvrefs"><td colspan="${ nPhysCols }"></td></tr>`);
+            let $refsRow = HTML.parse(`<tr class="jmvrefs"><td colspan="${ nPhysCols }"></td></tr>`);
             // class="jmvrefs" excludes this from some exports/copy
-            $refsRow[0].childNodes[0].appendChild(this.refs);
+            $refsRow.childNodes[0].appendChild(this.refs);
             this.$tableFooter.append($refsRow);
         }
         else
             this.refs.remove();
 
-        this._ascButtons = this.$tableHeader.find('button.sort-asc');
-        this._descButtons = this.$tableHeader.find('button.sort-desc');
-        this._trs = this.$tableBody.find('tr');
+        this._ascButtons = this.$tableHeader.querySelectorAll('button.sort-asc');
+        this._descButtons = this.$tableHeader.querySelectorAll('button.sort-desc');
+        this._trs = this.$tableBody.querySelectorAll('tr');
 
-        this._ascButtons.on('click', event => {
-            let $button = $(event.target);
-            let columnName = $button.attr('data-name');
-            this.model.sort(columnName, 'asc');
-        });
-
-        this._descButtons.on('click', event => {
-            let $button = $(event.target);
-            let columnName = $button.attr('data-name');
-            this.model.sort(columnName, 'desc');
-        });
+        this._ascButtons.forEach(el => el.addEventListener('click', this.onSortClick));
+        this._descButtons.forEach(el =>el.addEventListener('click', this.onSortClick));
 
         if (table.rowSelect) {
-            this._trs.on('click', event => {
-                let $row = $(event.target).closest(this._trs);
-                let rowNo = this._trs.index($row);
+            this._trs.forEach(el => el.addEventListener('click', this.onRowSelect));
+        }
+    }
+
+    onRowSelect(event: MouseEvent) {
+        if (event.target instanceof HTMLElement) {
+            const table = this.model.attributes.element;
+            let $row = event.target.closest('tr');
+            let rowNo = -1;
+            for (let i = 0; i < this._trs.length; i++) {
+            if (this._trs[i] === $row) {
+                rowNo = i;
+                break;
+            }
+            }
+            if (rowNo !== -1) {
                 rowNo = this.model.attributes.sortTransform[rowNo];
                 if (rowNo === table.rowSelected)
                     window.setOption(table.rowSelect, -1);
                 else
                     window.setOption(table.rowSelect, rowNo);
-            });
+            }
         }
-    },
+    }
+
+    onSortClick(event: MouseEvent) {
+        if (event.target instanceof HTMLElement) {
+            let $button = event.target;
+            let columnName = $button.getAttribute('data-name');
+            let type = $button.getAttribute('data-sort');
+            this.model.sort(columnName, type);
+        }
+    }
+
     determineRowHeaderCount(cells) {
 
         let head = cells.header[0];
@@ -728,7 +881,8 @@ export const View = Elem.View.extend({
             }
         }
         return headingCount;
-    },
+    }
+
     determineAriaLabel(value) {
         if (typeof value !== 'string')
             return null;
@@ -738,8 +892,9 @@ export const View = Elem.View.extend({
             return null;
 
         return this.termToAriaDescription(items);
-    },
-    termToAriaDescription: function(raw) {
+    }
+
+    termToAriaDescription(raw) {
         if (raw.length === 1)
             return raw[0];
 
@@ -751,8 +906,9 @@ export const View = Elem.View.extend({
         }
         let second = raw[raw.length - 1];
         return _('The interaction of {0} and {1}', [first, second]);
-    },
-    makeFormatClasses(column) {
+    }
+
+    makeFormatClasses(column: ITableColumn) {
 
         let classes = ' jmv-results-table-cell-' + (column.type ? column.type : 'number');
 
@@ -766,6 +922,8 @@ export const View = Elem.View.extend({
         }
         return classes;
     }
-});
+}
+
+customElements.define('jmv-results-table', View);
 
 export default { Model, View };

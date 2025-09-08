@@ -1,83 +1,97 @@
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
 import focusLoop from '../common/focusloop';
 
-import Elem from './element';
+import Elem, { ElementData, ElementModel } from './element';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 import { flatten } from '../common/utils/addresses';
+import { AnalysisStatus } from './create';
 
-export const Model = Elem.Model.extend({
-    defaults : {
-        name: 'name',
-        title: '(no title)',
-        element: {
-            path: '',
-            width: 400,
-            height: 300
-        },
-        error: null,
-        status: 'complete',
-        options: { },
-    },
-    initialize: function() {
+export interface IImageElementData {
+    path: string,
+    width: number,
+    height: number
+}
+
+export class Model extends Elem.Model<ElementModel<IImageElementData>> {
+    constructor(data?: ElementModel<IImageElementData>) {
+
+    super(data || {
+            name: 'name',
+            title: '(no title)',
+            element: {
+                path: '',
+                width: 400,
+                height: 300
+            },
+            error: null,
+            status: AnalysisStatus.ANALYSIS_COMPLETE,
+            options: { },
+            stale: false
+        });
     }
-});
+}
 
-export const View = Elem.View.extend({
-    initialize: function(data) {
+export class View extends Elem.View<Model> {
 
-        Elem.View.prototype.initialize.call(this, data);
+    $title: HTMLHeadingElement;
+    $image: HTMLElement;
 
-        this.$el.addClass('jmv-results-image');
+    constructor(model: Model, data: ElementData) {
+        super(model, data);
+
+        this.classList.add('jmv-results-image');
 
         let imageId = focusLoop.getNextAriaElementId('image');
-        this.$el.attr('role', 'img');
-        this.$el.attr('aria-labelledby', imageId);
+        this.setAttribute('role', 'img');
+        this.setAttribute('aria-labelledby', imageId);
 
-        this.$status = $('<div class="jmv-results-image-status-indicator"></div>');
-        this.$status.prependTo(this.$el);
+        const $status = HTML.parse('<div class="jmv-results-image-status-indicator"></div>');
+        this.prepend($status);
         
-        this.$title = $(`<h${this.level+1} id="${imageId}" class="jmv-results-image-title"></h${this.level+1}>`);
-        this.$title.prependTo(this.$el);
+        this.$title = HTML.parse(`<h${this.level+1} id="${imageId}" class="jmv-results-image-title"></h${this.level+1}>`);
+        this.prepend(this.$title);
 
         if (this.model === null)
-            this.model = new ImageModel();
+            this.model = new Model();
 
         let address = flatten(this.address());
-        this.$image = $(`<div class="jmv-results-image-image" data-address="${ encodeURI(address) }">`).appendTo(this.$el);
+        this.$image = HTML.parse(`<div class="jmv-results-image-image" data-address="${ encodeURI(address) }">`);
+        this.append(this.$image);
 
         this.render();
-    },
-    type: function() {
+    }
+
+    type() {
         return 'Image';
-    },
-    label: function() {
+    }
+
+    label() {
         return _('Image');
-    },
-    render: function() {
+    }
+
+    render() {
 
         if (this.$title) {
             if (this.model.attributes.title) {
-                this.$title.text(this.model.attributes.title);
-                this.$title.show();
+                this.$title.textContent = this.model.attributes.title;
+                this.$title.style.display = '';
             }
             else {
-                this.$title.empty();
-                this.$title.hide();
+                this.$title.innerHTML = '';
+                this.$title.style.display = 'none';
             }
         }
 
         if (this.model.attributes.status === 1)
-            this.$el.attr('data-status', 'inited');
+            this.setAttribute('data-status', 'inited');
         else if (this.model.attributes.status === 2)
-            this.$el.attr('data-status', 'running');
+            this.setAttribute('data-status', 'running');
         else if (this.model.attributes.status === 5)
-            this.$el.attr('data-status', 'running');
+            this.setAttribute('data-status', 'running');
         else
-            this.$el.removeAttr('data-status');
+            this.removeAttribute('data-status');
 
         let address = flatten(this.address());
 
@@ -90,14 +104,14 @@ export const View = Elem.View.extend({
             backgroundImage = "url('" + url + "')";
         }
 
-        this.$image.css({
-            'background-image': backgroundImage,
-            'width': element.width + 'px',
-            'height' : element.height + 'px',
-            'background-size': element.width + 'px'
-        });
+        this.$image.style.backgroundImage = backgroundImage;
+        this.$image.style.width = element.width + 'px';
+        this.$image.style.height = element.height + 'px';
+        this.$image.style.backgroundSize = element.width + 'px';
 
     }
-});
+}
+
+customElements.define('jmv-results-image', View);
 
 export default { Model, View };

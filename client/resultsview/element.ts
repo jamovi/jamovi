@@ -1,63 +1,101 @@
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
 import Tracker from './itemtracker';
 import focusLoop from '../common/focusloop';
 
 import b64 from '../common/utils/b64';
 import { contextMenuListener } from '../common/utils';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 import './refs';
+import { EventMap } from '../common/eventmap';
+import { ReferenceNumbers } from './refs';
+import { AnalysisStatus, IElement } from './create';
 
-export const Model = Backbone.Model.extend({
-    defaults: {
-        refs: [ ],
-        refTable: null,
-    },
-});
+export interface ElementData {
+    level?: number;
+    fmt: any;
+    parent: View;
+    update: (item: View, element: IElement, options, level: number, mode: string, devMode, fmt, refTable) => boolean;
+    create?: (element: IElement, options, level: number, parent: View, mode: string, devMode, fmt, refTable ) => View;
+    mode: string;
+    devMode: boolean;
+}
 
-export const View = Backbone.View.extend({
-    initialize(data, interalFocus) {
+export interface ElementModel<T = any> {
+    refs?: any[ ],
+    refTable?: any,
+    name: string,
+    title: string,
+    error: { message: string },
+    status: AnalysisStatus,
+    stale: boolean,
+    options: any,
+    element: T
+}
 
-        this.layout = new Tracker();
+export class Model<T extends ElementModel> extends EventMap<T> {
+    constructor(data: T) {
+        super(data);
+    }
+}
+
+type InferType<T> = T extends Model<infer A> ? A : never;
+
+export abstract class View<M extends Model<T> = any, T extends ElementModel = InferType<M>> extends HTMLElement {
+    layout: Tracker = new Tracker();
+    model: M;
+    $errorPlacement: HTMLElement;
+    addIndex: number = 1;
+    refs: ReferenceNumbers;
+    ready: Promise<void>;
+    parent: View;
+    level: number;
+    updateItem: (item: View, element: IElement, options, level, mode, devMode, fmt, refTable) => boolean;
+    fmt: any;
+    mode: string;
+
+    constructor(model: M, data: ElementData, interalFocus?: boolean) {
+        super();
+
+        this.model = model;
 
         this.updateItem = data.update;
         this.parent = data.parent;
-        this.level = ('level' in data) ? data.level : 0;
+        this.level = (data.level !== undefined) ? data.level : 0;
         this.fmt = data.fmt;
+        this.mode = data.mode;
 
-        this.$el.addClass('jmv-results-item');
-        this.errorMsgId = focusLoop.getNextAriaElementId('errormsg');
-        this.$el.attr('aria-errormessage', this.errorMsgId);
-        this.$el.attr('data-name', b64.enc(this.model.attributes.name));
+        this.classList.add('jmv-results-item');
+        const errorMsgId = focusLoop.getNextAriaElementId('errormsg');
+        this.setAttribute('aria-errormessage', errorMsgId);
+        this.setAttribute('data-name', b64.enc(this.model.attributes.name));
 
-        contextMenuListener(this.$el[0], event => {
+        contextMenuListener(this, event => {
             event.stopPropagation();
             this._sendEvent({ type: 'menu', data: { entries: [], pos: { left: event.pageX, top: event.pageY } } });
             event.preventDefault();
             return false;
         });
 
-        this.$errorPlacement = $(`<div id="${this.errorMsgId}" class="jmv-results-error-placement"></div>`);
-        this.$errorPlacement.appendTo(this.$el);
-        this.addIndex = 1;
+        this.$errorPlacement = HTML.parse(`<div id="${errorMsgId}" class="jmv-results-error-placement"></div>`);
+        this.append(this.$errorPlacement);
 
-        this.refs = document.createElement('jmv-reference-numbers');
+        this.refs = new ReferenceNumbers();
         this.refs.setTable(this.model.attributes.refTable);
         this.refs.setRefs(this.model.attributes.refs);
-        this.el.appendChild(this.refs);
+        this.appendChild(this.refs);
 
         if ( ! interalFocus)
-            this.setFocusElement(this.el);
+            this.setFocusElement(this);
 
         this.ready = Promise.resolve();
-    },
-    setFocusElement(element) {
+    }
+
+    setFocusElement(element: HTMLElement) {
         element.classList.add('selectedable-result-item')
         element.setAttribute('tabindex', '0');
-        element.addEventListener('keydown', (event) => {
+        element.addEventListener('keydown', (event: KeyboardEvent) => {
             if ((event.ctrlKey || event.metaKey) && event.code === 'KeyC') {
                 if (document.activeElement === element) {
                     this.copyContentToClipboard()
@@ -65,56 +103,58 @@ export const View = Backbone.View.extend({
                 }
             }
         });
-    },
+    }
+
     render() {
         let error = this.model.get('error');
         if (error !== null) {
-            if (this.$el.hasClass('jmv-results-error'))
-                this.$errorPlacement.find('.jmv-results-error-message').text(error.message);
+            if (this.classList.contains('jmv-results-error'))
+                this.$errorPlacement.querySelector('.jmv-results-error-message').textContent = error.message;
             else {
-                this.$el.addClass('jmv-results-error');
-                $(`<div class="error-box"><div class="icon"></div><div class="jmv-results-error-message">${ error.message }</div></div>`).appendTo(this.$errorPlacement);
+                this.classList.add('jmv-results-error');
+                this.$errorPlacement.append(HTML.parse(`<div class="error-box"><div class="icon"></div><div class="jmv-results-error-message">${ error.message }</div></div>`));
             }
-            this.$el.attr('aria-invalid', true);
+            this.setAttribute('aria-invalid', 'true');
         }
         else {
-            this.$el.removeClass('jmv-results-error');
-            this.$errorPlacement.empty();
-            this.$el.removeAttr('aria-invalid');
+            this.classList.remove('jmv-results-error');
+            this.$errorPlacement.innerHTML = '';
+            this.removeAttribute('aria-invalid');
         }
-    },
+    }
 
     _collapseSection() {
-        let element = this.$el[0];
-        let sectionHeight = element.scrollHeight;
+        let sectionHeight = this.scrollHeight;
 
-        let elementTransition = element.style.transition;
-        element.style.transition = '';
+        let elementTransition = this.style.transition;
+        this.style.transition = '';
 
         requestAnimationFrame(() => {
-            element.style.height = sectionHeight + 'px';
-            element.style.transition = elementTransition;
+            this.style.height = sectionHeight + 'px';
+            this.style.transition = elementTransition;
             requestAnimationFrame(() => {
-                element.style.height = 0 + 'px';
+                this.style.height = 0 + 'px';
             });
         });
-    },
+    }
 
     _expandSection(value) {
 
-        let element = this.$el[0];
+        this.setAttribute('data-expanding', 'true');
+        let sectionHeight = this.scrollHeight;
 
-        element.setAttribute('data-expanding', true);
-        let sectionHeight = element.scrollHeight;
+        this.style.height = value === undefined ? sectionHeight : value;
 
-        element.style.height = value === undefined ? sectionHeight : value;
-
-        element.addEventListener('transitionend', (e) => {
-            element.removeEventListener('transitionend', e.callee);
-            element.style.height = null;
-            element.setAttribute('data-expanding', false);
+        this.addEventListener('transitionend', (e) => {
+            this.removeEventListener('transitionend', e.callee);
+            this.style.height = null;
+            this.setAttribute('data-expanding', 'false');
         });
-    },
+    }
+
+    abstract label(): string;
+    abstract type(): string;
+
     update(data) {
 
         if (this.updateItem(this, data.element, data.options, data.level, data.mode, data.devMode, data.fmt, data.refTable)) {
@@ -124,17 +164,20 @@ export const View = Backbone.View.extend({
             return true;
         }
         return false;
-    },
-    addContent($el) {
-        let before = this.$el.children()[this.addIndex - 1];
-        $el.insertAfter(before);
+    }
+
+    addContent($el: HTMLElement) {
+        let before = this.children[this.addIndex - 1];
+        before.after($el);
         this.addIndex += 1;
-    },
+    }
+
     copyContentToClipboard() {
         this._sendEvent({ type: 'copy', data: { address: this.address(), type: this.type(),
             label: this.label(),
             name: this.type().toLowerCase() } });
-    },
+    }
+
     _sendEvent(event) {
         if (this.parent === null)
             return;
@@ -154,10 +197,12 @@ export const View = Backbone.View.extend({
             event.data.entries.unshift(entry);
             this.parent._sendEvent(event);
         }
-    },
-    _menuOptions(event) {
+    }
+
+    _menuOptions() {
         return [ { name: 'copy', label: _('Copy') }, { name: 'export', label: `${_('Export')}...` }, { name: 'addNote', label: _('Add Note')} ];
-    },
+    }
+
     address() {
         let addr;
         if (this.parent && this.parent.address) {
@@ -168,10 +213,19 @@ export const View = Backbone.View.extend({
             addr = [ ];
         }
         return addr;
-    },
+    }
+
     isRoot() {
         return ! (this.parent && this.parent.address);
     }
-});
+}
+
+export abstract class CollectionView<M extends Model<T> = any, T extends ElementModel = InferType<M>> extends View<M, T> {
+    constructor(model: M, data: ElementData, interalFocus?: boolean) {
+        super(model, data, interalFocus);
+    }
+
+    abstract get(address: string[]) : View;
+}
 
 export default { View, Model };

@@ -1,21 +1,25 @@
 'use strict';
 
-class Item {  
-    _static: boolean;
-    $el: any;
-    item: any;
-    _updated: boolean;
+import { View } from "./element";
 
-    constructor(item, update, deactivate) {
+
+export class Item {  
+    _static: boolean;
+    item: HTMLElement;
+    _updated: boolean;
+    _active: boolean;
+    _lastActive: boolean;
+
+    _update: (el: HTMLElement, data: any) => boolean;
+    deactivate: () => any;
+
+    constructor(item: HTMLElement, update: (el: HTMLElement, data: any) => boolean, deactivate: () => any) {
         this._static = update === undefined || update === null;
 
         this._update = update;
+
         this.item = item;
-        this.$el = item;
-        if (item.$el !== undefined) {
-            this.$el = item.$el;
-            this._static = item.update === undefined;
-        }
+        this._static = item.update === undefined;
 
         this.activate();
         this._updated = true;
@@ -26,8 +30,8 @@ class Item {
             };
         }
         else {
-            this.update = function(data) {
-                if ((this._update && this._update(this.$el, data)) ||
+            this.update = (data) => {
+                if ((this._update && this._update(this.item, data)) ||
                     (this.item.update && this.item.update(data))) {
 
                     this.activate();
@@ -46,7 +50,7 @@ class Item {
             this.deactivate = this.item.deactivate.bind(this.item);
     }
 
-    update?(data): boolean;
+    update?(data: any): boolean;
 
     isActive() {
         if (this._lastActive !== null)
@@ -93,7 +97,7 @@ export class ItemTracker {
     constructor() {
     }
 
-    include(address: string, activate, update, deactivate): Item {
+    include(address: string, activate: (item?: HTMLElement) => HTMLElement, update?: (el: HTMLElement, data: any) => boolean, deactivate?: () => any): Item {
 
         let current = this._items[address];
         if ( ! current) {
@@ -127,7 +131,7 @@ export class ItemTracker {
             let current = this._items[addr];
             if (current.end()) {
                 delete this._items[addr];
-                current.$el.remove();
+                current.item.remove();
             }
         }
     }

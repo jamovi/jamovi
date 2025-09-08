@@ -1,64 +1,68 @@
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
 
-import Elem from './element';
+import { AnalysisStatus } from './create';
+import Elem, { ElementData, ElementModel } from './element';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
-export const Model = Elem.Model.extend({
-    defaults : {
-        name:    'name',
-        title:   '(no title)',
-        element: '(no syntax)',
-        error: null,
-        status: 'complete',
-        stale: false,
-        options: { },
+export class Model extends Elem.Model<ElementModel<string>> {
+    constructor(data?: ElementModel<string>) {
+
+        super(data || {
+                name:    'name',
+                title:   '(no title)',
+                element: '(no syntax)',
+                error: null,
+                status: AnalysisStatus.ANALYSIS_COMPLETE,
+                stale: false,
+                options: { },
+            }
+        );
     }
-});
+}
 
-export const View = Elem.View.extend({
-    initialize: function(data) {
+export class View extends Elem.View<Model> {
+    $title: HTMLHeadingElement;
+    $syntax: HTMLPreElement;
 
-        Elem.View.prototype.initialize.call(this, data);
+    constructor(model: Model, data: ElementData) {
+        super(model, data);
 
-        this.$el.addClass('jmv-results-syntax');
+        this.classList.add('jmv-results-syntax');
 
-        this.$title = $('<h' + (this.level+1) + ' class="jmv-results-image-title"></h' + (this.level+1) + '>');
+        this.$title = HTML.parse('<h' + (this.level+1) + ' class="jmv-results-image-title"></h' + (this.level+1) + '>');
         this.addContent(this.$title);
 
-        if (this.model === null)
-            this.model = new SyntaxModel();
-
-        this.$syntax = $('<pre class="jmv-results-syntax-text"></pre>');
+        this.$syntax = HTML.parse('<pre class="jmv-results-syntax-text"></pre>');
         this.addContent(this.$syntax);
 
         this.render();
-    },
-    type: function() {
+    }
+    type() {
         return 'Syntax';
-    },
-    label: function() {
+    }
+    label() {
         return _('Syntax');
-    },
-    render: function() {
+    }
+    render() {
 
         let syntax = this.model.attributes.element;
-        this.$syntax.text(syntax);
+        this.$syntax.innerText = syntax;
 
         if (this.$title) {
             if (this.model.attributes.title)
-                this.$title.text(this.model.attributes.title);
+                this.$title.innerText = this.model.attributes.title;
             else
-                this.$title.empty();
+                this.$title.innerHTML = '';
         }
 
         if (this.model.attributes.stale)
-            this.$syntax.addClass('stale');
+            this.$syntax.classList.add('stale');
         else
-            this.$syntax.removeClass('stale');
+            this.$syntax.classList.remove('stale');
 
         return true;
     }
-});
+}
+
+customElements.define('jmv-results-preformatted', View);

@@ -1,38 +1,56 @@
 'use strict';
 
-import $ from 'jquery';
-import Backbone from 'backbone';
-Backbone.$ = $;
 import Annotations from './annotations';
 
-import Elem from './element';
+import Elem, { CollectionView, View as Element, ElementData, ElementModel } from './element';
 import _focusLoop from '../common/focusloop';
+import { AnalysisStatus, IElement } from './create';
+import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { Item } from './itemtracker';
+import Annotation from './annotation';
+import Heading from './heading';
 
-export const Model = Elem.Model.extend({
-    defaults : {
-        name: "name",
-        title: "(no title)",
-        element : {
-            elements : [ ]
-        },
-        error: null,
-        status: 'complete',
-        options: { },
-    },
-    initialize: function() {
+export interface GroupElementData extends ElementData {
+    hasTitle: boolean;
+    isEmptyAnalysis: boolean;
+}
+
+export interface IGroupElementData {
+    elements : IElement[ ]
+}
+
+export class Model extends Elem.Model<ElementModel<IGroupElementData>> {
+    constructor(data: ElementModel<IGroupElementData>) {
+        super(data || {
+            name: "name",
+            title: "(no title)",
+            element : {
+                elements : [ ]
+            },
+            error: null,
+            status: AnalysisStatus.ANALYSIS_COMPLETE,
+            options: { },
+            stale: false
+        })
     }
-});
+}
 
-export const View = Elem.View.extend({
-    initialize: function(data) {
+export class View extends CollectionView<Model> {
+    $title: HTMLHeadingElement;
+    $container: HTMLElement;
+    create: (element: IElement, options, level: number, parent: View, mode: string, devMode, fmt, refTable ) => Element;
+    devMode: boolean;
+    hasTitle: boolean;
+    isEmptyAnalysis: boolean;
+    _children: Element[];
+    hoTag: string;
+    hcTag: string;
 
-        Elem.View.prototype.initialize.call(this, data);
-
-        if (this.model === null)
-            this.model = new GroupModel();
+    constructor(model: Model, data: GroupElementData) {
+        super(model, data);
 
         this.create = data.create;
-        this.children = [ ];
+        this._children = [ ];
         this.mode = data.mode;
         this.devMode = data.devMode;
         this.fmt = data.fmt;
@@ -43,24 +61,24 @@ export const View = Elem.View.extend({
             this.hoTag = `<h${ this.level + 1 }>`;
             this.hcTag = `</h${ this.level + 1 }>`;
 
-            this.$el.addClass('jmv-results-group');
+            this.classList.add('jmv-results-group');
             
 
             let labelId = _focusLoop.getNextAriaElementId('label');
 
-            this.$el.attr('aria-labelledby', labelId);
+            this.setAttribute('aria-labelledby', labelId);
 
             if (this.level === 0 && (this.parent === undefined || this.parent.parent === undefined)) {
-                this.$el.attr('role', 'region');
-                let annotation = Annotations.create(this.address(), 'heading', this.level, { text: this.model.attributes.title });
-                annotation.$el.attr('id', labelId);
-                annotation.$el.prependTo(this.$el);
+                this.setAttribute('role', 'region');
+                let annotation = Annotations.create(this.address(), 'heading', this.level, this.model.attributes.title);
+                annotation.setAttribute('id', labelId);
+                this.prepend(annotation);
             }
             else {
-                this.$el.attr('role', 'group');
-                this.$title = $(this.hoTag + this.model.attributes.title + this.hcTag).prependTo(this.$el);
-                this.$title.attr('id', labelId);
-                this.$title.prependTo(this.$el);
+                this.setAttribute('role', 'group');
+                this.$title = HTML.parse(this.hoTag + this.model.attributes.title + this.hcTag);
+                this.$title.setAttribute('id', labelId);
+                this.prepend(this.$title);
             }
 
             this.addIndex++;
@@ -68,26 +86,29 @@ export const View = Elem.View.extend({
 
 
 
-        this.$container = $('<div class="jmv-results-group-container"></div>');
+        this.$container = HTML.parse('<div class="jmv-results-group-container"></div>');
         this.addContent(this.$container);
 
         this.render();
-    },
-    type: function() {
+    }
+
+    type() {
         return 'Group';
-    },
-    label: function() {
+    }
+
+    label() {
         return _('Group');
-    },
-    get: function(address) {
+    }
+
+    get(address: string[]) {
         if (address.length === 0)
             return this;
 
         let childName = address[0];
         let child = null;
 
-        for (let i = 0; i < this.children.length; i++) {
-            let nextChild = this.children[i];
+        for (let i = 0; i < this._children.length; i++) {
+            let nextChild = this._children[i];
             if (nextChild.model.get('name') === childName) {
                 child = nextChild;
                 break;
@@ -98,11 +119,12 @@ export const View = Elem.View.extend({
             return child.get(address.slice(1));
         else
             return child;
-    },
-    render: function() {
-        this.children = [ ];
+    }
 
-        Elem.View.prototype.render.call(this);
+    render() {
+        this._children = [ ];
+
+        super.render();
 
         let promises = [ ];
         let elements = this.model.attributes.element.elements;
@@ -110,13 +132,13 @@ export const View = Elem.View.extend({
 
         if (this.$title) {
             if (this.model.attributes.title)
-                this.$title.text(this.model.attributes.title);
+                this.$title.textContent = this.model.attributes.title;
             else
-                this.$title.empty();
+                this.$title.innerHTML = '';
         }
         else {
             let heading = Annotations.getControl(this.address(), 'heading');
-            if (heading)
+            if (heading && heading instanceof Heading)
                 heading.update();
         }
 
@@ -162,7 +184,7 @@ export const View = Elem.View.extend({
                 continue;
 
             let child = current.item;
-            this.children.push(child);
+            this._children.push(child);
             promises.push(child);
 
             current = this._includeBreak(current, childAddress);
@@ -172,7 +194,8 @@ export const View = Elem.View.extend({
         }
 
         this.ready = Promise.all(promises);
-    },
+    }
+
     createElementTitle(element) {
         switch (element.type) {
             case 'table':
@@ -186,57 +209,68 @@ export const View = Elem.View.extend({
             default:
                 return _('Annotation for item {name}', {name: element.title }); 
         }
-    },
-    _includeItem(current, childAddress, element, options) {
+    }
+
+    _includeItem(current, childAddress: string, element: IElement, options) {
         return this.layout.include(childAddress + ':item:' + element.type, () => {
-            let $el = $('<div></div>');
-            let child = this.create(element, options, $el, this.level + 1, this, this.mode, undefined, this.fmt, this.model.attributes.refTable);
+            let child = this.create(element, options, this.level + 1, this, this.mode, undefined, this.fmt, this.model.attributes.refTable);
             if (child !== null) {
-                $el.addClass('hidden');
+                child.classList.add('hidden');
                 if (current === null)
-                    this.$container[0].prepend($el[0]);
+                    this.$container.prepend(child);
                 else
-                    $el.insertAfter(current.$el);
+                    current.item.after(child);
 
                 setTimeout(() => {
-                    $el.removeClass('hidden');
+                    child.classList.remove('hidden');
                 }, 200);
             }
 
             return child;
         });
-    },
-    _includeBreak(current, childAddress) {
+    }
+
+    _includeBreak(current: Item, childAddress: string) {
         return this.layout.include(childAddress + ':break', () => {
-            return $('<br>').insertAfter(current.$el);
+            const br = HTML.create('br');
+            current.item.after(br);
+            return br;
         });
-    },
-    _includeAnnotation(current, childAddress, item, isTop, title) {
+    }
+
+    _includeAnnotation(current: Item, childAddress: string, item: View, isTop: boolean, title: string) {
         let suffix = isTop ? 'topText' : 'bottomText';
         let control = this.layout.include(childAddress + ':' + suffix, (annotation) => {
-            if (annotation)
-                Annotations.activate(annotation, this.level);
+            if (annotation) {
+                if (annotation instanceof Annotation)
+                    Annotations.activate(annotation, this.level);
+                else
+                    throw new Error('Address being used for a non annotation.');
+            }
             else
-                annotation = Annotations.create(item.address(), suffix, this.level, { title });
+                annotation = Annotations.create(item.address(), suffix, this.level, title);
 
             if (isTop)
-                this.$container[0].prepend(annotation.$el[0]);
+                this.$container.prepend(annotation);
             else
-                annotation.$el.insertAfter(current.$el);
+                current.item.after(annotation);
 
             return annotation;
         });
         control.update();
         return control;
-    },
-    _menuOptions(event) {
+    }
+
+    override _menuOptions() {
         if (this.isEmptyAnalysis)
             return [ { name: 'copy', label: _('Copy') } ];
         else if (this.isRoot())
             return [ { name: 'copy', label: _('Copy') }, { name: 'duplicate', label: _('Duplicate') }, { name: 'export', label: `${_('Export')}...` } ];
         else
-            return Elem.View.prototype._menuOptions.call(this);
+            return super._menuOptions();
     }
-});
+}
+
+customElements.define('jmv-results-group', View);
 
 export default { Model, View };

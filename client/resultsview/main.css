@@ -6,6 +6,21 @@
 @import './annotation.css';
 @import '../node_modules/highlight.js/styles/tomorrow.css';
 
+
+jmv-annotation,
+jmv-results-array,
+jmv-results-group,
+jmv-results-heading,
+jmv-results-html,
+jmv-results-image,
+jmv-results-notice,
+jmv-results-preformatted,
+jmv-results-table {
+    display: block;
+    position: relative;
+}
+
+
 #results.weights .title {
     font-size: 160%;
     color: #3E6DA9;
@@ -23,9 +38,14 @@
     margin: 10px 0;
 }
 
+.selectedable-result-item {
+    position: relative;
+}
+
 .selectedable-result-item:focus, .focus-activated {
     outline: Highlight auto 1px;
     outline: -webkit-focus-ring-color auto 1px;
+    z-index: 5000;
 }
 .selectedable-result-item:not(#results), .focus-activated:not(#results) {
     outline-offset: 12px;

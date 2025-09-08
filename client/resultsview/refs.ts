@@ -43,7 +43,7 @@ const css = `
     }
 `;
 
-class ReferenceNumbers extends HTMLElement {
+export class ReferenceNumbers extends HTMLElement {
     constructor() {
         super();
 

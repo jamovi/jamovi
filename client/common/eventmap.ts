@@ -222,10 +222,10 @@ export abstract class EventDistributor extends HTMLElement {
 
 export class EventMap<T> extends ContextableEventEmittier {
     
-    public attributes: T;
+    public attributes: Partial<T>;
     public previousAttributes: Partial<T> = { };
 
-    constructor(attributes: T) {
+    constructor(attributes: Partial<T>) {
         super();
         this.attributes = attributes;
     }

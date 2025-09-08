@@ -1171,7 +1171,7 @@ class FocusLoop extends EventEmitter {
                 }
             }
         }
-        else
+        else if (loopElement.contains(document.activeElement) === false)
             loopElement.focus();
     }
 
