@@ -20,6 +20,7 @@ export class AppMenuButton extends EventDistributor {
     $refsModeList: HTMLSelectElement;
     $themeList: HTMLSelectElement;
     $paletteList: HTMLSelectElement;
+    $decSymbolList: HTMLSelectElement;
     $missingsInput: HTMLInputElement;
     $devModeCheck: HTMLInputElement;
     $languageList: HTMLSelectElement;
@@ -126,6 +127,15 @@ export class AppMenuButton extends EventDistributor {
         this.$pFormatList.addEventListener('click', event => event.stopPropagation())
         this.$pFormatList.addEventListener('change', event => this._changeResultsFormat());
 
+        let decSymbolId = focusLoop.getNextAriaElementId('label');
+        let $decSymbol = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
+        $results.append($decSymbol);
+        $decSymbol.append(HTML.parse(`<div id="${decSymbolId}">${_('Decimal symbol')}</div>`));
+        this.$decSymbolList = HTML.parse(`<select aria-labelledby="${decSymbolId}"><option value=".">${_('Dot')}</option><option value=",">${_('Comma')}</option></select>`);
+        $decSymbol.append(this.$decSymbolList);
+        this.$decSymbolList.addEventListener('click', event => event.stopPropagation())
+        this.$decSymbolList.addEventListener('change', event => this._changeDecSymbol(event.target.value));
+
         let refsModeId = focusLoop.getNextAriaElementId('label');
         let $refsMode = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
         $results.append($refsMode);
@@ -148,7 +158,7 @@ export class AppMenuButton extends EventDistributor {
         let $plots = HTML.parse(`<div class="jmv-results" role="group" aria-labelledby="${plotsId}"></div>`);
         $content.append($plots);
         $plots.append(HTML.parse(`<div id="${plotsId}" class="jmv-ribbon-appmenu-subheading">${_('Plots')}</div>`));
-        
+
 
         let themeId = focusLoop.getNextAriaElementId('label');
         let $theme = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
@@ -229,6 +239,7 @@ export class AppMenuButton extends EventDistributor {
 
         this.model.settings().on('change:theme',        () => this._updateUI());
         this.model.settings().on('change:palette',      () => this._updateUI());
+        this.model.settings().on('change:decSymbol',    () => this._updateUI());
         this.model.settings().on('change:devMode',      () => this._updateUI());
         this.model.settings().on('change:zoom',         () => this._updateUI());
         this.model.settings().on('change:format',       () => this._updateUI());
@@ -239,7 +250,7 @@ export class AppMenuButton extends EventDistributor {
         let available = I18ns.get('app').availableLanguages().map((code) => {
             if (code === '---')
                 return `</optgroup><optgroup label="${ _('In development') }">`;
-              
+
             let ownName;
             if (code === 'zh-cn') {
                 // sensitive! shouldn't be translated
@@ -276,6 +287,10 @@ export class AppMenuButton extends EventDistributor {
 
     _changePalette(name) {
         this.model.settings().setSetting('palette', name);
+    }
+
+    _changeDecSymbol(symbol: '.' | ',') {
+        this.model.settings().setSetting('decSymbol', symbol);
     }
 
     _changeMissings() {
@@ -340,6 +355,8 @@ export class AppMenuButton extends EventDistributor {
         this.$themeList.value = theme;
         let palette = settings.getSetting('palette', 'jmv');
         this.$paletteList.value = palette;
+        let decSymbol = settings.getSetting('decSymbol', '.');
+        this.$decSymbolList.value = decSymbol;
         let devMode = settings.getSetting('devMode', false);
         this.$devModeCheck.checked = devMode;
         let zoom = '' + settings.getSetting('zoom', 100) + '%';
@@ -349,14 +366,6 @@ export class AppMenuButton extends EventDistributor {
 
         let language = settings.getSetting('selectedLanguage', '');
         this.$languageList.value = language;
-
-        for (let key in this.$versionInfoStatus) {
-            let $item = this.$versionInfoStatus[key];
-            if (key === status)
-                $item.show();
-            else
-                $item.hide();
-        }
     }
 
     toggleMenu(fromMouse=false) {
