@@ -38,10 +38,10 @@ import { IBackstageSupport } from './instance';
 import SelectionLoop from '../common/selectionloop';
 
 interface IPlace {
-    name: string, 
-    title: string,  
-    shortcutKey: string, 
-    model?: FSEntryListModel, 
+    name: string,
+    title: string,
+    shortcutKey: string,
+    model?: FSEntryListModel,
     view?: BackstagePanelView,
     action?: () => any;
     separator?: boolean;
@@ -1188,7 +1188,7 @@ export class BackstageView  extends EventDistributor {
             'keydown' : this._keypressHandle
         });
 
-        this.main = new BackstageChoices(this.model, this ); 
+        this.main = new BackstageChoices(this.model, this );
         this.main.classList.add('silky-bs-main');
 
         let focusToken = focusLoop.addFocusLoop(this, { exitSelector: '.jmv-ribbon-tab[data-tabname="file"]', level: 1, modal: true, allowKeyPaths: true, exitKeys: ['Escape'] } );
@@ -1198,7 +1198,7 @@ export class BackstageView  extends EventDistributor {
             else
                 this.deactivate();
         });
-        
+
     }
 
     connectedCallback() {
@@ -1449,7 +1449,7 @@ export class BackstageView  extends EventDistributor {
         document.getElementById('main').setAttribute('aria-hidden', 'false');
         document.querySelector('.jmv-ribbon-tab.file-tab').setAttribute('aria-expanded', 'false');
 
-        
+
         focusLoop.leaveFocusLoop(this, fromMouse);
         if (fromMouse)
             focusLoop.setFocusMode('default');
@@ -1533,7 +1533,7 @@ export class BackstageView  extends EventDistributor {
         //let $op = this.$ops.filter('[data-op="' + operation + '-item"]');
         let hasPlaces = false;
         if (operation) {
-            let opEl = Array.from(this.ops).filter(el => 
+            let opEl = Array.from(this.ops).filter(el =>
                 el.getAttribute('data-op') === `${operation}-item`
             )[0];
             opEl.querySelector('.silky-bs-op-button').removeAttribute('tabindex');//.addClass('bs-menu-item-ignore');
@@ -1611,6 +1611,7 @@ export class BackstageChoices extends EventDistributor {
             place.model.set('title', place.title);
             this.current = place.view;
             this.append(this.current);
+            this.current.refresh?.();
 
             if (this.current.preferredWidth)
                 this.parent.style.width = this.current.preferredWidth();

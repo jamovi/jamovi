@@ -79,7 +79,8 @@ export interface IFSEntryModel {
 
 export interface IBackstagePanelView {
     preferredWidth?: () => void,
-    setShortcutPath?: (shortcutPath: string) => void
+    setShortcutPath?: (shortcutPath: string) => void,
+    refresh?: () => void,
 }
 
 export type BackstagePanelView = EventDistributor & IBackstagePanelView;
@@ -106,7 +107,7 @@ export class FSEntryListModel extends EventMap<IFSEntryModel> {
             dirInfo: undefined
         });
     }
-   
+
     requestOpen(options: IOpenOptions) {
         options.wdType = this.get('wdType');
         this.trigger('dataSetOpenRequested', options);
@@ -145,7 +146,7 @@ export class FSEntryListView extends EventDistributor {
     connectedCallback() {
         this.model.on('change:items', this._render, this);
         this.model.on('change:directory', this._render, this);
-        
+
         this.innerHTML = '';
         this._render();
     }
