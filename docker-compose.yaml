@@ -23,7 +23,7 @@ services:
   #     - './client/resultsview.html:/source/client/resultsview.html'
   #     - './client/analysisui.html:/source/client/analysisui.html'
   #     - './client/tsconfig.json:/source/client/tsconfig.json'
-  #     - './client/vite.config.ts:/source/client/vite.config.ts'
+  #     - './client/vite.config.mts:/source/client/vite.config.mts'
   #     - './client/package.json:/source/client/package.json'
   #     - './server/jamovi/server/jamovi.proto:/source/server/assets/coms.proto'
   #   ports:
