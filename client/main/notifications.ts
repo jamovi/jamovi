@@ -58,7 +58,7 @@ class NotificationView extends EventDistributor {
 
         let $cancel = HTML.parse(`<div class="jmv-notification-button-cancel">${_('Cancel')}</div>`);
         this.$buttons.append($cancel);
-        
+
         this.$buttons.style.display = (this.model.attributes.cancel ? null : 'none');
 
         $cancel.addEventListener('click', (event) => {
@@ -124,7 +124,7 @@ class Notifications {
         let dismiss = notification.attributes.dismissed;
 
         for (let item of this.list) {
-            if (item.model === notification || (notification.id !== undefined && notification.id === item.model.attributes.id)) {
+            if (item.model === notification || (notification.attributes.id !== undefined && notification.attributes.id === item.model.attributes.id)) {
                 found = true;
                 if ( ! dismiss) {
                     item.model.set(notification.attributes);
