@@ -8,8 +8,9 @@ import Menu from '../../common/menu';
 
 import ActionHub from '../actionhub';
 import { RibbonItem } from '../ribbon/ribbontab';
+import ButtonElement from '../utils/buttonelement';
 
-export class ContextMenuButton extends HTMLButtonElement implements RibbonItem {
+export class ContextMenuButton extends ButtonElement implements RibbonItem {
     eventData: any;
     menu: Menu
     _menuGroup: RibbonGroup;
@@ -31,7 +32,7 @@ export class ContextMenuButton extends HTMLButtonElement implements RibbonItem {
 
     constructor(options) {
         super();
-        
+
         let title = options.title === undefined ? null : options.title;
         let name = options.name;
         let size = 'medium';
@@ -211,7 +212,7 @@ export class ContextMenuButton extends HTMLButtonElement implements RibbonItem {
         const rect = this.getBoundingClientRect();
         const style = getComputedStyle(this);
 
-        const x = rect.left + window.scrollX + this.offsetWidth + 
+        const x = rect.left + window.scrollX + this.offsetWidth +
                 parseFloat(style.marginLeft) + parseFloat(style.marginRight);
 
         const y = rect.top + window.scrollY;
