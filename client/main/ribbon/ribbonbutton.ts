@@ -10,8 +10,9 @@ import focusLoop, { IShortcutTokenOptions } from '../../common/focusloop';
 import Menu from '../../common/menu';
 import { s6e } from '../../common/utils';
 import RibbonTab, { RibbonItem } from './ribbontab';
+import ButtonElement from '../utils/buttonelement';
 
-export class RibbonButton extends HTMLButtonElement implements RibbonItem {
+export class RibbonButton extends ButtonElement implements RibbonItem {
     value: any;
     _menuGroup: RibbonGroup;
     parent: RibbonTab;
@@ -266,7 +267,7 @@ export class RibbonButton extends HTMLButtonElement implements RibbonItem {
     _toggleMenu(fromMouse) {
         if (this.menu.isVisible())
             this.hideMenu(fromMouse);
-        else 
+        else
             this.showMenu(fromMouse);
     }
 

@@ -3,8 +3,9 @@
 
 import ActionHub from '../actionhub';
 import { StatusbarItemProperties } from './statusbar';
+import ButtonElement from '../utils/buttonelement';
 
-class StatusbarButton extends HTMLButtonElement {
+class StatusbarButton extends ButtonElement {
     _name: string = null;
     _properties: StatusbarItemProperties;
 
@@ -26,7 +27,7 @@ class StatusbarButton extends HTMLButtonElement {
         this.classList.add('jmv-statusbar-button');
         this.tabIndex = 0;
         this.setAttribute('aria-disabled', 'true');
-        if (this._properties && this._properties.label) 
+        if (this._properties && this._properties.label)
             this.setAttribute('aria-label', this._properties.label);
 
         let action = ActionHub.get(this._name);
