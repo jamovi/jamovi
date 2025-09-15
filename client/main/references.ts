@@ -2,14 +2,51 @@
 'use strict';
 
 import focusLoop from '../common/focusloop';
+import Analyses from './analyses';
+
+
+interface IReferenceDetails {
+    addresses: {
+        module: string;
+        name: string;
+    }[];
+    text: any;
+    url: string;
+}
+
+export interface Authors {
+     complete: string;
+}
+
+export interface IReference {
+    name: string;
+    type: string;
+    authors: Authors;
+    year: number;
+    title: string;
+    publisher: string;
+    url: string;
+    volume?: string;
+    issue?: string;
+    pages?: string;
+    year2?: string;
+    extra?: string;
+}
 
 export class References extends HTMLElement {
+    _root: ShadowRoot;
+    _body: HTMLDivElement;
+    _analyses: Analyses;
+    _refs: IReferenceDetails[];
+    _modules: Set<string>;
+    _numbers: { [module: string]: { [name: string]: number } };
+
     constructor() {
         super();
 
         this._analyses = null;
         this._refs = [ ];
-        this._modules = new Set();
+        this._modules = new Set<string>();
         this._numbers = null;
 
         this._root = this.attachShadow({ mode: 'open' });
@@ -20,7 +57,7 @@ export class References extends HTMLElement {
         style.textContent = this._css();
         this._root.appendChild(style);
 
-        this._root.host.addEventListener('keydown', (event) => {
+        this._root.host.addEventListener('keydown', (event: KeyboardEvent) => {
             if (event.altKey && event.code === 'ArrowDown') {
                 focusLoop.enterFocusLoop(this._body);
             }
@@ -45,7 +82,7 @@ export class References extends HTMLElement {
         this._analyses = analyses;
     }
 
-    getNumbers(ns?: string) {
+    getAllNumbers() {
         if ( ! this._numbers) {
             let numbers = { jmv: { }, R: { } };
             for (let module of this._modules)
@@ -58,16 +95,17 @@ export class References extends HTMLElement {
             this._numbers = numbers;
         }
 
-        if (ns === undefined) {
-            return this._numbers;
-        }
-        else {
-            let nums = this._numbers[ns];
-            if (nums === undefined)
-                return [ ];
-            else
-                return nums;
-        }
+        return this._numbers;
+    }
+    
+    getNumbers(ns: string) {
+        const numbers = this.getAllNumbers();
+
+        let nums = numbers[ns];
+        if (nums === undefined)
+            return { };
+        else
+            return nums;
     }
 
     n() {
@@ -92,19 +130,19 @@ export class References extends HTMLElement {
     }
 
     nSelected() {
-        let refElems = [...this._body.querySelectorAll('jmv-reference')];
+        let refElems = [...this._body.querySelectorAll<Reference>('jmv-reference')];
         let n = refElems.reduce((count, elem) => count + (elem.selected ? 1 : 0), 0);
         return n;
     }
 
     selectAll() {
-        let refElems = this._body.querySelectorAll('jmv-reference');
+        let refElems = this._body.querySelectorAll<Reference>('jmv-reference');
         for (let elem of refElems)
             elem.select();
     }
 
     clearSelection() {
-        let refElems = this._body.querySelectorAll('jmv-reference');
+        let refElems = this._body.querySelectorAll<Reference>('jmv-reference');
         for (let elem of refElems)
             elem.unselect();
     }
@@ -112,7 +150,7 @@ export class References extends HTMLElement {
     asHTML() {
         let noneSelected = (this.nSelected() === 0);
         let pieces = [ ];
-        let refElems = this._body.querySelectorAll('jmv-reference');
+        let refElems = this._body.querySelectorAll<Reference>('jmv-reference');
         for (let elem of refElems) {
             if (noneSelected || elem.selected)
                 pieces.push(elem.asHTML());
@@ -123,7 +161,7 @@ export class References extends HTMLElement {
     asText() {
         let noneSelected = (this.nSelected() === 0);
         let pieces = [ ];
-        let refElems = this._body.querySelectorAll('jmv-reference');
+        let refElems = this._body.querySelectorAll<Reference>('jmv-reference');
         for (let elem of refElems) {
             if (noneSelected || elem.selected)
                 pieces.push(elem.asText());
@@ -134,7 +172,7 @@ export class References extends HTMLElement {
     update() {
 
         let refs = [ ];
-        let modules = new Set();
+        let modules = new Set<string>();
 
         refs.push(this.resolve('jmv', {
             name: 'jamovi',
@@ -198,7 +236,7 @@ export class References extends HTMLElement {
         let firstRef = null;
         for (let i = 0; i < refs.length; i++) {
             let ref = refs[i];
-            let el = document.createElement('jmv-reference');
+            let el = document.createElement('jmv-reference') as Reference;
             el.setup(i + 1, ref.text);
             el.setAttribute('role', 'listitem');
             el.setAttribute('tabindex', '0');
@@ -218,7 +256,7 @@ export class References extends HTMLElement {
             event.target.setSelected( ! event.target.selected);
     }
 
-    resolve(moduleName, ref) {
+    resolve(moduleName: string, ref: IReference) {
 
         // the proto addresses changed
         if (ref.authors === null || typeof(ref.authors) !== 'object')
@@ -241,7 +279,7 @@ export class References extends HTMLElement {
 
         let year = ref.year2;
         if ( ! year)
-            year = ref.year;
+            year = ref.year.toString();
 
         if (ref.type === 'article') {
             let volume = '';
@@ -304,10 +342,17 @@ export class References extends HTMLElement {
 }
 
 export class Reference extends HTMLElement {
+    selected: boolean;
+    _root: ShadowRoot;
+
+    _cont: HTMLElement;
+    _checkbox: HTMLInputElement;
+    _text: HTMLElement;
+    _number: HTMLElement;
+
     constructor() {
         super();
 
-        this._reference = null;
         this.selected = false;
 
         this._root = this.attachShadow({ mode: 'open' });
@@ -363,7 +408,7 @@ export class Reference extends HTMLElement {
         });
     }
 
-    setup(number, text, url) {
+    setup(number: number, text: string) {
         this._number.textContent = `[${ number }]`;
         this._text.textContent = text;
         text = this._text.innerHTML;
@@ -389,7 +434,7 @@ export class Reference extends HTMLElement {
         this.setSelected(false);
     }
 
-    setSelected(selected) {
+    setSelected(selected: boolean) {
         this.selected = selected;
         this._checkbox.checked = selected;
         this._cont.dataset.checked = (selected ? '1' : '0');

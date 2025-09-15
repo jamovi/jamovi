@@ -4,55 +4,55 @@
 
 'use strict';
 
-const optionPB = { };
+const optionPB = { 
+    toPB: function(options, extra, Messages) {
+        let names = [ ];
+        let optionsPB = [ ];
 
-optionPB.toPB = function(options, extra, Messages) {
-    let names = [ ];
-    let optionsPB = [ ];
-
-    if (options._options !== undefined) {
-        for (let name in options._options) {
-            let value = options.getOption(name).getValue();
-            if (value !== undefined) {
+        if (options._options !== undefined) {
+            for (let name in options._options) {
+                let value = options.getOption(name).getValue();
+                if (value !== undefined) {
+                    names.push(name);
+                    optionsPB.push(_toPB(value, Messages));
+                }
+            }
+        }
+        else {
+            for (let name in options) {
+                let value = options[name];
                 names.push(name);
                 optionsPB.push(_toPB(value, Messages));
             }
         }
-    }
-    else {
-        for (let name in options) {
-            let value = options[name];
+
+        for (let name in extra) {
+            let value = extra[name];
             names.push(name);
             optionsPB.push(_toPB(value, Messages));
         }
+
+        let child = new Messages.AnalysisOptions();
+        child.setOptions(optionsPB);
+        child.setNames(names);
+        child.setHasNames(true);
+
+        return child;
+    },
+
+    fromPB: function(optionsPB, Messages) {
+
+        let value = { };
+
+        for (let j = 0; j < optionsPB.names.length; j++) {
+            let name = optionsPB.names[j];
+            let option = optionsPB.options[j];
+            value[name] = _fromPB(option, Messages);
+        }
+
+        return value;
     }
-
-    for (let name in extra) {
-        let value = extra[name];
-        names.push(name);
-        optionsPB.push(_toPB(value, Messages));
-    }
-
-    let child = new Messages.AnalysisOptions();
-    child.setOptions(optionsPB);
-    child.setNames(names);
-    child.setHasNames(true);
-
-    return child;
-};
-
-optionPB.fromPB = function(optionsPB, Messages) {
-
-    let value = { };
-
-    for (let j = 0; j < optionsPB.names.length; j++) {
-        let name = optionsPB.names[j];
-        let option = optionsPB.options[j];
-        value[name] = _fromPB(option, Messages);
-    }
-
-    return value;
-};
+}
 
 const _toPB = function(value, Messages) {
 

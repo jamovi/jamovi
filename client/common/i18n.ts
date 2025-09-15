@@ -4,18 +4,65 @@ import Jed from 'jed';
 
 function s6e(x) {
     return x.replace(/</g, '&lt;')  //to break html insertion
-    .replace(/>/g, '&gt;')  // to really break html insertion
-    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")  // markdown to html
-    .replace(/__(.*?)__/g, "<strong>$1</strong>")  // markdown to html
-    .replace(/\*(.*?)\*/g, "<i>$1</i>")  // markdown to html
-    .replace(/_(.*?)_/g, "<i>$1</i>");  // markdown to html
+        .replace(/>/g, '&gt;')  // to really break html insertion
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")  // markdown to html
+        .replace(/__(.*?)__/g, "<strong>$1</strong>")  // markdown to html
+        .replace(/\*(.*?)\*/g, "<i>$1</i>")  // markdown to html
+        .replace(/_(.*?)_/g, "<i>$1</i>");  // markdown to html
+}
+
+// Represents the header entry ("")
+interface JedLocaleHeaders {
+    domain?: string;
+    lang?: string;
+    plural_forms?: string;
+    [key: string]: string | undefined;
+}
+
+// Represents a single translation entry (array of plural forms)
+type JedTranslationEntry = string[];
+
+// The full locale_data domain dictionary
+interface JedLocaleDomain {
+    "": JedLocaleHeaders;
+    [msgid: string]: JedTranslationEntry | JedLocaleHeaders;
+}
+
+// All domains (usually only "messages", but Jed supports multiple)
+interface JedLocaleData {
+    [domain: string]: JedLocaleDomain;
+}
+
+// The object passed to Jed constructor
+export interface I18nData {
+    code: string;
+    domain?: string; // default domain
+    locale_data: JedLocaleData;
+}
+
+export const isI18nData = function (obj: unknown): obj is I18nData {
+    if (typeof obj !== "object" || obj === null) return false;
+
+    const data = obj as Partial<I18nData>;
+
+    return (
+        typeof data.code === "string" &&
+        typeof data.domain === "string" &&
+        typeof data.locale_data === "object" &&
+        data.locale_data !== null &&
+        typeof (data.locale_data as any).messages === "object" &&
+        (data.locale_data as any).messages !== null &&
+        Object.values((data.locale_data as any).messages).every(
+            val => Array.isArray(val) && val.every(s => typeof s === "string")
+        )
+    );
 }
 
 export class I18n {
     _availableLanguages: Array<string>;
     language: string;
     jed: Jed;
-    localeData: any;
+    localeData: I18nData;
 
     constructor() {
         this._ = this._.bind(this);
@@ -24,17 +71,17 @@ export class I18n {
         this._n = this._n.bind(this);
         this.findBestMatchingLanguage = this.findBestMatchingLanguage.bind(this);
 
-        this._availableLanguages = [ 'en' ];
+        this._availableLanguages = ['en'];
         this.language = this.systemLanguage();
     }
 
-    initialise(code, localeData) {
+    initialise(code: string, localeData: I18nData) {
         this.language = code;
         this.jed = new Jed(localeData);
         this.localeData = localeData;
     }
 
-    setAvailableLanguages(available) {
+    setAvailableLanguages(available: string[]) {
         this._availableLanguages = available;
     }
 
@@ -42,9 +89,9 @@ export class I18n {
         return this._availableLanguages;
     }
 
-    _(key:string, formats:{[key:string]:string}, options:{prefix:string, postfix:string}={ prefix: '', postfix: ''}): string {
+    _(key: string, formats?: { [key: string]: (string|number) } | (string|number)[], options: { prefix: string, postfix: string } = { prefix: '', postfix: '' }): string {
         let value = null;
-        if ( ! this.jed)
+        if (!this.jed)
             value = key;
         else
             value = this.jed.dcnpgettext(undefined, undefined, key);
@@ -57,9 +104,9 @@ export class I18n {
         return value;
     }
 
-    _c(context, key, formats): string {
+    _c(context: string, key: string, formats?: { [key: string]: (string|number) } | (string|number)[]): string {
         let value = null;
-        if ( ! this.jed)
+        if (!this.jed)
             value = key;
         else
             value = this.jed.dcnpgettext(undefined, context, key);
@@ -72,9 +119,9 @@ export class I18n {
         return value;
     }
 
-    _nc(context, key, plural, count, formats): string {
+    _nc(context: string, key: string, plural: string, count: number, formats?: { [key: string]: (string|number), n?: (string|number) }): string {
         let value = null;
-        if ( ! this.jed) {
+        if (!this.jed) {
             if (count != 1)
                 value = plural;
             else
@@ -84,10 +131,10 @@ export class I18n {
             value = this.jed.dcnpgettext(undefined, context, key, plural, count);
 
         if (count > 1) {
-            if (! formats)
-                formats = { };
+            if (!formats)
+                formats = {};
             if (formats.n === undefined)
-                formats.n = count;
+                formats.n = count.toString();
         }
         if (formats)
             value = this.format(value, formats);
@@ -97,9 +144,9 @@ export class I18n {
         return value;
     }
 
-    _n(key, plural, count, formats): string {
+    _n(key: string, plural: string, count: number, formats?: { [key: string]: (string|number), n?: (string|number) }): string {
         let value = null;
-        if ( ! this.jed) {
+        if (!this.jed) {
             if (count != 1)
                 value = plural;
             else
@@ -109,10 +156,10 @@ export class I18n {
             value = this.jed.dcnpgettext(undefined, undefined, key, plural, count);
 
         if (count > 1) {
-            if (! formats)
-                formats = { };
+            if (!formats)
+                formats = {};
             if (formats.n === undefined)
-                formats.n = count;
+                formats.n = count.toString();
         }
         if (formats)
             value = this.format(value, formats);
@@ -122,7 +169,7 @@ export class I18n {
         return value;
     }
 
-    __(compound, options={ prefix: '', postfix: '' }): string {
+    __(compound: string, options = { prefix: '', postfix: '' }): string {
         const parts = compound.split('\u0004');
         if (parts.length < 2 || parts[1] === '') {
             return this._(parts[0]);
@@ -134,21 +181,21 @@ export class I18n {
         }
     }
 
-    format(fstring:string, values:{[key:string]:string}, options:{prefix:string, postfix:string}={ prefix: '', postfix: '' }): string {
+    format(fstring: string, values: { [key: string]: (string|number) } | (string|number)[], options: { prefix: string, postfix: string } = { prefix: '', postfix: '' }): string {
         const { prefix, postfix } = options;
         if (typeof values === 'string') {
-            return fstring.replace('{}', `${ prefix }${ values }${ postfix }`);
+            return fstring.replace('{}', `${prefix}${values}${postfix}`);
         }
         else {
             let value = fstring;
             for (let name in values)
-                value = value.replace(`{${name}}`, `${ prefix }${ values[name] }${ postfix }`);
+                value = value.replace(`{${name}}`, `${prefix}${values[name]}${postfix}`);
             return value;
         }
     }
 
     isRTL() {
-        let rtlLangs = ['ar','arc','dv','fa','ha','he','khw','ks','ku','ps','ur','yi'];
+        let rtlLangs = ['ar', 'arc', 'dv', 'fa', 'ha', 'he', 'khw', 'ks', 'ku', 'ps', 'ur', 'yi'];
 
         return rtlLangs.find((item) => {
             return this.language === item || this.language.startsWith(item + '-');
@@ -159,10 +206,10 @@ export class I18n {
 
         let languages = navigator.languages;
 
-        if ( ! languages) {
+        if (!languages) {
             let lang = navigator.language || navigator.userLanguage || navigator.systemLanguage || navigator.browserLanguage;
             if (lang)
-                languages = [ lang ];
+                languages = [lang];
         }
 
         if (languages) {
@@ -189,7 +236,7 @@ export class I18n {
             isValid: true
         };
 
-        if ( ! code) {
+        if (!code) {
             parts.isValid = false;
             parts.code = code;
         }
@@ -228,7 +275,7 @@ export class I18n {
         return parts;
     }
 
-    findBestMatchingLanguage(code, codes, options) {
+    findBestMatchingLanguage(code: string, codes: string[], options?: { excludeDev?: boolean }) {
 
         options = options || {};
 

@@ -8,16 +8,19 @@ import focusLoop from '../../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
 import Store from '../store';
+import { Modules } from '../modules';
+import { RibbonModel } from '../ribbon';
+import Settings from '../settings';
 
 export class AnalyseTab extends RibbonTab {
     buttons: RibbonItem[] = [ ];
-    settings;
-    modules;
+    settings: Settings;
+    modules: Modules;
     store: Store;
     _moduleCount = 0;
     _analysesList = { };
 
-    constructor(modules, model) {
+    constructor(modules: Modules, model: RibbonModel) {
         super('analyses', 'A', _('Analyses'));
         this.modules = modules;
         this.buttons = [ ];
@@ -52,7 +55,7 @@ export class AnalyseTab extends RibbonTab {
         }
     }
 
-    _showModule(name) {
+    _showModule(name: string) {
         for (let i = 0; i < this.buttons.length; i++) {
             let button = this.buttons[i];
             if (button instanceof RibbonMenu)
@@ -92,7 +95,7 @@ export class AnalyseTab extends RibbonTab {
         let modules = this.modules.get('modules');
         for (let module of modules) {
             if (module.analyses.length > 0) {
-                let _translate = await module.getTranslator();
+                let _translate = await module.getTranslator;
                 if (this._analysesList[module.name] === undefined) {
                     this._analysesList[module.name] = { version: module.version, analyses: [] };
                     this._moduleCount += 1;
@@ -143,7 +146,7 @@ export class AnalyseTab extends RibbonTab {
 
         let menus = { };
         for (let module of modules) {
-            let _translate = await module.getTranslator();
+            let _translate = await module.getTranslator;
             let isNew = module.new;
             for (let analysis of module.analyses) {
                 if (analysis.category !== undefined && analysis.category !== 'analyses')
@@ -217,7 +220,7 @@ export class AnalyseTab extends RibbonTab {
         return this.buttons;
     }
 
-    private _analysisSelected(analysis) {
+    public _analysisSelected(analysis: { name: string, ns: string, title: string, checked: boolean }) {
         if (analysis.name === 'modules' && analysis.ns === 'app')
             this.store.show(1);
         else if (analysis.name === 'manageMods' && analysis.ns === 'app')

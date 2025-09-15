@@ -8,19 +8,22 @@ import RibbonButton from './ribbonbutton';
 import focusLoop from '../../common/focusloop';
 import RibbonGroup from './ribbongroup';
 import RibbonSeparator from './ribbonseparator';
+import { Modules } from '../modules';
+import Settings from '../settings';
+import { RibbonModel } from '../ribbon';
 
 //import Store from '../store';
 
 class PlotsTab extends RibbonTab {
     buttons: RibbonItem[] = [ ];
-    settings;
-    modules;
+    settings: Settings;
+    modules: Modules;
     //store: Store;
     _moduleCount = 0;
     _analysesList = { };
     _moreIndex: number = -1;
 
-    constructor(modules, model) {
+    constructor(modules: Modules, model: RibbonModel) {
         super('plots', 'P', _('Plots'));
         this.modules = modules;
         this.settings = model.settings();
@@ -92,7 +95,7 @@ class PlotsTab extends RibbonTab {
         this._moduleCount = 0;
         let modules = this.modules.get('modules');
         for (let module of modules) {
-            let _translate = await module.getTranslator();
+            let _translate = await module.getTranslator;
             if (module.analyses.length > 0) {
                 if (this._analysesList[module.name] === undefined) {
                     this._analysesList[module.name] = { version: module.version, analyses: [] };
@@ -145,7 +148,7 @@ class PlotsTab extends RibbonTab {
         let lastSub = null;
 
         for (let module of modules) {
-            let _translate = await module.getTranslator();
+            let _translate = await module.getTranslator;
             let isNew = module.new;
             for (let analysis of module.analyses) {
                 if (analysis.category !== 'plots')
@@ -250,7 +253,7 @@ class PlotsTab extends RibbonTab {
         return this.buttons;
     }
 
-    private _analysisSelected(analysis) {
+    private _analysisSelected(analysis: { name: string, ns: string, title: string, checked?: boolean }) {
        /* if (analysis.name === 'modules' && analysis.ns === 'app')
             this.store.show(1);
         else if (analysis.name === 'manageMods' && analysis.ns === 'app')

@@ -10,17 +10,17 @@ import tarp from './utils/tarp';
 import focusLoop from '../common/focusloop';
 import selectionLoop from '../common/selectionloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
-import Instance from './instance';
+import { RibbonModel } from './ribbon';
 
 class Store extends HTMLElement {
 
     $highlight: HTMLElement;
-    model: Instance;
+    model: RibbonModel;
     _selectedIndex: number;
     $tabs: NodeListOf<HTMLElement>;
     $pages: NodeListOf<HTMLElement>;
 
-    constructor(model: Instance) {
+    constructor(model: RibbonModel) {
         super();
 
         this.model = model;

@@ -22,7 +22,7 @@ export class VariableEditor extends HTMLElement {
     $hoverHeader: HTMLElement;
 
     editorPanel: EditorPanel;
-    transformEditor: typeof TransformEditor;
+    transformEditor: TransformEditor;
     editorModel: VariableModel;
 
     $ok: HTMLButtonElement;

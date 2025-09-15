@@ -12,6 +12,8 @@ export class RibbonGroup extends HTMLElement implements RibbonItem {
     dock: 'right' | 'left';
     parent: RibbonTab;
     items: RibbonItem[];
+    body: HTMLElement;
+    separator: HTMLElement;
 
     /*
     params
@@ -136,7 +138,7 @@ export class RibbonGroup extends HTMLElement implements RibbonItem {
         }
     }
 
-    setEnabled(enabled) {
+    setEnabled(enabled: boolean) {
         this.setAttribute('aria-disabled', (! enabled).toString());
     }
 

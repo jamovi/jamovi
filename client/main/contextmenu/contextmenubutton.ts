@@ -8,13 +8,35 @@ import Menu from '../../common/menu';
 
 import ActionHub from '../actionhub';
 import { RibbonItem } from '../ribbon/ribbontab';
+
+export interface ContextMenuButtonOptions {
+    title?: string;
+    name: string;
+    right?: boolean;
+    level?: number;
+    useActionHub?: boolean;
+    enabled?: boolean;
+    iconId?: string;
+    tabName?: string;
+    eventData?: any;
+    subItems?: any[];
+}
 import ButtonElement from '../utils/buttonelement';
 
 export class ContextMenuButton extends ButtonElement implements RibbonItem {
     eventData: any;
     menu: Menu
     _menuGroup: RibbonGroup;
-    dock: 'left';
+    dock: 'left' | 'right';
+    useActionHub: boolean;
+    _enabled: boolean;
+    _iconId: string;
+    tabName: string;
+    size: string;
+    level: number;
+    _definedTabName: boolean;
+    name: string;
+
 
     /*
     options
@@ -30,7 +52,7 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
     }
     */
 
-    constructor(options) {
+    constructor(options: ContextMenuButtonOptions) {
         super();
 
         let title = options.title === undefined ? null : options.title;
@@ -91,8 +113,6 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
                 this._clicked(event, false);
             else if (event.code == 'ArrowRight' && this._menuGroup !== undefined)
                 this._clicked(event, false);
-            else if (event.code == 'ArrowLeft' && this.parent)
-                this.parent.hideMenu(event, false);
         });
 
 
@@ -111,13 +131,6 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
                     this.setEnabled(event.changed.enabled);
             });
         }
-    }
-
-    setParent(parent) {
-        this.parent = parent;
-
-        if (this._menuGroup !== undefined)
-            this._menuGroup.setParent(parent);
     }
 
     setTabName(name) {
@@ -162,7 +175,7 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
         event.preventDefault();
     }
 
-    addItem(item) {
+    addItem(item: RibbonItem) {
         if (this._menuGroup === undefined) {
             this.menu = new Menu(this, this.level + 1, { exitKeys: ['ArrowLeft'] });
 
@@ -198,14 +211,14 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
         this.innerHTML = html;
     }
 
-    hideMenu(fromMouse) {
+    hideMenu(fromMouse?: boolean) {
         if ( ! this.menu)
             return;
 
         this.menu.hide(fromMouse);
     }
 
-    showMenu(fromMouse) {
+    showMenu(fromMouse?: boolean) {
         if ( ! this.menu)
             return;
 
@@ -236,7 +249,7 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
         return null;
     }
 
-    _toggleMenu(fromMouse) {
+    _toggleMenu(fromMouse?: boolean) {
         if (this.menu.isVisible())
             this.hideMenu(fromMouse);
         else

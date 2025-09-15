@@ -13,9 +13,12 @@ import SelectionLoop from '../common/selectionloop';
 import Notifs, { NotifData } from './ribbon/notifs';
 import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { Modules } from './modules';
+import Settings from './settings';
  
 
 type AnyTab = DataTab | VariablesTab | AnnotationTab | AnalyseTab | PlotsTab;
+
 export type TabTypes = {
   analyses: AnalyseTab;
   annotation: AnnotationTab;
@@ -38,8 +41,10 @@ export class RibbonModel extends EventMap<IRibbonModelData>{
     _plotsTab: PlotsTab;
     _editTab: AnnotationTab;
     appMenu: AppMenu;
+    _modules: Modules;
+    _settings: Settings;
 
-    constructor(modules, settings) {
+    constructor(modules: Modules, settings: Settings) {
         super({
             tabs: [],
             selectedTab: 'analyses'
@@ -236,19 +241,13 @@ export class RibbonView extends EventDistributor {
         );
 
         this.tabSelection.on('selected-index-changed', (data) => {
-            let tabs = Array.from(this.$tabs); // Convert NodeList or jQuery object to array
+            let tabs = Array.from(this.$tabs); // Convert NodeList object to array
             let index = tabs.indexOf(data.target);
-            //let index = this.$tabs.index(data.target);
             let tab = this.model.getTab(index);
 
             this.$body.setAttribute('aria-labeledby', `tab-${tab.name.toLowerCase()}`);
 
-            if (tab.getRibbonItems)
-                this.model.set('selectedTab', tab.name);
-            else {
-                let newEvent = new CustomEvent<{tabName: keyof TabTypes, withMouse: boolean}>('tabSelected', { detail: { tabName: tab.name, withMouse: data.withMouse }});
-                this.dispatchEvent(newEvent);
-            }
+            this.model.set('selectedTab', tab.name);
         });
 
         this.$fullScreen.addEventListener('click', () => {
@@ -323,7 +322,7 @@ export class RibbonView extends EventDistributor {
         this._refresh();
     }
 
-    openFileMenu(usingMouse) {
+    openFileMenu(usingMouse?: boolean) {
         let newEvent = new CustomEvent<{tabName: keyof TabTypes, withMouse: boolean}>('tabSelected', { detail: { tabName: 'file', withMouse: usingMouse }});
         this.dispatchEvent(newEvent);
         //this.trigger('tabSelected', 'file', usingMouse);
@@ -352,11 +351,6 @@ export class RibbonView extends EventDistributor {
         this.appMenu.hide();
 
         this.focus();
-    }
-
-    _buttonClicked(action) {
-        this._menuClosed();
-        this.model._actionRequest(action);
     }
 }
 

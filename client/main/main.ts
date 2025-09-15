@@ -1,6 +1,6 @@
 'use strict';
 
-import host from './host';
+import host, { WindowOpenFailEvent } from './host';
 
 import * as auth from './auth/auth';
 
@@ -30,6 +30,7 @@ import { UserFacingError } from './errors';
 import Keyboard from '../common/focusloop';
 
 import './utils/headeralert';
+import type { HeaderAlert } from './utils/headeralert';
 
 import lobby, { hasLobby } from './extras/lobby';
 import { InstanceOpenStream } from './instance';
@@ -38,15 +39,12 @@ import { IInstanceOpenResult } from './instance';
 import { IShowDialogOptions } from './host';
 
 import './infobox';
+import type { InfoBox } from './infobox';
 
 import keyboardJS  from 'keyboardjs';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
-
-
 
 window._ = I18n._;
 window.n_ = I18n._n;
-window.A11y = Keyboard;
 
 function ready(fn: () => void) {
     if (document.readyState !== 'loading')
@@ -68,7 +66,9 @@ try {
     I18n.setAvailableLanguages(languages.available);
     let current = languages.current;
     if ( ! current) {
-        let options = {};
+        let options: {
+            excludeDev?: boolean;
+        } = {};
         if (host.isElectron)
             // prevent the use of in-dev languages as 'system default' in electron
             options.excludeDev = true;
@@ -150,7 +150,7 @@ let ribbonModel = new RibbonModel(instance.modules(), instance.settings());
 // this is passing over a context boundary, so can't pass complex objects
 host.setDialogProvider({ showDialog: (op:string, options: IShowDialogOptions) => backstageModel.showDialog(op, options) });
 
-let infoBox = document.createElement('jmv-infobox');
+let infoBox = document.createElement('jmv-infobox') as InfoBox;
     infoBox.style.display = 'none';
     infoBox.setAttribute('id', 'infobox');
 
@@ -378,7 +378,7 @@ ready(async() => {
         event.dataTransfer.dropEffect = 'copy';
         event.preventDefault();
     };
-    document.ondrop = (event) => {
+    document.ondrop = (event: DragEvent) => {
         for (let file of event.dataTransfer.files)
             backstageModel.requestOpen({ path: file.path, title: file.name });
         event.preventDefault();
@@ -554,9 +554,9 @@ ready(async() => {
     });
 
     if (host.os === 'ios') {
-        let headerAlert = document.createElement('jmv-headeralert');
+        let headerAlert = document.createElement('jmv-headeralert') as HeaderAlert;
         document.body.prepend(headerAlert);
-        host.on('window-open-failed', (event) => {
+        host.on('window-open-failed', (event: WindowOpenFailEvent) => {
             headerAlert.notify(event);
         });
     }

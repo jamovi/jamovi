@@ -24,8 +24,8 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         this.classList.add('jmv-ribbon-button');
         this.classList.add('jmv-analyses-button');
         this.setAttribute('tabindex', '0');
-        this.focusId = focusLoop.getNextFocusId();
-        this.setAttribute('data-focus-id', this.focusId);
+        //this.focusId = focusLoop.getNextFocusId();
+        //this.setAttribute('data-focus-id', this.focusId);
         this.setAttribute('role', 'menuitem');
 
         this.title = title;
@@ -41,8 +41,6 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         if (shortcutKey) {
             let keySplit = shortcutKey.split('-');
             let stcOptions: IShortcutTokenOptions = { key: keySplit[0].toUpperCase(), action: event => this._clicked(event, false) };
-            if (keySplit.length > 1)
-                stcOptions.position = keySplit[1].toUpperCase();
             focusLoop.applyShortcutOptions(this, stcOptions);
         }
 
@@ -79,14 +77,14 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         this.setAttribute('aria-disabled', (! enabled).toString());
     }
 
-    _notifySelected(name, ns, title, checked) {
+    _notifySelected(name: string, ns: string, title: string, checked: boolean) {
         let analysis = { name, ns, title, checked };
         this.parent._analysisSelected(analysis);
         if (checked === undefined)
             this.hideMenu();
     }
 
-    hideMenu(fromMouse=false) {
+    hideMenu(fromMouse: boolean=false) {
         this.menu.hide(fromMouse);
     }
 
@@ -104,7 +102,7 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
 
         if (item.type === 'module' && item.name === name) {
             let menuId = item.el.getAttribute('aria-controls');
-            document.querySelector(`#${menuId} input`).checked = false;
+            document.querySelector<HTMLInputElement>(`#${menuId} input`).checked = false;
         }
 
         if (item.items && item.items.length > 0) {
@@ -140,7 +138,7 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
 
         if (item.type === 'module' && item.name === name) {
             let menuId = item.el.getAttribute('aria-controls');
-            document.querySelector(`#${menuId} input`).checked = true;
+            document.querySelector<HTMLInputElement>(`#${menuId} input`).checked = true;
         }
 
         if (item.items) {
@@ -402,17 +400,17 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         }
 
 
-        this.menuItems = menuElement.querySelectorAll('.jmv-ribbon-menu-item:not(.module)');
-        this.moduleItems = menuElement.querySelectorAll('.jmv-ribbon-menu-item.module');
-        this.groupItemLists = menuElement.querySelectorAll('.jmv-group-items:not(.side-panel .jmv-group-items)');
+        const menuItems = menuElement.querySelectorAll('.jmv-ribbon-menu-item:not(.module)');
+        //const moduleItems = menuElement.querySelectorAll('.jmv-ribbon-menu-item.module');
+        const groupItemLists = menuElement.querySelectorAll('.jmv-group-items:not(.side-panel .jmv-group-items)');
 
         // Add click event listeners
-        this.menuItems.forEach(item => {
+        menuItems.forEach(item => {
             item.addEventListener('click', (event: MouseEvent) => this._itemClicked(event));
         });
 
         // Add scroll event listeners
-        this.groupItemLists.forEach(list => {
+        groupItemLists.forEach(list => {
             list.addEventListener('scroll', event => this._moduleListScroll(event));
         });
 
@@ -429,13 +427,7 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         let rect = this.getBoundingClientRect();
         let x = rect.left + window.scrollX;
         let y = rect.top + window.scrollY + this.offsetHeight;
-        if (this.inMenu) {
-            const menuStyle = window.getComputedStyle(this.menu);
-            const menuMarginLeft = parseFloat(menuStyle.marginLeft);
-            const menuMarginRight = parseFloat(menuStyle.marginRight);
-            x += this.menu.offsetWidth + menuMarginLeft + menuMarginRight;
-            y -= rect.height + 10;
-        }
+
         this.menu.show(x, y, { withMouse: fromMouse });
     }
 }

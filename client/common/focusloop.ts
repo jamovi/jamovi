@@ -100,7 +100,7 @@ class FocusLoopToken extends EventEmitter implements IFocusLoopTokenOptions {
     }
 };
 
-type FocusMode = 'default' | 'shortcuts' | 'accessible' | 'hover' | 'keyboard';
+export type FocusMode = 'default' | 'shortcuts' | 'accessible' | 'hover' | 'keyboard';
 
 type KeyPressInfo = { 
     handle: () => void, 

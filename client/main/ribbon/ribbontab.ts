@@ -10,6 +10,7 @@ export interface RibbonItem extends HTMLElement {
     setParent?: (parent: RibbonTab, shortcut: string, inMenu?: boolean) => void;
     setTabName?: (name:string) => void;
     getMenus?: () => Menu[];
+    hideMenu?: (usedMouse?: boolean) => void;
     dock: 'right' | 'left';
     getEntryButton?: (openPath: string[], open: boolean, fromMouse?: boolean) => RibbonItem;
 }

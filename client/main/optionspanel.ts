@@ -6,7 +6,7 @@ if ('default' in Framesg) // this import is handled differently between browseri
     Framesg = Framesg.default;
 
 import host from './host';
-import I18n from '../common/i18n';
+import I18n, { I18nData } from '../common/i18n';
 
 import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
@@ -14,6 +14,15 @@ import { EventEmitter } from 'tsee';
 import DataSetViewModel from './dataset';
 import { Analysis } from './analyses';
 
+interface IFrameCommsApi {
+    frameDocumentReady: (data: any) => void;
+    onFrameMouseEvent: (data: any) => void;
+    onOptionsChanged: (data: any) => void;
+    hideOptions: (data: any) => void;
+    requestAction: (data: any) => any;
+    optionsViewReady: (ready: boolean) => void;
+    requestData: (data: any) => any;
+}
 
 class AnalysisResources extends EventEmitter {
     frame: HTMLIFrameElement;
@@ -23,8 +32,14 @@ class AnalysisResources extends EventEmitter {
     dataSetModel: DataSetViewModel
     analysis: Analysis;
     ready: Promise<any>;
-    def: string;
-    i18nDef: any;
+    def: string | { error: string };
+    i18nDef: I18nData;
+    options: { [name: string]: string };
+    frameComms: typeof Framesg;
+    frameCommsApi: IFrameCommsApi;
+    notifyDocumentReady: () => void;
+    notifyAborted: (reason?: any) => void;
+    jamoviVersion: string;
 
     constructor(analysis: Analysis, target: HTMLElement, iframeUrl: string, instanceId: string) {
         super();
@@ -141,7 +156,7 @@ class AnalysisResources extends EventEmitter {
 
         this.ready = Promise.all([
             analysis.ready.then(() => {
-                return new Promise((resolve, reject) => {
+                return new Promise<string | { error: string }>((resolve, reject) => {
                     if (analysis.missingModule) {
                         this.def = { error: 'Missing module: ' + analysis.ns };
                         resolve(this.def);
@@ -167,11 +182,11 @@ class AnalysisResources extends EventEmitter {
                     }
                 });
             }),
-            new Promise((resolve, reject) => {
+            new Promise<void>((resolve, reject) => {
                 this.notifyDocumentReady = resolve;
                 this.notifyAborted = reject;
             }),
-            host.version.then(version => {
+            host.version.then((version: string) => {
                 this.jamoviVersion = version;
             })
         ]).then(() => {
@@ -179,7 +194,7 @@ class AnalysisResources extends EventEmitter {
         });
     }
 
-    setAnalysisTitle(title) {
+    setAnalysisTitle(title: string) {
         if ( ! this.analysis.missingModule)
             this.frameComms.send("setTitle", title);
     }
@@ -204,7 +219,7 @@ class AnalysisResources extends EventEmitter {
         });  
     }
 
-    updateData(options) {
+    updateData(options: { [name: string]: any }) {
         this.options = options;
         if (!this.analysis.missingModule)
             this.frameComms.send("initialiseOptions", { id: this.analysis.id, options: this.options });
@@ -263,7 +278,7 @@ class OptionsPanel {
         }
     }
 
-    _optionsChanged(analysis, incoming) {
+    _optionsChanged(analysis: Analysis, incoming?: boolean) {
         if (incoming) {
             let analysesKey = analysis.ns + "-" + analysis.name;
             let resources = this._analysesResources[analysesKey];
@@ -272,14 +287,14 @@ class OptionsPanel {
         }
     }
 
-    _analysisNameChanged(analysis) {
+    _analysisNameChanged(analysis: Analysis) {
         let analysesKey = analysis.ns + "-" + analysis.name;
         let resources = this._analysesResources[analysesKey];
         if (resources)
             resources.setAnalysisTitle(analysis.getHeading());
     }
 
-    reloadAnalyses(moduleName) {
+    reloadAnalyses(moduleName: string) {
         let analysis = null;
         if (this._currentResources !== null && this._currentResources.analysis.ns === moduleName) {
             analysis = this._currentResources.analysis;
@@ -301,7 +316,7 @@ class OptionsPanel {
         }
     }
 
-    setAnalysis(analysis) {
+    setAnalysis(analysis: Analysis) {
         let analysesKey = analysis.ns + "-" + analysis.name;
 
         let resources = this._analysesResources[analysesKey];
@@ -338,7 +353,7 @@ class OptionsPanel {
         }
     }
 
-    notifyOfDataChange(resource, dataType, dataInfo) {
+    notifyOfDataChange(resource: AnalysisResources, dataType: 'columns', dataInfo: any) {
         resource.ready.then(() => {
             resource.notifyDataChanged(dataType, dataInfo);
         });
@@ -405,7 +420,7 @@ class OptionsPanel {
         frame.style.height = `${value}px`;
     }
 
-    addMsgListeners(resource) {
+    addMsgListeners(resource: AnalysisResources) {
         resource.on("hideOptions", () => {
             this.model.set('selectedAnalysis', null);
         });
@@ -415,9 +430,9 @@ class OptionsPanel {
         });
     }
 
-    removeMsgListeners(resource) {
-        resource.off("hideOptions");
-        resource.off("frameReady");
+    removeMsgListeners(resource: AnalysisResources) {
+        resource.removeAllListeners("hideOptions");
+        resource.removeAllListeners("frameReady");
     }
 
     hideOptions(clearSelected?: boolean) {

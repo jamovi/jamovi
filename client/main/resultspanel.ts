@@ -249,7 +249,7 @@ class ResultsPanel extends EventDistributor {
         });
 
         let selected = this.model.get('selectedAnalysis');
-        if (selected !== null && analysis.id === selected.id) {
+        if (selected !== null && selected instanceof Analysis && analysis.id === selected.id) {
             $container.setAttribute('data-selected', '');
             $container.setAttribute('aria-current', 'true');
         }
@@ -359,9 +359,9 @@ class ResultsPanel extends EventDistributor {
 
         let modulesWithRefChanges = [ ];
 
-        let oldNums = this._refsTable.getNumbers();
+        let oldNums = this._refsTable.getAllNumbers();
         this._refsTable.update();
-        let refNums = this._refsTable.getNumbers();
+        let refNums = this._refsTable.getAllNumbers();
         for (let name in oldNums) {
             if ( ! this.deepEqual(refNums[name], oldNums[name]))
                 modulesWithRefChanges.push(name);
@@ -417,7 +417,7 @@ class ResultsPanel extends EventDistributor {
             type: 'reftablechanged',
             data: {
                 refs: this._refsTable.getNumbers(analysis.ns),
-                refsMode: this.model.settings().getSetting('refsMode'),
+                refsMode: this.model.settings().getSetting('refsMode', 'bottom'),
             }
         };
         resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
@@ -476,7 +476,7 @@ class ResultsPanel extends EventDistributor {
                 devMode: this.model.settings().get('devMode'),
                 format: format,
                 refs: this._refsTable.getNumbers(analysis.ns),
-                refsMode: this.model.settings().getSetting('refsMode'),
+                refsMode: this.model.settings().getSetting('refsMode', 'bottom'),
                 isEmpty: resources.isEmpty,
                 hasTitle: resources.hasTitle,
                 selected: newSelected === null ? null : newSelected === analysis,

@@ -2,13 +2,49 @@
 'use strict';
 
 import host from './host';
-import focusLoop from '../common/focusloop';
+import focusLoop, { FocusMode } from '../common/focusloop';
 
-class InfoBox extends HTMLElement {
+export interface InfoBoxData {
+    'message-src'?: string;
+    title: string;
+    message: string;
+    status: string;
+    data?: any;
+    cancelable?: boolean;
+}
+
+export interface InfoBoxElement extends HTMLElement {
+    focusElement: () => HTMLElement;
+}
+
+export class InfoBox extends HTMLElement {
 
     static get observedAttributes() {
         return ['title', 'message', 'message-src', 'status'];
     }
+
+    _visible: boolean;
+    _root: ShadowRoot;
+    _host: HTMLElement;
+    _complete: Promise<any>;
+    _processEnterKey: boolean;
+    _body: HTMLElement;
+    _local: HTMLElement;
+    _container: HTMLElement;
+    _remote: HTMLElement;
+    _heading: HTMLElement;
+    _content: HTMLElement;
+    _button: HTMLElement;
+    _cancel: HTMLElement;
+    _indicator: HTMLElement
+    _loaded: boolean;
+    _iframe: HTMLIFrameElement;
+    _displayInfo: InfoBoxData | InfoBoxElement;
+    _currentElement: InfoBoxElement;
+    _focusLoopElement: HTMLElement;
+    _cancelable: boolean;
+    _resolve: (data: any) => void;
+    _cssStyles: {[style: string]: string};
 
     constructor() {
         super();
@@ -16,7 +52,7 @@ class InfoBox extends HTMLElement {
         this._complete = Promise.resolve();
 
         this._root = this.attachShadow({ mode: 'open' });
-        this._host = this._root.host;
+        this._host = this._root.host as HTMLElement;
 
         this._root.innerHTML = `
             <style>
@@ -62,9 +98,9 @@ class InfoBox extends HTMLElement {
         focusLoop.addFocusLoop(this._container, { level: 1, modal: true, allowKeyPaths: true } );
     }
 
-    setup(info, params, closeFocusMode) {
+    setup(info: InfoBoxData | InfoBoxElement, params?: { cancelable?: boolean, class?: string[] | string }, closeFocusMode?: FocusMode) {
 
-        const useExisting = this._visible && (
+        const useExisting = this._visible && (info instanceof HTMLElement === false) && (this._displayInfo instanceof HTMLElement === false) && (
             (info['message-src'] && info['message-src'] === this._displayInfo['message-src'])
             || (info.title === this._displayInfo.title
                 && info.message === this._displayInfo.message
@@ -114,19 +150,7 @@ class InfoBox extends HTMLElement {
 
             this._local.classList.add('external');
 
-            if (info.message || info.title) {
-                
-                this._host.setAttribute('title', info.title || '');
-                this._host.setAttribute('message', info.message || '');
-                this._host.setAttribute('status', info.status || '');
-                params.cancelable = info.cancelable === undefined ? false : info.cancelable;
-                this._processEnterKey = true;
-                this._focusLoopElement = this._container;
-                setTimeout(() => {
-                    this._button.focus();
-            }, 100);
-            }
-            else if (this._isElement(info)) {
+            if (info instanceof HTMLElement) {
                 if (info !== this._currentElement) {
                     if (this._currentElement)
                         focusLoop.removeFocusLoop(this._currentElement);
@@ -136,13 +160,24 @@ class InfoBox extends HTMLElement {
                     focusLoop.addFocusLoop(this._currentElement, { level: 1, modal: true, allowKeyPaths: true } );
 
                     if (params.class)
-                        this._local.classList.add(params.class);
+                        this._local.classList.add(...params.class);
                 }
                 this._focusLoopElement = this._currentElement;
                 this.appendChild(this._currentElement);
                 if (this._currentElement.focusElement)
                     setTimeout(() => {
                         this._currentElement.focusElement().focus();
+                }, 100);
+            }
+            else if (info.message || info.title) {
+                this._host.setAttribute('title', info.title || '');
+                this._host.setAttribute('message', info.message || '');
+                this._host.setAttribute('status', info.status || '');
+                params.cancelable = info.cancelable === undefined ? false : info.cancelable;
+                this._processEnterKey = true;
+                this._focusLoopElement = this._container;
+                setTimeout(() => {
+                        this._button.focus();
                 }, 100);
             }
             else {
@@ -155,8 +190,8 @@ class InfoBox extends HTMLElement {
                 focusLoop.enterFocusLoop(this._focusLoopElement, { withMouse: false, closeFocusMode });
             this._host.style.display = null;
             setTimeout(() => {
-                this._body.style.opacity = 1;
-                this._host.style.opacity = 1;
+                this._body.style.opacity = '1';
+                this._host.style.opacity = '1';
             }, 10);
         }
 
@@ -169,15 +204,9 @@ class InfoBox extends HTMLElement {
 
         this._complete = new Promise((resolve, reject) => {
             this._resolve = resolve;
-            this._reject = reject;
         });
 
         return this._complete;
-    }
-
-    _isElement(item){
-      return ( typeof HTMLElement === "object" ? item instanceof HTMLElement : //DOM2
-            item && typeof item === "object" && item !== null && item.nodeType === 1 && typeof item.nodeName==="string");
     }
 
     hide() {
@@ -185,7 +214,7 @@ class InfoBox extends HTMLElement {
             return;
 
         this._visible = false;
-        if (this._isElement(this._displayInfo))
+        if (this._displayInfo instanceof HTMLElement)
             this.removeChild(this._displayInfo);
         else {
             this._host.setAttribute('title', '');
@@ -265,7 +294,7 @@ class InfoBox extends HTMLElement {
             }
             if (data.status === 'show') {
                 this._indicator.style.display = 'none';
-                this._css = data.css;
+                this._cssStyles = data.css;
                 for (let style in data.css) {
                     this._body.style[style] = data.css[style];
                 }
@@ -275,12 +304,12 @@ class InfoBox extends HTMLElement {
     }
 
     clearCSS() {
-        if (this._css) {
-            for (let style in this._css) {
+        if (this._cssStyles) {
+            for (let style in this._cssStyles) {
                 this._body.style[style] = '';
             }
         }
-        this._css = [];
+        this._cssStyles = { };
     }
 
     attributeChangedCallback(name, old, value) {
@@ -298,7 +327,7 @@ class InfoBox extends HTMLElement {
                 this._iframe = document.createElement('iframe');
                 this._iframe.onload = () => {
                     this._loaded = true;
-                    if (this._displayInfo['message-src'] && this._displayInfo.data)
+                    if (this._displayInfo instanceof HTMLElement === false && this._displayInfo['message-src'] && this._displayInfo.data)
                         this._iframe.contentWindow.postMessage(this._displayInfo.data);
                 };
                 this._iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms';

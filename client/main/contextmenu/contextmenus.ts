@@ -3,7 +3,7 @@
 
 import RibbonSeparator from '../ribbon/ribbonseparator';
 import RibbonGroup from '../ribbon/ribbongroup';
-import ContextMenuButton from './contextmenubutton';
+import ContextMenuButton, { ContextMenuButtonOptions } from './contextmenubutton';
 
 export const createRowMenuItems = function(plural) {
     return [
@@ -49,7 +49,7 @@ export const createFilterRowMenuItems = function() {
     ];
 };
 
-export const createVariableMenuItems = function(plural, noData) {
+export const createVariableMenuItems = function(plural:boolean, noData) {
     let menu = [
         new RibbonGroup({ orientation: 'vertical', items: [
             new ContextMenuButton({ title: _('Add Variable'), name: 'addVar', subItems: [
@@ -142,7 +142,7 @@ export const createFilterMenuItems = function(noData) {
     }
 };
 
-export const createResultsObjectMenuItems = function(entries, parent, levelId) {
+export const createResultsObjectMenuItems = function(entries, parent?, levelId?: number) {
     let items = [];
     for (let entry of entries) {
 
@@ -154,7 +154,7 @@ export const createResultsObjectMenuItems = function(entries, parent, levelId) {
         if (title === 'Copy')
             iconId = 'copy';
 
-        let params = { title: title, iconId: iconId, name: entry.label + '_' + levelId + items.length, useActionHub: false };
+        let params: ContextMenuButtonOptions = { title: title, iconId: iconId, name: entry.label + '_' + levelId + items.length, useActionHub: false };
         if (entry.options !== undefined && entry.options.length > 0) {
             params.subItems = createResultsObjectMenuItems(entry.options, entry, items.length);
             params.eventData = { type: 'activated', address: entry.address };

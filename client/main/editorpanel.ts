@@ -14,6 +14,7 @@ export class EditorPanel extends EventEmitter {
     visible: boolean;
     attachedItem: HTMLElement;
     onBack: () => void;
+    $icon: HTMLElement;
 
     constructor(el: HTMLElement) {
         super();
@@ -65,7 +66,7 @@ export class EditorPanel extends EventEmitter {
             backCall();
     }
 
-    attach(item: HTMLElement, onBack: () => void = null) {
+    attach(item: (HTMLElement & {$icon?: HTMLElement}), onBack: () => void = null) {
 
         this.onBack = onBack;
         if (item !== null && item === this.attachedItem) {

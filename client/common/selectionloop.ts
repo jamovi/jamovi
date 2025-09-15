@@ -6,7 +6,19 @@ import { EventEmitter } from 'events';
 // and the movement and behaviour of that selection between and within other child controls
 export class SelectionLoop extends EventEmitter {
 
-    constructor(name, element) {
+    name: string;
+    container: HTMLElement;
+    selectedElement: HTMLElement;
+    focusElement: HTMLElement;
+
+    itemClass: string;
+    selectedItemClass: string;
+    highlightedItemClass: string;
+    autoSelectClass: string;
+    itemIgnoreClass: string;
+    actionClass: string;
+
+    constructor(name: string, element: HTMLElement) {
         super();
 
         this.name = name;
@@ -20,7 +32,7 @@ export class SelectionLoop extends EventEmitter {
 
         this.container.addEventListener('focusin', (event) => {
             let element = event.target;
-            if (element != this.container)
+            if (element instanceof HTMLElement && element != this.container)
                 this.highlightElement(element, false, false);
         });
 
@@ -39,7 +51,7 @@ export class SelectionLoop extends EventEmitter {
     }
 
 
-    highlightElement(element, highlightOnly=false, applyFocus=true) {
+    highlightElement(element: HTMLElement, highlightOnly=false, applyFocus=true) {
         if (element && element.classList.contains(this.itemClass) && element != this.focusElement) {
             const elements = this.container.querySelectorAll(`.${this.highlightedItemClass}`);
             elements.forEach(el => el.classList.remove(this.highlightedItemClass));
@@ -64,12 +76,12 @@ export class SelectionLoop extends EventEmitter {
     }
 
 
-    selectElement(element, withMouse=false, silent=false) {
+    selectElement(element: HTMLElement, withMouse=false, silent=false) {
         this.highlightElement(element, true, ! silent);
         this._selectElement(element, withMouse, silent);
     }
 
-    _selectElement(element, withMouse=false, silent=false) {
+    _selectElement(element: HTMLElement, withMouse=false, silent=false) {
         if (element && element.classList.contains(this.itemClass) && (element != this.selectedElement || element.classList.contains(this.actionClass))) {
             this.selectedElement = element;
             if ( ! silent)

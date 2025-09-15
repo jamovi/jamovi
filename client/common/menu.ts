@@ -1,6 +1,6 @@
 'use strict';
 
-import focusLoop from './focusloop';
+import focusLoop, { IFocusLoopEnterOptions } from './focusloop';
 
 export class Menu extends HTMLElement {
     owner: HTMLElement;
@@ -9,7 +9,7 @@ export class Menu extends HTMLElement {
     _visible: boolean = false;
     connected: boolean;
 
-    constructor(owner: HTMLElement=null, level: number=null, options: {id: string | undefined, className: string | undefined, exitKeys: string[] | undefined }=null) {
+    constructor(owner: HTMLElement=null, level: number=null, options: {id?: string | undefined, className?: string | undefined, exitKeys?: string[] | undefined }=null) {
         super();
 
         this.connected = false;
@@ -80,7 +80,7 @@ export class Menu extends HTMLElement {
         });
     }
 
-    connect(menu) {
+    connect(menu?: Menu) {
         let parent = null;
         if (! menu)
             parent = document.body;
@@ -115,15 +115,13 @@ export class Menu extends HTMLElement {
         focusLoop.changeLevel(this, level);
     }
 
-    show(x, y, options, openPath) {
+    show(x: number, y: number, options?: IFocusLoopEnterOptions) {
 
         if (typeof options !== 'object')
             throw 'problem';
 
         if (this._visible)
             return;
-
-        openPath = openPath === undefined ? [] : openPath;
 
         this._visible = true;
 

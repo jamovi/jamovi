@@ -2,9 +2,17 @@
 'use strict';
 
 import { TimedOut } from '../errors';
+import { WindowOpenFailEvent } from '../host';
+import { Future } from './common';
 
 
-class HeaderAlert extends HTMLElement {
+export class HeaderAlert extends HTMLElement {
+
+    _root: ShadowRoot;
+    _host: Element;
+    _url: string;
+    _future: Future<unknown>
+    _timeoutId: NodeJS.Timeout;
 
     constructor() {
         super();
@@ -18,29 +26,29 @@ class HeaderAlert extends HTMLElement {
         style.innerText = this._css();
         this._root.appendChild(style);
 
-        this._content = document.createElement('div');
-        this._content.id = 'content';
-        this._root.appendChild(this._content);
+        const _content = document.createElement('div');
+        _content.id = 'content';
+        this._root.appendChild(_content);
 
-        this._button = document.createElement('button');
-        this._button.id = 'open-button';
-        this._button.innerText = _('Try again');
-        this._button.addEventListener('click', (event) => this.open());
+        const _button = document.createElement('button');
+        _button.id = 'open-button';
+        _button.innerText = _('Try again');
+        _button.addEventListener('click', (event) => this.open());
 
-        this._text = document.createElement('div');
-        this._text.id = 'text';
-        this._text.innerText = _('Your web browser prevented jamovi from opening a new tab');
+        const _text = document.createElement('div');
+        _text.id = 'text';
+        _text.innerText = _('Your web browser prevented jamovi from opening a new tab');
 
-        this._explain = document.createElement('div');
-        this._explain.id = 'explanation';
-        this._explain.innerText = _('(This is a quirk of Safari and iPads)');
+        const _explain = document.createElement('div');
+        _explain.id = 'explanation';
+        _explain.innerText = _('(This is a quirk of Safari and iPads)');
 
-        this._content.appendChild(this._text);
-        this._content.appendChild(this._button);
-        this._content.appendChild(this._explain);
+        _content.appendChild(_text);
+        _content.appendChild(_button);
+        _content.appendChild(_explain);
     }
 
-    notify(event) {
+    notify(event: WindowOpenFailEvent) {
         this._url = event.url;
         this._future = event.future;
         if (this._timeoutId)
@@ -49,14 +57,14 @@ class HeaderAlert extends HTMLElement {
         this._host.classList.add('visible');
     }
 
-    open(message) {
+    open() {
         const win = window.open(this._url, '_blank');
         this._future.resolve(win);
         this._future = null;
         this.hide();
         if (this._timeoutId) {
             clearTimeout(this._timeoutId);
-            this._timeoutId = 0;
+            this._timeoutId = null;
         }
     }
 

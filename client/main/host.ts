@@ -51,7 +51,7 @@ let dialogProvider;
 const emitter = new events.EventEmitter();
 
 const on = etron.on || ((name, args) => emitter.on(name, args));
-let _notify = (name, args) => emitter.emit(name, args);
+let _notify = (name: string, args: WindowOpenFailEvent) => emitter.emit(name, args);
 
 export const os = (function() {
     if (['iPad Simulator',
@@ -81,6 +81,8 @@ export const openWindow = etron.openWindow || function(instanceId) {
     if (opened === null)
         _notify('window-open-failed', { url });
 };
+
+export type WindowOpenFailEvent = {url: string, future?: Future<unknown>}
 
 export async function open(url, target, windowFeatures) {
     let opened = window.open(url, target, windowFeatures);

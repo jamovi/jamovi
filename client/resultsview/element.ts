@@ -23,7 +23,7 @@ export interface ElementData {
 }
 
 export interface ElementModel<T = any> {
-    refs?: any[ ],
+    refs?: string[ ],
     refTable?: any,
     name: string,
     title: string,
