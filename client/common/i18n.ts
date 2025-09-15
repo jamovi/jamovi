@@ -224,7 +224,7 @@ export class I18n {
 
     // for information about language codes
     // https://www.w3.org/International/articles/language-tags/
-    parseLangCode(code) {
+    parseLangCode(code: string) {
 
         let parts = {
             language: null,
@@ -290,6 +290,8 @@ export class I18n {
 
         if (codes.includes(code))
             return code;
+        else if (code.startsWith('en'))  //if its english don't use translations.
+            return null;
 
         let desiredLanguage = this.parseLangCode(code);
         if (desiredLanguage.isValid === false)
