@@ -150,7 +150,6 @@ class Annotation extends HTMLElement implements IAnnotation {
         this.editor.keyboard.addBinding({
             key: 'Escape'
         }, (range, context) => {
-            //this.editor.blur();
             this.focus();
         });
         
@@ -166,7 +165,7 @@ class Annotation extends HTMLElement implements IAnnotation {
 
         let cancelFunction = this.editor.theme.tooltip.cancel;
         this.editor.theme.tooltip.cancel = () => {
-            cancelFunction.call(this);
+            cancelFunction.call(this.editor.theme.tooltip);
             this.blotToRemove = null;
             this.editor.focus();
         };

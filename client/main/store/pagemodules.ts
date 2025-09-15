@@ -86,7 +86,7 @@ class PageModules extends HTMLElement {
         const moduleSelection = new selectionLoop('modules', this.$content);
 
         this.$content.addEventListener('focus', (event) => {
-            let visibleItems = this.$content.querySelectorAll('.jmv-store-module:not(.hide-module)');
+            let visibleItems = this.$content.querySelectorAll<HTMLElement>('.jmv-store-module:not(.hide-module)');
             if (visibleItems.length > 0)
                 moduleSelection.highlightElement(visibleItems[0]);
         })
@@ -239,7 +239,7 @@ class PageModules extends HTMLElement {
 
         for (let module of this.modules) {
 
-            let translator = await module.getTranslator();
+            let translator = await module.getTranslator;
 
             let version = Version.stringify(module.version, 3);
 

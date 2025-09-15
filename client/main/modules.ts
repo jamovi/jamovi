@@ -8,7 +8,7 @@ import yaml from 'js-yaml';
 
 import host from './host';
 import Version from './utils/version';
-import I18n from '../common/i18n';
+import I18n, { I18nData, isI18nData } from '../common/i18n';
 
 import { EventMap } from '../common/eventmap';
 
@@ -73,7 +73,7 @@ interface IModuleMeta {
     minAppVersion: number,
     visible: boolean,
     incompatible: boolean,
-    getTranslator: () => (value: string) => string,
+    getTranslator: Promise<(value: string) => string>,
     ops: Op[]
 }
 
@@ -177,7 +177,7 @@ export class ModulesBase extends EventMap<IModulesModel> {
                 minAppVersion: modulePB.minAppVersion,
                 visible: modulePB.visible,
                 incompatible: modulePB.incompatible,
-                getTranslator: () => { return (value) => { return value; }; },
+                getTranslator: Promise.resolve((value: string) => { return value; }),
                 ops: []
             };
 
@@ -196,6 +196,8 @@ export class ModulesBase extends EventMap<IModulesModel> {
     _determineOps(module: IModuleMeta) : Op[] {
         return [ ];
     }
+
+    create?(module: IModuleMeta): void;
 }
 
 class Module {
@@ -204,13 +206,14 @@ class Module {
     _version: string;
     _moduleDefn: AnalysisDef[];
     _analysisDefns = { };
-    _i18nDefns = { };
+    _i18nDefns: {[code: string]: Promise<I18nData> } = { };
     _status: string = 'none';
     loaded = false;
-    _languages = [];
+    _languages: string[] = [];
     _i18nReady: Promise<void>;
     _ready: Promise<void>;
     currentI18nCode: string;
+    currentI18nDef: I18nData;
 
     constructor(ns, version) {
         this._ns = ns;
@@ -232,8 +235,8 @@ class Module {
         let url = `../modules/${ this._ns }`;
         if (this._version)
             url = `${ url }?v=${ this._version }`;
-        let options = { };
 
+        let options: RequestInit = { };
         if (refresh)
             options.cache = 'reload';
 
@@ -293,14 +296,15 @@ class Module {
         this.currentI18nDef = await this.getI18nDefn();
     }
 
-    translate(key) {
+    // so that this is bound
+    translate = (key: string): string => {
         if (key.trim() === '')
             return key;
 
         if ( ! this.currentI18nDef)
             return key;
 
-        let value = this.currentI18nDef.locale_data.messages[key.trim()];
+        let value: string[] = this.currentI18nDef.locale_data.messages[key.trim()];
         if (value === null || value === undefined || value[0] === '')
             return key;
         else
@@ -379,30 +383,30 @@ class Module {
 
             let code = await this.getCurrentI18nCode();
             if (code === null || code === '')
-                return '';
+                return null;
 
             let defn = this._i18nDefns[code];
             if (defn === undefined){
-                let defnProm = this._i18nDefns[code];
-                if (defnProm === undefined) {
-                    defnProm = this._i18nDefns[code] = (async() => {
+                //let defnProm = this._i18nDefns[code];
+                //if (defnProm === undefined) {
+                    defn = this._i18nDefns[code] = (async() => {
                         let url = `../modules/${ this._ns }/i18n/${ code }`;
                         let response = await fetch(url);
                         if (response.ok) {
                             try {
-                                return await response.json();
+                                return await response.json() as I18nData;
                             }
                             catch (e) {
                                 throw new ModuleCorruptError();
                             }
                         }
                         else {
-                            return '';
+                            return null;
                         }
                     })();
-                }
-                let defn = await defnProm;
-                return defn;
+                //}
+                //let defn = await defnProm;
+                //return defn;
             }
             return defn;
         }
@@ -493,10 +497,8 @@ export class Modules extends ModulesBase {
         });
     }
 
-    create(info) {
-        info.getTranslator = () => {
-            return this.getTranslator(info.name);
-        };
+    override create(info: IModuleMeta) {
+        info.getTranslator = this.getTranslator(info.name);
 
         this._moduleDefns[info.name] = new Module(info.name, Version.stringify(info.version));
     }
@@ -526,7 +528,7 @@ export class Modules extends ModulesBase {
         return module;
     }
 
-    async getDefn(ns, name) {
+    async getDefn(ns: string, name: string) {
         let module = this._moduleDefns[ns];
         if ( ! module)
             module = this._createModule(ns);
@@ -534,16 +536,16 @@ export class Modules extends ModulesBase {
         return await module.getDefn(name);
     }
 
-    async getTranslator(ns) {
+    async getTranslator(ns: string) {
         let module = this._moduleDefns[ns];
         if ( ! module)
             module = this._createModule(ns);
 
         await module._i18nReady;
-        return module.translate.bind(module);
+        return module.translate;
     }
 
-    async getI18nCodes(ns) {
+    async getI18nCodes(ns: string) {
         let module = this._moduleDefns[ns];
         if ( ! module)
             module = this._createModule(ns);
@@ -551,7 +553,7 @@ export class Modules extends ModulesBase {
         return await module.getI18nCodes();
     }
 
-    async getCurrentI18nCode(ns) {
+    async getCurrentI18nCode(ns: string) {
         let module = this._moduleDefns[ns];
         if ( ! module)
             module = this._createModule(ns);
@@ -559,7 +561,7 @@ export class Modules extends ModulesBase {
         return await module.getCurrentI18nCode();
     }
 
-    async getI18nDefn(ns) {
+    async getI18nDefn(ns: string) {
         let module = this._moduleDefns[ns];
         if ( ! module)
             module = this._createModule(ns);

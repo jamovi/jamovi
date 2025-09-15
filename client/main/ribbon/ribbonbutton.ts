@@ -16,6 +16,17 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
     value: any;
     _menuGroup: RibbonGroup;
     parent: RibbonTab;
+    labelId: string;
+    shortcutKey: string;
+    tabName: string;
+    _definedTabName: boolean;
+    size: 'small' | 'medium' | 'large';
+    dock: 'left' | 'right';
+    level: number;
+    menu: Menu;
+    inMenu: boolean;
+    icon: string;
+    name: string;
 
     /*
     params
@@ -82,8 +93,8 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
             this.classList.add('has-icon');
 
         this.setAttribute('data-name', this.name.toLowerCase());
-        this.focusId = focusLoop.getNextFocusId();
-        this.setAttribute('data-focus-id', this.focusId);
+        //this.focusId = focusLoop.getNextFocusId();
+        //this.setAttribute('data-focus-id', this.focusId);
         this.setAttribute('aria-disabled', 'true');
         if (right)
             this.classList.add('right');
@@ -138,7 +149,7 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
             this.classList.remove('checked');
     }
 
-    setParent(parent: RibbonTab, parentShortcutPath, inMenu) {
+    setParent(parent: RibbonTab, parentShortcutPath, inMenu: boolean) {
         this.parent = parent;
 
         let shortcutPath = parentShortcutPath;
@@ -249,22 +260,21 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
         this.innerHTML = html;
     }
 
-    hideMenu(fromMouse) {
+    hideMenu(fromMouse?: boolean) {
         if ( ! this.menu)
             return;
 
         this.menu.hide(fromMouse);
     }
 
-    showMenu(fromMouse) {
+    showMenu(fromMouse?: boolean) {
         if ( ! this.menu || this.menu.isVisible())
             return;
 
         this.positionMenu(fromMouse);
-        //focusLoop.updateShortcuts();
     }
 
-    _toggleMenu(fromMouse) {
+    _toggleMenu(fromMouse?: boolean) {
         if (this.menu.isVisible())
             this.hideMenu(fromMouse);
         else

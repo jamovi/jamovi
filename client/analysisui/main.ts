@@ -22,7 +22,14 @@ import { applyMagicEvents as ApplyMagicEvents } from './applymagicevents';
 import Keyboard from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
-import I18n from "../common/i18n";
+import I18n, { I18nData } from "../common/i18n";
+
+declare global {
+    function s_(key: string, formats?: { [key: string]: (string|number); } | (string|number)[], options?: { prefix: string; postfix: string; }): string;
+    interface Window {
+        s_: (key: string, formats?: { [key: string]: (string|number); } | (string|number)[], options?: { prefix: string; postfix: string; }) => string;
+    }
+}
 
 window.s_ = I18n._;
 
@@ -58,7 +65,7 @@ const frameCommsApi = {
 
 let parentFrame = new Framesg(window.parent, window.name, frameCommsApi);
 
-let requestData = function(requestType, requestData, getRemote) {
+let requestData = function(requestType: 'columns' | 'column', requestData, getRemote?: boolean) {
     let data = { requestType: requestType, requestData: requestData };
     if (getRemote)
         return parentFrame.send("requestData", data);
@@ -77,7 +84,7 @@ let requestData = function(requestType, requestData, getRemote) {
         return parentFrame.send("requestData", data);
 };
 
-let requestAction = function(requestType, requestData) {
+let requestAction = function(requestType: 'createColumn', requestData) {
     let data = { requestType: requestType, requestData: requestData };
     return parentFrame.send("requestAction", data);
 };
@@ -111,24 +118,17 @@ let dataResources = { columns: [] };
 
 document.oncontextmenu = function () { return false; };
 
-type i18nData = {
-    code: string;
-    domain: string;
-    locale_data: {
-        messages: {
-            [key: string] : string[];
-        }
-    }
-}
 
 class Analysis {
     View: OptionsView;
     model: IOptionsViewModel;
-    i18n: i18nData;
+    i18n: I18nData;
     id: number;
     viewTemplate: View;
+    inError: boolean;
+    errors: string[];
 
-    constructor(def: string, i18nDef: i18nData, jamoviVersion, id: number) {
+    constructor(def: string, i18nDef: I18nData, jamoviVersion, id: number) {
 
         this.id = id;
 
@@ -257,7 +257,7 @@ ready(() => {
 });
 
 
-function loadAnalysis(def, i18nDef, appI18nDef, jamoviVersion, id, focusMode) {
+function loadAnalysis(def, i18nDef: I18nData, appI18nDef: I18nData, jamoviVersion, id, focusMode) {
 
     if (appI18nDef)
         I18n.initialise(appI18nDef.locale_data.messages[''].lang, appI18nDef);

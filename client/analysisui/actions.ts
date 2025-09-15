@@ -312,7 +312,7 @@ class View extends EventEmitter {
 
     workspace: { [id: string]: any} = { };
     flags: { loaded: boolean, updating: boolean } = { loaded: true, updating: false };
-    private customVariables: CustomColumn[] = [];
+    customVariables: CustomColumn[] = [];
     handlers: { [name: string] : (...args: any[]) => void };
     _id: number;
     errors: string[] = [];

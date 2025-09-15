@@ -235,6 +235,10 @@ export interface IOptionsViewModel {
 
 export class OptionsView extends EventEmitter implements IControlProvider {
     el: HTMLElement;
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.el: HTMLElement`.
+     */
+    $el: any
     _i18nSource: { translate: (key: string) => string } = null;
     _nextControlID = 0;
     _loaded = false;

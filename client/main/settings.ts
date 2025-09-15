@@ -2,10 +2,11 @@
 'use strict';
 
 import { EventMap } from '../common/eventmap';
+import Coms from './coms';
 import host from './host';
 import { Event } from'./utils/sync';
 
-enum Theme {
+export enum Theme {
     DEFAULT = 'default', 
     MINIMAL = 'minimal',
     SPSS = 'iheartspss', 
@@ -18,7 +19,7 @@ enum Mode {
 }
 
 interface SettingsData {
-    coms: any,
+    coms: Coms,
     recents: any[ ],
     //examples: [ ],
     modules: any[ ],

@@ -363,7 +363,10 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
     controls: any[] = [];
     label: HTMLElement;
     buttons: HTMLElement;
-    $buttons: HTMLElement;
+    /**
+     * @deprecated Should not be used. Rather use `(property) Control.label: HTMLElement`.
+     */
+    $buttons: any;
     toolbar : Toolbar;
     _targetDoubleClickDetect = 0;
     _targetDoubleClickDetectObj = null;
