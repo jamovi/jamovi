@@ -1,14 +1,14 @@
 'use strict';
 
-class Option {
-    _value: any;
+class Option<T=any> {
+    _value: T;
     _template: { [property: string]: any};
     _templateOverride: { [property: string]: any};
     _isLeaf: boolean;
     _initialized: boolean;
     children: Option[];
 
-    constructor(template, value, isLeaf) {
+    constructor(template, value: T, isLeaf: boolean) {
         this._template = template;
         this._templateOverride = { };
         this._isLeaf = isLeaf;
@@ -18,14 +18,14 @@ class Option {
             this.setValue(value);
     }
 
-    setProperty(property, value) {
+    setProperty(property: string, value: any) {
         if (value === this._template[property])
             delete this._templateOverride[property];
         else
             this._templateOverride[property] = value;
     }
 
-    getProperty(property) {
+    getProperty(property: string) {
         let value = this._templateOverride[property];
         if (value === undefined)
             value = this._template[property];
@@ -33,14 +33,14 @@ class Option {
         return value;
     }
 
-    getValue() {
+    getValue(): T {
         if (this._isLeaf)
             return this._value;
         else if (this._onGetValue)
             return this._onGetValue();
     }
 
-    _onGetValue?(): any;
+    _onGetValue?(): T;
 
     arraysEqual(a, b) {
         if (a === b) return true;
@@ -85,7 +85,7 @@ class Option {
         return true;
     }
 
-    setValue(value) {
+    setValue(value: T) {
         let changed = false;
         if (this._isLeaf) {
             if (this.areEqual(value, this._value) === false) {
@@ -121,8 +121,8 @@ class Option {
         return changed;
     }
 
-    _createChildren?(value:any): void;
-    _updateChildren?(value:any): boolean;
+    _createChildren?(value:T): void;
+    _updateChildren?(value:T): boolean;
     getChild?(key: number | string): Option;
 
     getAssignedColumns() {
@@ -153,7 +153,7 @@ class Option {
         }
     }
 
-    renameColumn(oldName, newName) {
+    renameColumn(oldName: string, newName: string) {
         if (this._isLeaf)
             this._onRenameColumn(oldName, newName);
         else {
@@ -162,7 +162,7 @@ class Option {
         }
     }
 
-    renameLevel(variable, oldLabel, newLabel, getOption) {
+    renameLevel(variable, oldLabel: string, newLabel: string, getOption) {
         if (this._isLeaf)
             this._onRenameLevel(variable, oldLabel, newLabel, getOption);
         else {
@@ -171,7 +171,7 @@ class Option {
         }
     }
 
-    clearColumnUse(columnName) {
+    clearColumnUse(columnName: string) {
         if (this._isLeaf)
             this._onClearColumnUse(columnName);
         else {
@@ -188,31 +188,31 @@ class Option {
         return [];
     }
 
-    _onClearColumnUse(columnName) {  };
+    _onClearColumnUse(columnName: string) {  };
 
-    _onRenameColumn(oldName, newName) {  };
+    _onRenameColumn(oldName: string, newName: string) {  };
 
     _onRenameLevel(variable, oldLevel, newLevel, getOption) {  };
 }
 
-class Integer extends Option {
-    constructor(template, value) {
+class Integer extends Option<number> {
+    constructor(template, value: number) {
         super(template, value, true);
     }
 }
 
-class Number extends Option {
-    constructor(template, value) {
+class Number extends Option<number> {
+    constructor(template, value: number) {
         super(template, value, true);
     }
 }
 
-class Level extends Option {
-    constructor(template, value) {
+class Level extends Option<string> {
+    constructor(template, value: string) {
         super(template, value, true);
     }
 
-    override _onRenameLevel(variable, oldLabel, newLabel, getOption) {
+    override _onRenameLevel(variable, oldLabel: string, newLabel: string, getOption) {
         let linkedVariable = this.getProperty('variable');
         if (linkedVariable) {
             if (linkedVariable.startsWith('(') && linkedVariable.endsWith(')')) {
@@ -225,8 +225,8 @@ class Level extends Option {
     }
 }
 
-class Variable extends Option {
-    constructor(template, value) {
+class Variable extends Option<string> {
+    constructor(template, value: string) {
         super(template, value, true);
     }
 
@@ -242,14 +242,14 @@ class Variable extends Option {
             return [];
     }
 
-    override _onRenameColumn(oldName, newName) {
+    override _onRenameColumn(oldName: string, newName: string) {
         if (this._value === oldName)
             this._value = newName;
     }
 }
 
-class Variables extends Option {
-    constructor(template, value) {
+class Variables extends Option<string[]> {
+    constructor(template, value: string[]) {
         super(template, value, true);
     }
 
@@ -262,7 +262,7 @@ class Variables extends Option {
         return r;
     }
 
-    override _onClearColumnUse(columnName) {
+    override _onClearColumnUse(columnName: string) {
         if (this._value !== null) {
             for (let i = 0; i < this._value.length; i++) {
                 if (this._value[i] === columnName) {
@@ -273,7 +273,7 @@ class Variables extends Option {
         }
     }
 
-    override _onRenameColumn(oldName, newName) {
+    override _onRenameColumn(oldName: string, newName: string) {
         if (this._value !== null) {
             for (let i = 0; i < this._value.length; i++) {
                 if (this._value[i] === oldName)
@@ -284,7 +284,7 @@ class Variables extends Option {
 }
 
 class Output extends Variable {
-    constructor(template, value) {
+    constructor(template, value: string) {
         super(template, value);
     }
 
@@ -297,7 +297,7 @@ class Output extends Variable {
 }
 
 class Outputs extends Variables {
-    constructor(template, value) {
+    constructor(template, value: string[]) {
         super(template, value);
     }
 
@@ -311,8 +311,8 @@ class Outputs extends Variables {
     }
 }
 
-class Terms extends Option {
-    constructor(template, value) {
+class Terms extends Option<string[][]> {
+    constructor(template, value: string[][]) {
         super(template, value, true);
     }
 
@@ -327,7 +327,7 @@ class Terms extends Option {
         return t;
     }
 
-    override _onClearColumnUse(columnName) {
+    override _onClearColumnUse(columnName: string) {
         if (this._value !== null) {
             for (let i = 0; i < this._value.length; i++) {
                 for (let j = 0; j < this._value[i].length; j++) {
@@ -341,7 +341,7 @@ class Terms extends Option {
         }
     }
 
-    override _onRenameColumn(oldName, newName) {
+    override _onRenameColumn(oldName: string, newName: string) {
         if (this._value !== null) {
             for (let i = 0; i < this._value.length; i++) {
                 for (let j = 0; j < this._value[i].length; j++) {
@@ -354,8 +354,8 @@ class Terms extends Option {
 
 }
 
-class Term extends Option {
-    constructor(template, value) {
+class Term extends Option<string[]> {
+    constructor(template, value: string[]) {
         super(template, value, true);
     }
 
@@ -368,7 +368,7 @@ class Term extends Option {
         return r;
     }
 
-    override _onClearColumnUse(columnName) {
+    override _onClearColumnUse(columnName: string) {
         if (this._value !== null) {
             for (let i = 0; i < this._value.length; i++) {
                 if (this._value[i] === columnName) {
@@ -379,7 +379,7 @@ class Term extends Option {
         }
     }
 
-    override _onRenameColumn(oldName, newName) {
+    override _onRenameColumn(oldName: string, newName: string) {
         if (this._value !== null) {
             for (let i = 0; i < this._value.length; i++) {
                 if (this._value[i] === oldName)
@@ -389,13 +389,13 @@ class Term extends Option {
     }
 }
 
-class Pairs extends Option {
-    constructor(template, value) {
+class Pairs extends Option<{i1: string, i2: string}[]> {
+    constructor(template, value: {i1: string, i2: string}[]) {
         super(template, value, true);
     }
 
     override _onGetAssignedColumns() {
-        let r = [];
+        let r: string[] = [];
         if (this._value !== null) {
             for (let i = 0; i < this._value.length; i++) {
                 if (this._value[i] !== null) {
@@ -409,7 +409,7 @@ class Pairs extends Option {
         return r;
     }
 
-    override _onClearColumnUse(columnName) {
+    override _onClearColumnUse(columnName: string) {
         if (this._value !== null) {
             for (let i = 0; i < this._value.length; i++) {
                 if (this._value[i] !== null) {
@@ -426,7 +426,7 @@ class Pairs extends Option {
         }
     }
 
-    override _onRenameColumn(oldName, newName) {
+    override _onRenameColumn(oldName: string, newName: string) {
         if (this._value !== null) {
             for (let i = 0; i < this._value.length; i++) {
                 if (this._value[i] !== null) {
@@ -440,11 +440,11 @@ class Pairs extends Option {
     }
 }
 
-class Group extends Option {
+class Group extends Option<{ [name:string]: any }> {
     
     _indexedChildren: { [key:string]:Option };
 
-    constructor(template, value) {
+    constructor(template, value: { [name:string]: any }) {
         super(template, value, false);
 
         this.setValue(value);
@@ -463,7 +463,7 @@ class Group extends Option {
         return r;
     }
 
-    override _createChildren(value) {
+    override _createChildren(value: { [name:string]: any }) {
         this._indexedChildren = { };
         for (let i = 0; i < this._template.elements.length; i++) {
             let element = this._template.elements[i];
@@ -473,7 +473,7 @@ class Group extends Option {
         }
     }
 
-    override _updateChildren(value) {
+    override _updateChildren(value: { [name:string]: any }) {
         let changed = false;
         this.children = [];
         let newIndexedChildren = {};
@@ -502,13 +502,13 @@ class Group extends Option {
 }
 
 class Pair extends Group {
-    constructor(template, value) {
+    constructor(template, value: { [name:string]: any }) {
         super({ type: 'Group', elements: [{ type: 'Variable', name: 'i1' }, { type: 'Variable', name: 'i2' }] }, value);
     }
 }
 
-class ArrayOption extends Option {
-    constructor(template, value) {
+class ArrayOption extends Option<any[]> {
+    constructor(template, value: any[]) {
         super(template, value, false);
 
         this.setValue(value);
@@ -524,12 +524,12 @@ class ArrayOption extends Option {
         return r;
     }
 
-    override _createChildren(value) {
+    override _createChildren(value: any[]) {
         for (let i = 0; i < value.length; i++)
             this.children.push(OptionTypes.create(this._template.template, value[i]));
     }
 
-    override _updateChildren(value) {
+    override _updateChildren(value: any[]) {
         let changed = false;
         for (let i = 0; i < value.length; i++) {
             if (i < this.children.length)
@@ -616,6 +616,16 @@ export class Options {
         this._changingHandles.push(handle);
     }
 
+    getAssignedOutputs() {
+        let r = [];
+        for (let name in this._options) {
+            let option = this._options[name];
+            r = r.concat(option.getAssignedOutputs());
+        }
+        r = [...new Set(r)];
+        return r;
+    }
+
     getAssignedColumns() {
         let r = [];
         for (let name in this._options) {
@@ -682,7 +692,7 @@ export class Options {
         return null;
     }
 
-    setValues(values, initializeOnly?: boolean) {
+    setValues(values: {[name: string]: any}, initializeOnly?: boolean) {
         let changed = false;
         for (let name in values) {
             let value = values[name];
@@ -730,7 +740,7 @@ export class Options {
     }
 
     getValues() {
-        var values = { };
+        var values: { [name: string]: any } = { };
         for (let name in this._options) {
             let value = this._options[name].getValue();
             if (value !== undefined)

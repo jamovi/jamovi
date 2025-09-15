@@ -94,6 +94,10 @@ export class BackstageModel extends EventMap<IBackstageModel> {
     _oneDriveOpenModel: FSEntryListModel;
     _oneDriveSaveModel: FSEntryListModel;
 
+    _savePromiseResolve: () => void
+    _dialogPath: string;
+    _opHasChanged: boolean;
+
     constructor(instance: IBackstageSupport) {
         super({
             activated : false,
@@ -693,13 +697,13 @@ export class BackstageModel extends EventMap<IBackstageModel> {
         if (index === -1)
             index = 0;
 
-        if (this._opChanged) {
+        if (this._opHasChanged) {
             if (index >= op.places.length)
                 index = 0;
             else
                 this.attributes.place = op.places[index].name;
 
-            this._opChanged = false;
+            this._opHasChanged = false;
         }
 
         return op.places[index];
@@ -839,8 +843,12 @@ export class BackstageModel extends EventMap<IBackstageModel> {
         let currentPlace = this.getCurrentPlace();
         if (currentPlace.model.fileExtensions) {
             for (let extDesc of currentPlace.model.fileExtensions)
-                for (let ext of extDesc.extensions)
-                    extensions.push(ext);
+                if (typeof extDesc === 'string')
+                    extensions.push(extDesc);
+                else {
+                    for (let ext of extDesc.extensions)
+                        extensions.push(ext);
+                }
         }
 
         let promise = this.instance.browse(dirPath, extensions);
@@ -915,7 +923,7 @@ export class BackstageModel extends EventMap<IBackstageModel> {
 
     _opChanged() {
 
-        this._opChanged = true;
+        this._opHasChanged = true;
 
         let op = this.getCurrentOp();
         if (op === null)
@@ -1044,7 +1052,7 @@ export class BackstageModel extends EventMap<IBackstageModel> {
             throw 'This method can only be called from outside of backstage.';
 
         let rej: Function;
-        let prom = new Promise((resolve, reject) => {
+        let prom = new Promise<void>((resolve, reject) => {
             this._savePromiseResolve = resolve;
             rej = reject;
         }).then(() => {
@@ -1172,6 +1180,8 @@ export class BackstageView  extends EventDistributor {
     ops: NodeListOf<HTMLElement>;
     opPanel: HTMLElement;
     menuSelection: SelectionLoop;
+    activeStateChanging: boolean;
+    deactivating: boolean;
 
     constructor(model: BackstageModel) {
         super();

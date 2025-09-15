@@ -1,6 +1,7 @@
 'use strict';
 
 import { EventMap } from "../common/eventmap";
+import Coms, { QQ } from "./coms";
 import { Block, IAreaSelection, ISelection, RowBlock } from "./selection";
 
 enum TransformAction {
@@ -147,7 +148,7 @@ interface DataSetModelData {
     vColumnCount : number,
     tColumnCount : number,
     removedRowRanges: RowRange[],
-    coms : any,
+    coms : Coms,
     instanceId : string | null,
     editingVar : number[] | null,
     varEdited : boolean,
@@ -260,7 +261,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
         }
     };
 
-    constructor(coms, extra: Omit<M, keyof DataSetModelData>) {
+    constructor(coms: Coms, extra: Omit<M, keyof DataSetModelData>) {
         super(Object.assign({
             hasDataSet : false,
             columns    : [ ],
@@ -446,7 +447,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
             return this.attributes.columns[index];
     }
 
-    insertRows(ranges: { rowStart: number, rowCount: number}[]): Promise<any> {
+    insertRows(ranges: { rowStart: number, rowCount: number}[]): QQ.Promise<any> {
 
         let coms = this.attributes.coms;
 
@@ -471,7 +472,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
         });
     }
 
-    deleteRows(rowRanges: { rowStart: number, rowCount: number}[]): Promise<any> {
+    deleteRows(rowRanges: { rowStart: number, rowCount: number}[]) {
 
         let coms = this.attributes.coms;
 
@@ -510,7 +511,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
         throw 'Column display index out of range.';
     }
 
-    insertColumn(columns: Column[] | Column, isDisplayIndex?: boolean): Promise<any> {
+    insertColumn(columns: Column[] | Column, isDisplayIndex?: boolean) {
 
         if (Array.isArray(columns) === false)
             columns = [columns];
@@ -612,7 +613,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
         }
     }
 
-    toggleFilterVisibility(): Promise<any> {
+    toggleFilterVisibility() {
 
         let coms = this.attributes.coms;
 
@@ -634,11 +635,11 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
         });
     }
 
-    deleteColumn(id: number): Promise<any> {
+    deleteColumn(id: number) {
         return this.deleteColumns([id]);
     }
 
-    deleteColumns(ids: number[]): Promise<any> {
+    deleteColumns(ids: number[]) {
 
         let coms = this.attributes.coms;
 
@@ -698,12 +699,12 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
         });
     }
 
-    changeColumn(id: number, values: Partial<Column>): Promise<any> {
+    changeColumn(id: number, values: Partial<Column>) {
         let column = this.getColumnById(id);
         return this.changeColumns([{ index: column.index, id: id, values: values }]);
     }
 
-    changeColumns(pairs: {index: number, id: number, values: Partial<Column>}[]): Promise<any> {
+    changeColumns(pairs: {index: number, id: number, values: Partial<Column>}[]) {
 
         let coms = this.attributes.coms;
         let datasetPB = new coms.Messages.DataSetRR();
@@ -1395,7 +1396,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
         return transform;
     }
 
-    setTransforms(pairs: { id: number, values: Partial<Transform>}[]): Promise<any> {
+    setTransforms(pairs: { id: number, values: Partial<Transform>}[]) {
 
         let coms = this.attributes.coms;
         let datasetPB = new coms.Messages.DataSetRR();
@@ -1483,7 +1484,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
         });
     }
 
-    removeTransforms(ids: number[]): Promise<any> {
+    removeTransforms(ids: number[]) {
 
         let coms = this.attributes.coms;
         let datasetPB = new coms.Messages.DataSetRR();
@@ -1533,7 +1534,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
         });
     }
 
-    redo(): Promise<any> {
+    redo() {
         let coms = this.attributes.coms;
         let datasetPB = new coms.Messages.DataSetRR();
         datasetPB.op = coms.Messages.GetSet.REDO;
@@ -1591,7 +1592,7 @@ interface Cell {
 
 class DataSetViewModel extends DataSetModel<DataSetViewModelData & DataSetModelData> { 
 
-    constructor(coms) {
+    constructor(coms: Coms) {
         super(coms, {
             cells    : [ ],
             filtered : [ ],

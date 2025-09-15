@@ -8,6 +8,7 @@ import focusLoop from '../../common/focusloop';
 import host from '../host';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 import { RibbonModel } from "../ribbon";
+import { Theme } from "../settings";
 
 export class AppMenuButton extends EventDistributor {
 
@@ -111,7 +112,7 @@ export class AppMenuButton extends EventDistributor {
         let $nFormat = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
         $results.append($nFormat);
         $nFormat.append(HTML.parse(`<div id="${nFormatId}">${_('Number format')}</div>`));
-        this.$nFormatList = HTML.parse(`<select aria-labelledby="${nFormatId}"><optgroup label="${_('significant figures')}"><option value="sf:3">${ _('{n} sf', { n: 3 }) }</option><option value="sf:4">${ _('{n} sf', { n: 4 }) }</option><option value="sf:5">${ _('{n} sf', { n: 5 }) }</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:2">${ _('{n} dp', { n: 2 }) }</option><option value="dp:3">${ _('{n} dp', { n: 3 }) }</option><option value="dp:4">${ _('{n} dp', { n: 4 }) }</option><option value="dp:5">${ _('{n} dp', { n: 5 }) }</option><option value="dp:16">${ _('{n} dp', { n: 16 }) }</option></optgroup></select>`)
+        this.$nFormatList = HTML.parse(`<select aria-labelledby="${nFormatId}"><optgroup label="${_('significant figures')}"><option value="sf:3">${ _('{n} sf', { n: '3' }) }</option><option value="sf:4">${ _('{n} sf', { n: '4' }) }</option><option value="sf:5">${ _('{n} sf', { n: '5' }) }</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:2">${ _('{n} dp', { n: '2' }) }</option><option value="dp:3">${ _('{n} dp', { n: '3' }) }</option><option value="dp:4">${ _('{n} dp', { n: '4' }) }</option><option value="dp:5">${ _('{n} dp', { n: '5' }) }</option><option value="dp:16">${ _('{n} dp', { n: '16' }) }</option></optgroup></select>`)
         $nFormat.append(this.$nFormatList);
         this.$nFormatList.addEventListener('click', event => event.stopPropagation());
         this.$nFormatList.addEventListener('change', event => this._changeResultsFormat());
@@ -120,7 +121,7 @@ export class AppMenuButton extends EventDistributor {
         let $pFormat = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
         $results.append($pFormat);
         $pFormat.append(HTML.parse(`<div id="${pFormatId}">${_('p-value format')}</div>`));
-        this.$pFormatList = HTML.parse(`<select aria-labelledby="${pFormatId}"><optgroup label="${_('significant figures')}"><option value="sf:3">${ _('{n} sf', { n: 3 }) }</option><option value="sf:4">${ _('{n} sf', { n: 4 }) }</option><option value="sf:5">${ _('{n} sf', { n: 5 }) }</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:3">${ _('{n} dp', { n: 3 }) }</option><option value="dp:4">${ _('{n} dp', { n: 4 }) }</option><option value="dp:5">${ _('{n} dp', { n: 5 }) }</option><option value="dp:16">${ _('{n} dp', { n: 16 }) }</option></optgroup></select>`);
+        this.$pFormatList = HTML.parse(`<select aria-labelledby="${pFormatId}"><optgroup label="${_('significant figures')}"><option value="sf:3">${ _('{n} sf', { n: '3' }) }</option><option value="sf:4">${ _('{n} sf', { n: '4' }) }</option><option value="sf:5">${ _('{n} sf', { n: '5' }) }</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:3">${ _('{n} dp', { n: '3' }) }</option><option value="dp:4">${ _('{n} dp', { n: '4' }) }</option><option value="dp:5">${ _('{n} dp', { n: '5' }) }</option><option value="dp:16">${ _('{n} dp', { n: '16' }) }</option></optgroup></select>`);
         $pFormat.append(this.$pFormatList);
         this.$pFormatList.addEventListener('click', event => event.stopPropagation())
         this.$pFormatList.addEventListener('change', event => this._changeResultsFormat());
@@ -156,7 +157,7 @@ export class AppMenuButton extends EventDistributor {
         this.$themeList = HTML.parse(`<select aria-labelledby="${themeId}"><option value="default">${_('Default')}</option><option value="minimal">${_('Minimal')}</option><option value="iheartspss">${_('I ♥ SPSS')}</option><option value="hadley">${_('Hadley')}</option><option value="bw">${_('Black & white')}</option></select>`);
         $theme.append(this.$themeList);
         this.$themeList.addEventListener('click', event => event.stopPropagation())
-        this.$themeList.addEventListener('change', event => this._changeTheme(event.target.value));
+        this.$themeList.addEventListener('change', event => this._changeTheme(this.$themeList.value));
 
         let paletteId = focusLoop.getNextAriaElementId('label');
         let $palette = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
@@ -165,7 +166,7 @@ export class AppMenuButton extends EventDistributor {
         this.$paletteList = HTML.parse(`<select aria-labelledby="${paletteId}"><optgroup label="${_('qualitative')}"><option value="jmv">jmv</option><option value="Dark2">${_('Dark2')}</option><option value="Set1">${_('Set1')}</option><option value="Accent">${_('Accent')}</option><option value="spss">${_('I ♥ SPSS')}</option><option value="hadley">${_('Hadley')}</option></optgroup><optgroup label="${_('sequential')}"><option value="Greys">${_('Greys')}</option><option value="Blues">${_('Blues')}</option><option value="Greens">${_('Greens')}</option></optgroup></select>`);
         $palette.append(this.$paletteList);
         this.$paletteList.addEventListener('click', event => event.stopPropagation())
-        this.$paletteList.addEventListener('change', event => this._changePalette(event.target.value));
+        this.$paletteList.addEventListener('change', event => this._changePalette(this.$paletteList.value));
 
         $content.append(HTML.parse('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
@@ -209,7 +210,7 @@ export class AppMenuButton extends EventDistributor {
         $zoomOut.addEventListener('click', event => { this.model.settings().zoomOut(); event.stopPropagation(); });
 
         host.on('zoom', event => {
-            let z = '' + parseInt(event.zoom * 100) + '%';
+            let z = `${Math.floor(event.zoom * 100)}%`;
             this.$zoomLevel.innerText = z;
         });
 
@@ -315,10 +316,10 @@ export class AppMenuButton extends EventDistributor {
     _updateUI() {
         let settings = this.model.settings();
 
-        let fmt = settings.getSetting('format');
+        let fmtString = settings.getSetting('format', undefined);
         let nf, pf;
         try {
-            fmt = JSON.parse(fmt);
+            const fmt = JSON.parse(fmtString);
             if ( ! ('pt' in fmt))
                 fmt.pt = 'dp';
             nf = fmt.t + ':' + fmt.n;
@@ -335,7 +336,7 @@ export class AppMenuButton extends EventDistributor {
         let refsMode = settings.getSetting('refsMode', 'bottom');
         this.$refsModeList.value = refsMode;
 
-        let theme = settings.getSetting('theme', 'default');
+        let theme = settings.getSetting('theme', Theme.DEFAULT);
         this.$themeList.value = theme;
         let palette = settings.getSetting('palette', 'jmv');
         this.$paletteList.value = palette;
@@ -375,7 +376,7 @@ export class AppMenuButton extends EventDistributor {
         }, 200);
     }
 
-    hide(fromMouse) {
+    hide(fromMouse?: boolean) {
         if ( ! this.menuVisible)
             return;
         this.menuVisible = false;

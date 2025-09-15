@@ -2,26 +2,32 @@
 'use strict';
 
 class RefTable {
+    mode: 'bottom' | 'hidden';
+    table: {
+        [name: string]: number;
+    };
+    _listeners: { [eventName: string]: ((...args: any[]) => void)[] };
+
     constructor() {
         this.table = {};
         this.mode = 'bottom';
         this._listeners = { };
     }
 
-    setup(table, mode) {
+    setup(table: { [name: string]: number; }, mode: 'bottom' | 'hidden') {
         this.table = table;
         this.mode = mode;
         this.dispatchEvent(new CustomEvent('changed'));
     }
 
-    addEventListener(name, callback) {
+    addEventListener(name: string, callback: (...args: any[]) => void) {
         if (name in this._listeners)
             this._listeners[name].push(callback);
         else
             this._listeners[name] = [ callback ];
     }
 
-    dispatchEvent(event) {
+    dispatchEvent(event: any) {
         let listeners = this._listeners[event.type];
         if (listeners) {
             for (let listener of listeners)
@@ -44,6 +50,11 @@ const css = `
 `;
 
 export class ReferenceNumbers extends HTMLElement {
+    _root: ShadowRoot;
+    _body: HTMLElement;
+    _refTable: RefTable;
+    _refs: string[];
+
     constructor() {
         super();
 
@@ -62,12 +73,12 @@ export class ReferenceNumbers extends HTMLElement {
         this._body = this._root.querySelector('div.body');
     }
 
-    setTable(refTable) {
+    setTable(refTable: RefTable) {
         this._refTable = refTable;
         this._refTable.addEventListener('changed', () => this.update());
     }
 
-    setRefs(refs) {
+    setRefs(refs: string[]) {
         this._refs = refs;
         this.update();
     }

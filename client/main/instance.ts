@@ -15,7 +15,7 @@ import OptionsPB from './optionspb';
 import { Modules } from './modules';
 import I18n from '../common/i18n';
 
-import Settings from './settings';
+import Settings, { Theme } from './settings';
 import ProgressStream from './utils/progressstream';
 
 import { UserFacingError } from './errors';
@@ -34,6 +34,8 @@ interface CreateAnalysisOptions {
 
 import { parse as parseJsonLines } from './utils/jsonlines';
 import { ISaveOptions } from './backstage/fsentry';
+import Q from 'q';
+import Coms, { QQ } from './coms';
 
 export interface IInstanceOpenOptions {
     path?: string,
@@ -75,10 +77,10 @@ export interface IInstanceOpenProgress {
 export type InstanceOpenStream = ProgressStream<IInstanceOpenProgress, IInstanceOpenResult>;
 
 export interface IModuleInteractions {
-    installModule: (name: string) => Promise<void>,
-    uninstallModule: (name: string) => Promise<void>,
-    setModuleVisibility: (name: string, value: boolean) =>  Promise<void>,
-    retrieveAvailableModules: () =>  Promise<void>,
+    installModule: (name: string) => QQ.Promise<void>,
+    uninstallModule: (name: string) => QQ.Promise<void>,
+    setModuleVisibility: (name: string, value: boolean) =>  QQ.Promise<void>,
+    retrieveAvailableModules: () => QQ.Promise<void>,
 }
 
 export interface ISettingsProvider {
@@ -86,7 +88,7 @@ export interface ISettingsProvider {
 }
 
 export interface IInstanceModel {
-    coms : any,
+    coms : Coms,
     selectedAnalysis : Analysis | 'refsTable' | null,
     hasDataSet : boolean,
     path : string,
@@ -103,7 +105,7 @@ export interface IBackstageResources {
     browse: (filePath: string, extensions: string[]) => any,
     modules: () => Modules,
     open: (options: IInstanceOpenOptions) => InstanceOpenStream,
-    dataSetModel: () => typeof DataSetViewModel,
+    dataSetModel: () => DataSetViewModel,
     import: (paths: string[]) => any,
     save: (options: ISaveOptions) => any
 }
@@ -112,7 +114,7 @@ export type IModulesProvider = IModuleInteractions & ISettingsProvider & EventMa
 
 export type IBackstageSupport = IBackstageResources & ISettingsProvider & EventMap<IInstanceModel>;
 
-export class Instance extends EventMap<IInstanceModel>{
+export class Instance extends EventMap<IInstanceModel> implements IBackstageSupport{
 
     _settings: Settings;
     _modules: Modules;
@@ -124,7 +126,7 @@ export class Instance extends EventMap<IInstanceModel>{
     command: string = '';
     _analyses: Analyses;
 
-    constructor(coms) {
+    constructor(coms: Coms) {
         super({
             coms : coms,
             selectedAnalysis : null,
@@ -212,7 +214,7 @@ export class Instance extends EventMap<IInstanceModel>{
 
     }
 
-    import(paths) {
+    import(paths: string[]) {
 
         let coms = this.attributes.coms;
 
@@ -237,14 +239,14 @@ export class Instance extends EventMap<IInstanceModel>{
                 message: _('File imported'),
                 cause:  _('Import successful'),
             });
-        }, (error) => {
+        }, (error: { message: string, cause: string }) => {
             progress.dismiss();
             // we still have to retrieveInfo() on failure, because the import
             // may have failed on, say, the second data set, and the data set
             // will still have changed
             this._readDataset(false);
             this._notify(error);
-        }, (prog) => {
+        }, (prog: [number, number]) => {
             progress.set('progress', prog);
             this.trigger('notification', progress);
             return prog;
@@ -515,7 +517,7 @@ export class Instance extends EventMap<IInstanceModel>{
             } catch (e) {
 
                 if (e instanceof FileExistsError && ! options.overwrite) {
-                    const response = window.confirm(_(`The file '{filename}' already exists. Overwrite this file?`, { filename }), _('Confirm overwite'));
+                    const response = window.confirm(_(`The file '{filename}' already exists. Overwrite this file?`, { filename }));
                     if (response) {
                         options.overwrite = true;
                         retrying = true;
@@ -543,7 +545,7 @@ export class Instance extends EventMap<IInstanceModel>{
 
         options = Object.assign({}, options); // clone so we can modify without side-effects
 
-        return new ProgressStream(async (setProgress) => {
+        return new ProgressStream<[number, number], any>(async (setProgress) => {
 
             const app = await host.nameAndVersion;
 
@@ -855,7 +857,7 @@ export class Instance extends EventMap<IInstanceModel>{
 
     _optionsExtras() {
         let ppi = Math.trunc(72 * (window.devicePixelRatio || 1));
-        let theme = this._settings.getSetting('theme', 'default');
+        let theme = this._settings.getSetting('theme', Theme.DEFAULT);
         let palette = this._settings.getSetting('palette', 'jmv');
 
         return { '.ppi': ppi, theme: theme, palette: palette };
@@ -916,7 +918,7 @@ export class Instance extends EventMap<IInstanceModel>{
         this._sendAnalysisRequest(request);
     }
 
-    async _sendAnalysis(analysis, duplicee) {
+    async _sendAnalysis(analysis, duplicee?: Analysis) {
         this._dataSetModel.set('edited', true);
 
         let request = null;
@@ -1108,7 +1110,7 @@ export class Instance extends EventMap<IInstanceModel>{
 
             if (columnDataChanged || columnRenamed || columnDeleted) {
                 let selectedAnalysis = this.get('selectedAnalysis');
-                if (selectedAnalysis !== null && selectedAnalysis.id === analysis.id)
+                if (selectedAnalysis !== null && selectedAnalysis instanceof Analysis && selectedAnalysis.id === analysis.id)
                     this.trigger("change:selectedAnalysis", { changed: { selectedAnalysis: analysis } });
             }
         }

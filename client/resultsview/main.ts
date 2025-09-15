@@ -9,13 +9,25 @@ import { exportElem } from '../common/utils/formatio';
 import b64 from '../common/utils/b64';
 import Annotations, { AnnotationAction } from './annotations';
 import Tracker from './itemtracker';
-import I18n from '../common/i18n';
+import I18n, { I18nData } from '../common/i18n';
 import focusLoop from '../common/focusloop';
 import { contextMenuListener } from '../common/utils';
 import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
 import { CollectionView, View } from "./element";
 
 window._ = I18n._;
+
+declare global {
+    function s_(key: string, formats?: { [key: string]: (string|number); } | (string|number)[], options?: { prefix: string; postfix: string; }): string;
+    interface Window {
+        s_: (key: string, formats?: { [key: string]: (string|number); } | (string|number)[], options?: { prefix: string; postfix: string; }) => string;
+
+        setOption: (name: string, value: any) => void;
+        setParam: (address: string[], options: any) => void;
+        getParam: (address: string[], name: string) => any;
+        openUrl: (url: string) => void;
+    }
+}
 
 interface AnnotationEvent {
     type: 'editFocused' | 'editState' | 'action';
@@ -75,6 +87,8 @@ class Main {  // this is constructed at the bottom
     _analysisSelected: any;
     resultsDefn: any;
 
+    moduleI18nDef: I18nData;
+
     constructor() {
         /*this.translateUsingModule = (key) => {
             if (key === null || key === undefined|| key.trim() === '' || ! this.moduleI18nDef)
@@ -111,7 +125,7 @@ class Main {  // this is constructed at the bottom
 
         this._reallyNotifyResize = this._reallyNotifyResize.bind(this);
 
-        window.setOption = (name, value) => {
+        window.setOption = (name: string, value: any) => {
             this.mainWindow.postMessage({
                 type: 'setOption',
                 data: { name, value }
@@ -125,13 +139,13 @@ class Main {  // this is constructed at the bottom
             }, '*');
         };
 
-        window.getParam = (address, name) => {
+        window.getParam = (address: string[], name: string) => {
             let optionName = 'results/' + address.join('/') + '/' + name;
             if (optionName in this.resultsDefn.options)
                 return this.resultsDefn.options[optionName];
         };
 
-        window.openUrl = (url) => {
+        window.openUrl = (url: string) => {
             this.mainWindow.postMessage({
                 type: 'openUrl',
                 data: { url: url }
@@ -300,7 +314,7 @@ class Main {  // this is constructed at the bottom
             let el = document.elementFromPoint(hostEvent.pageX, hostEvent.pageY);
             if (el === document.body)
                 el = this.$results;
-            const clickEvent = new MouseEvent(hostEvent.type, {
+            const clickEvent = new MouseEvent('click', {
                 view: window,
                 bubbles: true,
                 cancelable: true,
@@ -309,16 +323,17 @@ class Main {  // this is constructed at the bottom
                 button: hostEvent.button
             });
             el.dispatchEvent(clickEvent);
-            /*if (hostEvent.button === 2) {
+            if (hostEvent.button === 2) {
                 const clickEvent = new MouseEvent('contextmenu', {
                     view: window,
                     bubbles: true,
                     cancelable: true,
                     clientX: hostEvent.pageX,
                     clientY: hostEvent.pageY,
+                    button: hostEvent.button
                 });
                 el.dispatchEvent(clickEvent);
-            }*/
+            }
         }
         else if (hostEvent.type === 'enterannotation') {
             let annotation = Annotations.controls[0];

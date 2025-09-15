@@ -8,16 +8,55 @@ import auth from './auth/auth';
 
 import PROTO_DEFN from '../assets/coms.proto?raw';
 
+interface ComsTransaction {
+    id : number,
+    resolve : (data: any) => void,
+    reject  : (reason?: string) => void,
+    onprogress : (progress: [number, number]) => void,
+    requestTime : Date
+}
+
+export declare namespace QQ {
+  export interface Promise<T> {
+    then<TResult1 = T, TResult2 = never>(
+      onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null,
+      onRejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null,
+      onProgress?: ((progress: any) => void) | undefined | null
+    ): Promise<TResult1 | TResult2>;
+
+    catch<TResult = never>(
+      onRejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null
+    ): Promise<T | TResult>;
+
+    finally<U>(onFinally: () => U | PromiseLike<U>): Promise<T>;
+  }
+
+  interface Deferred<T> {
+    promise: Promise<T>;
+    resolve(value?: T | PromiseLike<T>): void;
+    reject(reason?: any): void;
+    notify(progress: any): void;
+    makeNodeResolver(): (err: any, value: T) => void;
+  }
+
+  function defer<T>(): Deferred<T>;
+  function resolve<T>(value?: T | PromiseLike<T>): Promise<T>;
+  function reject<T = never>(reason?: any): Promise<T>;
+  function all<T>(promises: (T | PromiseLike<T>)[]): Promise<T[]>;
+  function delay<T>(value: T, ms: number): Promise<T>;
+}
+
 class Coms {
 
+    _transId: number = 0;
+    _ws: WebSocket;
+    _opened: boolean;
+    Messages: any;
+    ready: Promise<void>;
+    _listeners: { eventName:string, callback: (...args: any[]) => void }[] = [];
+    _transactions: ComsTransaction[] = [];
+
     constructor() {
-
-        this._baseUrl = null;
-        this._transId = 0;
-        this._transactions = [ ];
-        this._listeners = [ ];
-
-        this.connected = null;
 
         const builder = ProtoBuf.loadProto(PROTO_DEFN);
         this.Messages = builder.build().jamovi.coms;
@@ -25,10 +64,7 @@ class Coms {
         this.ready = Promise.resolve();
     }
 
-    connect() {
-
-        if (this.connected)
-            return this.connected;
+    connect(): QQ.Promise<void> {
 
         let url = `${ window.location.origin }${ window.location.pathname }coms`;
         url = url.replace('http', 'ws'); // http -> ws, https -> wss
@@ -58,7 +94,6 @@ class Coms {
                 if ( ! this._opened)
                     return;
 
-                this.connected = null;
                 this._opened = false;
 
                 if ([1000, 1001].includes(event.code))
@@ -71,7 +106,7 @@ class Coms {
         });
     }
 
-    reconnect(retries) {
+    reconnect(retries: number[]) {
         if (retries.length === 0) {
             this._notifyEvent('failure');
             return;
@@ -85,7 +120,7 @@ class Coms {
         }, retryIn);
     }
 
-    send(request) {
+    send(request): QQ.Promise<any> {
 
         return new Q.promise((resolve, reject, onprogress) => {
 
@@ -142,15 +177,15 @@ class Coms {
             this._notifyEvent('broadcast', response);
     }
 
-    on(eventName, callback) {
+    on(eventName: string, callback: (...args: any[]) => void) {
         this._listeners.push({ eventName, callback });
     }
 
-    off(eventName, callback) {
+    off(eventName: string, callback: (...args: any[]) => void) {
         this._listeners = this._listeners.filter(v => v.eventName !== eventName || v.callback !== callback);
     }
 
-    _notifyEvent(eventName, event) {
+    _notifyEvent(eventName: string, event?: any) {
         for (let listener of this._listeners) {
             if (listener.eventName === eventName)
                 listener.callback(event);

@@ -7,6 +7,8 @@ import Options from './options';
 import { ContextableEventEmittier } from '../common/eventmap';
 import DataSetViewModel from './dataset';
 import { Modules } from './modules';
+import { IReference } from './references';
+import { I18nData } from '../common/i18n';
 
 export class Analysis {
     id: number;
@@ -22,11 +24,18 @@ export class Analysis {
     results: any;
     ready: Promise<void>;
     isReady: boolean;
-    i18n: any;
+    i18n: I18nData;
     uijs: string;
+    references: IReference[];
+    _parent: Analyses;
+    values: {[name: string]: any};
+    _notifySetup: (analysis: Analysis) => void;
+    dependents: Analysis[];
+    dependsOn: Analysis;
+    waitingFor: number;
 
 
-    constructor(id, name, ns, modules) {
+    constructor(id: number, name: string, ns: string, modules: Modules) {
 
         this.id = id;
         this.name = name;
@@ -40,14 +49,13 @@ export class Analysis {
         this.uijs = undefined;
 
         this._parent = null;
-        this._defn = null;
         this.dependsOn = null;
         this.dependents = [ ];
 
         this.reload();
     }
 
-    addDependent(analysis) {
+    addDependent(analysis: Analysis) {
         this.dependents.push(analysis);
         analysis.dependsOn = this;
         delete analysis.waitingFor;
@@ -79,9 +87,8 @@ export class Analysis {
                 return defn;
             })();
 
-            let waitForSetup = new Promise((resolve, reject) => {
+            let waitForSetup = new Promise<Analysis>((resolve, reject) => {
                 this._notifySetup = resolve;
-                this._notifyFail  = reject;
             });
 
             try {
@@ -101,7 +108,7 @@ export class Analysis {
         })();
     }
 
-    translate(key) {
+    translate(key: string) {
         if (this.i18n) {
             let value = this.i18n.locale_data.messages[key][0];
             if (value)
@@ -110,12 +117,12 @@ export class Analysis {
         return key;
     }
 
-    setup(values) {
+    setup(values: {[name: string]: any}) {
         this.values = values;
         this._notifySetup(this);
     }
 
-    async setResults(res, internal) {
+    async setResults(res, internal?: boolean) {
         if (internal === undefined)
             internal = false;
 
@@ -208,7 +215,7 @@ interface CreateOpts {
     readonly id?: number;
     readonly index?: number;
     readonly dependsOn?: number;
-    readonly options?: typeof Options;
+    readonly options?: { [name: string]: any; };
     readonly results?: any;
     readonly references?: any;
     readonly enabled?: boolean;
@@ -240,7 +247,7 @@ class Analyses extends ContextableEventEmittier {
                         return { value: this._analyses[index-1], done: false };
                     }
                     else {
-                        return { done: true };
+                        return { value: undefined, done: true };
                     }
                }
             };
@@ -457,7 +464,7 @@ class Analyses extends ContextableEventEmittier {
         this.trigger('analysisResultsChanged', analysis);
     }
 
-    _notifyOptionsChanged(analysis: Analysis, incoming: boolean) : void {  // incoming is true if the options have been changed as a result of the server. It will be falsey if the change to the options has occured because of the client.
+    _notifyOptionsChanged(analysis: Analysis, incoming: boolean = false) : void {  // incoming is true if the options have been changed as a result of the server. It will be falsey if the change to the options has occured because of the client.
         this.trigger('analysisOptionsChanged', analysis, incoming);
     }
 

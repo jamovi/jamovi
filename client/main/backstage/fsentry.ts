@@ -4,6 +4,7 @@ import focusLoop from '../../common/focusloop';
 import { EventMap, EventDistributor } from '../../common/eventmap';
 import type { IExtensionGroup } from '../host';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { IInstanceOpenOptions } from '../instance';
 
 export enum FSItemType {
     File = 0,
@@ -14,9 +15,7 @@ export enum FSItemType {
 
 export type WDType  = 'main' | 'thispc' | 'examples' | 'temp' | 'onedrive'
 
-export interface IOpenOptions {
-    path: string;
-    title?: string;
+export interface IOpenOptions extends IInstanceOpenOptions {
     type?: FSItemType;
     wdType?: WDType;
     username?: string;
@@ -90,7 +89,7 @@ export type clickProcessType = 'open' | 'import' | 'save' | 'export' | null;
 export class FSEntryListModel extends EventMap<IFSEntryModel> {
     clickProcess: clickProcessType = null;
     writeOnly = false;
-    fileExtensions: IExtensionGroup[];
+    fileExtensions: IExtensionGroup[] | string[];
 
     constructor() {
         super({
