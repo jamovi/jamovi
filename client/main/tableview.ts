@@ -912,6 +912,9 @@ class TableView extends HTMLElement implements DataSetView {
 
     _mouseDown(event: PointerEvent) {
 
+        if (this._editing)
+            return Promise.resolve();
+
         this.setTouchMode((!event.pointerType && this.touchMode) || event.pointerType !== 'mouse');
 
         this.$body.setPointerCapture(event.pointerId);
@@ -1398,6 +1401,7 @@ class TableView extends HTMLElement implements DataSetView {
                     this.statusbar.updateInfoLabel('editStatus', _('Edit'));
                 }
             });
+
             this._focusCell.addEventListener('beforeinput', (event: InputEvent) => {
                 if (this._delayedEditing && this._editing === false) {
                     if (event.data.length > 1) {
@@ -1782,9 +1786,9 @@ class TableView extends HTMLElement implements DataSetView {
                 type: 'error',
             });
 
-            if (this._focusCell) {
+            if (this._focusCell) 
                 this._focusCell.select();
-            }
+            
             throw 'cancelled';
         });
     }
@@ -2692,11 +2696,11 @@ class TableView extends HTMLElement implements DataSetView {
             </div>`;
     }
 
-    _createCell<K extends "div" | "input">(top, height, rowNo, colNo, tag: K = "div" as K): HTMLElementTagNameMap[K] {
+    _createCell<K extends "div" | "input">(top: number, height: number, rowNo: number, colNo: number, tag: K = "div" as K): HTMLElementTagNameMap[K] {
         let cell = document.createElement(tag);
 
         cell.classList.add('jmv-column-cell');
-        cell.dataset.row = rowNo;
+        cell.dataset.row = rowNo.toString();
         cell.style.top = `${ top }px`;
         cell.style.height = `${ height }px`;
         cell.style.lineHeight = `${ height-3 }px`;
