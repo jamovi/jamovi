@@ -691,10 +691,13 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
 
             if (this.items.length === 0) {
                 this.clearSelection();
+                this.itemsList.setAttribute('tabindex', '');
                 this.itemsList.append(HTML.parse(`<span>${_('No recognised data files were found.')}</span>`));
             }
-            else
+            else {
+                this.itemsList.setAttribute('tabindex', '0');
                 this._setSelection(this.items[0]);
+            }
         }
         focusLoop.updateShortcuts({ shortcutPath: this.shortcutPath, silent: true});
     }
