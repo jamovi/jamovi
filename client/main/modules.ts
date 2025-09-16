@@ -368,12 +368,8 @@ class Module {
         if ( ! code) {
             let codes = await this.getI18nCodes();
             code = I18n.findBestMatchingLanguage(I18n.language, codes);
-            if (code === null) {
-                if (codes.includes('en'))
-                    code = 'en';
-                else
-                    code = '';
-            }
+            if (code === null) 
+                code = '';
             this.currentI18nCode = code;
         }
         return code;
