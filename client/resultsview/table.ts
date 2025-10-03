@@ -414,7 +414,7 @@ export class View extends Elem.View<Model> {
 
                 let sourceCell = sourceCells[rowNo];
 
-                let cell = { value : null, type: sourceColumn.type, superTitle: sourceColumn.superTitle, colIndex: sourceColNo, classes : rowFormat, sups : '', visible: isVis(sourceColumn), beginGroup: false, combineBelow: false };
+                let cell = { value : null, type: sourceColumn.type, superTitle: sourceColumn.superTitle, colIndex: sourceColNo, classes : rowFormat, sups : '' };
 
                 if (sourceCell.format & Format.NEGATIVE)
                     cell.classes += ' jmv-results-table-cell-negative';
@@ -424,6 +424,8 @@ export class View extends Elem.View<Model> {
 
                 if ((sourceCell.format & Format.BEGIN_GROUP) === Format.BEGIN_GROUP)
                     cell.beginGroup = true;
+
+                cell.visible = isVis(sourceColumn);
 
                 if (sourceColumn.combineBelow)
                     cell.combineBelow = true;
