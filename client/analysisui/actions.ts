@@ -284,29 +284,26 @@ class View extends EventEmitter {
 
     // this is to maintain backwards compatibility for v2.0 and v3.0 modules
     public static extend(params) {
-        return function() {
-            let view = this as View;
+        return function(this: View) {
             let errors = [];
-            if (view.handlers === undefined) { // version 2.0 modules need the utils as part of this object. This is here for backwards compatability
-                Object.assign(view, utils); 
-                return errors;
-            }
+            if (this.handlers === undefined) // version 2.0 modules need the utils as part of this object. This is here for backwards compatability
+                Object.assign(this, utils); 
 
             // this.handlers is created in the compiler.
-            for (let handle in view.handlers) {
-                if (view[handle] !== undefined)
+            for (let handle in this.handlers) {
+                if (this[handle] !== undefined)
                     errors.push('The method name "' + handle + '" cannot be used as it conflicts with a method that already exists in the events base class of this analyses.');
                 else
-                    view[handle] = view.handlers[handle];
+                    this[handle] = this.handlers[handle];
             }
 
-            view.errors = errors;
+            this.errors = errors;
 
-            Object.assign(view, params);
-            if (view.events !== undefined)
-                view.events = view._baseEvents.concat(view.events);
+            Object.assign(this, params);
+            if (this.events !== undefined)
+                this.events = this._baseEvents.concat(this.events);
             else
-                view.events = view._baseEvents;
+                this.events = this._baseEvents;
         };
     }
 
