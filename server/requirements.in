@@ -1,14 +1,14 @@
 tornado
 Cython
 PyYAML
-numpy
-scipy
+numpy==2.1.1
+scipy==1.14.1
+    # numpy and scipy to match the flatpak
 chardet
 nanomsg
 openpyxl
 pyexcel-ezodf
 aiohttp
-loguru
-pytest
 protobuf
+loguru
 certifi
