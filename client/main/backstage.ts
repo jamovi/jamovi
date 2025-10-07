@@ -302,6 +302,12 @@ export class BackstageModel extends EventMap<IBackstageModel> {
 
         this._savePromiseResolve = null;
 
+        ActionHub.get('saveAs').on('request', () => {
+            this.set('activated', true);
+            this.set('operation', 'saveAs');
+            return true;
+        });
+
         ActionHub.get('save').on('request', async () => {
             try {
                 await this.requestSave();

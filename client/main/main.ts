@@ -241,6 +241,7 @@ ready(async() => {
 
     Keyboard.addKeyboardListener('F10', () => host.toggleDevTools(), 'Toggle Developer Tools', false);
     Keyboard.addKeyboardListener('F9',  () => instance.restartEngines(), 'Restart jamovi engines', false);
+    Keyboard.addKeyboardListener('Ctrl+Shift+KeyS', () => ActionHub.get('saveAs').do(), _('Project Save As'));
     Keyboard.addKeyboardListener('Ctrl+KeyS', () => ActionHub.get('save').do(), _('Save project'));
     Keyboard.addKeyboardListener('Ctrl+KeyO', () => ActionHub.get('open').do(), _('Open data file'));
     Keyboard.addKeyboardListener('Escape', () => {
