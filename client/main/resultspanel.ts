@@ -469,6 +469,7 @@ class ResultsPanel extends EventDistributor {
             type: 'results',
             data: {
                 name: analysis.name,
+                languageCode: this.model.get('resultsLanguage'),
                 ns: analysis.ns,
                 results: analysis.results,
                 options: analysis.options ? analysis.options.getValues() : {},
@@ -608,32 +609,32 @@ class ResultsPanel extends EventDistributor {
             switch (eventType) {
                 case 'annotationChanged':
                     this.model.set('edited', true);
-                    this.dispatchEvent(new CustomEvent('annotationChanged'));
+                    this.dispatchEvent(new CustomEvent('annotationChanged', { bubbles:true }));
                     break;
                 case 'annotationFocus':
                     this._focus += 1;
                     if (this._focus === 1) {
                         this.annotationGotFocus();
-                        this.dispatchEvent(new CustomEvent('annotationFocus'));
+                        this.dispatchEvent(new CustomEvent('annotationFocus', { bubbles:true }));
                     }
                     break;
                 case 'analysisLostFocus':
-                    this.dispatchEvent(new CustomEvent('analysisLostFocus'));
+                    this.dispatchEvent(new CustomEvent('analysisLostFocus', { bubbles:true }));
                     break;
                 case 'annotationLostFocus':
                     this._focus -= 1;
                     if (this._focus === 0) {
                         this.annotationLostFocus();
-                        this.dispatchEvent(new CustomEvent('annotationLostFocus'));
+                        this.dispatchEvent(new CustomEvent('annotationLostFocus', { bubbles:true }));
                     }
                     else if (this._focus < 0)
                         throw "shouldn't get here";
                     break;
                 case 'activeFormatChanged':
-                    this.dispatchEvent(new CustomEvent('activeFormatChanged', { detail: eventData }));
+                    this.dispatchEvent(new CustomEvent('activeFormatChanged', { detail: eventData, bubbles:true }));
                     break;
                 case 'headingChanged':
-                    this.dispatchEvent(new CustomEvent('headingChanged', { detail: eventData }));
+                    this.dispatchEvent(new CustomEvent('headingChanged', { detail: eventData, bubbles: true }));
                     analysis.updateHeading();
                     break;
                 case 'sizeChanged':

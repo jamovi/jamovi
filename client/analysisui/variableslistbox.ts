@@ -56,7 +56,7 @@ export class VariablesListBox extends SelectableOptionListControl<VariablesListB
             let bottomValue = 3 - this.el.scrollTop;
 
             this.$icons.style.bottom = `${bottomValue}px`;
-            this.$icons.style.right = `${rightValue}px`;
+            this.$icons.style.insetInlineEnd = `${rightValue}px`;
         }
     }
 

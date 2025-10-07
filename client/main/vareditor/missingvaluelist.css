@@ -6,7 +6,7 @@
     background-color: white;
     border: 1px solid #dfdfdf;
     /* padding: 5px 0; */
-    /* padding-right: 0; */
+    /* padding-inline-end: 0; */
     margin: 10px 0 30px 0;
     justify-content: space-between;
 }
@@ -16,7 +16,7 @@
     max-height: 250px;
     width: 300px;
     flex-grow: 1;
-    margin-left: 5px;
+    margin-inline-start: 5px;
     margin-top: 2px;
 }
 
@@ -38,7 +38,7 @@
     color: #575757;
     flex-shrink: 0;
     margin: 5px;
-    /* margin-right: 5px; */
+    /* margin-inline-end: 5px; */
     height: 22px;
 }
 
@@ -59,5 +59,5 @@
     border: none;
     width: 11px;
     height: 11px;
-    margin-right: 6px;
+    margin-inline-end: 6px;
 }

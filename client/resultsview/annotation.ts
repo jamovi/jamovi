@@ -112,7 +112,6 @@ class Annotation extends HTMLElement implements IAnnotation {
         this.role = 'region';
         this.ariaRoleDescription = title;
         this.ariaDescription = _('Press enter to edit');
-
         
         this.innerHTML = `<div class="editor-box">
                 <div class="editor jmv-note-theme"></div>
@@ -146,6 +145,9 @@ class Annotation extends HTMLElement implements IAnnotation {
             theme: 'snow'
         });
 
+        this.editor.format('direction', document.body.dir);
+        this.editor.format('align', 'start');
+
 
         this.editor.keyboard.addBinding({
             key: 'Escape'
@@ -176,7 +178,7 @@ class Annotation extends HTMLElement implements IAnnotation {
             event.preventDefault();
         });
 
-        let $formulaHelp = HTML.parse<HTMLLinkElement>(`<a class="ql-help" rel="noopener noreferrer" target="_blank" href="https://katex.org/docs/supported.html" style="margin-left: 20px;">${_('Help')}</a>`);
+        let $formulaHelp = HTML.parse<HTMLLinkElement>(`<a class="ql-help" rel="noopener noreferrer" target="_blank" href="https://katex.org/docs/supported.html" style="margin-inline-start: 20px;">${_('Help')}</a>`);
         $formulaHelp.addEventListener('click', (event) => {
             window.openUrl('https://katex.org/docs/supported.html');
             event.stopPropagation();

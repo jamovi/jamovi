@@ -19,7 +19,7 @@ export class ContextMenu extends EventEmitter { // this is constructed at the bo
     constructor() {
         super();
 
-        this.menu = new Menu(null, 0, { exitKeys: ['ArrowLeft'] });
+        this.menu = new Menu(null, 0, { exitKeys: ['InlineArrowLeft'] });
         this.el = this.menu;
         this.el.setAttribute('hloop', 'false');
     
@@ -71,7 +71,10 @@ export class ContextMenu extends EventEmitter { // this is constructed at the bo
             if (openButton !== null) {
                 const style = getComputedStyle(this.el);
                 const width = this.el.offsetWidth + parseFloat(style.marginLeft) + parseFloat(style.marginRight);
-                x -= width - 10;
+                if (style.direction === 'rtl')
+                    x += width - 10;
+                else
+                    x -= width - 10;
                 const top = openButton.offsetTop ;
                 y -= top + 10;
             }

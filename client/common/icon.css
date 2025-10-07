@@ -10,9 +10,9 @@
     position: absolute;
     width: 400px;
     top: 40%;
-    left: 50%;
+    inset-inline-start: 50%;
     margin-top: -25px;
-    margin-left: -200px;
+    margin-inline-start: -200px;
     z-index: 200;
 }
 
@@ -29,12 +29,12 @@
 
 .icon-info-box .icon-version .version-separator {
     color: #AAAAAA;
-    border-left: 2px solid #AAAAAA;
+    border-inline-start: 2px solid #AAAAAA;
     height: 50px;
-    margin-left: 12px;
-    margin-right: 12px;
+    margin-inline-start: 12px;
+    margin-inline-end: 12px;
 }
 
 .icon-info-box .icon-version .version-text {
-    margin-left: 6px;
+    margin-inline-start: 6px;
 }

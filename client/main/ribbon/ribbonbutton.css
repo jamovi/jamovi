@@ -12,13 +12,13 @@
 
 .jmv-ribbon-button-menu {
     top: 100%;
-    margin-left: -3px;
+    margin-inline-start: -3px;
     margin-top: 0px;
     border-radius: 0px;
     background-color: white;
     position: absolute;
     white-space: nowrap;
-    text-align: left;
+    text-align: start;
     z-index: 100;
     color: #555555;
     max-width: 330px;
@@ -36,7 +36,10 @@
     background-position: center;
     background-repeat: no-repeat ;
     background-size: contain;
-    margin: 0 2px 0 6px;
+    margin-top: 0px;
+    margin-inline-end: 2px;
+    margin-bottom: 0px;
+    margin-inline-start: 6px;
 }
 
 .jmv-ribbon-button-size-small .jmv-ribbon-menu-arrow {
@@ -52,9 +55,9 @@
 .jmv-ribbon-group-body .jmv-ribbon-button-label {
     margin-top: 5px;
     flex-grow: 1;
-    text-align: left;
-    margin-left: 3px;
-    margin-right: 3px;
+    text-align: start;
+    margin-inline-start: 3px;
+    margin-inline-end: 3px;
 }
 
 /*huge button*/
@@ -100,14 +103,14 @@
 }
 
 [keyboardfocus="true"] .jmv-ribbon-button:focus {
-    background-color: #3e6da93b;
+    background-color: #d5dfeb;
 }
 
 
 .jmv-ribbon-button-size-medium .jmv-ribbon-button-label {
-    margin-left: 8px;
+    margin-inline-start: 8px;
     margin-top: 0px;
-    margin-right: 13px;
+    margin-inline-end: 13px;
 }
 
 /*small button*/

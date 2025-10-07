@@ -259,12 +259,23 @@ ready(() => {
 
 function loadAnalysis(def, i18nDef: I18nData, appI18nDef: I18nData, jamoviVersion, id, focusMode) {
 
-    if (appI18nDef)
+    const header = document.querySelector<HTMLElement>('.silky-options-header');
+    if (appI18nDef) {
         I18n.initialise(appI18nDef.locale_data.messages[''].lang, appI18nDef);
+        const moduleCode = i18nDef?.code || 'en';
+        document.body.dir = I18n.isRTL(moduleCode) ? 'rtl' : 'ltr';
+
+        header.dir = I18n.isRTL() ? 'rtl' : 'ltr';
+    }
 
     window.jamoviVersion = jamoviVersion;
 
     let $hide = document.querySelector('.silky-sp-back-button');
+    if (header.dir === 'rtl') {
+        $hide.querySelector('span').classList.remove('mif-arrow-right');
+        $hide.querySelector('span').classList.add('mif-arrow-left');
+    }
+
     $hide.setAttribute('title', s_('Hide options'));
     $hide.addEventListener('click', () => {
         closeOptions();

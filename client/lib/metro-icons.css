@@ -2818,7 +2818,10 @@
   border: 1px dashed red;
 }
 .example {
-  padding: .625rem 1.825rem .625rem 2.5rem;
+  padding-top: .625rem;
+  padding-inline-end: 1.825rem;
+  padding-bottom: .625rem;
+  padding-inline-start: 2.5rem;
   border: 1px #ccc dashed;
   position: relative;
   margin: 0 0 .625rem 0;

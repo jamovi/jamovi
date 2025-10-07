@@ -13,7 +13,10 @@
     overflow: scroll ;
     transition: all .2s ;
     background-color: white ;
-    padding: 2px 0px 0 2px;
+    padding-top: 2px;
+    padding-inline-end: 0;
+    padding-bottom: 0;
+    padding-inline-start: 2px;
 }
 
 .jmv-results-container[data-analysis-name='weights'] {
@@ -39,7 +42,7 @@
 .jmv-results-panel.jmv-results-panel-hidden, .jmv-welcome-panel.jmv-welcome-panel-hidden {
     width: 0 ;
     overflow: hidden ;
-    padding-right: 0 ;
+    padding-inline-end: 0 ;
 }
 
 .jmv-results-panel[data-analysis-selected] {
@@ -84,8 +87,8 @@
 .jmv-results-cover {
     position: absolute ;
     top: 0;
-    right: 0 ;
-    left: 0;
+    inset-inline-end: 0 ;
+    inset-inline-start: 0;
     bottom: 0;
     opacity: 0 ;
     background-color: white ;

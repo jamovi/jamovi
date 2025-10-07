@@ -6,7 +6,7 @@
 
 .end-temp-button {
     position: absolute;
-    right: 0px;
+    inset-inline-end: 0px;
 }
 
 
@@ -28,7 +28,10 @@
 }
 
 .display-in-menu {
-    margin: 0px 30px 0px 10px;
+    margin-top: 0px;
+    margin-inline-end: 30px;
+    margin-bottom: 0px;
+    margin-inline-start: 10px;
 
 }
 
@@ -63,6 +66,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    border-radius: 4px;
 }
 
 .jmv-analyses-button:focus {
@@ -98,11 +102,11 @@
 }
 
 [focusmode="default"] .jmv-ribbon-button:not([aria-disabled]):not(.maintain-color):hover {
-    background-color: #c6d1df;
+    background-color: #d5dfeb;
 }
 
 [focusmode="hover"] .jmv-ribbon-button:not([aria-disabled]):not(.maintain-color):hover {
-    background-color: #3e6da93b;
+    background-color: #d5dfeb;
 }
 
 .jmv-ribbon-button.maintain-color:not([aria-disabled]):hover {
@@ -134,13 +138,13 @@
 }
 
 .jmv-ribbon-button.right .jmv-ribbon-button-menu {
-    left: unset ;
-    right: 0px ;
+    inset-inline-start: unset ;
+    inset-inline-end: 0px ;
 }
 
 .jmv-ribbon-menu-item > .description {
     font-size: 88% ;
-    text-align: left;
+    text-align: start;
 }
 
 .jmv-ribbon-menu-item {
@@ -160,16 +164,16 @@
 }
 
 .jmv-analyses-button .jmv-ribbon-button-menu {
-    left: 0px;
+    inset-inline-start: 0px;
     top: 100%;
-    margin-left: 0;
+    margin-inline-start: 0;
     padding: 6px 0px;
 }
 
 .jmv-ribbon-menu-item-sub {
     font-size: 85% ;
     padding-top: 3px ;
-    padding-left: 60px ;
+    padding-inline-start: 60px ;
     pointer-events: none ;
 }
 
@@ -177,8 +181,12 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
-    padding-left: 0px;
+    padding-inline-start: 0px;
     width: 200px;
+}
+
+body[dir='rtl'] .to-analyses-arrow {
+    transform: rotate(180deg);
 }
 
 .to-analyses-arrow {
@@ -188,8 +196,8 @@
     background-position: center;
     background-repeat: no-repeat;
     background-size: 100% 100%;
-    margin-right: 2px;
-    margin-left: 8px;
+    margin-inline-end: 2px;
+    margin-inline-start: 8px;
     filter: opacity(80%);
     opacity: 0;
     visibility: hidden;
@@ -200,7 +208,10 @@
 }
 
 .side-panel input {
-    margin: 10px 5px 10px 20px;
+    margin-top: 10px;
+    margin-inline-end: 5px;
+    margin-bottom: 10px;
+    margin-inline-start: 20px;
 }
 
 .side-panel {
@@ -228,7 +239,10 @@
 }
 
 .jmv-ribbon-menu-item.module {
-    padding: 8px 18px 8px 0px;
+    padding-top: 8px;
+    padding-inline-end: 18px;
+    padding-bottom: 8px;
+    padding-inline-start: 0px;
 }
 
 [keyboardfocus="true"] .jmv-ribbon-menu-item.module:focus .to-analyses-arrow,
@@ -248,10 +262,10 @@
     opacity: 0;
     width: 0px;
     visibility: hidden;
-    padding-left: 0px;
-    padding-right: 0px;
-    margin-left: 0px;
-    margin-right: 0px;
+    padding-inline-start: 0px;
+    padding-inline-end: 0px;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
     min-width: 0px;
 }
 
@@ -268,15 +282,15 @@
 }
 
 .jmv-ribbon-menu-item.module .description {
-    margin-left: 8px;
+    margin-inline-start: 8px;
 }
 
 [focusmode="hover"] .jmv-ribbon-menu-item:hover {
-    background-color: #3e6da93b;
+    background-color: #d5dfeb;
 }
 
 [keyboardfocus="true"] .jmv-ribbon-menu-item:focus {
-    background-color: #3e6da93b;
+    background-color: #d5dfeb;
 }
 
 /*.jmv-ribbon-menu-item:focus-within {

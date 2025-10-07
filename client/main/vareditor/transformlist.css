@@ -20,8 +20,11 @@
     min-height: 1.5em;
     line-height: 1.5em;*/
     width: 100%;
-    padding: 6px 5px 6px 25px;
-    text-align: left;
+    padding-top: 6px;
+    padding-inline-end: 5px;
+    padding-bottom: 6px;
+    padding-inline-start: 25px;
+    text-align: start;
     background-color: inherit;
     border: none;
 }
@@ -32,8 +35,11 @@
 
 .jmv-transform-list .transform-create {
     width: 100%;
-    padding: 6px 5px 6px 25px;
-    text-align: left;
+    padding-top: 6px;
+    padding-inline-end: 5px;
+    padding-bottom: 6px;
+    padding-inline-start: 25px;
+    text-align: start;
     background-color: inherit;
     border: none;
 }

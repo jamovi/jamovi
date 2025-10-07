@@ -16,7 +16,7 @@
 }
 
 .silky-option-text-input {
-    padding-left: 3px;
+    padding-inline-start: 3px;
     width: 100%;
     box-sizing: border-box;
 }
@@ -50,7 +50,7 @@
 }
 
 .jmv-option-text-input-suggested:not(.silky-option-text-start)  {
-    margin-left: 1ex;
+    margin-inline-start: 1ex;
 }
 
 .jmv-option-text-input-suggested {

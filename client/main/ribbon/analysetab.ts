@@ -141,7 +141,8 @@ export class AnalyseTab extends RibbonTab {
         button.setAttribute('id', buttonId);
         button.classList.add('jmv-modules-menu-item');
         button.style.position = 'sticky';
-        button.style.right =  '0px';
+        button.style.insetInlineEnd =  '0px';
+        button.style.insetInlineStart =  '0px';
         this.buttons.push(button);
 
         let menus = { };

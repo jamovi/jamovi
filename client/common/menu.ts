@@ -145,8 +145,14 @@ export class Menu extends HTMLElement {
         const height = rect.height + marginTop + marginBottom;
         const width = rect.width + marginLeft + marginRight;
 
+        if (computedStyle.direction === 'rtl')
+            x -= width;
+
         if (y + height > window.innerHeight) 
             y -= (y + height) - window.innerHeight;
+
+        if (x < 0)
+            x = 0;
 
         if (x + width > window.innerWidth)
             x -= (x + width) - window.innerWidth;

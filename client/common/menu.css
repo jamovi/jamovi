@@ -20,11 +20,11 @@
 }
 
 .menu-owner.active:not([disabled]) {
-    background-color: #3e6da93b ;
+    background-color: #d5dfeb ;
 }
 
 .menu-owner:not([disabled]):active {
-    background-color: #3e6da93b ;
+    background-color: #d5dfeb ;
 }
 
 .jmv-menu:hover .menu-owner.active:not(:hover):not(.mouse-over) {

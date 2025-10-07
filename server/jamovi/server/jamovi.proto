@@ -601,6 +601,7 @@ message InfoResponse {
     repeated AnalysisResponse analyses = 9;
     uint32 changesCount = 10;
     int32 changesPosition = 11;
+    string resultsLanguage = 12;
 }
 
 enum SpecialValues {

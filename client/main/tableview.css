@@ -26,7 +26,7 @@
          position: absolute;
          top: 2px;
          bottom: 3px;
-         right: 1px;
+         inset-inline-end: 1px;
          width: 25px;
          height: unset;
          cursor: col-resize;
@@ -60,12 +60,12 @@
      }
 
      .jmv-table-cell-selected > .bottom-right-sizer:not(.jmv-tableview.fine-pointer *) {
-         right: -13px;
+         inset-inline-end: -13px;
          bottom: -13px;
      }
 
      .jmv-table-cell-selected > .top-left-sizer:not(.jmv-tableview.fine-pointer *) {
-         left: -13px;
+         inset-inline-start: -13px;
          top: -13px;
      }
  }
@@ -140,7 +140,7 @@
     overflow: auto ;
     width: 100% ;
     height: 100% ;
-    border-right: 1px solid #ACACAC ;
+    border-inline-end: 1px solid #ACACAC ;
     border-bottom: 1px solid #ACACAC;
     box-sizing: border-box ;
     background-color: #F8F8F8 ;
@@ -202,7 +202,7 @@
     position: sticky ;
     z-index: 20 ;
     color: #555555 ;
-    left: 0px;
+    inset-inline-start: 0px;
 }
 
 .jmv-table-header {
@@ -216,7 +216,7 @@
 
 .jmv-table-header-background {
     position: absolute ;
-    left: 0 ;
+    inset-inline-start: 0 ;
     top: 0 ;
     width: 100% ;
     height: 100% ;
@@ -225,14 +225,15 @@
 }
 
 .jmv-column-header:first-child {
-    padding-left: 0 ;
+    padding-inline-start: 0 ;
 }
 
 .jmv-column-header {
     position: absolute ;
 
     top: 0 ;
-    border-width: 0 1px 1px 0 ;
+    border-width: 0 0 1px 0 ;
+    border-inline-end-width: 1px;
     border-style: solid ;
     border-image: linear-gradient(to top, #ACACAC, rgba(0,0,0,0));
     padding: 3px 6px 4px 6px;
@@ -280,7 +281,7 @@
     overflow: hidden;
     white-space: pre;
     text-overflow: ellipsis;
-    padding-left: 4px;
+    padding-inline-start: 4px;
     line-height: normal;
 }
 
@@ -298,7 +299,7 @@
     border-radius: 3px;
     position: absolute;
     background-color: #acacac;
-    right: 5px;
+    inset-inline-end: 5px;
     top: 3px;
     opacity: 0;
     cursor: default;
@@ -324,7 +325,7 @@
 .jmv-column-header-resizer {
     position: absolute ;
     top: -6px ;
-    right: -6px ;
+    inset-inline-end: -6px ;
     width: 12px ;
     height: 24px ;
     background-color: red ;
@@ -334,11 +335,11 @@
 }
 
 .jmv-column-cell[data-type="string"] {
-    text-align: left ;
+    text-align: start ;
 }
 
 .jmv-column-cell[data-type="number"] {
-    text-align: right ;
+    text-align: end ;
 }
 
 .jmv-column-cell[data-type="bool"] {
@@ -397,8 +398,8 @@
 }
 
 .jmv-column-cell {
-    padding-left: 10px ;
-    padding-right: 10px ;
+    padding-inline-start: 10px ;
+    padding-inline-end: 10px ;
     overflow: hidden ;
     font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     caret-color: transparent;
@@ -410,14 +411,14 @@
     border: 1px solid #FFFFFF ;
     z-index: 10 ;
     box-sizing: border-box ;
-    transition: left 0.1s, top 0.1s, width 0.1s, height 0.1s ;
+    transition: inset-inline-start 0.1s, top 0.1s, width 0.1s, height 0.1s ;
     box-shadow: 0 0 0 2px #5E8BC4 ;
     padding: 2px 4px ;
     white-space: no-wrap;
     background-color: rgba(94, 139, 196, .1);
     font-size: 12.8px ;
 
-    left: -100px ; /* overridden by code */
+    inset-inline-start: -100px ; /* overridden by code */
     top: -100px ;
 }
 
@@ -427,10 +428,10 @@
     visibility: hidden;
     width: 100%;
     position: absolute;
-    border-right: 2px solid #5e8bc4;
+    border-inline-end: 2px solid #5e8bc4;
     box-sizing: border-box;
     top: 0px;
-    right: -1px;
+    inset-inline-end: -1px;
     bottom: -1px;
     background-color: transparent;
 }
@@ -443,9 +444,9 @@
     position: absolute;
     border-bottom: 2px solid #5e8bc4;
     box-sizing: border-box;
-    left: 0px;
+    inset-inline-start: 0px;
     bottom: -1px;
-    right: -1px;
+    inset-inline-end: -1px;
     background-color: transparent;
 }
 
@@ -462,7 +463,7 @@
     box-shadow: inset 0px 0px 0px 1px #ffffff;
     background-color: rgba(37, 37, 37, 0.1);
     transition: none;
-    left: -100px;
+    inset-inline-start: -100px;
     top: -100px;
 }
 
@@ -489,7 +490,7 @@ input.jmv-table-cell-selected.copying {
 .jmv-table-cell-selected[data-measuretype="continuous"],
 .jmv-table-cell-selected[data-measuretype="nominal"],
 .jmv-table-cell-selected[data-measuretype="ordinal"] {
-    text-align: right ;
+    text-align: end ;
 }
 
 .jmv-table-cell-selected br {
@@ -511,23 +512,23 @@ input.jmv-table-cell-selected.copying {
     position: sticky ;
     z-index: 40 ;
     pointer-events: none;
-    left: 0px;
+    inset-inline-start: 0px;
     overflow: visible;
 }
 
 .jmv-table-row-highlight {
-    border-right: 2px solid #5E8BC4 ;
+    border-inline-end: 2px solid #5E8BC4 ;
     transition: top 0.1s, width 0.1s, height 0.1s ;
     box-sizing: border-box;
     top: -100px ; /* overridden by code */
-    right: 0px;
+    inset-inline-end: 0px;
 }
 
 .jmv-table-column-highlight {
     top: -2px ;
-    left: -100px ; /* overridden by code */
+    inset-inline-start: -100px ; /* overridden by code */
     border-bottom: 2px solid #5E8BC4 ;
-    transition: left 0.1s, width 0.1s, height 0.1s ;
+    transition: inset-inline-start 0.1s, width 0.1s, height 0.1s ;
     pointer-events: none ;
 }
 
@@ -593,10 +594,15 @@ input.jmv-table-cell-selected.copying {
     line-height: normal;
 }
 
+body[dir='rtl'] .jmv-row-header-cell {
+    border-image: linear-gradient(to left, rgba(0,0,0,0), #ACACAC) 1 1 ;
+}
+
 .jmv-row-header-cell {
     background-color: #E6E6E6 ;
     text-align: center ;
-    border-width: 1px 1px 0 0 ;
+    border-width: 1px 0 0 0 ;
+    border-inline-end-width: 1px;
     border-style: solid ;
     border-color: #ACACAC ;
     border-image: linear-gradient(to left, #ACACAC, rgba(0,0,0,0)) 1 100% ;
@@ -606,11 +612,13 @@ input.jmv-table-cell-selected.copying {
 }
 
 .jmv-row-header-cell:first-child {
-    border-width: 0 1px 0 0 ;
+    border-width: 0 0 0 0 ;
+    border-inline-end-width: 1px;
 }
 
 .jmv-row-header-cell:last-child {
-    border-width: 1px 1px 1px 0 ;
+    border-width: 1px 0 1px 0 ;
+    border-inline-end-width: 1px;
 }
 
 .jmv-row-header-cell.split-above {
@@ -620,13 +628,16 @@ input.jmv-table-cell-selected.copying {
 
 .jmv-column-cell {
     border: 1px solid #DEDEDE ;
-    border-width: 1px 1px 0 0 ;
+    border-width: 1px 0 0 0 ;
+    border-inline-end-width: 1px;
 }
 
 .jmv-column-cell:first-child {
-    border-width: 0 1px 0 0 ;
+    border-width: 0 0 0 0 ;
+    border-inline-end-width: 1px;
 }
 
 .jmv-column-cell:last-child {
-    border-width: 1px 1px 1px 0 ;
+    border-width: 1px 0 1px 0 ;
+    border-inline-end-width: 1px;
 }

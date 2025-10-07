@@ -35,7 +35,7 @@
 }
 
 .jmv-formula-toolbar-options > .ops-box > .op:nth-child(2) {
-    margin-left: 10px;
+    margin-inline-start: 10px;
 }
 
 
@@ -63,7 +63,7 @@
 
 .jmv-formula-toolbar-options > .ops-box > .op > .content .item {
     flex-grow: 1;
-    text-align: left;
+    text-align: start;
     padding: 3px 6px;
     white-space: pre;
 }

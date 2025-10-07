@@ -15,7 +15,10 @@
 
 .jmv-variable-editor-autotype {
     display: inline-block ;
-    margin: 0px 0 0px 4px;
+    margin-top: 0px;
+    margin-inline-end: 0px;
+    margin-bottom: 0px;
+    margin-inline-start: 4px;
 }
 
 .jmv-variable-editor-widget input {
@@ -35,7 +38,7 @@
 
 .jmv-vareditor-datatype select{
     flex-grow: 1;
-    margin-left: 5px;
+    margin-inline-start: 5px;
 }
 
 .jmv-variable-editor-levels-control .container {
@@ -97,7 +100,7 @@
 .jmv-variable-editor-levels-control {
     display: flex;
     flex-grow: 1;
-    margin-left: 15px;
+    margin-inline-start: 15px;
     transition: box-shadow 0.15s;
     position: relative;
 }
@@ -108,7 +111,7 @@
     padding: 0px;
     position: absolute;
     bottom: 0px;
-    right: 0px;
+    inset-inline-end: 0px;
     background: inherit;
     border: none;
     font-size: 15px;
@@ -147,7 +150,10 @@
 
 .jmv-variable-editor-level {
     position: relative;
-    padding: 5px 0px 5px 25px;
+    padding-top: 5px;
+    padding-inline-end: 0px;
+    padding-bottom: 5px;
+    padding-inline-start: 25px;
     box-sizing: border-box;
     display: flex;
     flex-direction: column-reverse;
@@ -155,11 +161,11 @@
 }
 
 .jmv-variable-editor-level-value {
-    padding-left: 4px;
+    padding-inline-start: 4px;
     padding-top: 2px;
     font-size: 80%;
-    text-align: right;
-    margin-right: 10px;
+    text-align: end;
+    margin-inline-end: 10px;
 }
 
 .jmv-variable-editor-level[data-changed=false] > .jmv-variable-editor-level-value {
@@ -168,7 +174,7 @@
 
 .jmv-variable-editor-level-label {
     padding: 0;
-    padding-left: 4px;
+    padding-inline-start: 4px;
     border-bottom-style: none;
     border-right-style: none;
     border-top-style: none;
@@ -177,7 +183,7 @@
     border-color: #e6e6e6;
     height: 100%;
     outline: none;
-    margin-right: 0 5px;
+    margin-inline-end: 0 5px;
     border: 1px solid transparent;
     transition: .2s background-color, .2s border-color, .2s border-radius;
     height: 1.4em;
@@ -202,12 +208,12 @@
 
 .missing-values .label {
     display: inline;
-    margin-right: 10px;
+    margin-inline-end: 10px;
     white-space: nowrap;
 }
 
 .missing-values .list {
-    padding-left: 0px;
+    padding-inline-start: 0px;
     line-height: 1.6em;
     border: 1px solid transparent;
     border-radius: 0px;
@@ -217,7 +223,7 @@
     text-overflow: ellipsis;
     overflow: hidden;
     vertical-align: baseline;
-    margin-left: 5px;
+    margin-inline-start: 5px;
 }
 
 .missing-values .list:empty {
@@ -239,8 +245,8 @@
     background-color: rgba(145, 145, 145, 0.13);
     margin: 0 0 0 3px;
     padding: 0 5px;
-    border-right: 1px solid #d7d7d7;
-    border-left: 1px solid #d7d7d7;
+    border-inline-end: 1px solid #d7d7d7;
+    border-inline-start: 1px solid #d7d7d7;
     border: 1px solid #d7d7d7;
 }
 
@@ -261,7 +267,7 @@
 }
 
 .jmv-variable-editor-datavarwidget .measure-box #type {
-    margin-left: 5px;
+    margin-inline-start: 5px;
     flex-grow: 1;
     flex-shrink: 1;
 }
@@ -269,7 +275,7 @@
 .jmv-variable-editor-datavarwidget .measure-box .icon {
     width: 16px;
     height: 16px;
-    margin-left: 8px;
+    margin-inline-start: 8px;
     background-repeat: no-repeat;
     background-size: 100%;
     background-position: center;
@@ -297,7 +303,7 @@
     height: 20px;
     position: absolute;
     top: 5px;
-    left: 5px;
+    inset-inline-start: 5px;
     background-repeat: no-repeat;
     background-position: center;
     background-size: 12px 15px;

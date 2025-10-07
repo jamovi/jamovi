@@ -68,9 +68,9 @@ export class SplitPanel extends EventDistributor {
             this.firstSection = section;
 
         if (section.listIndex > 0) {
-            let leftSection = this.getSection(section.listIndex - 1);
-            leftSection.setNextSection("right", section);
-            section.setNextSection("left", leftSection);
+            let prevSection = this.getSection(section.listIndex - 1);
+            prevSection.setNextSection("right", section);
+            section.setNextSection("left", prevSection);
          }
 
          section.initalise(properties);
@@ -559,6 +559,12 @@ export class SplitPanel extends EventDistributor {
         let columnTemplates = getComputedStyle(this).gridTemplateColumns.split(' ');
         let shrinkingSection = diffX < 0 ? leftSection : rightSection;
         let growingSection = diffX > 0 ? leftSection : rightSection;
+        const dir = window.getComputedStyle(this).direction;
+        if (dir === 'rtl') {
+            const temp = shrinkingSection;
+            shrinkingSection = growingSection;
+            growingSection = temp;
+        }
 
         let shrinkingIndex = parseInt(getComputedStyle(shrinkingSection).gridColumnStart) - 1;
         let currentWidth = parseInt(columnTemplates[shrinkingIndex]);

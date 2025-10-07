@@ -1,6 +1,6 @@
 
 .silky-layout-container > .first-cell > .silky-option-list {
-    margin-left: 0px;
+    margin-inline-start: 0px;
 }
 
 .silky-layout-container:not(.silky-control-body) > .first-row > .silky-option-list {
@@ -8,7 +8,7 @@
 }
 
 .silky-layout-container > .last-cell > .silky-option-list {
-    margin-right: 0px;
+    margin-inline-end: 0px;
 }
 
 .silky-layout-container:not(.silky-control-body) > .last-row > .silky-option-list {
@@ -56,15 +56,16 @@
     box-sizing: border-box ;
     text-align: center ;
     cursor: default ;
-    margin-right: 6px ;
-    margin-left: 6px ;
+    margin-inline-end: 6px ;
+    margin-inline-start: 6px ;
     white-space: nowrap;
     display: inline;
 }
 
+
 .list-item-delete-button {
     position: absolute;
-    right: 0px;
+    inset-inline-end: 0px;
     top: 0px;
     font-size: 11px ;
     color: #555555 ;
@@ -94,12 +95,12 @@
 
 .silky-option-list.multi-item:not(.silky-target-list) > .silky-layout-cell:not(.silky-option-list-filler).selected {
     background-color: transparent;
-    border-left: 4px solid rgb(46,138,199);
+    border-inline-start: 4px solid rgb(46,138,199);
 }
 
 .silky-option-list.multi-item:not(.silky-target-list) > .silky-layout-cell:not(.silky-option-list-filler) {
     border-radius: 0px;
-    border-left: 4px solid transparent;
+    border-inline-start: 4px solid transparent;
     border-bottom: 1px solid #eaeaea;
 }
 

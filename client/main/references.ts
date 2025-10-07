@@ -376,14 +376,14 @@ export class Reference extends HTMLElement {
                 }
 
                 input {
-                    margin-right: 6px ;
+                    margin-inline-end: 6px ;
                     opacity: var(--checkbox-opacity, 1);
                     transition: opacity .3s ;
                 }
 
                 span.num {
                     font-weight: bold ;
-                    margin-right: 6px ;
+                    margin-inline-end: 6px ;
                     line-height: 150% ;
                 }
 

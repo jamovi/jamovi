@@ -124,11 +124,11 @@ h1 {
 }
 
 .silky-layout-cell.cell-border:not(.first-cell) {
-    border-left: 1px solid #d8d8d8;
+    border-inline-start: 1px solid #d8d8d8;
 }
 
 .silky-layout-cell.cell-border-columns:not(.first-cell) {
-    border-left: 1px solid #d8d8d8;
+    border-inline-start: 1px solid #d8d8d8;
 }
 
 .silky-layout-cell.cell-border:not(.first-row) {
@@ -151,14 +151,17 @@ h1 {
 }
 
 .silky-list-item-textbox {
-    margin: 2px 5px 2px 5px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    margin-inline-start: 5px;
+    margin-inline-end: 5px;
 }
 
 .silky-options-content {
     border: none;
     overflow: auto;
-    padding-right: 15px;
-    padding-left: 15px;
+    padding-inline-end: 15px;
+    padding-inline-start: 15px;
     padding-top: 15px;
     box-sizing: border-box;
     overflow-x: hidden;
@@ -176,7 +179,7 @@ h1 {
     cursor: default ;
     margin-top: 6px ;
     margin-bottom: 6px ;
-    margin-right: 6px ;
+    margin-inline-end: 6px ;
     color: #555555 ;
     display: inline-block;
     background-color: transparent;
@@ -209,8 +212,8 @@ h1 {
 
     margin-top: 5px ;
     padding-bottom: 5px ;
-    padding-right: 15px ;
-    padding-left: 15px ;
+    padding-inline-end: 15px ;
+    padding-inline-start: 15px ;
 
     background-image: linear-gradient(to left, #ACACAC, transparent);
     background-size: 100% 2px;
@@ -230,16 +233,16 @@ h1 {
 
 .silky-list-item.silky-format-variable, .silky-list-item.silky-format-term {
     font-size: 100% ;
-    padding-left: 5px;
+    padding-inline-start: 5px;
     padding-top: 3px;
     padding-bottom: 3px;
-    padding-right: 3px;
+    padding-inline-end: 3px;
     display: flex;
     align-items: center;
 }
 
 .silky-list-item .silky-list-item-value {
-    padding-left: 4px;
+    padding-inline-start: 4px;
     flex: 1 1;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -271,9 +274,12 @@ h1 {
 }
 
 .silky-dropdown-toggle {
-  position: relative;
-  top: -4px ;
-  left: 6px ;
+    position: relative;
+    /*top: -4px ;*/
+    /*inset-inline-start: 6px ;*/
+    width: 10px;
+    height: 10px;
+    display: block;
 }
 
 .silky-option-list {
@@ -284,24 +290,30 @@ h1 {
 .silky-dropdown-toggle:before {
   display: block;
   position: absolute;
-  vertical-align: middle;
+  /*vertical-align: middle;*/
   color: transparent;
   font-size: 0;
   content: "";
   height: 5px;
   width: 5px;
   background-color: transparent;
-  border-left: 2px solid;
+  border-inline-start: 2px solid;
   border-bottom: 2px solid;
   border-color: rgb(100, 100, 100);
   top: 50%;
-  left: 100%;
+  inset-inline-start: 50%;
+    margin-top: -1px;
   z-index: 2;
+}
+
+body[dir="rtl"] .silky-dropdown-toggle:before {
+  -webkit-transform: rotate(45deg);
+    transform: rotate(45deg);
 }
 
 .silky-dropdown-toggle:before {
   -webkit-transform: rotate(-45deg);
-          transform: rotate(-45deg);
+    transform: rotate(-45deg);
 }
 
 .silky-option-variable-button {
@@ -309,15 +321,15 @@ h1 {
     height:28px;
     border: 1px solid rgb(130, 130, 130) ;
     background-color: rgb(255, 255, 255);
-    margin-left: 10px;
-    margin-right: 10px;
+    margin-inline-start: 10px;
+    margin-inline-end: 10px;
 }
 
 .supplier-button-filler {
     width: 34px;
     height:28px;
-    margin-left: 10px;
-    margin-right: 10px;
+    margin-inline-start: 10px;
+    margin-inline-end: 10px;
 }
 
 .silky-option-variable-button[disabled] {
@@ -372,7 +384,7 @@ h1 {
 
 .silky-list-item.silky-format-rma_cell {
     font-size: 100% ;
-    padding-left: 5px;
+    padding-inline-start: 5px;
     padding-top: 5px;
     padding-bottom: 5px;
     vertical-align: middle ;
@@ -387,7 +399,7 @@ h1 {
 }
 
 .silky-control-body-style-list {
-    margin-left: 15px;
+    margin-inline-start: 15px;
     margin-top: 0px;
 }
 
@@ -408,7 +420,7 @@ h1 {
 }
 
 .silky-layout-cell.rendered {
-    transition: top 0.2s, left 0.2s, width 0.2s, height 0.2s, opacity 0.2s, visibility 0.2s;
+    transition: top 0.2s, left 0.2s, width 0.2s, height 0.2s, inset-inline-start 0.2s, opacity 0.2s, visibility 0.2s;
 }
 
 .item-template {
@@ -428,27 +440,36 @@ h1 {
 }
 
 input[type=text].silky-option-listitem {
-  -webkit-transition: all 0.30s ease-in-out;
-  -moz-transition: all 0.30s ease-in-out;
-  -ms-transition: all 0.30s ease-in-out;
-  -o-transition: all 0.30s ease-in-out;
-  outline: none;
-  padding: 3px 4px 3px 8px;
-  margin: 3px 0px 3px 0px;
-  border: 1px solid #FFFFFF;
-  border-left: none;
-  border-right: none;
-  z-index: 98;
+    -webkit-transition: all 0.30s ease-in-out;
+    -moz-transition: all 0.30s ease-in-out;
+    -ms-transition: all 0.30s ease-in-out;
+    -o-transition: all 0.30s ease-in-out;
+    outline: none;
+    padding-top: 3px;
+    padding-inline-end: 4px;
+    padding-bottom: 3px;
+    padding-inline-start: 8px;
+    margin: 3px 0px 3px 0px;
+    border: 1px solid #FFFFFF;
+    border-inline-start: none;
+    border-inline-end: none;
+    z-index: 98;
 }
 
 input[type=text].silky-option-listitem:focus {
-  box-shadow: 0 0 5px rgba(181, 202, 239, 1);
-  padding: 3px 4px 3px 8px;
-  margin: 3px 1px 3px 0px;
-  border: 1px solid rgba(181, 202, 239, 1);
-  border-left: none;
-  border-right: none;
-  z-index: 99;
+    box-shadow: 0 0 5px rgba(181, 202, 239, 1);
+    padding-top: 3px;
+    padding-inline-end: 4px;
+    padding-bottom: 3px;
+    padding-inline-start: 8px;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    margin-inline-start: 0px;
+    margin-inline-end: 1px;
+    border: 1px solid rgba(181, 202, 239, 1);
+    border-inline-start: none;
+    border-inline-end: none;
+    z-index: 99;
 }
 
 .centre-text {
@@ -471,7 +492,7 @@ input[type=text].silky-option-listitem:focus {
 
 .rmcell-template .silky-control-label {
     font-size: 80% ;
-    padding-right: 3px;
+    padding-inline-end: 3px;
     padding-top: 0px;
     padding-bottom: 3px;
 }
@@ -522,8 +543,8 @@ input[type=text].silky-option-listitem:focus {
     background-size: 100%;
     width: 19px;
     flex-shrink: 0;
-    margin-right: 8px;
-    margin-left: 5px;
+    margin-inline-end: 8px;
+    margin-inline-start: 5px;
     filter: invert(100%) grayscale(100%) brightness(40%) sepia(100%) hue-rotate(-50deg) saturate(600%) contrast(0.8);
 
 }

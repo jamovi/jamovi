@@ -177,7 +177,7 @@ class TableView extends HTMLElement implements DataSetView {
             </div>
             <div class="jmv-table-container" role="presentation">
                 <div class="jmv-table-body" role="presentation">
-                    <div class="jmv-column-row-header" style="left: 0 ;" aria-hidden="true");></div>
+                    <div class="jmv-column-row-header" style="inset-inline-start: 0 ;" aria-hidden="true");></div>
                     <div class="jmv-sub-selections"></div>
                     <div class="jmv-table-cell-selected has-edit-focus">
                         <div class="selection-sizer top-left-sizer"></div>
@@ -263,10 +263,10 @@ class TableView extends HTMLElement implements DataSetView {
 
         this.controller.on('columnAppended', (colNo) => {
             let selRight = this._lefts[colNo] + this._widths[colNo];
-            let scrollX = this.$container.scrollLeft;
+            let scrollX = this.$container.scrollLeft * (document.body.dir === 'rtl' ? -1 : 1);
             let containerRight = scrollX + (this.$container.clientWidth - TableView.getScrollbarWidth());
             if (selRight > containerRight)
-                this.$container.scrollLeft = scrollX + selRight - containerRight;
+                this.$container.scrollLeft = (scrollX + selRight - containerRight) * (document.body.dir === 'rtl' ? -1 : 1);
         });
 
         this.controller.on('copying', () => {
@@ -469,7 +469,7 @@ class TableView extends HTMLElement implements DataSetView {
                 data-active="${ column.active ? '1' : '0' }"
                 class="jmv-column"
                 style="
-                    left: ${ left }px ;
+                    inset-inline-start: ${ left }px ;
                     width: ${ column.width }px ;
                 "
             >
@@ -637,8 +637,8 @@ class TableView extends HTMLElement implements DataSetView {
                     if (child.hasAttribute('aria-colindex'))
                         child.setAttribute('aria-colindex', i.toString());
                 }
-                $header.style.left =  `${this._lefts[i]}px`;
-                $column.style.left = `${this._lefts[i]}px`;
+                $header.style.insetInlineStart =  `${this._lefts[i]}px`;
+                $column.style.insetInlineStart = `${this._lefts[i]}px`;
             }
         }
 
@@ -834,9 +834,13 @@ class TableView extends HTMLElement implements DataSetView {
         rowNo = rowNo < 0 ? 0 : rowNo;
         rowNo = rowNo > this.model.attributes.vRowCount - 1 ? this.model.attributes.vRowCount - 1 : rowNo;
 
-        if (x - bounds.left >= 0 && x - bounds.left < this._rowHeaderWidth) // on row header
+        const dir = getComputedStyle(this).direction;
+        const bx = dir === 'rtl' ? bounds.right - x : x - bounds.left;
+        vx = dir === 'rtl' ? bodyBounds.right - x : x - bodyBounds.left;
+
+        if (bx >= 0 && bx < this._rowHeaderWidth) // on row header
             rowHeader = true;
-        vx = x - bodyBounds.left;
+
         for (colNo = 0; colNo < this._lefts.length; colNo++) {
             if (vx < this._lefts[colNo]) {
                 tiltX = (vx - this._lefts[colNo - 1] < this._lefts[colNo] - vx) ? 'left' : 'right';
@@ -1202,13 +1206,13 @@ class TableView extends HTMLElement implements DataSetView {
                     this.$selection.style.height = `${newRect.bottom - newRect.top}px`;
                 }
                 else if (this.selection.isFullColumnSelection()) {
-                    this.$selection.style.left = `${newRect.left}px`
+                    this.$selection.style.insetInlineStart = `${newRect.left}px`
                     this.$selection.style.width = `${newRect.right - newRect.left}px`;
                 }
                 else {
                     this.$selection.style.top = `${newRect.top}px`;
                     this.$selection.style.height = `${newRect.bottom - newRect.top}px`;
-                    this.$selection.style.left = `${newRect.left}px`; 
+                    this.$selection.style.insetInlineStart = `${newRect.left}px`; 
                     this.$selection.style.width = `${newRect.right - newRect.left}px`;
                 }
 
@@ -1249,12 +1253,12 @@ class TableView extends HTMLElement implements DataSetView {
         let x = this._lefts[range.left];
         let width = this._lefts[range.right] + this._widths[range.right] - x;
         let selRight = x + width;
-        let scrollX = this.$container.scrollLeft;
+        let scrollX = this.$container.scrollLeft * (document.body.dir === 'rtl' ? -1 : 1);
         let containerRight = scrollX + (this.$container.clientWidth - TableView.getScrollbarWidth());
         if (selRight > containerRight)
-            this.$container.scrollLeft = scrollX + selRight - containerRight;
+            this.$container.scrollLeft = (scrollX + selRight - containerRight) * (document.body.dir === 'rtl' ? -1 : 1);
         else if (x - this._rowHeaderWidth < scrollX)
-            this.$container.scrollLeft = x - this._rowHeaderWidth;
+            this.$container.scrollLeft = (x - this._rowHeaderWidth) * (document.body.dir === 'rtl' ? -1 : 1);
 
 
         let nRows = range.bottom - range.top + 1;
@@ -1305,7 +1309,7 @@ class TableView extends HTMLElement implements DataSetView {
             let width = this._lefts[selection.right] + this._widths[selection.right] - x;
             let height = this._rowHeight * nRows;
 
-            $secondarySelection.style.left = `${x}px`;
+            $secondarySelection.style.insetInlineStart = `${x}px`;
             $secondarySelection.style.top = `${y}px`;
             $secondarySelection.style.width = `${width}px`;
             $secondarySelection.style.height = `${height}px`;
@@ -1461,7 +1465,7 @@ class TableView extends HTMLElement implements DataSetView {
         let height = this._rowHeight;
 
         this._focusCell.style.top = `${y+1}px`;
-        this._focusCell.style.left = `${x}px`;
+        this._focusCell.style.insetInlineStart = `${x}px`;
         this._focusCell.style.width = `${width-1}px`;
         this._focusCell.style.height = `${height-2}px`;
         this._focusCell.style.lineHeight = `${height-3}px`;
@@ -1519,16 +1523,16 @@ class TableView extends HTMLElement implements DataSetView {
         if (fullRow) {
 
             let width = this.$container.clientWidth;
-            let leftScroll = this.$container.scrollLeft;
+            let leftScroll = this.$container.scrollLeft * (document.body.dir === 'rtl' ? -1 : 1);
             let selectionWidth = this.$selection.clientWidth - leftScroll;
             if (selectionWidth < width)
                 width = selectionWidth;
-            $sizerLeft.style.left = `${leftScroll + (width/2) - ($sizerLeft.clientWidth/2)}px`;
-            $sizerRight.style.left = `${leftScroll + (width/2) - ($sizerRight.clientWidth/2)}px`;
+            $sizerLeft.style.insetInlineStart = `${leftScroll + (width/2) - ($sizerLeft.clientWidth/2)}px`;
+            $sizerRight.style.insetInlineStart = `${leftScroll + (width/2) - ($sizerRight.clientWidth/2)}px`;
         }
         else {
-            $sizerLeft.style.left = '';
-            $sizerRight.style.left = '';
+            $sizerLeft.style.insetInlineStart = '';
+            $sizerRight.style.insetInlineStart = '';
         }
 
         if (fullCol) {
@@ -1584,7 +1588,7 @@ class TableView extends HTMLElement implements DataSetView {
             }, 300);
         }
 
-        this.$selection.style.left = `${x}px`;
+        this.$selection.style.insetInlineStart = `${x}px`;
         this.$selection.style.top = `${y}px`;
         this.$selection.style.width = `${width - 1}px`; 
         this.$selection.style.height = `${height }px`;
@@ -1598,7 +1602,7 @@ class TableView extends HTMLElement implements DataSetView {
         this.$selectionRowHighlightWrapper.style.width = `${this._rowHeaderWidth}px`;
         this.$selectionRowHighlight.style.top = `${y}px`; 
         this.$selectionRowHighlight.style.height = `${height}px`;
-        this.$selectionColumnHighlight.style.left = `${x}px`;
+        this.$selectionColumnHighlight.style.insetInlineStart = `${x}px`;
         this.$selectionColumnHighlight.style.width = `${width}px`;
         this.$selectionColumnHighlight.style.height = `${this._rowHeight}px`;
 
@@ -1816,18 +1820,20 @@ class TableView extends HTMLElement implements DataSetView {
 
     _editingKeyPress(event: KeyboardEvent) {
 
+        const dir = getComputedStyle(this).direction;
+
         switch(event.key) {
             case 'ArrowLeft':
                 if (this._modifyingCellContents === false) {
                     this._endEditing().then(() => {
-                        this.selection.moveCursor('left');
+                        this.selection.moveCursor(dir === 'rtl' ? 'forward' : 'back');
                     }, () => {});
                 }
                 break;
             case 'ArrowRight':
                 if (this._modifyingCellContents === false) {
                     this._endEditing().then(() => {
-                        this.selection.moveCursor('right');
+                        this.selection.moveCursor(dir === 'rtl' ? 'back' : 'forward');
                     }, () => {});
                 }
                 break;
@@ -1860,9 +1866,9 @@ class TableView extends HTMLElement implements DataSetView {
             case 'Tab':
                 this._endEditing().then(() => {
                     if (event.shiftKey)
-                        this.selection.moveCursor('left', false, true);
+                        this.selection.moveCursor('back', false, true);
                     else
-                        this.selection.moveCursor('right', false, true);
+                        this.selection.moveCursor('forward', false, true);
                 }, () => {});
                 event.preventDefault();
                 break;
@@ -1888,6 +1894,8 @@ class TableView extends HTMLElement implements DataSetView {
     }
 
     _notEditingKeyPress(event: KeyboardEvent) {
+
+        const dir = getComputedStyle(this).direction;
 
         //touch screens don't have keycodes
         if (event.keyCode === 0 || event.keyCode === 229) {
@@ -1986,39 +1994,61 @@ class TableView extends HTMLElement implements DataSetView {
                 if (event.metaKey || event.ctrlKey) {
                     if (event.shiftKey) {
                         let newSelection = this.selection.clone();
-                        newSelection.left = 0;
-                        if (newSelection.right !== this.model.visibleRealColumnCount() - 1)
-                            newSelection.colFocus = 0;
+                        if (dir === 'rtl') {
+                            newSelection.right = this.model.visibleRealColumnCount() - 1;
+                            if (newSelection.left !== 0)
+                                newSelection.colFocus = this.model.visibleRealColumnCount() - 1;
+                        }
+                        else {
+                            newSelection.left = 0;
+                            if (newSelection.right !== this.model.visibleRealColumnCount() - 1)
+                                newSelection.colFocus = 0;
+                        }
                         this.selection.setSelections(newSelection);
                     }
-                    else
-                        this.selection.setSelection(this.selection.rowNo, 0);
+                    else {
+                        if (dir === 'rtl')
+                            this.selection.setSelection(this.selection.rowNo, this.model.visibleRealColumnCount() - 1);
+                        else
+                            this.selection.setSelection(this.selection.rowNo, 0);
+                    }
                 }
                 else
-                    this.selection.moveCursor('left', event.shiftKey);
+                    this.selection.moveCursor(dir === 'rtl' ? 'forward' : 'back', event.shiftKey);
                 event.preventDefault();
                 break;
             case 'Tab':
                 if (event.shiftKey)
-                    this.selection.moveCursor('left', false, true);
+                    this.selection.moveCursor('back', false, true);
                 else
-                    this.selection.moveCursor('right', false, true);
+                    this.selection.moveCursor('forward', false, true);
                 event.preventDefault();
                 break;
             case 'ArrowRight':
                 if (event.metaKey || event.ctrlKey) {
                     if (event.shiftKey) {
                         let newSelection = this.selection.clone();
-                        newSelection.right = this.model.visibleRealColumnCount() - 1;
-                        if (newSelection.left !== 0)
-                            newSelection.colFocus = this.model.visibleRealColumnCount() - 1;
+                        if (dir === 'rtl') {
+                            newSelection.left = 0;
+                            if (newSelection.right !== this.model.visibleRealColumnCount() - 1)
+                                newSelection.colFocus = 0;
+                        }
+                        else {
+                            newSelection.right = this.model.visibleRealColumnCount() - 1;
+                            if (newSelection.left !== 0)
+                                newSelection.colFocus = this.model.visibleRealColumnCount() - 1;
+                        }
                         this.selection.setSelections(newSelection);
                     }
-                    else
-                        this.selection.setSelection(this.selection.rowNo, this.model.visibleRealColumnCount() - 1);
+                    else {
+                        if (dir === 'rtl')
+                            this.selection.setSelection(this.selection.rowNo, 0);
+                        else
+                            this.selection.setSelection(this.selection.rowNo, this.model.visibleRealColumnCount() - 1);
+                    }
                 }
                 else
-                    this.selection.moveCursor('right', event.shiftKey);
+                    this.selection.moveCursor(dir === 'rtl' ? 'back' : 'forward', event.shiftKey);
                 event.preventDefault();
                 break;
             case 'ArrowUp':
@@ -2155,7 +2185,7 @@ class TableView extends HTMLElement implements DataSetView {
                             data-active="${ column.active ? '1' : '0' }"
                             class="jmv-column"
                             style="
-                                left: ${ left }px ;
+                                inset-inline-start: ${ left }px ;
                                 width: ${ column.width }px ;
                             "
                         >
@@ -2179,8 +2209,8 @@ class TableView extends HTMLElement implements DataSetView {
                             if (child.hasAttribute('aria-colindex'))
                                 child.setAttribute('aria-colindex', i.toString());
                         }
-                        $header.style.left = `${this._lefts[i]}px`;
-                        $column.style.left = `${this._lefts[i]}px`;
+                        $header.style.insetInlineStart = `${this._lefts[i]}px`;
+                        $column.style.insetInlineStart = `${this._lefts[i]}px`;
                     }
                 }
 
@@ -2271,6 +2301,7 @@ class TableView extends HTMLElement implements DataSetView {
         let column = data.column;
         let $target = data.$resizer;
         let x = event.pageX - data.startPageX; // event.offsetX - 6;
+
         data.startPageX = event.pageX;
 
         if (x === 0)
@@ -2279,6 +2310,9 @@ class TableView extends HTMLElement implements DataSetView {
         let colNo = parseInt($target.getAttribute('data-index'));
 
         let newWidth = this._widths[colNo] + x;
+        if (document.body.dir === 'rtl')
+            newWidth = this._widths[colNo] - x;
+
         if (newWidth < 32) {
             newWidth = 32;
             x = newWidth - this._widths[colNo];
@@ -2298,11 +2332,14 @@ class TableView extends HTMLElement implements DataSetView {
         $column.style.width = `${this._widths[colNo]}px`;
 
         for (let i = colNo + 1; i < this._lefts.length; i++) {
-            this._lefts[i] += x;
+            if (document.body.dir === 'rtl')
+                this._lefts[i] -= x;
+            else
+                this._lefts[i] += x;
             let $header = this.$headers[i];
             let $column = this.$columns[i];
-            $header.style.left = `${this._lefts[i]}px`;
-            $column.style.left = `${this._lefts[i]}px`;
+            $header.style.insetInlineStart = `${this._lefts[i]}px`;
+            $column.style.insetInlineStart = `${this._lefts[i]}px`;
         }
 
         let range = this.selection;
@@ -2312,15 +2349,18 @@ class TableView extends HTMLElement implements DataSetView {
         let width = this._lefts[range.right] + this._widths[range.right] - left;
         let height = this._rowHeight * nRows;
 
-        this.$selection.style.left = `${left}px`;
+        this.$selection.style.insetInlineStart = `${left}px`;
         this.$selection.style.top = `${top}px`;
         this.$selection.style.width = `${width - 1}px`;
         this.$selection.style.height = `${height}px`;
 
-        this.$selectionColumnHighlight.style.left = `${left}px`;
+        this.$selectionColumnHighlight.style.insetInlineStart = `${left}px`;
         this.$selectionColumnHighlight.style.width = `${width}px`;
 
-        this._bodyWidth += x;
+        if (document.body.dir === 'rtl')
+            this._bodyWidth -= x;
+        else
+            this._bodyWidth += x;
         this.$body.style.width = `${this._bodyWidth}px`;
 
         this.classList.remove('resizing');
@@ -2445,15 +2485,15 @@ class TableView extends HTMLElement implements DataSetView {
                 this.$rhColumn.style.width = `${this._rowHeaderWidth}px`;
                 this.$topLeftCell.style.width = `${this._rowHeaderWidth}px`;
 
-                this.$selectionColumnHighlight.style.left = `${leftCol + deltaWidth}px`;
+                this.$selectionColumnHighlight.style.insetInlineStart = `${leftCol + deltaWidth}px`;
                 this.$selectionRowHighlightWrapper.style.width = `${this._rowHeaderWidth}px`;
-                this.$selection.style.left = `${leftSel + deltaWidth}px`;
+                this.$selection.style.insetInlineStart = `${leftSel + deltaWidth}px`;
 
                 let $selections = this.$body.querySelectorAll<HTMLElement>('.jmv-table-cell-secondary-selected');
                 for (let i = 0; i < $selections.length; i++) {
                     let $selection = $selections[i];
                     leftSel = $selection.offsetLeft;
-                    $selection.style.left = `${leftSel + deltaWidth}px`;
+                    $selection.style.insetInlineStart = `${leftSel + deltaWidth}px`;
                 }
 
                 this._lefts = this._lefts.map(x => x += deltaWidth);
@@ -2461,8 +2501,8 @@ class TableView extends HTMLElement implements DataSetView {
                     let $column = this.$columns[i];
                     let $header = this.$headers[i];
                     let left = this._lefts[i];
-                    $column.style.left = `${left}px`;
-                    $header.style.left = `${left}px`;
+                    $column.style.insetInlineStart = `${left}px`;
+                    $header.style.insetInlineStart = `${left}px`;
                 }
             }
         }
@@ -2584,8 +2624,8 @@ class TableView extends HTMLElement implements DataSetView {
         if (this._encloses(this.viewOuterRange, currentViewRange) === false)
             this._updateViewRange();
 
-        let left = this.$container.scrollLeft;
-        this.$header.style.left = `${-left}px`;
+        let left = this.$container.scrollLeft * (document.body.dir === 'rtl' ? -1 : 1);
+        this.$header.style.insetInlineStart = `${-left}px`;
         this.$header.style.width = `${this.clientWidth + left}px`;
     }
 
@@ -2598,8 +2638,8 @@ class TableView extends HTMLElement implements DataSetView {
         if (this._encloses(this.viewOuterRange, currentViewRange) === false)
             this._updateViewRange();
 
-        let left = this.$container.scrollLeft;
-        this.$header.style.left = `${-left}px`;
+        let left = this.$container.scrollLeft * (document.body.dir === 'rtl' ? -1 : 1);
+        this.$header.style.insetInlineStart = `${-left}px`;
         this.$header.style.width = `${this.clientWidth + left}px`;
     }
 
@@ -2656,14 +2696,8 @@ class TableView extends HTMLElement implements DataSetView {
 
         let oldViewport = this.viewport;
 
-        //this.viewRange      = v;
         this.viewOuterRange = { top : oTop,   bottom : oBot,   left : oLeft,      right : oRight };
         this.viewport = { top : topRow, bottom : botRow, left : leftColumn, right : rightColumn };
-
-        //console.log("view");
-        //console.log(this.viewport);
-        //console.log(this.viewRange);
-        //console.log(this.viewOuterRange);
 
         this.refreshCells(oldViewport, this.viewport);
     }
@@ -2683,7 +2717,7 @@ class TableView extends HTMLElement implements DataSetView {
                 data-id="${ column.id }"
                 class="jmv-column-header"
                 style="
-                    left: ${ left }px ;
+                    inset-inline-start: ${ left }px ;
                     width: ${ column.width }px ;
                     height: ${ this._rowHeight }px ;
                 "
@@ -2974,7 +3008,8 @@ class TableView extends HTMLElement implements DataSetView {
     _getViewRange() {
         let vTop   = this.$container.scrollTop;
         let vBot   = vTop + this.clientHeight - this._rowHeight;
-        let vLeft  = this.$container.scrollLeft;
+        let vLeft  = this.$container.scrollLeft * (document.body.dir === 'rtl' ? -1 : 1);
+
         let vRight = vLeft + this.clientWidth;
 
         return { top : vTop, bottom : vBot, left : vLeft, right : vRight };

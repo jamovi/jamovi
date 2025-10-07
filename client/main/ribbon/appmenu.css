@@ -8,7 +8,7 @@
 .jmv-ribbon-appmenu-menu-panel {
     position: fixed;
     display: flex;
-    right: -1px;
+    inset-inline-end: -1px;
     top: 0px;
     width: 0px;
     visibility: hidden;
@@ -17,7 +17,7 @@
     color: #555555;
     margin: 0;
     transition: .15s width ease-out, .15s visibility ease-out;
-    border-left: 1px solid #D0D0D0;
+    border-inline-start: 1px solid #D0D0D0;
     filter: drop-shadow(0px 0px 5px #00000066);
 }
 
@@ -35,7 +35,7 @@ body.windows.electron .jmv-ribbon-appmenu-menu-panel {
     overflow: hidden;
     margin: 0 ;
     font-size: 70% ;
-    text-align: left ;
+    text-align: start ;
     flex-direction: column;
     min-width: 250px;
 }
@@ -78,6 +78,10 @@ body.windows.electron .jmv-ribbon-appmenu-menu-panel {
     background-color: #888888 ;
 }
 
+body[dir="ltr"] .jmv-ribbon-appmenu-back-button > div {
+    transform: rotate(180deg);
+}
+
 .jmv-ribbon-appmenu-back-button > div {
     flex: 1;
     mask: url('../../assets/action-back.svg') 0 0/25px 25px no-repeat;
@@ -86,7 +90,6 @@ body.windows.electron .jmv-ribbon-appmenu-menu-panel {
     -webkit-mask-repeat: no-repeat;
     -webkit-mask-position: center;
     -webkit-mask-size: 25px;
-    transform: rotate(180deg);
     min-width: 25px;
     height: 25px;
 }
@@ -123,7 +126,7 @@ body.windows.electron .jmv-ribbon-appmenu-menu-panel {
 }
 
 input[type="checkbox"].jmv-ribbon-appmenu-checkbox {
-    margin-right: 0px;
+    margin-inline-end: 0px;
 }
 
 .jmv-ribbon-appmenu-list {
@@ -145,8 +148,8 @@ input[type="checkbox"].jmv-ribbon-appmenu-checkbox {
 }
 
 .jmv-ribbon-appmenu-zoomlevel {
-    margin-left: 8px ;
-    margin-right: 8px ;
+    margin-inline-start: 8px ;
+    margin-inline-end: 8px ;
 }
 
 .jmv-ribbon-appmenu-zoomin,

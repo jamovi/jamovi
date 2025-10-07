@@ -9,11 +9,11 @@
 }
 
 .silky-layout-container > .first-cell > .silky-options-supplier-group {
-    margin-left: 0px;
+    margin-inline-start: 0px;
 }
 
 .silky-layout-container > .last-cell > .silky-options-supplier-group {
-    margin-right: 0px;
+    margin-inline-end: 0px;
 }
 
 .silky-layout-container:not(.silky-control-body) > .last-row > .silky-options-supplier-group {

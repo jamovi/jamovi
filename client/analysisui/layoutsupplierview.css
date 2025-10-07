@@ -13,8 +13,8 @@
     opacity: 0;
     position: absolute;
     bottom: 0px;
-    left: 0px;
-    right: 0px;
+    inset-inline-start: 0px;
+    inset-inline-end: 0px;
     z-index: 300;
     padding: 5px;
     margin: 5px;
@@ -99,9 +99,13 @@
     position: sticky;
     background: none;
     border: none;
-    padding: 0 0 1px 0;
+    padding-top: 0px;
+    padding-inline-end: 0px;
+    padding-bottom: 1px;
+    padding-inline-start: 0px;
     top: 2px;
-    right: 2px;
+    inset-inline-end: 2px;
+    inset-inline-start: 2px;
     height: 0px;
     z-index: 100;
     justify-self: flex-end;
@@ -138,6 +142,6 @@
 }
 
 .silky-list-item .power-box .button-box {
-    margin-right: 3px;
-    margin-left: 3px;
+    margin-inline-end: 3px;
+    margin-inline-start: 3px;
 }

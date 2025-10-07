@@ -107,7 +107,7 @@
     top: 0 ;
     bottom: 0 ;
     transition: all .2s ;
-    left: 0 ;
+    inset-inline-start: 0 ;
     padding: 0px 20px 20px 20px ;
 }
 
@@ -117,9 +117,9 @@
 }
 
 .jmv-store-page.left {
-    left: -100% ;
+    inset-inline-start: -100% ;
 }
 
 .jmv-store-page.right {
-    left: 100% ;
+    inset-inline-start: 100% ;
 }

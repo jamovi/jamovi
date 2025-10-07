@@ -725,8 +725,15 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
 
     setButtonsMode(gainOnClick) {
         this.gainOnClick = gainOnClick;
-        this.buttons.classList.add(gainOnClick ? 'arrow-right' : 'arrow-left');
-        this.buttons.classList.remove(gainOnClick ? 'arrow-left' : 'arrow-right');
+        const dir = window.getComputedStyle(this.buttons).direction;
+        if (dir === 'rtl') {
+            this.buttons.classList.add(gainOnClick ? 'arrow-left' : 'arrow-right');
+            this.buttons.classList.remove(gainOnClick ? 'arrow-right' : 'arrow-left');
+        }
+        else {
+            this.buttons.classList.add(gainOnClick ? 'arrow-right' : 'arrow-left');
+            this.buttons.classList.remove(gainOnClick ? 'arrow-left' : 'arrow-right');
+        }
         let label = this.getTranslatedProperty('label');
         if (this.gainOnClick) {
             let action = this.getDefaultTransferAction();

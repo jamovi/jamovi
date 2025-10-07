@@ -15,7 +15,7 @@
     min-width: 100px;
     height: 25px;
     min-height: 25px;
-    padding-left: 25px;
+    padding-inline-start: 25px;
     border-bottom: 1px solid #d8d8d8;
 }
 

@@ -847,6 +847,8 @@ class VariablesView extends HTMLElement  implements DataSetView {
         if ((event.metaKey || event.ctrlKey) && ! (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'ArrowUp' || event.key === 'ArrowDown'))
             return;
 
+        const dir = getComputedStyle(this).direction;
+
         switch(event.key) {
             case 'ArrowUp':
             case 'ArrowLeft':
@@ -862,14 +864,14 @@ class VariablesView extends HTMLElement  implements DataSetView {
                         this.selection.setSelection(this.selection.rowNo, 0, false);
                 }
                 else
-                    this.selection.moveCursor('left', event.shiftKey);
+                    this.selection.moveCursor((dir === 'rtl' && event.key !== 'ArrowUp') ? 'forward' : 'back', event.shiftKey);
                 event.preventDefault();
                 break;
             case 'Tab':
                 if (event.shiftKey)
-                    this.selection.moveCursor('left', false, true);
+                    this.selection.moveCursor(dir === 'rtl' ? 'forward' : 'back', false, true);
                 else
-                    this.selection.moveCursor('right', false, true);
+                    this.selection.moveCursor(dir === 'rtl' ? 'back' : 'forward', false, true);
                 event.preventDefault();
                 break;
             case 'ArrowDown':
@@ -886,7 +888,7 @@ class VariablesView extends HTMLElement  implements DataSetView {
                         this.selection.setSelection(this.selection.rowNo, this.model.attributes.columnCount - 1, false);
                 }
                 else
-                    this.selection.moveCursor('right', event.shiftKey);
+                    this.selection.moveCursor((dir === 'rtl' && event.key !== 'ArrowDown') ? 'back' : 'forward', event.shiftKey);
                 event.preventDefault();
                 break;
         }

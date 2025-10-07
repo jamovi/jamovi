@@ -1,10 +1,11 @@
 
+
 .silky-bs {
     display: grid ;
     grid-template-columns: min-content auto;
+    inset-inline-start: 0;
     position: fixed ;
     overflow: hidden;
-    left: 0 ;
     background-color: #F0F0F0 ;
     z-index: 100 ;
     width: 0px;
@@ -76,12 +77,12 @@
     background-size: 15px 15px;
     background-image: url('../assets/variable-search.svg');
     border-radius: 3px;
-    margin-right: 4px;
+    margin-inline-end: 4px;
 }
 
 .searchbox > input {
     width: 100%;
-    padding-left: 5px;
+    padding-inline-start: 5px;
 }
 
 .silky-bs.activated {
@@ -97,7 +98,7 @@
 .silky-bs-op-panel {
     min-width: 250px;
     max-width: 250px;
-    left: 0;
+    inset-inline-start: 0;
     top: 0 ;
     height: 100% ;
     background-color: #FFFFFF ;
@@ -129,7 +130,7 @@
 }
 
 .silky-bs-back {
-    margin-left: 10px;
+    margin-inline-start: 10px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -146,6 +147,10 @@
     background-color: transparent;
     border: none;
     overflow: hidden;
+}
+
+body[dir="rtl"] .silky-bs-back-button > div {
+    transform: rotate(180deg);
 }
 
 .silky-bs-back-button > div {
@@ -179,7 +184,10 @@
 }
 
 .silky-bs-op-button, .silky-bs-op-header {
-    padding: 12px 24px 12px 18px;
+    padding-top: 12px;
+    padding-inline-end: 24px;
+    padding-bottom: 12px;
+    padding-inline-start: 18px;
     cursor: default ;
     /*font-weight: bold;*/
     font-size: 120%;
@@ -233,7 +241,10 @@
 
 .silky-bs-op-place.selected-place {
     background-color: #e1e9f4 ;
-    padding: 8px 0px 8px 8px;
+    padding-top: 8px;
+    padding-inline-end: 0px;
+    padding-bottom: 8px;
+    padding-inline-start: 8px;
     font-weight: bold;
     color: #3E6DA9;
     font-size: 105%;
@@ -242,7 +253,10 @@
 }
 
 .silky-bs-op-place {
-    padding: 8px 0px 8px 8px;
+    padding-top: 8px;
+    padding-inline-end: 0px;
+    padding-bottom: 8px;
+    padding-inline-start: 8px;
     transition: .2s padding ease-out;
     border: 2px solid transparent;
     position: relative;
@@ -255,15 +269,15 @@
 }
 
 .silky-bs-op-place .shortcut-key-tag {
-    left: 3em;
+    inset-inline-start: 3em;
 }
 
 .silky-bs-fslist-entry .shortcut-key-tag {
-    left: 3em;
+    inset-inline-start: 3em;
 }
 
 .silky-bs-op-button .shortcut-key-tag {
-    left: 2em;
+    inset-inline-start: 2em;
     font-size: 80%;
 }
 
@@ -293,7 +307,7 @@
 }
 
 .silky-bs-op-recents.silky-bs-fslist {
-    padding-left: 0px;
+    padding-inline-start: 0px;
     overflow: visible;
 }
 
@@ -302,11 +316,11 @@
 }
 
 .silky-bs-op-recents .silky-bs-fslist-entry {
-    padding-left: 25px;
+    padding-inline-start: 25px;
     width: auto;
     border: 2px solid transparent;
     background-color: inherit;
-    text-align: left;
+    text-align: start;
 }
 
 .silky-bs-op-recents .silky-bs-fslist-entry:hover {
@@ -345,7 +359,7 @@
 }
 
 .silky-bs-mid .silky-bs-places {
-    border-right: 1px solid #DDDDDD ;
+    border-inline-end: 1px solid #DDDDDD ;
     bottom: 24px ;
 }
 
@@ -358,12 +372,12 @@
     font-size: 120% ;
     height: 40px ;
     line-height: 40px ;
-    padding-left: 12px ;
+    padding-inline-start: 12px ;
     margin-top: 6px ;
     background-size: auto 60% ;
     background-repeat: no-repeat ;
     background-position: 8px center ;
-    padding-left: 40px ;
+    padding-inline-start: 40px ;
 }
 
 .silky-bs-place-separator {
@@ -372,7 +386,7 @@
     border-width: 0px 0px 1px 0px;
     border-color: #DDDDDD;
     height: 6px;
-    margin-right: 20px;
+    margin-inline-end: 20px;
 }
 
 .silky-bs-place:hover {
@@ -406,11 +420,14 @@
 
 .silky-bs-choices {
     position: absolute ;
-    left: 435px ;
+    inset-inline-start: 435px ;
     top: 136px ;
     bottom: 20px ;
-    right: 10px ;
-    padding: 18px 18px 18px 0px ;
+    inset-inline-end: 10px ;
+    padding-top: 18px;
+    padding-inline-end: 18px;
+    padding-bottom: 18px;
+    padding-inline-start: 0px;
     box-sizing: border-box ;
     overflow: hidden;
 }
@@ -456,12 +473,12 @@
     background-repeat: no-repeat;
     background-position: center;
     background-size: 100% ;
-    margin-left: 2px ;
-    margin-right: 2px ;
+    margin-inline-start: 2px ;
+    margin-inline-end: 2px ;
 }
 
 .silky-bs-fslist-item > .shortcut-key-tag {
-    left: 0px;
+    inset-inline-start: 0px;
     top: 0px;
 }
 
@@ -472,14 +489,14 @@
     flex-flow: row nowrap;
     box-sizing: border-box;
     align-items: center;
-    padding-right: 4px ;
+    padding-inline-end: 4px ;
     border: 2px solid transparent;
     position: relative;
 }
 
 .silky-bs-fslist-item > * {
-    margin-left: 2px;
-    margin-right: 2px;
+    margin-inline-start: 2px;
+    margin-inline-end: 2px;
 }
 
 .silky-bs-flist-icon {
@@ -568,7 +585,7 @@
     background-position: center;
     background-repeat: no-repeat;
     background-size: 100% 100%;
-    margin-right: 10px;
+    margin-inline-end: 10px;
 }
 
 .silky-bs-fslist-items {
@@ -693,7 +710,10 @@
     font-size: 14px ;
     box-sizing: border-box;
     border: none;
-    padding: 3px 4px 3px 2px;
+    padding-top: 3px;
+    padding-inline-end: 4px;
+    padding-bottom: 3px;
+    padding-inline-start: 2px;
     background-color: transparent;
 }
 
@@ -716,8 +736,8 @@
 }
 
 .jmv-bs-fslist-checkbox {
-    margin-left: 5px !important;
-    margin-right: 0px !important;
+    margin-inline-start: 5px !important;
+    margin-inline-end: 0px !important;
     opacity: 1;
     transition: 0.2s opacity, 0.2s width, 0.2s margin, 0.2s visibility;
     visibility: visible;
@@ -759,13 +779,16 @@
     align-items: center;
     height: 30px;
     font-size: 15px ;
-    margin-left: 10px;
+    margin-inline-start: 10px;
     border-style: solid;
     border-width: 1px;
     border-color: #AAAAAA;
     background-color: #FFFFFF ;
     box-sizing: border-box;
-    padding: 3px 12px 3px 10px;
+    padding-top: 3px;
+    padding-inline-end: 12px;
+    padding-bottom: 3px;
+    padding-inline-start: 10px;
 }
 
 .silky-bs-fslist-selected-item {
@@ -792,7 +815,7 @@
     height: 19px;
     overflow: hidden;
     white-space: nowrap ;
-    margin-left: 5px;
+    margin-inline-start: 5px;
     /*padding: 3px 0px 3px 5px;
     background-color: white;
     border: #c1c1c1 solid 1px;
@@ -805,9 +828,12 @@
     align-items: center;
     height: 30px;
     font-size: 15px;
-    margin-left: 10px;
+    margin-inline-start: 10px;
     box-sizing: border-box;
-    padding: 3px 12px 3px 10px;
+    padding-top: 3px;
+    padding-inline-end: 12px;
+    padding-bottom: 3px;
+    padding-inline-start: 10px;
     border: none;
     font-family: inherit;
     position: relative;
@@ -827,7 +853,7 @@
     text-align: center ;
     vertical-align: middle ;
     cursor: default ;
-    margin-right: 5px ;
+    margin-inline-end: 5px ;
 }
 
 .silky-bs-fslist-browser-back-button {
@@ -843,7 +869,7 @@
     cursor: default ;
     /*margin-top: 6px ;
     margin-bottom: 6px ;*/
-    margin-left: 0px ;
+    margin-inline-start: 0px ;
     color: #3E6DA9 ;
     flex: 0 1 auto;
     padding: 0px;
@@ -857,7 +883,7 @@
     border-color: transparent;
     border-style: solid;
     border-width: 1px;
-    margin-left: 0px ;
+    margin-inline-start: 0px ;
     color: #3E6DA9 ;
     flex: 0 1 auto;
     background-image: url('../assets/bs-check-items.svg');
@@ -880,7 +906,7 @@
 }
 
 .silky-bs-fslist {
-    padding-left: 20px ;
+    padding-inline-start: 20px ;
     box-sizing: border-box;
 }
 
@@ -901,6 +927,6 @@
 }
 
 .silky-under-development {
-    margin-left: 40px;
+    margin-inline-start: 40px;
     margin-top: 100px;
 }

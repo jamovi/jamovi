@@ -39,13 +39,13 @@ class RefTable {
 const css = `
 
     .body {
-        text-align: right ;
+        text-align: end ;
         font-size: 80% ;
     }
 
     span.num {
         font-weight: bold ;
-        margin-right: 6px ;
+        margin-inline-end: 6px ;
     }
 `;
 

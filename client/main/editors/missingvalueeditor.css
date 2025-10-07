@@ -12,7 +12,10 @@
 .jmv-missing-value-editor .msg {
     flex-grow: 0;
     flex-shrink: 1;
-    margin: 20px 240px 2px 0px;
+    margin-top: 20px;
+    margin-inline-end: 240px;
+    margin-bottom: 2px;
+    margin-inline-start: 0px;
     font-size: 15px;
     color: #909090;
     font-weight: 100;
