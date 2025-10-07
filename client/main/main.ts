@@ -45,6 +45,7 @@ import keyboardJS  from 'keyboardjs';
 
 window._ = I18n._;
 window.n_ = I18n._n;
+window.A11y = Keyboard;
 
 function ready(fn: () => void) {
     if (document.readyState !== 'loading')
