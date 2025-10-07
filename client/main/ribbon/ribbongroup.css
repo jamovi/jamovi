@@ -33,7 +33,7 @@
     order: 0;
     height: 28px;
     line-height: 28px;
-    text-align: left;
+    text-align: start;
     font-weight: 600;
     padding: 0px 12px 0px 12px;
 }

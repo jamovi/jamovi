@@ -873,7 +873,8 @@ class Selection extends EventEmitter implements ISelection {
         return true;
     }
 
-    moveCursor(direction: 'left' | 'right' | 'up' | 'down', extend: boolean = false, ignoreTabStart: boolean = false) {
+
+    moveCursor(direction: 'back' | 'forward' | 'up' | 'down', extend: boolean = false, ignoreTabStart: boolean = false) {
 
         let range = this.clone();
         let rowNo = range.rowNo;
@@ -885,7 +886,7 @@ class Selection extends EventEmitter implements ISelection {
         let scrollDown = false;
 
         switch (direction) {
-            case 'left':
+            case 'back':
                 if (extend) {
                     if (this.hiddenIncluded) {
                         if (this.getColumnEnd() > this.getColumnPos()) {
@@ -949,7 +950,7 @@ class Selection extends EventEmitter implements ISelection {
                     range.rowFocus = rowNo;
                 }
                 break;
-            case 'right':
+            case 'forward':
                 if (extend) {
                     if (this.hiddenIncluded) {
                         if (this.getColumnStart() < this.getColumnPos()) {

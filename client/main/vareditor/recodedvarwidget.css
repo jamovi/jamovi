@@ -47,7 +47,10 @@
 .jmv-variable-recoded-top .transform-icon {
     width: 8px;
     height: 8px;
-    margin: 0 9px 0 15px;
+    margin-top: 0px;
+    margin-inline-end: 9px;
+    margin-bottom: 0px;
+    margin-inline-start: 15px;
     background-color: #0066ff;
     border-radius: 4px;
     background-repeat: no-repeat;
@@ -61,7 +64,10 @@
 .jmv-variable-recoded-top .variable-type-icon {
     width: 16px;
     height: 16px;
-    margin: 0 5px 0 11px;
+    margin-top: 0px;
+    margin-inline-end: 5px;
+    margin-bottom: 0px;
+    margin-inline-start: 11px;
     background-repeat: no-repeat;
     background-size: 100%;
     background-position: center;
@@ -109,8 +115,11 @@
 .jmv-variable-recoded-options > .formula-box > .remove-cond {
     position: absolute;
     text-align: center;
-    margin: 0px 0px 0px 5px;
-    right: 6px;
+    margin-top: 0px;
+    margin-inline-end: 0px;
+    margin-bottom: 0px;
+    margin-inline-start: 5px;
+    inset-inline-end: 6px;
     font-size: 10px;
     color: #bbbbbb;
     cursor: default;
@@ -122,12 +131,12 @@
 }
 
 .jmv-variable-recoded-widget > .contents > .insert-box {
-    margin-right: 5px;
+    margin-inline-end: 5px;
     margin-top: 6px;
 }
 
 .jmv-variable-recoded-widget > .contents > .right-box {
-    margin-left: 5px;
+    margin-inline-start: 5px;
 }
 
 .jmv-variable-recoded-widget > .contents > .insert-box > .insert {
@@ -156,7 +165,7 @@
     border: 1px solid #a0a0a0;
     color: #212121;
     border-radius: 2px;
-    margin-left: 5px;
+    margin-inline-start: 5px;
     padding: 0 5px;
     line-height: 1.5;
     background-color: #eeeeee;

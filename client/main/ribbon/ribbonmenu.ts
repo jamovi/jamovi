@@ -209,7 +209,10 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         let sidePanelMarginRight = parseFloat(sidePanelStyle.marginRight);
         let sidePanelWidth = item.sidePanel.offsetWidth + sidePanelMarginLeft + sidePanelMarginRight;
 
-        x = x - sidePanelWidth;
+        if (getComputedStyle(this).direction === 'rtl')
+            x = x + sidePanelWidth + rect.width;
+        else
+            x = x - sidePanelWidth;
 
         // Show the panel
         item.sidePanel.show(x, y, { withMouse: fromMouse });
@@ -283,7 +286,7 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         if (item.analyses !== undefined) {
 
             let labelId = focusLoop.getNextAriaElementId('label');
-            item.sidePanel = new Menu(item.el, level + 1, { exitKeys:['ArrowRight'] });
+            item.sidePanel = new Menu(item.el, level + 1, { exitKeys:['InlineArrowRight'] });
             item.sidePanel.setAttribute('aria-laeblledby', labelId);
             item.sidePanel.classList.add('side-panel');
             item.sidePanel.append(HTML.create('div', { class: 'side-panel-heading', id: labelId }, `Module - ${ item.name }`));
@@ -303,7 +306,7 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
                 event.preventDefault();
             });
             item.el.addEventListener('keydown', (event) => {
-                if (event.code == 'ArrowLeft' || event.code === 'Enter' || event.code === 'Space')
+                if ( event.code == (document.body.dir === 'rtl' ? 'ArrowRight' : 'ArrowLeft') || event.code === 'Enter' || event.code === 'Space')
                     this.showSidePanel(item, false);
             });
 
@@ -427,6 +430,8 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         let rect = this.getBoundingClientRect();
         let x = rect.left + window.scrollX;
         let y = rect.top + window.scrollY + this.offsetHeight;
+        if (getComputedStyle(this).direction === 'rtl')
+            x += rect.width;
 
         this.menu.show(x, y, { withMouse: fromMouse });
     }

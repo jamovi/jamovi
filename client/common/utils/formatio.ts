@@ -67,7 +67,7 @@ export function htmlifyCells(cells, options={}) {
     return '<!DOCTYPE html>\n<html><head><meta charset="utf-8">' + generator + '</head><body><table>' + rows.join('\n') + '</table></body></html>';
 }
 
-export function exportElem(el, format=undefined, options={ images:'absolute', margin: '24', docType: true }) {
+export function exportElem(el, format=undefined, options: { exclude?: string[], dir: 'rtl' | 'ltr', images: 'absolute' | 'relative', margin: number, docType: boolean }={ images:'absolute', margin: 24, docType: true, dir: 'ltr' }) {
     if (format === 'text/plain') {
         return Promise.resolve(_textify(el).trim());
     }
@@ -107,7 +107,7 @@ export function exportElem(el, format=undefined, options={ images:'absolute', ma
             if (options.docType)
                 docType = '<!DOCTYPE html>';
 
-            let margin = '24';
+            let margin = 24;
             if (options.margin !== undefined)
                 margin = options.margin;
 
@@ -197,7 +197,7 @@ export function exportElem(el, format=undefined, options={ images:'absolute', ma
     }
         </style>
 </head>
-<body>
+<body dir=${options.dir}>
     ${ content }
 </body>
 </html>`;

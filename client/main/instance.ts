@@ -98,7 +98,8 @@ export interface IInstanceModel {
     arbitraryCodePresent: boolean,
     editState: boolean,
     saveFormat: string,
-    edited: boolean
+    edited: boolean,
+    resultsLanguage: string
 }
 
 export interface IBackstageResources {
@@ -138,7 +139,8 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             arbitraryCodePresent: false,
             editState: false,
             saveFormat: undefined,
-            edited: false
+            edited: false,
+            resultsLanguage: I18n.language
         })
 
         this._settings = new Settings({ coms: this.attributes.coms });
@@ -730,7 +732,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         this.trigger('notification', notification);
     }
 
-    _beginInstance(instanceId) {
+    _beginInstance(instanceId: string) {
 
         let coms = this.attributes.coms;
 
@@ -747,7 +749,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         });
     }
 
-    async _readDataset(loadAnalyses=true) {
+    async _readDataset(loadAnalyses: boolean=true) {
 
         let coms = this.attributes.coms;
 
@@ -761,6 +763,9 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         info = coms.Messages.InfoResponse.decode(response.payload);
 
         this._dataSetModel.set('instanceId', this._instanceId);
+
+        if (info.resultsLanguage)
+            this.set('resultsLanguage', info.resultsLanguage);
 
         if (info.hasDataSet) {
             this._dataSetModel.setup(info);

@@ -250,6 +250,7 @@ class Main {  // this is constructed at the bottom
         let eventData = hostEvent.data;
 
         if (hostEvent.type === 'results') {
+            document.body.dir = I18n.isRTL(eventData.languageCode) ? 'rtl' : 'ltr';
             this.resultsDefn = eventData;
             this._analysisSelected = eventData.selected;
             this._annotationSelected = eventData.annotationSelected;
@@ -353,8 +354,10 @@ class Main {  // this is constructed at the bottom
         }
         else if (hostEvent.type === 'i18nDef') {
             this.moduleI18nDef = eventData.moduleI18n;
-            if (eventData.appI18n)
+            if (eventData.appI18n) {
                 I18n.initialise(eventData.appI18n.locale_data.messages[""].lang, eventData.appI18n);
+                //document.body.dir = I18n.isRTL() ? 'rtl' : 'ltr';
+            }
             if (this.resultsDefn)
                 this._render();
         }

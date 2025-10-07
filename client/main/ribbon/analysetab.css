@@ -1,7 +1,7 @@
 
 .modules-menu-item {
     position: sticky !important;
-    right: 6px;
+    inset-inline-end: 6px;
     background-color: inherit;
 }
 
@@ -132,4 +132,8 @@
 
 .jmv-ribbon-button[data-name="growth"] .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-growth.svg");
+}
+
+.jmv-analyses-button.jmv-modules-menu-item {
+    background-color: #dddddd;
 }

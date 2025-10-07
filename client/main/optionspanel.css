@@ -6,8 +6,8 @@
 .silky-options-header {
     margin-top: 5px ;
     padding-bottom: 5px ;
-    padding-right: 15px ;
-    padding-left: 15px ;
+    padding-inline-end: 15px ;
+    padding-inline-start: 15px ;
 
     background-image: linear-gradient(to left, #555555, transparent);
     background-size: 100% 2px;
@@ -16,13 +16,13 @@
 }
 
 .silky-options-group {
-    margin-right: 15px;
+    margin-inline-end: 15px;
     margin-bottom: 15px;
     overflow: hidden;
 }
 
 .silky-options-group.silky-options-level-1 {
-    margin-right: 0px;
+    margin-inline-end: 0px;
 }
 
 .silky-options-group.silky-gridlayout-collapsed {
@@ -31,7 +31,7 @@
 
 /*Adding a space after a header if the grid is inline*/
 .silky-options-group.silky-options-group-style-inline .silky-options-group-header {
-    margin-right: 1ex;
+    margin-inline-end: 1ex;
 }
 
 .silky-options-group-header1 {
@@ -86,8 +86,8 @@ input[type="radio"] {
     vertical-align: middle;
     margin-top: 0px;
     margin-bottom: 0px;
-    margin-left: 0px;
-    margin-right: 5px;
+    margin-inline-start: 0px;
+    margin-inline-end: 5px;
 }
 
 .electron input[type="checkbox"] {
@@ -100,8 +100,8 @@ input[type="checkbox"] {
     vertical-align: middle;
     margin-top: 0px;
     margin-bottom: 0px;
-    margin-left: 0px;
-    margin-right: 5px;
+    margin-inline-start: 0px;
+    margin-inline-end: 5px;
 }
 
 label.silky-option-checkbox span, .silky-option-radio label span {
@@ -131,21 +131,23 @@ input[type="text"].silky-option-long-text {
 }
 
 .silky-option-suffix {
-    margin-left: 1ex;
+    margin-inline-start: 1ex;
 }
 
 .silky-options-collapse-icon {
-    border-right: 1px solid rgb(130, 130, 130) ;
-    padding-right: 23px;
-    margin-right: 5px;
+    border-inline-end: 1px solid rgb(130, 130, 130) ;
+    padding-inline-end: 23px;
+    margin-inline-end: 10px;
     box-sizing: border-box ;
     cursor: default ;
+    height: 100%;
+    width: 10px;
 }
 
 .silky-dropdown-toggle {
   position: relative;
   top: -4px ;
-  left: 6px ;
+  inset-inline-start: 6px ;
 }
 
 .silky-variable-supplier {
@@ -160,18 +162,19 @@ input[type="text"].silky-option-long-text {
 .silky-dropdown-toggle:before {
   display: block;
   position: absolute;
-  vertical-align: middle;
+  /*vertical-align: middle;*/
   color: transparent;
   font-size: 0;
   content: "";
   height: 5px;
   width: 5px;
   background-color: transparent;
-  border-left: 2px solid;
+  border-inline-start: 2px solid;
   border-bottom: 2px solid;
   border-color: rgb(100, 100, 100);
   top: 50%;
-  left: 100%;
+  inset-inline-start: 50%;
+    margin-top: -1px;
   z-index: 2;
 }
 
@@ -190,6 +193,6 @@ input[type="text"].silky-option-long-text {
     height:25px;
     border: 1px solid rgb(130, 130, 130) ;
     background-color: rgb(255, 255, 255);
-    margin-left: 10px;
-    margin-right: 10px;
+    margin-inline-start: 10px;
+    margin-inline-end: 10px;
 }

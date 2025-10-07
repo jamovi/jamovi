@@ -7,7 +7,10 @@
 .jmv-variable-computed-methods {
     display: flex;
     flex-direction: column;
-    margin: 0px 20px 20px 0px;
+    margin-top: 0px;
+    margin-inline-end: 20px;
+    margin-bottom: 20px;
+    margin-inline-start: 0px;
     flex-grow: 1;
     background-color: white;
     border: 1px solid #CCCCCC;
@@ -58,7 +61,7 @@
     background-size: 65%;
     cursor: default;
     flex: none;
-    margin-right: 3px;
+    margin-inline-end: 3px;
     background-color: white;
     box-sizing: content-box;
     padding: 0px;
@@ -79,15 +82,18 @@
     top: 50%;
     margin-top: -3px;
     width: 5px;
-    left: 16px;
+    inset-inline-start: 16px;
     height: 5px;
 }
 
 .jmv-variable-computed-options > .formula-box > .equal {
-    padding: 5px 5px 0px 34px;
+    padding-top: 5px;
+    padding-inline-end: 5px;
+    padding-bottom: 0px;
+    padding-inline-start: 34px;
     position: absolute;
     top: 0;
-    left: 0;
+    inset-inline-start: 0;
     pointer-events: none;
     font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
     font-size: 12px;
@@ -121,7 +127,10 @@
     text-indent: 1em;
     font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
     font-size: 12px;
-    padding: 5px 20px 5px 5px;
+    padding-top: 5px;
+    padding-inline-end: 20px;
+    padding-bottom: 5px;
+    padding-inline-start: 5px;
     background-color: #FFFFFF;
     border: 1px solid #CCCCCC;
     cursor: text;
@@ -140,11 +149,11 @@
 }
 
 .jmv-variable-computed-options > .formula-box .caret {
-    border-left: 1px solid #888888;
+    border-inline-start: 1px solid #888888;
     top: 2px;
-    left: 15px;
+    inset-inline-start: 15px;
     height: calc(1em + 2px);
     position: absolute;
-    transition: .05s left ease-out, .05s top ease-out;
+    transition: .05s left ease-out, .05s inset-inline-start ease-out, .05s top ease-out;
     pointer-events: none;
 }

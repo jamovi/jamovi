@@ -60,9 +60,9 @@
     margin-top: 0px;
     background-color: #ecf3fb;
 
-    padding-left: 10px;
-    /*padding-right: 10px;*/
-    margin-left: -10px;
+    padding-inline-start: 10px;
+    /*padding-inline-end: 10px;*/
+    margin-inline-start: -10px;
     visibility: visible;
 }
 
@@ -89,6 +89,7 @@
 .jmv-annotation .ql-editor {
     padding: 0;
     transition: 0.2s padding;
+    /*text-align: start;*/
 }
 
 .jmv-annotation .ql-editor:not(.ql-blank) {
@@ -126,7 +127,10 @@ https://github.com/quilljs/quill/issues/1157
 }
 
 .jmv-annotation .ql-editor pre.ql-syntax {
-    padding: 5px 5px 5px 10px;
+    padding-top: 5px;
+    padding-inline-end: 5px;
+    padding-bottom: 5px;
+    padding-inline-start: 10px;
     border: 1px solid #CCCCCC;
     background-color: #FAFAFA;
     border-radius: 5px;
@@ -168,7 +172,7 @@ https://github.com/quilljs/quill/issues/1157
 .jmv-note-theme .ql-tooltip::before {
   content: "Visit URL:";
   line-height: 26px;
-  margin-right: 8px;
+  margin-inline-end: 8px;
 }
 .jmv-note-theme .ql-tooltip input[type=text] {
   display: none;
@@ -187,14 +191,14 @@ https://github.com/quilljs/quill/issues/1157
   vertical-align: top;
 }
 .jmv-note-theme .ql-tooltip a.ql-action::after {
-  border-right: 1px solid #ccc;
+  border-inline-end: 1px solid #ccc;
   content: 'Edit';
-  margin-left: 16px;
-  padding-right: 8px;
+  margin-inline-start: 16px;
+  padding-inline-end: 8px;
 }
 .jmv-note-theme .ql-tooltip a.ql-remove::before {
   content: 'Remove';
-  margin-left: 8px;
+  margin-inline-start: 8px;
 }
 .jmv-note-theme .ql-tooltip a {
   line-height: 26px;
@@ -207,9 +211,9 @@ https://github.com/quilljs/quill/issues/1157
   display: inline-block;
 }
 .jmv-note-theme .ql-tooltip.ql-editing a.ql-action::after {
-  border-right: 0px;
+  border-inline-end: 0px;
   content: 'Save';
-  padding-right: 0px;
+  padding-inline-end: 0px;
 }
 .jmv-note-theme .ql-tooltip[data-mode=link]::before {
   content: "Enter link:";
@@ -230,7 +234,7 @@ https://github.com/quilljs/quill/issues/1157
 }
 
 .ql-editor.ql-blank::before {
-    left: 0px;
+    inset-inline-start: 0px;
     content: '';
     color: rgb(116, 116, 116);
     opacity: 0;

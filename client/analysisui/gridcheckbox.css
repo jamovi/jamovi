@@ -6,7 +6,7 @@
 }
 
 .silky-layout-container > .first-cell > .silky-option-checkbox {
-    margin-left: 0px;
+    margin-inline-start: 0px;
 }
 
 .silky-layout-container:not(.silky-control-body) > .first-row > .silky-option-checkbox {
@@ -14,7 +14,7 @@
 }
 
 .silky-layout-container > .last-cell > .silky-option-checkbox {
-    margin-right: 0px;
+    margin-inline-end: 0px;
 }
 
 .silky-layout-container:not(.silky-control-body) > .last-row > .silky-option-checkbox {
@@ -39,8 +39,8 @@ input[type="checkbox"] {
     vertical-align: middle;
     margin-top: 0px;
     margin-bottom: 0px;
-    margin-left: 0px;
-    margin-right: 5px;
+    margin-inline-start: 0px;
+    margin-inline-end: 5px;
 }
 
 div.silky-option-checkbox span {

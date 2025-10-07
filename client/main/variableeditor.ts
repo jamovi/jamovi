@@ -97,15 +97,17 @@ export class VariableEditor extends HTMLElement {
             </button>`) as HTMLButtonElement;
         this.$main.append(this.$ok);
 
+        const dir = getComputedStyle(this).direction;
+
         this.$right = HTML.parse(`
             <button aria-label="${_('Next variable')}" tabindex="0" class="jmv-variable-editor-button-right jmv-tooltip" title="${_('Next variable')}">
-                <span class="mif-chevron-right"></span>
+                <span class="${dir === 'rtl' ? 'mif-chevron-left' : 'mif-chevron-right'}"></span>
             </button>`) as HTMLButtonElement;
         this.$main.append(this.$right);
 
         this.$left = HTML.parse(`
             <button aria-label="${_('Previous variable')}" tabindex="0" class="jmv-variable-editor-button-left jmv-tooltip" title="${_('Previous variable')}">
-                <span class="mif-chevron-left"></span>
+                <span class="${dir === 'rtl' ? 'mif-chevron-right' : 'mif-chevron-left'}"></span>
             </button>`) as HTMLButtonElement;
         this.$main.append(this.$left);
 
@@ -259,11 +261,11 @@ export class VariableEditor extends HTMLElement {
         this.$main.prepend(this.editors[0]);
         this.$main.prepend(this.editors[1]);
 
-        this.editors[0].style.left = '0';
+        this.editors[0].style.insetInlineStart = '0';
         this.editors[0].style.opacity = '1';
         this.editors[0].style.visibility = 'visible';
 
-        this.editors[1].style.left = '100%';
+        this.editors[1].style.insetInlineStart = '100%';
         this.editors[1].style.opacity = '0';
         this.editors[1].style.visibility = 'hidden';
 
@@ -413,14 +415,14 @@ export class VariableEditor extends HTMLElement {
                 const goLeft = now < prev || (now === prev && prevIds.length > currentIds.length);
                 if (goLeft) {
                     editor.classList.add('inactive');
-                    editor.style.left = '-100%';
-                    old.style.left = '100%';
+                    editor.style.insetInlineStart = '-100%';
+                    old.style.insetInlineStart = '100%';
                     old.style.opacity = '0';
                     old.style.visibility = 'hidden';
                 } else {
                     editor.classList.add('inactive');
-                    editor.style.left = '100%';
-                    old.style.left = '-100%';
+                    editor.style.insetInlineStart = '100%';
+                    old.style.insetInlineStart = '-100%';
                     old.style.opacity = '0';
                     old.style.visibility = 'hidden';
                 }
@@ -430,7 +432,7 @@ export class VariableEditor extends HTMLElement {
 
                 this._showId = window.setTimeout(() => {
                     editor.classList.remove('inactive');
-                    editor.style.left = '0';
+                    editor.style.insetInlineStart = '0';
                     editor.style.opacity = '1';
                     editor.style.visibility = 'visible';
                     this._showId = null;

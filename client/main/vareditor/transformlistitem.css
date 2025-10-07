@@ -20,9 +20,12 @@
 
 .jmv-transform-list-item > .label {
     flex-grow: 1;
-    /*margin-right: 15px;*/
-    padding: 6px 5px 6px 15px;
-    text-align: left;
+    /*margin-inline-end: 15px;*/
+    padding-top: 6px;
+    padding-inline-end: 5px;
+    padding-bottom: 6px;
+    padding-inline-start: 15px;
+    text-align: start;
     background-color: inherit;
     border: none;
 }
@@ -73,7 +76,10 @@
 
 .jmv-transform-list-item > .remove {
     text-align: center;
-    margin: 0px 10px 0px 5px;
+    margin-top: 0px;
+    margin-inline-end: 10px;
+    margin-bottom: 0px;
+    margin-inline-start: 5px;
     font-size: 10px;
     color: #bbbbbb;
     cursor: default;

@@ -443,7 +443,7 @@ export class InfoBox extends HTMLElement {
 
             .heading .title {
                 font-size: 130%;
-                margin-left: 11px;
+                margin-inline-start: 11px;
             }
 
             .heading .icon {
@@ -453,7 +453,7 @@ export class InfoBox extends HTMLElement {
                 background-size: 100%;
                 background-position: center;
                 background-image: url("data:image/svg+xml,%3Csvg fill='%23eac282' height='30px' viewBox='0 0 24 24' width='30px' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0h24v24H0z' fill='none'/%3E%3Cpath d='M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z'/%3E%3C/svg%3E");
-                margin-right: 10px;
+                margin-inline-end: 10px;
             }
 
             .content {
@@ -501,7 +501,7 @@ export class InfoBox extends HTMLElement {
                 top: 50%;
                 left: 50%;
                 margin-top: -15px;
-                margin-left: -15px;
+                margin-inline-start: -15px;
                 width: 30px;
                 height: 30px;
                 z-index: 100;

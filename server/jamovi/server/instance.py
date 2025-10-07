@@ -1342,6 +1342,8 @@ class Instance:
         has_dataset = self._data.has_dataset
         response.hasDataSet = has_dataset
 
+        response.resultsLanguage = self._data.results_language
+
         if has_dataset:
             response.title = self._data.title
             response.path = self._virtualise_path(self._data.path)

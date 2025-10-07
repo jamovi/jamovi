@@ -33,7 +33,7 @@ export class View extends Elem.View<Model> {
         this.$title = HTML.parse('<h' + (this.level+1) + ' class="jmv-results-image-title"></h' + (this.level+1) + '>');
         this.addContent(this.$title);
 
-        this.$syntax = HTML.parse('<pre class="jmv-results-syntax-text"></pre>');
+        this.$syntax = HTML.parse('<pre class="jmv-results-syntax-text" dir="ltr"></pre>');
         this.addContent(this.$syntax);
 
         this.render();

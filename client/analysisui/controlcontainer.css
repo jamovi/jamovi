@@ -11,7 +11,7 @@
 }
 
 .silky-layout-container > .first-cell > .silky-control-container:not(.silky-control-body) {
-    margin-left: 0px;
+    margin-inline-start: 0px;
 }
 
 .silky-layout-container:not(.silky-control-body) > .first-row > .silky-control-container:not(.silky-control-body) {
@@ -19,7 +19,7 @@
 }
 
 .silky-layout-container > .last-cell > .silky-control-container:not(.silky-control-body) {
-    margin-right: 0px;
+    margin-inline-end: 0px;
 }
 
 .silky-layout-container:not(.silky-control-body) > .last-row > .silky-control-container:not(.silky-control-body) {

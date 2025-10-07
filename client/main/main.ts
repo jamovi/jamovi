@@ -78,6 +78,8 @@ try {
     if ( ! current)
         current = 'en';
 
+    //current = 'he';
+
     response = await fetch(`${ baseUrl }${ current }.json`);
     if ( ! response.ok)
         throw new Error(`Unable to fetch json for language '${ current }'`);
@@ -86,6 +88,7 @@ try {
         let def = await response.json();
         I18n.initialise(current, def);
         document.documentElement.setAttribute('lang', current);
+        document.body.dir = I18n.isRTL() ? 'rtl' : 'ltr';
         host.setLanguage(current);
     }
     catch (e) {
@@ -96,7 +99,7 @@ catch (e) {
     console.log(e);
 }
 
-
+Keyboard.setDirection(I18n.isRTL() ? 'rtl' : 'ltr');
 
 
 keyboardJS.Keyboard.prototype.pause = function(key) {

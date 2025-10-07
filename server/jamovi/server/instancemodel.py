@@ -39,6 +39,7 @@ class InstanceModel:
     _title: str
     _reuseable_virtual_ids: deque
     _filters_visible: bool
+    _results_language: str =  ''
     _is_edited: bool = False
     _is_blank: bool = False
     _perms: Permissions
@@ -90,6 +91,19 @@ class InstanceModel:
             yield
         finally:
             detach()
+
+    @property
+    def results_language(self):
+        if self._results_language == '':
+            self._results_language = self._instance.session.get_language()
+            if self._results_language == None:
+                self._results_language = ''
+        
+        return self._results_language
+
+    @results_language.setter
+    def results_language(self, language):
+        self._results_language = language
 
     @property
     def filters_visible(self):

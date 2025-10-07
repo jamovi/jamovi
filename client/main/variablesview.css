@@ -28,7 +28,7 @@
     position: relative;
     height: 100%;
     width: 100%;
-    margin-left: 3px;
+    margin-inline-start: 3px;
 }
 
 .jmv-variablesview .measure-box .dot {
@@ -36,19 +36,22 @@
     height: 5px;
     border-radius: 3px;
     position: absolute;
-    left: -3px;
+    inset-inline-start: -3px;
     top: 2px;
 }
 
 .jmv-variables-searchbox .search {
     width: 100%;
-    padding-left: 5px;
+    padding-inline-start: 5px;
 }
 
 .jmv-variables-container {
     grid-area: 2 / 1 / span 1 / span 1;
     overflow: auto;
-    margin: 8px 0px 0px 3px;
+    margin-top: 8px;
+    margin-inline-end: 0px;
+    margin-bottom: 0px;
+    margin-inline-start: 3px;
     border: 1px solid #ACACAC;
     background-color: white;
     display: flex;
@@ -86,7 +89,10 @@
 
 .jmv-variables-body .cell .description {
     overflow: auto;
-    padding: 0px 5px 0px 3px;
+    padding-top: 0px;
+    padding-inline-end: 5px;
+    padding-bottom: 0px;
+    padding-inline-start: 3px;
 }
 
 .jmv-variables-body .cell {
@@ -115,7 +121,7 @@
 }
 
 .jmv-variables-body .cell.has-resizer {
-    padding-right: 12px;
+    padding-inline-end: 12px;
 }
 
 .jmv-variables-body .cell.selected {
@@ -142,11 +148,11 @@
 
 
 .cell > .select {
-    margin-right: 0px;
+    margin-inline-end: 0px;
 }
 
 .cell > .select-header-checkbox {
-    margin-right: 0px;
+    margin-inline-end: 0px;
 }
 
 .cell[data-hidden="true"] * {
@@ -222,6 +228,9 @@
     bottom: 0px;
     border-bottom: none;
     align-self: flex-end;
-    margin: 0px 10px 0 0;
+    margin-top: 0px;
+    margin-inline-end: 10px;
+    margin-bottom: 0px;
+    margin-inline-start: 0px;
     padding-bottom: 10px;
 }

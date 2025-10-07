@@ -32,15 +32,18 @@
 
 .silky-control-container:not(.silky-options-supplier-group):not(.jmv-content-selector) >.layout-cell, 
 .multi-cell-wrapper > .layout-cell {
-    padding: 3px 5px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+    padding-inline-start: 5px;
+    padding-inline-end: 5px;
 }
 
 .layout-cell.first-cell {
-    padding-left: 0px !important;
+    padding-inline-start: 0px !important;
 }
 
 .layout-cell.last-cell {
-    padding-right: 0px !important;
+    padding-inline-end: 0px !important;
 }
 
 .layout-cell.first-row {
@@ -77,7 +80,7 @@
 
 /*Adding a space after a header if the grid is inline*/
 .silky-options-group-style-inline {
-    margin-right: 1ex;
+    margin-inline-end: 1ex;
 }
 
 .silky-control-label span {
@@ -90,11 +93,11 @@
 }
 
 .silky-layout-container > .first-cell > .silky-options-group {
-    margin-left: 0px !important;
+    margin-inline-start: 0px !important;
 }
 
 .silky-layout-container > .last-cell > .silky-options-group {
-    margin-right: 0px !important;
+    margin-inline-end: 0px !important;
 }
 
 .silky-layout-container:not(.silky-control-body) > .last-row > .silky-options-group {

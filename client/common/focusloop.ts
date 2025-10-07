@@ -128,6 +128,7 @@ interface IElementFocusDetails {
 // and the movement and behaviour of that focus between and within controls
 class FocusLoop extends EventEmitter {
 
+    direction: 'rtl' | 'ltr' = 'ltr';
     _isMainWindow: boolean;
     _mainWindow: Window;
     _availableModalId = 1;
@@ -1140,8 +1141,8 @@ class FocusLoop extends EventEmitter {
         if (this.focusedLoop && this.focusedLoop !== token) {
             if (this.focusedLoop.requiresLeave())
                 this.leaveFocusLoop(this.focusedLoop.el, this._mouseClicked, true);
-            else
-                this.focusedLoop.isActive = false;
+            //else
+            //    this.focusedLoop.isActive = false;
             this.focusedLoop = null;
         }
         this.focusedLoop = token;
@@ -1174,7 +1175,6 @@ class FocusLoop extends EventEmitter {
         else if (loopElement.contains(document.activeElement) === false)
             loopElement.focus();
     }
-
 
     leaveFocusLoop(loopElement: HTMLElement, withMouse=false, noFocusPassing=false) : boolean | (() => void) {
 
@@ -1483,17 +1483,26 @@ class FocusLoop extends EventEmitter {
             this.broadcast('setBaseKeyPaths', [this._keyPaths], false);
     }
 
+    setDirection(dir: 'rtl' | 'ltr') {
+        if (this._isMainWindow === false)
+            return;
+
+        this.direction = dir;
+        this.updateBaseKeyPaths();
+    }
+
     updateBaseKeyPaths() {
         if (this._isMainWindow)
-            this.broadcast('setBaseKeyPaths', [this._keyPaths], false);
+            this.broadcast('setBaseKeyPaths', [this._keyPaths, this.direction], false);
         else
             this.broadcast('updateBaseKeyPaths', [], false);
     }
 
-    setBaseKeyPaths(keyPaths: {[key:string]: string}) {
+    setBaseKeyPaths(keyPaths: {[key:string]: string}, dir: 'rtl' | 'ltr') {
         if (this._isMainWindow)
             return;
 
+        this.direction = dir;
         this._baseKeyPaths = keyPaths;
     }
 
@@ -1607,11 +1616,30 @@ class FocusLoop extends EventEmitter {
         let leftFocusLoop = false;
         exitKeys = token.exitKeys;
         let keyCode = event.code;
-        if (event.altKey && event.code !== 'Alt')
+
+        let checkInline = null;
+        if (keyCode === 'ArrowRight' || keyCode === 'ArrowLeft') {
+            if (this.direction === 'rtl') {
+                if (keyCode === 'ArrowRight')
+                    checkInline = 'InlineArrowLeft';
+                else if (keyCode === 'ArrowLeft')
+                    checkInline = 'InlineArrowRight';
+            }
+            else
+                checkInline = `Inline${keyCode}`;
+        }
+
+        if (event.altKey && event.code !== 'Alt') {
             keyCode = 'Alt+' + keyCode;
-        if (event.ctrlKey && event.code !== 'Ctrl')
+            if (checkInline)
+                checkInline = 'Alt+' + checkInline;
+        }
+        if (event.ctrlKey && event.code !== 'Ctrl') {
             keyCode = 'Ctrl+' + keyCode;
-        if (exitKeys.includes(keyCode)) {
+            if (checkInline)
+                checkInline = 'Ctrl+' + checkInline;
+        }
+        if (exitKeys.includes(keyCode) || (checkInline !== null && exitKeys.includes(checkInline))) {
             this.leaveFocusLoop(parent, false);
             event.preventDefault();
             leftFocusLoop = true;

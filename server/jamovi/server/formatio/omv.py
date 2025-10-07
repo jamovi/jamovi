@@ -117,6 +117,10 @@ def write(data, path, prog_cb, html=None, is_template=False):
 
         metadata = { }
 
+        document = { }
+        document['resultsLanguage'] = data.results_language
+        metadata['document'] = document
+
         meta_dataset = { }
         meta_dataset['rowCount'] = row_count
         meta_dataset['columnCount'] = data.column_count
@@ -313,6 +317,7 @@ def read(data, path, prog_cb, **kwargs):
 
         meta_content = zip.read('metadata.json').decode('utf-8')
         metadata = json.loads(meta_content)
+        meta_document = metadata.get('document', None)
         meta_dataset = metadata['dataSet']
 
         # if 'importPath' in meta_dataset:
@@ -413,6 +418,11 @@ def read(data, path, prog_cb, **kwargs):
 
         data.set_row_count(row_count)
         data.set_weights_by_name(meta_dataset.get('weights'))
+
+        if meta_document != None:
+            data.results_language = meta_document.get('resultsLanguage', 'en')
+        else:
+            data.results_language = 'en'
 
         columns_w_bad_levels = [ ]  # do some repair work
 
