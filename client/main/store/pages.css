@@ -19,8 +19,8 @@
 
 .store-page-searchbox > .search-icon {
     width: 12px;
-    margin-left: 4px;
-    margin-right: 3px;
+    margin-inline-start: 4px;
+    margin-inline-end: 3px;
     height: 12px;
     background-image: url('../../assets/variable-search.svg');
     background-repeat: no-repeat;
@@ -50,11 +50,17 @@
     display: flex;
     background-color: #9c9c9c;
     padding: 0px 10px;
-    margin: 10px 0 10px 5px;
+    margin-top: 10px;
+    margin-inline-end: 0px;
+    margin-bottom: 10px;
+    margin-inline-start: 5px;
 }
 
 .jmv-store-message .text {
-    padding: 10px 0px 10px 10px;
+    padding-top: 10px;
+    padding-inline-end: 0px;
+    padding-bottom: 10px;
+    padding-inline-start: 10px;
     color: white;
 }
 
@@ -114,7 +120,7 @@
 }
 
 .jmv-store-module-button:not(:first-of-type) {
-    margin-left: 10px;
+    margin-inline-start: 10px;
 }
 
 .jmv-store-module-button[data-op='update'] {
@@ -123,14 +129,14 @@
 }
 
 .jmv-store-module-button[data-op='installed'] {
-    padding-left: 0 ;
+    padding-inline-start: 0 ;
     border: 1.5px solid transparent ;
 }
 
 .jmv-store-module-button[data-op='unavailable'],
 .jmv-store-module-button[data-op='incompatible'],
 .jmv-store-module-button[data-op='old'] {
-    padding-left: 0 ;
+    padding-inline-start: 0 ;
     border: 1.5px solid transparent ;
     color: #DD0000 ;
 }
@@ -148,7 +154,7 @@
 .jmv-store-module .version {
     font-size: 80% ;
     color: #9F9F9F ;
-    padding-left: 6px ;
+    padding-inline-start: 6px ;
 }
 
 .jmv-store-module .authors {
@@ -184,7 +190,7 @@
 
 .jmv-store-page-installed-module button.uninstall {
     position: absolute ;
-    right: 6px ;
+    inset-inline-end: 6px ;
     bottom: 6px ;
     display: none;
 }
@@ -204,8 +210,8 @@
 .jmv-store-loading {
     position: absolute ;
     top: 0 ;
-    left: 50% ;
-    margin-left: -150px ;
+    inset-inline-start: 50% ;
+    margin-inline-start: -150px ;
     width: 300px ;
     height: 200px ;
     transition: opacity .2s ;
@@ -225,9 +231,9 @@
     position: absolute ;
     padding: 24px ;
     top: 0 ;
-    left: 50% ;
+    inset-inline-start: 50% ;
     width: 500px ;
-    margin-left: -250px ;
+    margin-inline-start: -250px ;
     opacity: 0 ;
     text-align: center ;
     pointer-events: none;
@@ -248,9 +254,9 @@
     box-sizing: border-box;
     position: absolute ;
     top: 0 ;
-    left: 50% ;
+    inset-inline-start: 50% ;
     width: 300px ;
-    margin-left: -170px ;
+    margin-inline-start: -170px ;
     text-align: center ;
     border: 1px solid #ACACAC ;
     border-bottom: none ;

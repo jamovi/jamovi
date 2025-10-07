@@ -5,11 +5,11 @@
 
 
 .silky-layout-container > .first-cell > .silky-option-combo-label {
-    margin-left: 0px;
+    margin-inline-start: 0px;
 }
 
 .silky-layout-container > .last-cell > .silky-option-combo-input {
-    margin-right: 0px;
+    margin-inline-end: 0px;
 }
 
 .silky-option-combo-input, .silky-option-combo-input option {

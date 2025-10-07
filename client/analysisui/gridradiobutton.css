@@ -9,8 +9,8 @@ input[type="radio"] {
     vertical-align: middle;
     margin-top: 0px;
     margin-bottom: 0px;
-    margin-left: 0px;
-    margin-right: 5px;
+    margin-inline-start: 0px;
+    margin-inline-end: 5px;
 }
 
 .silky-option-radio label span {
@@ -19,7 +19,7 @@ input[type="radio"] {
 }
 
 .silky-control-container .first-cell > .silky-option-radio {
-    margin-left: 0px;
+    margin-inline-start: 0px;
 }
 
 .silky-layout-container:not(.silky-control-body) > .first-row > .silky-option-radio {
@@ -27,7 +27,7 @@ input[type="radio"] {
 }
 
 .silky-layout-container > .last-cell > .silky-option-radio {
-    margin-right: 0px;
+    margin-inline-end: 0px;
 }
 
 .silky-layout-container:not(.silky-control-body) > .last-row > .silky-option-radio {

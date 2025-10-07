@@ -19,11 +19,11 @@
 }
 
 .silky-layout-container > .first-cell > .silky-options-collapse-button {
-    margin-left: 0px;
+    margin-inline-start: 0px;
 }
 
 .silky-layout-container > .last-cell > .silky-options-collapse-button {
-    margin-right: 0px;
+    margin-inline-end: 0px;
 }
 
 .silky-options-collapse-button.silky-gridlayout-collapsed, .silky-layout-container:not(.silky-control-body) > .last-row > .silky-options-collapse-button {
@@ -31,6 +31,9 @@
 }
 
 .silky-options-collapse-button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
     font-size: 100% ;
     border: 1px solid #B0B0B0;
     background-color: #D8D8D8;
@@ -38,24 +41,31 @@
     vertical-align: middle ;
     color: #555555 ;
     width: 100%;
-    text-align: left;
+    text-align: start;
 }
 
 .silky-options-collapse-icon {
-    border-right: 1px solid rgb(130, 130, 130) ;
-    padding-right: 23px;
-    margin-right: 5px;
+    border-inline-end: 1px solid rgb(130, 130, 130) ;
+    padding-inline-end: 23px;
+    margin-inline-end: 10px;
     box-sizing: border-box ;
     cursor: default ;
+    height: 100%;
+    width: 10px;
 }
 
-.silky-gridlayout-collapsed.silky-options-collapse-button .silky-dropdown-toggle {
+/*.silky-gridlayout-collapsed.silky-options-collapse-button .silky-dropdown-toggle {
   top: -3px ;
+}*/
+
+body[dir="rtl"] .silky-gridlayout-collapsed.silky-options-collapse-button .silky-dropdown-toggle:before {
+  -webkit-transform: rotate(135deg);
+    transform: rotate(135deg);
 }
 
 .silky-gridlayout-collapsed.silky-options-collapse-button .silky-dropdown-toggle:before {
   -webkit-transform: rotate(-135deg);
-          transform: rotate(-135deg);
+    transform: rotate(-135deg);
 }
 
 .silky-options-collapse-button .silky-dropdown-toggle:before {

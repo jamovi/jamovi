@@ -8,7 +8,10 @@
 
 .jmv-notification {
     margin: 6px ;
-    padding: 0 12px 0 0 ;
+    padding-top: 0;
+    padding-inline-end: 12px;
+    padding-bottom: 0;
+    padding-inline-start: 0;
     background-color : #F0F0F0 ;
     border: 1px solid #ACACAC;
     border-radius: 2px;
@@ -112,7 +115,7 @@
     padding: 6px ;
     border: 1px solid #ACACAC ;
     text-align: center ;
-    margin-left: 8px ;
+    margin-inline-start: 8px ;
 }
 
 .jmv-notification-buttons > :hover {

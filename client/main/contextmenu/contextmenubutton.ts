@@ -111,8 +111,10 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
         this.addEventListener('keydown', (event) => {
             if (event.code === 'Enter' || event.code === 'Space')
                 this._clicked(event, false);
-            else if (event.code == 'ArrowRight' && this._menuGroup !== undefined)
-                this._clicked(event, false);
+            else {
+                if (event.code == (document.body.dir === 'rtl' ? 'ArrowLeft' : 'ArrowRight') && this._menuGroup !== undefined)
+                    this._clicked(event, false);
+            }
         });
 
 
@@ -177,7 +179,7 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
 
     addItem(item: RibbonItem) {
         if (this._menuGroup === undefined) {
-            this.menu = new Menu(this, this.level + 1, { exitKeys: ['ArrowLeft'] });
+            this.menu = new Menu(this, this.level + 1, { exitKeys: ['InlineArrowLeft'] });
 
             this.append(HTML.create('div', { class: 'jmv-context-menu-arrow' }));
 
@@ -225,8 +227,11 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
         const rect = this.getBoundingClientRect();
         const style = getComputedStyle(this);
 
-        const x = rect.left + window.scrollX + this.offsetWidth +
+        let x = rect.left + window.scrollX + this.offsetWidth +
                 parseFloat(style.marginLeft) + parseFloat(style.marginRight);
+
+        if (style.direction === 'rtl')
+            x -= rect.width;
 
         const y = rect.top + window.scrollY;
 

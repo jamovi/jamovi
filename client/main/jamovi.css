@@ -177,8 +177,8 @@ body[data-table-mode='spreadsheet'] #main-view #spreadsheet {
 
 body.windows.electron #header-text {
     display: block ;
-    margin-left: 80px ;
-    margin-right: 150px ;
+    margin-inline-start: 80px ;
+    margin-inline-end: 150px ;
     display: block;
 }
 
@@ -190,7 +190,7 @@ body.windows.electron #header-text {
     z-index: 200 ;
     position: fixed;
     top: 1px;
-    right: 1px;
+    inset-inline-end: 1px;
     display: none ;
     height: 31px;
 }
@@ -285,7 +285,7 @@ body.windows.electron #header-buttons {
 
 #results > .shortcut-key-tag, #main-options > .shortcut-key-tag {
     top: 3px;
-    left: 3px;
+    inset-inline-start: 3px;
 }
 
 #results {
@@ -333,7 +333,7 @@ body.windows.electron #header-buttons {
 
 #progress-bar-helper {
     position: absolute ;
-    left: 0 ;
+    inset-inline-start: 0 ;
     top: 0 ;
     display: table ;
     width: 100% ;
@@ -361,7 +361,7 @@ body.windows.electron #header-buttons {
     height: 100% ;
     top : 0 ;
     padding: 12px 0 ;
-    right: 12px ;
+    inset-inline-end: 12px ;
     box-sizing: border-box;
     z-index: 310 ;
     white-space: pre;
@@ -372,7 +372,7 @@ body.windows.electron #header-buttons {
     height: 100% ;
     position: absolute ;
     top: 0 ;
-    left: 0 ;
+    inset-inline-start: 0 ;
     background-color: rgba(0, 0, 0, 0.4);
     display: none ;
     backdrop-filter: blur(1px);

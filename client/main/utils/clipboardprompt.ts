@@ -64,7 +64,7 @@ class ClipboardPrompt extends HTMLElement {
                 background-size: 100% 100%;
                 background-position: center;
                 background-repeat: no-repeat;
-                margin-right: 10px;
+                margin-inline-end: 10px;
             }
 
             .copy {

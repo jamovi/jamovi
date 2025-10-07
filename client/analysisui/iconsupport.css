@@ -16,11 +16,11 @@
 }
 
 .jmv-option-icons[data-icon-position='right'] {
-    margin-left: 5px;
+    margin-inline-start: 5px;
 }
 
 .jmv-option-icons[data-icon-position='left'] {
-    margin-right: 5px;
+    margin-inline-end: 5px;
 }
 
 .jmv-option-icon {

@@ -27,7 +27,7 @@
     flex-grow: 1;
     background-color: #fdfdfd;
     margin-top: 3px;
-    margin-left: 5px;
+    margin-inline-start: 5px;
     max-height: 103px;
 }
 
@@ -36,13 +36,13 @@
     height: 8px;
     border-radius: 4px;
     margin-top: 2px;
-    margin-right: 5px;
+    margin-inline-start: 5px;
 }
 
 .jmv-transform-editor-options {
     flex: 2;
     overflow-y: auto;
-    padding-right: 5px;
+    padding-inline-end: 5px;
 }
 
 .jmv-transform-editor-widget-title {
@@ -82,7 +82,7 @@
     flex-shrink: 0;
     flex-grow: 0;
     width: 8em;
-    margin-left: 5px;
+    margin-inline-start: 5px;
 }
 
 .jmv-transform-editor-top .desc-box {
@@ -95,10 +95,11 @@
     color: #848484;
     margin: 3px 0 5px 0;
 }
+
 .jmv-transform-editor-bottom .usage-box {
     position: absolute;
     top: 3px;
-    right: 100px;
+    inset-inline-end: 100px;
 }
 
 .jmv-transform-editor-bottom .measure-box, .jmv-transform-editor-bottom .usage-box {
@@ -108,13 +109,13 @@
 }
 
 .jmv-transform-editor-bottom .measure-box #transform-measure-type {
-    margin-left: 8px;
+    margin-inline-start: 8px;
 }
 
 .jmv-transform-editor-bottom .measure-box .transform-measure-icon {
     width: 16px;
     height: 16px;
-    margin-left: 8px;
+    margin-inline-start: 8px;
     background-repeat: no-repeat;
     background-size: 100%;
     background-position: center;
@@ -143,13 +144,13 @@
     align-items: baseline;
     color: #575757;
     justify-content: space-between;
-    padding-right: 33px;
+    padding-inline-end: 33px;
 }
 
 .jmv-transform-editor-bottom .view-button {
     border: 1px solid #a0a0a0;
     border-radius: 2px;
-    margin-left: 5px;
+    margin-inline-start: 5px;
     padding: 0 5px;
     line-height: 1.5;
     background-color: #eeeeee;
@@ -163,8 +164,8 @@
 }
 
 .jmv-transform-editor-top .recoded-from {
-    margin-left: 1ex;
-    margin-right: 1ex;
+    margin-inline-start: 1ex;
+    margin-inline-end: 1ex;
 }
 
 .jmv-transform-editor-bottom .usage-box .usage-label {
@@ -205,7 +206,7 @@
     height: 100%;
     line-height: inherit;
     align-self: center;
-    margin-right: 6px;
+    margin-inline-end: 6px;
     color: #bbbbbb;
 }
 
@@ -230,12 +231,12 @@
     transition: .4s background-color;
     color: #575757;
     flex-shrink: 0;
-    margin-left: 5px;
+    margin-inline-start: 5px;
     height: 22px;
 }
 
 .jmv-transform-editor > .contents > .content-list > .right-box {
-    margin-left: 3px;
+    margin-inline-start: 3px;
     overflow: hidden;
     width: 25px;
     transition: 0.2s width, .2s opacity, .2s margin, 0.2s visibility;
@@ -246,7 +247,7 @@
 .jmv-transform-editor > .contents > .content-list > .right-box.hidden {
     width: 0px;
     opacity: 0;
-    margin-left: 0px;
+    margin-inline-start: 0px;
     visibility: hidden;
 }
 
@@ -260,7 +261,7 @@
     border: none;
     width: 11px;
     height: 11px;
-    margin-right: 6px;
+    margin-inline-end: 6px;
 }
 
 .jmv-transform-editor > .contents > .insert-box:hover {
@@ -287,7 +288,7 @@
     filter: hue-rotate(40deg) saturate(5) grayscale(100%);
     width: 28px;
     align-self: stretch;
-    margin-right: 4px;
+    margin-inline-end: 4px;
     border: 1px solid #dadada;
     background-image: url('../../assets/filters-formula.svg');
     background-position: center left 1px;
@@ -313,7 +314,7 @@
     top: 50%;
     margin-top: -3px;
     width: 5px;
-    left: 16px;
+    inset-inline-start: 16px;
     height: 5px;
 }
 
@@ -327,9 +328,9 @@
     border-top: 1px solid transparent;
     border-bottom: 1px solid transparent;
     width: 3ch;
-    margin-left: 0.5ch;
-    border-right: 1px dashed rgba(62, 109, 169, 0.28);
-    border-left: 1px dashed rgba(62, 109, 169, 0.28);
+    margin-inline-start: 0.5ch;
+    border-inline-end: 1px dashed rgba(62, 109, 169, 0.28);
+    border-inline-start: 1px dashed rgba(62, 109, 169, 0.28);
     box-sizing: border-box;
     font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
     font-size: 12px;
@@ -339,20 +340,23 @@
 
 .jmv-transform-editor-options > .formula-box .formula-list-item > .down-arrow:hover {
     background-color: rgba(62, 109, 169, 0.05);
-    border-right: 1px solid rgba(62, 109, 169, 0.28);
-    border-left: 1px solid rgba(62, 109, 169, 0.28);
+    border-inline-end: 1px solid rgba(62, 109, 169, 0.28);
+    border-inline-start: 1px solid rgba(62, 109, 169, 0.28);
 }
 
 .jmv-transform-editor-options > .formula-box .equal {
     position: absolute;
     top: 0;
-    left: 0;
+    inset-inline-start: 0;
     pointer-events: none;
     font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
     font-size: 12px;
     color: #3e6da9;
     line-height: inherit;
-    padding: 0 0 0px 1ch;
+    padding-top: 0;
+    padding-inline-end: 0;
+    padding-bottom: 0px;
+    padding-inline-start: 1ch;
     border: 1px solid transparent;
 }
 
@@ -395,11 +399,14 @@
     text-indent: 1.5em;
     font-family: Menlo, Consolas, 'DejaVu Sans Mono', monospace;
     font-size: 12px;
-    padding: 0px 20px 0px 1ex;
+    padding-top: 0;
+    padding-inline-end: 20px;
+    padding-bottom: 0px;
+    padding-inline-start: 1ex;
     background-color: #FFFFFF;
     border: 1px solid #CCCCCC;
-    border-left: none;
-    border-right: none;
+    border-inline-start: none;
+    border-inline-end: none;
     cursor: text;
     overflow-y: auto;
     line-height: inherit;
@@ -411,11 +418,11 @@
 }
 
 .jmv-transform-editor-options > .formula-box .item-0 .formula {
-    border-left: 1px solid #CCCCCC;
+    border-inline-start: 1px solid #CCCCCC;
 }
 
 .jmv-transform-editor-options > .formula-box .item-last .formula {
-    border-right: 1px solid #CCCCCC;
+    border-inline-end: 1px solid #CCCCCC;
 }
 
 .jmv-transform-editor-options > .formula-box .item-0.item-last {
@@ -429,11 +436,11 @@
 }
 
 .jmv-transform-editor-options > .formula-box .caret {
-    border-left: 1px solid #888888;
+    border-inline-start: 1px solid #888888;
     top: 2px;
-    left: 15px;
+    inset-inline-start: 15px;
     height: calc(1em + 2px);
     position: absolute;
-    transition: .05s left ease-out, .05s top ease-out;
+    transition: .05s left ease-out, .05s inset-inline-start ease-out, .05s top ease-out;
     pointer-events: none;
 }

@@ -30,7 +30,7 @@
     background-size: 50%;
     background-repeat: no-repeat;
     background-position: center;
-    margin-right: 2px;
+    margin-inline-end: 2px;
     background-color: #cadaf3;
     border: 1px solid transparent;
     transition: .2s background-color ease-out, .2s border-color ease-out;

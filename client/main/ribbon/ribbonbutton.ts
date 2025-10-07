@@ -141,7 +141,7 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
         );
     }
 
-    setValue(value) {
+    setValue(value: boolean) {
         this.value = value;
         if (value)
             this.classList.add('checked');
@@ -285,6 +285,9 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
         let rect = this.getBoundingClientRect();
         let x = rect.left + window.scrollX + 5;
         let y = rect.top + window.scrollY + this.offsetHeight;
+        if (getComputedStyle(this).direction === 'rtl')
+            x += this.offsetWidth - 10;
+
         if (this.inMenu) {
             const menuStyle = window.getComputedStyle(this.menu);
             const menuMarginLeft = parseFloat(menuStyle.marginLeft);

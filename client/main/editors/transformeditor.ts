@@ -868,7 +868,7 @@ class TransformEditor extends HTMLElement {
             $fp.append($opEdit)
             setTimeout(() => {
                 let indent = ($equal.clientWidth + 1) + 'px';
-                $opEdit.style.left = indent;
+                $opEdit.style.insetInlineStart = indent;
             }, 10);
             $opEdit.style.width = _sign.length + 'ch';
             $opEdit.style.display = 'none';

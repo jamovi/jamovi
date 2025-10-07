@@ -194,11 +194,14 @@ export class I18n {
         }
     }
 
-    isRTL() {
+    isRTL(code?: string) {
+        if (code === undefined)
+            code = this.language;
+
         let rtlLangs = ['ar', 'arc', 'dv', 'fa', 'ha', 'he', 'khw', 'ks', 'ku', 'ps', 'ur', 'yi'];
 
         return rtlLangs.find((item) => {
-            return this.language === item || this.language.startsWith(item + '-');
+            return code === item || code.startsWith(item + '-');
         });
     }
 

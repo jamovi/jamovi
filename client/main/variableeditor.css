@@ -4,7 +4,7 @@
 
 .jmv-variable-editor > .shortcut-key-tag {
     top: 50px;
-    left: 20%;
+    inset-inline-start: 20%;
 }
 
 .jmv-variable-editor .hover-header {
@@ -55,7 +55,7 @@
 
 .jmv-variable-editor-ok {
     position: absolute ;
-    right: 12px ;
+    inset-inline-end: 12px ;
     top: 12px ;
     width: 40px ;
     height: 40px ;
@@ -79,7 +79,7 @@
 
 .jmv-variable-editor-ok span {
     position: absolute ;
-    left: 0 ;
+    inset-inline-start: 0 ;
     top: 0;
     width: 100% ;
     line-height: 32px;
@@ -128,11 +128,11 @@
 }
 
 .jmv-variable-editor-button-left {
-    left: 10px ;
+    inset-inline-start: 10px ;
 }
 
 .jmv-variable-editor-button-right {
-    right: 10px ;
+    inset-inline-end: 10px ;
 }
 
 .jmv-variable-editor-widget.multiple-variables .single-variable-support {
@@ -150,7 +150,7 @@
 }
 
 .jmv-variable-editor-widget:not(.inactive) {
-    transition: left .3s, opacity .3s, visibility .3s ;
+    transition: left .3s, inset-inline-start .3s, opacity .3s, visibility .3s ;
 }
 
 .jmv-variable-editor-widget .desc-box {
@@ -198,12 +198,12 @@
 
 .jmv-variable-editor-widget .desc-box .multi-var-info .multi-var-info-list .jmv-variable-list-item {
     background-color: #E8E8E8;
-    margin-right: 3px;
+    margin-inline-end: 3px;
     min-width: unset;
 }
 
 .jmv-variable-editor-widget .desc-box .multi-var-info .multi-var-info-list .jmv-variable-list-item > .label {
-    margin-right: 7px;
+    margin-inline-end: 7px;
     max-width: 77px;
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -211,7 +211,10 @@
 }
 
 .jmv-variable-editor-widget .desc-box .multi-var-info .multi-var-info-label {
-    margin: 0 5px 0 2px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-inline-start: 2px;
+    margin-inline-end: 5px;
     color: #888888;
     font-weight: 100;
 }
@@ -221,7 +224,10 @@
     color: #555555 ;
     background-color: white;
     padding: 3px 4px 3px 4px;
-    margin: 3px 37px 0px 0px;
+    margin-top: 3px;
+    margin-bottom: 0px;
+    margin-inline-start: 0px;
+    margin-inline-end: 37px;
     border: 1px solid #CCCCCC;
     flex-shrink: 0;
     flex-grow: 0;
@@ -232,7 +238,10 @@
     color: #555555 ;
     background-color: white;
     padding: 3px 4px 3px 4px;
-    margin: 3px 37px 0px 0px;
+    margin-top: 3px;
+    margin-bottom: 0px;
+    margin-inline-start: 0px;
+    margin-inline-end: 37px;
     border: 1px solid #CCCCCC;
     max-height: 3.2em;
     overflow: auto;
@@ -244,7 +253,7 @@
 .label-box {
     display: flex;
     flex-direction: row;
-    margin-right: 37px;
+    margin-inline-end: 37px;
     align-items: center;
     flex-shrink: 0;
     flex-grow: 0;
@@ -264,14 +273,14 @@
 
 .label-box .imported-as > .label {
     color: grey;
-    margin-right: 5px;
+    margin-inline-end: 5px;
     font-weight: 100;
     font-size: 90%;
 }
 
 .label-box .imported-as > .name {
     color: grey;
-    margin-right: 5px;
+    margin-inline-end: 5px;
     font-size: 90%;
     font-weight: 500;
 }
@@ -279,7 +288,10 @@
 .label-box .jmv-variable-editor-widget-label {
     font-size: 110%;
     color: #555555;
-    padding: 0px 4px 0px 2px;
+    padding-top: 0px;
+    padding-inline-end: 4px;
+    padding-bottom: 0px;
+    padding-inline-start: 2px;
     margin: 0px;
     font-weight: 100;
     text-transform: uppercase;
@@ -289,7 +301,10 @@
     flex-grow: 1;
     display: flex;
     overflow: hidden;
-    padding: 10px 10px 10px 0px;
+    padding-top: 10px;
+    padding-inline-end: 10px;
+    padding-bottom: 10px;
+    padding-inline-start: 0px;
 }
 
 .jmv-datavarwidget-body {
@@ -298,52 +313,55 @@
 }
 
 .jmv-variable-editor-widget-footer {
-    margin-left: 2px;
-    margin-right: 37px;
+    margin-inline-start: 2px;
+    margin-inline-end: 37px;
 }
 
 .jmv-variable-editor-main[data-type='output'] .jmv-variable-editor-widget-title {
-    margin-right: 10px;
+    margin-inline-end: 10px;
 }
 
 .jmv-variable-editor-main[data-type='output'] .jmv-variable-editor-widget-description {
-    margin-right: 10px;
+    margin-inline-end: 10px;
 }
 
 .jmv-variable-editor-main[data-type='computed'] .jmv-variable-editor-widget-footer {
-    margin-right: 10px;
+    margin-inline-end: 10px;
 }
 
 .jmv-variable-editor-main[data-type='computed'] .jmv-variable-editor-widget-title {
-    margin-right: 10px;
+    margin-inline-end: 10px;
 }
 
 .jmv-variable-editor-main[data-type='computed'] .jmv-variable-editor-widget-description {
-    margin-right: 10px;
+    margin-inline-end: 10px;
 }
 
 .jmv-variable-editor-main[data-type='computed'] .label-box {
-    margin-right: 10px
+    margin-inline-end: 10px
 }
 
 .jmv-variable-editor-main[data-type='filter'] .label-box .jmv-variable-editor-widget-label {
-    margin-left: 3px;
+    margin-inline-start: 3px;
 }
 
 .jmv-variable-editor-widget-footer > .status-box {
     display: flex;
     flex-direction: row-reverse;
     align-items: center;
-    float: right;
+    float: inline-end;
 }
 
 .jmv-variable-editor-widget-footer > .status-box > .status {
     color: #757575;
-    margin: 2px 0px 2px 3px;
-    padding-right: 3px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    margin-inline-start: 0px;
+    margin-inline-end: 3px;
+    padding-inline-end: 3px;
     height: 18px;
     line-height: 18px;
-    text-align: right;
+    text-align: end;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -398,7 +416,7 @@
     z-index: 2;
     position: absolute;
     top: calc(var(--diameter) / 2 + var(--offset) / 2 + 0.5px);
-    left: var(--offset);
+    inset-inline-start: var(--offset);
     box-sizing: border-box;
     width: var(--diameter);
     height: var(--diameter);
