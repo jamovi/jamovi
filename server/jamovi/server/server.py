@@ -612,6 +612,8 @@ class Server:
         self._debug = debug
         self._dev_server = dev_server
 
+        self._base_port = port
+
         self.ports_opened = self._ioloop.create_future()
 
         self._spool_path = conf.get('spool_path')
@@ -746,41 +748,114 @@ class Server:
             ping_timeout = int(ping_timeout)
 
         host = conf.get('hostname', '127.0.0.1')
-        host_a = conf.get('host_a', host)
-        host_b = conf.get('host_b', host_a if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', host) else f'a.{ host_a }')
-        host_c = conf.get('host_c', host_a if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', host) else f'r.{ host_a }')
+        host_a_conf = conf.get('host_a', host)
+        host_b_conf = conf.get('host_b', host_a_conf if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', host) else f'a.{ host_a_conf }')
+        host_c_conf = conf.get('host_c', host_a_conf if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', host) else f'r.{ host_a_conf }')
 
-        host_a = urlparse(f'//{ host_a }')
-        host_b = urlparse(f'//{ host_b }')
-        host_c = urlparse(f'//{ host_c }')
+        host_a_parsed = urlparse(f'//{ host_a_conf }')
+        host_b_parsed = urlparse(f'//{ host_b_conf }')
+        host_c_parsed = urlparse(f'//{ host_c_conf }')
 
-        path_a = host_a.path.rstrip('/')
-        path_b = host_b.path.rstrip('/')
-        path_c = host_c.path.rstrip('/')
+        path_a = host_a_parsed.path.rstrip('/')
+        path_b = host_b_parsed.path.rstrip('/')
+        path_c = host_c_parsed.path.rstrip('/')
 
-        port_a = host_a.port
-        port_b = host_b.port
-        port_c = host_c.port
+        public_host_a = host_a_parsed.hostname
+        public_host_b = host_b_parsed.hostname
+        public_host_c = host_c_parsed.hostname
 
-        host_a = host_a.hostname
-        host_b = host_b.hostname
-        host_c = host_c.hostname
+        public_port_a = host_a_parsed.port
+        public_port_b = host_b_parsed.port
+        public_port_c = host_c_parsed.port
+
+        def resolve_bind_port(port, offset):
+            if port is not None:
+                return port
+            base = self._base_port
+            if base is None or base == 0:
+                return 0
+            return base + offset
+
+        bind_port_a = resolve_bind_port(host_a_parsed.port, 0)
+        bind_port_b = resolve_bind_port(host_b_parsed.port, 1)
+        bind_port_c = resolve_bind_port(host_c_parsed.port, 2)
+
+        override_base = conf.get('hostname', None)
+        override_a_value = conf.get('hostname_a', override_base)
+        override_b_value = conf.get('hostname_b', None)
+        override_c_value = conf.get('hostname_c', None)
+
+        def apply_public_override(value, host_default, port_default, path_default):
+            if value is None:
+                return host_default, port_default, path_default
+            parsed = urlparse(f'//{ value }')
+            host_value = parsed.hostname if parsed.hostname is not None else host_default
+            path_value = parsed.path.rstrip('/') if parsed.path else ''
+            port_value = parsed.port
+            return host_value, port_value, path_value
+
+        public_host_a, public_port_a, path_a = apply_public_override(
+            override_a_value, public_host_a, public_port_a, path_a)
+
+        if override_a_value is not None:
+            if override_b_value is None and path_a == '':
+                if public_host_a is not None:
+                    if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', public_host_a):
+                        derived = public_host_a
+                    else:
+                        derived = f'a.{ public_host_a }'
+                    if public_port_a is not None:
+                        derived = f'{ derived }:{ public_port_a }'
+                    override_b_value = derived
+            if override_c_value is None and path_a == '':
+                if public_host_a is not None:
+                    if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', public_host_a):
+                        derived = public_host_a
+                    else:
+                        derived = f'r.{ public_host_a }'
+                    if public_port_a is not None:
+                        derived = f'{ derived }:{ public_port_a }'
+                    override_c_value = derived
+
+        public_host_b, public_port_b, path_b = apply_public_override(
+            override_b_value, public_host_b, public_port_b, path_b)
+        public_host_c, public_port_c, path_c = apply_public_override(
+            override_c_value, public_host_c, public_port_c, path_c)
+
+        host_a = public_host_a
+        host_b = public_host_b
+        host_c = public_host_c
 
         roots = [ ]
+
+        port_a = bind_port_a
+        port_b = bind_port_b
+        port_c = bind_port_c
 
         if host_a != host_b and host_b != host_c:
             separate_by = 'host'
         elif path_a != path_b and path_b != path_c:
             separate_by = 'path'
-            if port_a is None:
-                port_a = 80
-        elif port_a is None and port_b is None and port_c is None:
+        elif public_port_a is None and public_port_b is None and public_port_c is None:
             separate_by = 'port'
-            port_a = port_b = port_c = 0
-        elif port_a != port_b and port_b != port_c:
+            bind_port_a = bind_port_b = bind_port_c = 0
+        elif public_port_a != public_port_b and public_port_b != public_port_c:
             separate_by = 'port'
         else:
             raise ValueError
+
+        if separate_by == 'path':
+            if public_port_a is None:
+                public_port_a = 80
+            if public_port_b is None:
+                public_port_b = public_port_a
+            if public_port_c is None:
+                public_port_c = public_port_a
+
+        if separate_by == 'port':
+            port_a = bind_port_a
+            port_b = bind_port_b
+            port_c = bind_port_c
 
         self._main_app = tornado.web.Application(
             websocket_ping_interval=ping_interval,
@@ -903,42 +978,69 @@ class Server:
                     ModuleAssetHandler, { 'session': self._session }),
             ])
 
-        sockets = tornado.netutil.bind_sockets(port_a, self._host)
+        sockets = tornado.netutil.bind_sockets(bind_port_a, self._host)
         server = tornado.httpserver.HTTPServer(self._main_app)
         server.add_sockets(sockets)
         port_a = sockets[0].getsockname()[1]
 
         if separate_by == 'port':
-            sockets = tornado.netutil.bind_sockets(port_b, self._host)
+            sockets = tornado.netutil.bind_sockets(bind_port_b, self._host)
             server = tornado.httpserver.HTTPServer(self._analysisui_app)
             server.add_sockets(sockets)
             port_b = sockets[0].getsockname()[1]
 
-            sockets = tornado.netutil.bind_sockets(port_c, self._host)
+            sockets = tornado.netutil.bind_sockets(bind_port_c, self._host)
             server = tornado.httpserver.HTTPServer(self._resultsview_app)
             server.add_sockets(sockets)
             port_c = sockets[0].getsockname()[1]
         else:
             port_c = port_b = port_a
 
+        if separate_by == 'port':
+            if public_port_a is None:
+                public_port_a = port_a
+            if public_port_b is None:
+                public_port_b = port_b
+            if public_port_c is None:
+                public_port_c = port_c
+
         if host_a is not None:
+            def format_host_port(host, port, *, force_port=False):
+                if host is None:
+                    return ''
+                if force_port:
+                    return f'{ host }:{ port }'
+                if port is None or port == 80:
+                    return host
+                return f'{ host }:{ port }'
+
+            def format_root(host, port, path, *, force_port=False):
+                base = format_host_port(host, port, force_port=force_port)
+                if path:
+                    return f'{ base }{ path }'
+                return base
+
             if separate_by == 'port':
-                hosts = f'{ host_a }:{ port_a } { host_b }:{ port_b } { host_c }:{ port_c }'
-                roots[:] = (f'{ host_a }:{ port_a }', f'{ host_b }:{ port_b }', f'{ host_c }:{ port_c }')
+                host_strings = (
+                    format_host_port(host_a, public_port_a, force_port=True),
+                    format_host_port(host_b, public_port_b, force_port=True),
+                    format_host_port(host_c, public_port_c, force_port=True))
+                hosts = ' '.join(filter(None, host_strings))
+                roots[:] = host_strings
             elif separate_by == 'path':
-                if port_a != 80:
-                    hosts = f'{ host_a }:{ port_a }'
-                    roots[:] = (f'{ host_a }:{ port_a }{ path_a }', f'{ host_b }:{ port_b }{ path_b }', f'{ host_c }:{ port_c }{ path_c }')
-                else:
-                    hosts = f'{ host_a }'
-                    roots[:] = (f'{ host_a }{ path_a }', f'{ host_b }{ path_b }', f'{ host_c }{ path_c }')
-            else:  # separate_by == 'host':
-                if port_a != 80:
-                    hosts = f'{ host_a }:{ port_a } { host_b }:{ port_b } { host_c }:{ port_c }'
-                    roots[:] = (f'{ host_a }:{ port_a }', f'{ host_b }:{ port_b }', f'{ host_c }:{ port_c }')
-                else:
-                    hosts = f'{ host_a } { host_b } { host_c }'
-                    roots[:] = (host_a, host_b, host_c)
+                base_host = format_host_port(host_a, public_port_a)
+                hosts = base_host
+                roots[:] = (
+                    format_root(host_a, public_port_a, path_a),
+                    format_root(host_b, public_port_b, path_b),
+                    format_root(host_c, public_port_c, path_c))
+            else:  # separate_by == 'host'
+                host_strings = (
+                    format_host_port(host_a, public_port_a),
+                    format_host_port(host_b, public_port_b),
+                    format_host_port(host_c, public_port_c))
+                hosts = ' '.join(filter(None, host_strings))
+                roots[:] = host_strings
 
             # now we have the port numbers, we can add CSP
             cache_headers[ 'Content-Security-Policy' ] = f'''
