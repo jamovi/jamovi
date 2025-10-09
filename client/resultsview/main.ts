@@ -356,7 +356,6 @@ class Main {  // this is constructed at the bottom
             this.moduleI18nDef = eventData.moduleI18n;
             if (eventData.appI18n) {
                 I18n.initialise(eventData.appI18n.locale_data.messages[""].lang, eventData.appI18n);
-                //document.body.dir = I18n.isRTL() ? 'rtl' : 'ltr';
             }
             if (this.resultsDefn)
                 this._render();

@@ -440,36 +440,36 @@ body[dir="rtl"] .silky-dropdown-toggle:before {
 }
 
 input[type=text].silky-option-listitem {
-  -webkit-transition: all 0.30s ease-in-out;
-  -moz-transition: all 0.30s ease-in-out;
-  -ms-transition: all 0.30s ease-in-out;
-  -o-transition: all 0.30s ease-in-out;
-  outline: none;
+    -webkit-transition: all 0.30s ease-in-out;
+    -moz-transition: all 0.30s ease-in-out;
+    -ms-transition: all 0.30s ease-in-out;
+    -o-transition: all 0.30s ease-in-out;
+    outline: none;
     padding-top: 3px;
     padding-inline-end: 4px;
     padding-bottom: 3px;
     padding-inline-start: 8px;
-  margin: 3px 0px 3px 0px;
-  border: 1px solid #FFFFFF;
-  border-inline-start: none;
-  border-inline-end: none;
-  z-index: 98;
+    margin: 3px 0px 3px 0px;
+    border: 1px solid #FFFFFF;
+    border-inline-start: none;
+    border-inline-end: none;
+    z-index: 98;
 }
 
 input[type=text].silky-option-listitem:focus {
-  box-shadow: 0 0 5px rgba(181, 202, 239, 1);
-  padding-top: 3px;
+    box-shadow: 0 0 5px rgba(181, 202, 239, 1);
+    padding-top: 3px;
     padding-inline-end: 4px;
     padding-bottom: 3px;
     padding-inline-start: 8px;
-  margin-top: 3px;
-  margin-bottom: 3px;
-  margin-inline-start: 0px;
-  margin-inline-end: 1px;
-  border: 1px solid rgba(181, 202, 239, 1);
-  border-inline-start: none;
-  border-inline-end: none;
-  z-index: 99;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    margin-inline-start: 0px;
+    margin-inline-end: 1px;
+    border: 1px solid rgba(181, 202, 239, 1);
+    border-inline-start: none;
+    border-inline-end: none;
+    z-index: 99;
 }
 
 .centre-text {
