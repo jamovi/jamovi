@@ -781,7 +781,8 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
         let itemTitle = target.dataset.name;
         if (itemType !== FSItemType.File || this.model.clickProcess === 'open') {
             this.clearSelection();
-            this.model.requestOpen({ path: itemPath, title: itemTitle, type: itemType });
+            let extension = path.extname(itemTitle);
+            this.model.requestOpen({ path: itemPath, title: path.basename(itemTitle, extension), type: itemType });
             focusLoop.updateShortcuts({ shortcutPath: this.shortcutPath });
         }
         else if (itemType === FSItemType.File && this.model.clickProcess === 'import') {
@@ -937,8 +938,10 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
                     let itemType = itemTypeStr !== undefined ? parseInt(itemTypeStr, 10) as FSItemType : undefined;
                     let itemPath = target.dataset.path;
                     let itemTitle = target.dataset.name;
-                    if (itemType !== FSItemType.File || this.model.clickProcess === 'open')
-                        this.model.requestOpen({ path: itemPath, title: itemTitle, type: itemType });
+                    if (itemType !== FSItemType.File || this.model.clickProcess === 'open') {
+                        let extension = path.extname(itemTitle);
+                        this.model.requestOpen({ path: itemPath, title: path.basename(itemTitle, extension), type: itemType });
+                    }
                     else if (itemType === FSItemType.File && this.model.clickProcess === 'import')
                         this.model.requestImport({ paths: this._getSelectedPaths() });
                     else if (itemType === FSItemType.File && this.model.clickProcess === 'save')
@@ -1027,8 +1030,10 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
         let itemTitle = target.dataset.name;
         if (itemType === FSItemType.File)
             this._setMultiMode(false);
-        if (itemType !== FSItemType.File || this.model.clickProcess === 'open')
-            this.model.requestOpen({ path: itemPath, title: itemTitle, type: itemType });
+        if (itemType !== FSItemType.File || this.model.clickProcess === 'open') {
+            let extension = path.extname(itemTitle);
+            this.model.requestOpen({ path: itemPath, title: path.basename(itemTitle, extension), type: itemType });
+        }
         else if (itemType === FSItemType.File && this.model.clickProcess === 'import')
             this.model.requestImport({ paths: [itemPath] });
         else if (itemType === FSItemType.File && this.model.clickProcess === 'save')
