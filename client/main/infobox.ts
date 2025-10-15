@@ -386,6 +386,12 @@ export class InfoBox extends HTMLElement {
                 overflow: hidden ;
             }
 
+            @media (forced-colors: active) {
+                div.local {
+                    border: 1px solid buttonBorder;
+                }
+            }
+
             div.local {
                 margin: 20px;
                 background-color: white;

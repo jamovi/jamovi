@@ -33,6 +33,8 @@ class Store extends HTMLElement {
         const $header = HTML.parse('<div class="jmv-store-header"></div>');
         this.append($header);
 
+        const $logo = HTML.parse(`<div class="jmv-store-header-logo"></div>`);
+        $header.append($logo);
         const $close = HTML.parse(`<button class="jmv-store-button-close" aria-label="${_('Hide library')}"><span class="mif-arrow-up"></span></button>`);
         $header.append($close);
 

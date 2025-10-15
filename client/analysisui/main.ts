@@ -23,6 +23,7 @@ import Keyboard from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 import I18n, { I18nData } from "../common/i18n";
+import HighContrast from '../common/highcontrast';
 
 declare global {
     function s_(key: string, formats?: { [key: string]: (string|number); } | (string|number)[], options?: { prefix: string; postfix: string; }): string;
@@ -233,7 +234,9 @@ class Analysis {
 
 let analysis: Analysis = null;
 
-
+const highContrast = new HighContrast(document.body, document.body, () => {
+    return document.body.querySelectorAll('.silky-variable-type-img, .jmv-toolbar-button-icon, .search > .image');
+}, null, false);
 
 ready(() => {
 

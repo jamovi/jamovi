@@ -139,6 +139,12 @@ h1 {
     border-top: 1px solid #d8d8d8;
 }
 
+@media (forced-colors: active) {
+    .silky-layout-cell.selected {
+        background-color: Highlight !important;
+    }
+}
+
 .silky-layout-cell.selected {
     background-color: #B5CAEF;
 }

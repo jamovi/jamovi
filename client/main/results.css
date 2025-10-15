@@ -53,9 +53,15 @@
     background-color: #B5CAEF;
 }
 
+@media (forced-colors: active) {
+    .jmv-results-panel iframe {
+        background-color: Canvas !important;
+    }
+}
+
 .jmv-results-panel iframe {
     overflow: hidden ;
-    background-color: transparent ;
+    background-color: inherit ;
     transition: 0.3s background-color, 0.2s height, 0.2s width;
 }
 

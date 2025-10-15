@@ -42,6 +42,7 @@ import './infobox';
 import type { InfoBox } from './infobox';
 
 import keyboardJS  from 'keyboardjs';
+import HighContrast from '../common/highcontrast';
 
 window._ = I18n._;
 window.n_ = I18n._n;
@@ -226,6 +227,28 @@ window.addEventListener('popstate', function () {
     history.pushState(null, null, document.URL);
 });
 
+const highContrast = new HighContrast(document.body, document.body, () => {
+    return document.body.querySelectorAll(`
+        .silky-bs-flist-item-omv-icon, 
+        .silky-bs-flist-item-csv-icon,
+        .silky-bs-fslist-entry-icon,
+        .jmv-ribbon-button-icon, 
+        .jmv-column-header-icon,
+        .jmv-store-module-icon,
+        .measure-type-icon,
+        .silky-bs-flist-item-folder-browse-icon,
+        .silky-bs-fslist-browser-check-button,
+        .jmv-ribbon-appmenu-icon,
+        .jmv-ribbon-appmenu-back-button > div
+        `);
+}, () => {
+    return document.body.querySelectorAll(`
+        .silky-bs-logo,
+        .jmv-ribbon-fullscreen,
+        .jmv-store-header-logo,
+        .silky-bs-back-button > div
+        `);
+}, true);
 
 ready(async() => {
     if (navigator.platform === 'Win32')
