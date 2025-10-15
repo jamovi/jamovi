@@ -14,6 +14,7 @@ import focusLoop from '../common/focusloop';
 import { contextMenuListener } from '../common/utils';
 import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
 import { CollectionView, View } from "./element";
+import HighContrast from '../common/highcontrast';
 
 window._ = I18n._;
 
@@ -88,6 +89,7 @@ class Main {  // this is constructed at the bottom
     resultsDefn: any;
 
     moduleI18nDef: I18nData;
+    highContrast: HighContrast;
 
     constructor() {
         /*this.translateUsingModule = (key) => {
@@ -101,6 +103,10 @@ class Main {  // this is constructed at the bottom
                 return value[0];
         };
         window.mod_ = this.translateUsingModule.bind(this);*/
+
+        this.highContrast = new HighContrast(document.body, document.body, () => {
+            return document.body.querySelectorAll('.jmv-results-image-image');
+        }, null, false);
 
         this.onAnnotationEditing = this.onAnnotationEditing.bind(this);
 

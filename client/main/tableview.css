@@ -626,6 +626,17 @@ body[dir='rtl'] .jmv-row-header-cell {
     border-top: 3px solid #5E8BC4 ;
 }
 
+@media (forced-colors: active) {
+    .jmv-column-cell {
+        z-index: 10;
+    }
+
+    .jmv-table-cell-selected {
+        background-color: Highlight !important;
+    }
+}
+
+
 .jmv-column-cell {
     border: 1px solid #DEDEDE ;
     border-width: 1px 0 0 0 ;

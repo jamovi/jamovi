@@ -13,6 +13,12 @@
     visibility: visible;
 }
 
+@media (forced-colors: active) {
+    .jmv-menu {
+        border: 1px solid ButtonBorder;
+    }
+}
+
 .jmv-menu-hidden *,
 .jmv-menu-hidden {
     visibility: hidden !important;

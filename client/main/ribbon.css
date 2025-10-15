@@ -118,6 +118,12 @@ body.windows.electron .jmv-ribbon-appmenu {
     background-color: #4675B1 ;
 }
 
+@media (forced-colors: active) {
+    .jmv-ribbon-fullscreen:hover {
+        background-color: unset !important;
+    }
+}
+
 .jmv-ribbon-fullscreen:hover {
     color: #EEEEEE ;
     background-color: #4675B1 ;

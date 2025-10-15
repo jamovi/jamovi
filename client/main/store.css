@@ -6,6 +6,22 @@
     font-weight: 100;
 }
 
+@media (forced-colors: active) {
+    .jmv-store {
+        border: 1px solid ButtonBorder;
+    }
+}
+
+.jmv-store-header-logo {
+    height: 100%;
+    background-image: url('../assets/logo-store.svg');    
+    background-repeat: no-repeat;
+    background-size: auto 50%;
+    background-position-y: center;
+    background-position: left 12px center;
+}
+
+
 .jmv-store {
     position: absolute ;
     display: flex ;
@@ -25,10 +41,6 @@
 .jmv-store-header {
     background-color: #3E6DA9 ;
     height: 70px ;
-    background-image: url('../assets/logo-store.svg');
-    background-repeat: no-repeat;
-    background-size: auto 50% ;
-    background-position: left 12px center ;
 }
 
 .jmv-store.visible {
