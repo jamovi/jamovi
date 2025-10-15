@@ -197,7 +197,7 @@ export function exportElem(el, format=undefined, options: { exclude?: string[], 
     }
         </style>
 </head>
-<body dir=${options.dir}>
+<body dir="${options.dir ? options.dir : 'ltr'}">
     ${ content }
 </body>
 </html>`;
