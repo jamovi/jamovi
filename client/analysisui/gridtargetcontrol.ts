@@ -1247,7 +1247,8 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
 
             this.buttons = this.toolbar.el;
             this.$buttons = $(this.buttons);
-            this.buttons.classList.add('arrow-right');
+            const dir = window.getComputedStyle(document.body).direction;
+            this.buttons.classList.add(dir === 'rtl' ? 'arrow-left' : 'arrow-right');
             this.toolbar.on('buttonClicked', (item) => {
                 if (this.gainOnClick && this.targetGrids.length > 0 && !this.targetGrid)
                     this.setTargetGrid(this.targetGrids[0]);
