@@ -280,9 +280,6 @@ export class I18n {
 
     findBestMatchingLanguage(code: string, codes: string[], options?: { excludeDev?: boolean }) {
 
-        if (code === 'en') //if its english don't use translations.
-            return null;
-
         options = options || {};
 
         if (options.excludeDev) {
@@ -296,8 +293,6 @@ export class I18n {
 
         if (codes.includes(code))
             return code;
-        else if (code.startsWith('en'))  //if its a form of english don't use translations.
-            return null;
 
         let desiredLanguage = this.parseLangCode(code);
         if (desiredLanguage.isValid === false)

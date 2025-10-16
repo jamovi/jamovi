@@ -368,8 +368,8 @@ class Module {
         if ( ! code) {
             let codes = await this.getI18nCodes();
             code = I18n.findBestMatchingLanguage(I18n.language, codes);
-            if (code === null) 
-                code = '';
+            if ( ! code)
+                code = 'en';
             this.currentI18nCode = code;
         }
         return code;
@@ -378,31 +378,26 @@ class Module {
     async getI18nDefn() {
 
             let code = await this.getCurrentI18nCode();
-            if (code === null || code === '')
+            if (code === 'en')
                 return null;
 
             let defn = this._i18nDefns[code];
             if (defn === undefined){
-                //let defnProm = this._i18nDefns[code];
-                //if (defnProm === undefined) {
-                    defn = this._i18nDefns[code] = (async() => {
-                        let url = `../modules/${ this._ns }/i18n/${ code }`;
-                        let response = await fetch(url);
-                        if (response.ok) {
-                            try {
-                                return await response.json() as I18nData;
-                            }
-                            catch (e) {
-                                throw new ModuleCorruptError();
-                            }
+                defn = this._i18nDefns[code] = (async() => {
+                    let url = `../modules/${ this._ns }/i18n/${ code }`;
+                    let response = await fetch(url);
+                    if (response.ok) {
+                        try {
+                            return await response.json() as I18nData;
                         }
-                        else {
-                            return null;
+                        catch (e) {
+                            throw new ModuleCorruptError();
                         }
-                    })();
-                //}
-                //let defn = await defnProm;
-                //return defn;
+                    }
+                    else {
+                        return null;
+                    }
+                })();
             }
             return defn;
         }
