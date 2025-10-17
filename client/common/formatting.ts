@@ -8,7 +8,7 @@ export const determFormat = function(values, type, format, settings, maxNS?, min
     if (format === undefined)
         format = '';
     if (settings === undefined)
-        settings = { 't': 'sf', 'n': 3, 'pt': 'dp', 'p': 3 };
+        settings = { 't': 'sf', 'n': 3, 'pt': 'dp', 'p': 3, 'ds': '.' };
     if (minNS === undefined)
         minNS = 1e-3;
     if (maxNS === undefined)
@@ -38,7 +38,7 @@ export const determFormat = function(values, type, format, settings, maxNS?, min
                 minAbsNS = absValue;
         }
         else {
-            let exponent = parseInt(Math.log10(absValue));
+            let exponent = Math.log10(absValue) | 0;
             let absS = Math.abs(exponent);
             if (absS !== 0 && isFinite(absS) && absS > maxAbsExpnt)
                 maxAbsExpnt = absS;
@@ -48,8 +48,9 @@ export const determFormat = function(values, type, format, settings, maxNS?, min
     let dp, sf;
     let lz = true; // leading zero
 
-    let t = settings.t;
-    let n = settings.n;
+    let { t } = settings;
+    let { n } = settings;
+    const ds = settings.ds || '.';
 
     if (formats.includes('pvalue')) {
         t = settings.pt;
@@ -106,9 +107,9 @@ export const determFormat = function(values, type, format, settings, maxNS?, min
         }
     }
 
-    let expw = parseInt(Math.log10(maxAbsExpnt)+1);
+    let expw = (Math.log10(maxAbsExpnt)+1) | 0;
 
-    return { dp, expw, format, sf, maxNS, minNS, t, lz };
+    return { dp, expw, format, sf, maxNS, minNS, t, lz, ds };
 };
 
 export const format = function(value, format) {
@@ -134,27 +135,28 @@ export const format = function(value, format) {
     }
 
     if (format.t === 'dp' && format.format.includes('pvalue') && value < Math.pow(10, -format.dp)) {
-        return '<\u2009' + Math.pow(10,-format.dp).toFixed(format.dp).substring(1);
+        return '<\u2009' + Math.pow(10,-format.dp).toFixed(format.dp).replace('.', format.ds).substring(1);
     }
     else if (format.format.includes('pc')) {
-        return '' + (100 * value).toFixed(format.dp - 2) + '\u2009%';
+        return '' + (100 * value).toFixed(format.dp - 2).replace('.', format.ds) + '\u2009%';
     }
     else if (Math.abs(value) >= format.minNS && Math.abs(value) <= format.maxNS) {
-        let str = value.toFixed(format.dp);
+        let str = value.toFixed(format.dp).replace('.', format.ds);
         if (format.lz === false && str.startsWith('0.'))
             str = str.substring(1);
+        str = str.replace('.', format.ds)
         return str;
     }
     else {
         const exponent = Math.floor(Math.log10(Math.abs(value)));
         const mantissa = value/Math.pow(10, exponent);
         if (value === 0)
-            return value.toFixed(format.dp);
+            return value.toFixed(format.dp).replace('.', format.ds);
         const expSign = Math.abs(value) < 1 ? '-' : '+';
         let spaces = format.expw - Math.floor(Math.log10(Math.abs(exponent)));
         spaces = Math.max(spaces, 0);
         const gap = Array(spaces).join(' ');
-        return mantissa.toFixed(format.sf-1)+'e'+gap+expSign+Math.abs(exponent);
+        return mantissa.toFixed(format.sf-1).replace('.', format.ds)+'e'+gap+expSign+Math.abs(exponent);
     }
 
 };
