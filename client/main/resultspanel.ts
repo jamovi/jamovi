@@ -161,6 +161,7 @@ class ResultsPanel extends EventDistributor {
         });
 
         this.model.settings().on('change:format',  () => this._updateAll());
+        this.model.settings().on('change:decSymbol',  () => this._updateAll());
         this.model.settings().on('change:devMode', () => this._updateAll());
         this.model.settings().on('change:syntaxMode', () => this._updateAll());
         this.model.settings().on('change:refsMode', () => this._updateRefsMode());
@@ -468,6 +469,8 @@ class ResultsPanel extends EventDistributor {
         catch (e) {
             format = {t:'sf',n:3,pt:'dp',p:3};
         }
+
+        format.ds = this.model.settings().getSetting('decSymbol', '.');
 
         let analysis = resources.analysis;
 
