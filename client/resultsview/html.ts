@@ -78,8 +78,17 @@ export class View extends Elem.View<Model> {
             }
             else {
                 this.addContent(HTML.parse(`<div class="content">${ doc.content }</div>`));
+                $content = this.querySelector('.content');
             }
-            this.querySelectorAll('a[href]').forEach(el => el.addEventListener('click', this._handleLinkClick));
+            $content.querySelectorAll('a[href]').forEach(el => el.addEventListener('click', this._handleLinkClick));
+            const scriptElems = $content.querySelectorAll<HTMLScriptElement>('script');
+            for (const script of scriptElems) {
+                const nu = document.createElement('script')
+                nu.textContent = script.textContent;
+                document.head.appendChild(nu);
+                nu.parentNode.removeChild(nu);
+                script.parentNode.removeChild(script);
+            }
         });
     }
 
