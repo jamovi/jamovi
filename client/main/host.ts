@@ -25,9 +25,9 @@ export const analysisUIUrl = resolveUrl(window.config.client.roots[1]);
 export const resultsViewUrl = resolveUrl(window.config.client.roots[2]);
 
 
-export interface IExtensionGroup { 
-    description: string, 
-    extensions: string[] 
+export interface IExtensionGroup {
+    description: string,
+    extensions: string[]
 }
 
 export interface IShowDialogOptions {
@@ -36,9 +36,9 @@ export interface IShowDialogOptions {
     filters: IExtensionGroup[]
 }
 
-export interface IDialogProviderResult { 
-    cancelled: boolean, 
-    file?: string 
+export interface IDialogProviderResult {
+    cancelled: boolean,
+    file?: string
 }
 
 export interface IDialogProvider {
@@ -265,10 +265,13 @@ export const showSaveDialog = etron.showSaveDialog || (async function(options: I
     return await dialogProvider.showDialog('export', options);
 });
 
+export const openUrl = etron.openUrl || ((url) => {
+    window.open(url, '_blank');
+});
+
 export const showMessageBox = etron.showMessageBox; // || (async () => { });
 
 export const setEdited = etron.setEdited || (() => {});
-export const openUrl = etron.openUrl || (() => {});
 export const constructMenu = etron.constructMenu || (() => {});
 export const toggleDevTools = etron.toggleDevTools || (() => {});
 
