@@ -89,12 +89,25 @@ export class I18n {
         return this._availableLanguages;
     }
 
+    // extracts the value if it includes square bracket [context] as well
+    extractContext(key: string): { key: string, context: string | null } {
+        const m = key.match(/^(.+) \[([a-z]+)\]$/)
+        if (m)
+            return { key:m[1], context: m[2] };
+        return { key: key, context: undefined };
+    }
+
     _(key: string, formats?: { [key: string]: (string|number) } | (string|number)[], options: { prefix: string, postfix: string } = { prefix: '', postfix: '' }): string {
         let value = null;
-        if (!this.jed)
+
+        const extracted = this.extractContext(key);
+
+        key = extracted.key;
+
+        if ( ! this.jed)
             value = key;
         else
-            value = this.jed.dcnpgettext(undefined, undefined, key);
+            value = this.jed.dcnpgettext(undefined, extracted.context, key);
 
         value = s6e(value);
 
@@ -146,6 +159,10 @@ export class I18n {
 
     _n(key: string, plural: string, count: number, formats?: { [key: string]: (string|number), n?: (string|number) }): string {
         let value = null;
+
+        const extracted = this.extractContext(key);
+        key = extracted.key;
+
         if (!this.jed) {
             if (count != 1)
                 value = plural;
@@ -153,7 +170,7 @@ export class I18n {
                 value = key;
         }
         else
-            value = this.jed.dcnpgettext(undefined, undefined, key, plural, count);
+            value = this.jed.dcnpgettext(undefined, extracted.context, key, plural, count);
 
         if (count > 1) {
             if (!formats)
