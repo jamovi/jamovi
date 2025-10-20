@@ -1,0 +1,399 @@
+---
+Data:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        title:
+            type: string
+        hidden:
+            type: boolean
+        requiresMissings:
+            type: boolean
+        description: &Description
+            oneOf:
+              - type: string
+              - type: object
+                properties:
+                    - name: R
+                      type: string
+                required:
+                    - R
+
+Variables:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        title:
+            type: string
+        hidden:
+            type: boolean
+        takeFromDataIfMissing:
+            type: boolean
+        default:
+            type:
+              - 'null'
+              - array
+        required:
+            type: boolean
+        rejectUnusedLevels:
+            type: boolean
+        suggested:
+            type: array
+            items:
+                enum:
+                    - continuous
+                    - ordinal
+                    - nominal
+                    - id
+            minItems: 1
+            uniqueItems: true
+        permitted:
+            type: array
+            items:
+                enum:
+                    - numeric
+                    - factor
+                    - id
+            minItems: 1
+            uniqueItems: true
+        rejectInf:
+            type: boolean
+        description: *Description
+
+Level:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        variable:
+            type: string
+            pattern: ^\([A-Za-z][A-Za-z0-9_]*\)$
+        allowNone:
+            type: bool
+        content:
+            type: string
+        title:
+            type: string
+        hidden:
+            type: boolean
+        description: *Description
+
+Variable: &Variable
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        title:
+            type: string
+        hidden:
+            type: boolean
+        default:
+            type: 'null'
+        required:
+            type: boolean
+        rejectUnusedLevels:
+            type: boolean
+        suggested:
+            type: array
+            items:
+                enum:
+                    - continuous
+                    - ordinal
+                    - nominal
+                    - id
+            minItems: 1
+            uniqueItems: true
+        permitted:
+            type: array
+            items:
+                enum:
+                    - numeric
+                    - factor
+                    - id
+            minItems: 1
+            uniqueItems: true
+        rejectInf:
+            type: boolean
+        content:
+            type: string
+        description: *Description
+
+Bool:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        title:
+            type: string
+        hidden:
+            type: boolean
+        default:
+            type: boolean
+        description: *Description
+
+Action:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        title:
+            type: string
+        hidden:
+            type: boolean
+        default:
+            type: boolean
+        description: *Description
+
+Integer:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        title:
+            type: string
+        hidden:
+            type: boolean
+        default:
+            type: integer
+        min:
+            type: integer
+        max:
+            type: integer
+        description: *Description
+
+Number:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        title:
+            type: string
+        hidden:
+            type: boolean
+        default:
+            type: number
+        min:
+            type: number
+        max:
+            type: number
+        description: *Description
+
+String:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        content:
+            type: string
+        default:
+            type: string
+        title:
+            type: string
+        hidden:
+            type: boolean
+        description: *Description
+
+List:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        title:
+            type: string
+        hidden:
+            type: boolean
+        options:
+            type: array
+            items:
+                oneOf:
+                  - type: string
+                  - type: object
+                    additionalProperties: false
+                    properties:
+                        title:
+                            type: string
+                        name:
+                            type: string
+            minItems: 1
+        default:
+            type: string
+        description: *Description
+    required:
+        - options
+
+NMXList:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        title:
+            type: string
+        hidden:
+            type: boolean
+        options:
+            type: array
+            items:
+                oneOf:
+                  - type: string
+                  - type: object
+                    properties:
+                        name:
+                            type: string
+                        title:
+                            type: string
+        default:
+            type:
+              - 'null'
+              - array
+            items:
+                type: string
+        description: *Description
+
+Array:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        title:
+            type: string
+        hidden:
+            type: boolean
+        items:
+            type: string
+        default:
+            type:
+              - 'null'
+              - array
+        template:
+            type: object
+        description: *Description
+
+Pairs:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        title:
+            type: string
+        hidden:
+            type: boolean
+        suggested:
+            type: array
+            items:
+                enum:
+                    - continuous
+                    - ordinal
+                    - nominal
+                    - id
+            minItems: 1
+            uniqueItems: true
+        permitted:
+            type: array
+            items:
+                enum:
+                    - numeric
+                    - factor
+                    - id
+            minItems: 1
+            uniqueItems: true
+        description: *Description
+
+Terms:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        title:
+            type: string
+        hidden:
+            type: boolean
+        default:
+            type:
+              - 'null'
+              - array
+        description: *Description
+
+Group:
+    "$schema": http://json-schema.org/draft-04/schema#
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        hidden:
+            type: boolean
+        elements:
+            type: array
+            items:
+                type: object
+                properties:
+                    name:
+                        type: string
+                    type:
+                        type: string
+                required:
+                    - name
+                    - type
+        default:
+            type:
+              - 'null'
+              - array
+        description: *Description
+
+Sort:
+    "$schema": http://json-schema.org/draft-04/schema#
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        hidden:
+            type: boolean
+        sortBy:
+            type: string
+        sortDesc:
+            type: boolean

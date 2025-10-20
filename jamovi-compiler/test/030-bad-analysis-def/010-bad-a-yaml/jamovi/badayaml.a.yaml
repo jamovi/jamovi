@@ -1,0 +1,9 @@
+---
+name:  badayaml
+title: badayaml
+jas:     "1.0"
+version: "1.0.0"
+
+options:
+    - name: data
+      ty

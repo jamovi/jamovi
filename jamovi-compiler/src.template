@@ -1,0 +1,29 @@
+
+// This file is an automatically generated and should not be edited
+
+'use strict';
+
+const options = <%= JSON.stringify(analysis.options) %>;
+
+const view = function() {
+    
+    <%= analysis.constructor %>
+
+    View.extend({
+        jus: "<%= elements.jus %>",
+
+        <%= elements.events %>
+
+    }).call(this);
+}
+
+view.layout = ui.extend({
+
+    label: "<%= elements.title %>",
+    jus: "<%= elements.jus %>",
+    type: "root",
+    stage: <%= elements.stage %>, //0 - release, 1 - development, 2 - proposed
+    controls: <%= elements.controls %>
+});
+
+module.exports = { view : view, options: options };
