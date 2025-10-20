@@ -1,0 +1,5 @@
+Usage:
+    jmc --build path
+    jmc --prepare path
+    jmc --install path [--home path]
+    jmc --check        [--home path]
