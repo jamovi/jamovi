@@ -1,0 +1,313 @@
+//
+// Copyright (C) 2016 Jonathon Love
+//
+
+syntax = "proto3";
+
+package jamovi.coms;
+
+// ANALYSIS
+
+enum Status {
+    COMPLETE = 0;
+    IN_PROGRESS = 1;
+    ERROR = 2;
+}
+
+message Error {
+    string message = 1;
+    string cause = 2;
+}
+
+message ComsMessage {
+    int32 id = 1;
+    string instanceId = 2;
+    bytes payload = 3;
+    string payloadType = 4;
+    Status status = 5;
+    Error error = 6;
+}
+
+message AnalysisRequest {
+    string sessionId = 7;
+    string instanceId = 1;
+    int32 analysisId = 2;
+    string name = 3;
+    string ns = 4;
+
+    enum Perform {
+        INIT = 0;
+        RUN = 1;
+        RENDER = 4;
+        SAVE = 5;
+        DELETE = 6;
+        DUPLICATE = 7;
+    }
+
+    Perform perform = 5;
+    AnalysisOptions options = 6;
+    repeated string changed = 8;
+    int32 revision = 9;
+    bool restartEngines = 10;
+    bool clearState = 11;
+
+    repeated AnalysisRequest addons = 12;
+
+    int32 index = 15;
+    string path = 16;
+    string part = 17;
+    string format = 18;
+    string i18n = 19;
+    bool arbitraryCode = 20;
+    bool enabled = 21;
+}
+
+enum AnalysisStatus {
+    ANALYSIS_NONE = 0;
+    ANALYSIS_INITED = 1;
+    ANALYSIS_RUNNING = 2;
+    ANALYSIS_COMPLETE = 3;
+    ANALYSIS_ERROR = 4;
+    ANALYSIS_RENDERING = 5;
+}
+
+message AnalysisResponse {
+
+    string instanceId = 1;
+    int32 analysisId = 2;
+    string name = 3;
+    string ns = 4;
+    // Version version = 5;
+    AnalysisOptions options = 6;
+    ResultsElement results = 7;
+    AnalysisStatus status = 8;
+    Error error = 9;
+    bool final = 10;
+    int32 revision = 11;
+    bool restartEngines = 12;
+    string stacktrace = 13;
+    uint32 version = 14;
+    int32 index = 15;
+    repeated Reference references = 16;
+    int32 dependsOn = 17;
+    string title = 18;
+    bool hasTitle = 19;
+    bool arbitraryCode = 20;
+    bool enabled = 21;
+}
+
+message Reference {
+    string name = 1;
+    string type = 2;
+    Authors authors = 3;
+    uint32 year = 4;
+    string title = 5;
+    string publisher = 6;
+    string url = 7;
+    string volume = 8;
+    string issue = 10;
+    string pages = 9;
+    string year2 = 11;
+}
+
+message Authors {
+    string complete = 8;
+}
+
+message AnalysisOption {
+
+    enum Other {
+        FALSE = 0;
+        TRUE  = 1;
+        NONE  = 2;
+    }
+
+    oneof type {
+        int32 i = 1;
+        double d = 2;
+        string s = 3;
+        Other o = 4;
+        AnalysisOptions c = 5;
+    }
+}
+
+message AnalysisOptions {
+    repeated AnalysisOption options = 1;
+    bool hasNames = 2;
+    repeated string names = 3;
+}
+
+enum Visible {
+    DEFAULT_YES = 0;
+    DEFAULT_NO = 1;
+    YES = 2;
+    NO = 3;
+}
+
+message ResultsCell {
+
+    enum Other {
+        MISSING = 0;
+        NOT_A_NUMBER = 1;
+    }
+
+    oneof cellType {
+        int32  i = 1;
+        double d = 2;
+        string s = 3;
+        Other  o = 4;
+    }
+
+    int32 format = 5; // bit field
+
+    // 1 = begin group
+    // 2 = end group
+    // 4 = negative (red highlight)
+
+    repeated string footnotes = 6;
+    repeated string symbols = 7;
+    int32 sortKey = 8;
+}
+
+message ResultsColumn {
+
+    string name = 1;
+    string title = 2;
+    string type = 3;
+    string format = 4;
+    string superTitle = 5;
+    bool   combineBelow = 6;
+
+    repeated ResultsCell cells = 7;
+
+    bool sortable = 13;
+    bool hasSortKeys = 14;
+    Visible visible = 15;
+}
+
+message ResultsTableNote {
+    string key  = 1;
+    string note = 2;
+    bool   init = 3;
+}
+
+message Sort {
+    string sortBy = 1;
+    bool   sortDesc = 2;
+}
+
+message ResultsTable {
+    repeated ResultsColumn columns = 1;
+    repeated string rowNames = 2;
+    bool swapRowsColumns = 3;
+    repeated ResultsTableNote notes = 4;
+    string asText = 5;
+    string rowSelect = 6;
+    int32 rowSelected = 7;
+    string sortSelect = 8;
+    Sort sortSelected = 9;
+}
+
+message ResultsImage {
+    string path = 1;
+    int32 width = 2;
+    int32 height = 3;
+}
+
+message ResultsArray {
+    repeated ResultsElement elements = 1;
+
+    enum LayoutType {
+        FLAT = 0;
+        LIST_SELECT = 1;
+    }
+
+    LayoutType layout = 2;
+    bool hideHeadingOnlyChild = 4;
+
+    bool hasHeader = 8;
+    ResultsElement header = 9;
+}
+
+message ResultsGroup {
+    repeated ResultsElement elements = 1;
+}
+
+message ResultsHtml {
+    string content = 1;
+    repeated string scripts = 2;
+    repeated string stylesheets = 3;
+}
+
+message ResultsNotice {
+
+    enum NoticeType {
+        ERROR = 0;
+        STRONG_WARNING = 1;
+        WARNING = 2;
+        INFO = 3;
+    }
+
+    string content = 1;
+    NoticeType type = 2;
+}
+
+message VariableLevel {
+    string label = 1;
+    int32 value = 2;
+    string importValue = 3;
+}
+
+enum MeasureType {
+    NONE = 0;
+    NOMINAL = 2;
+    ORDINAL = 3;
+    CONTINUOUS = 4;
+}
+
+message ResultsAction {
+    string operation = 1;
+    AnalysisOptions options = 2;
+}
+
+message ResultsOutput {
+    string name = 1;
+    string title = 2;
+    string description = 3;
+    MeasureType measureType = 4;
+    bool stale = 5;
+    bool incData = 6;
+    repeated VariableLevel levels = 7;
+    repeated int32 i = 8;
+    repeated double d = 9;
+}
+
+message ResultsOutputs {
+    repeated ResultsOutput outputs = 1;
+    repeated uint32 rowNums = 2;
+}
+
+message ResultsElement {
+    string name = 1;
+    string title = 2;
+    AnalysisStatus status = 3;
+    Error error = 4;
+    bool stale = 5;
+
+    oneof type {
+        ResultsTable table = 6;
+        ResultsImage image = 7;
+        ResultsGroup group = 8;
+        ResultsArray array = 9;
+        string preformatted = 10;
+        string syntax = 11;
+        ResultsHtml html = 12;
+        ResultsOutputs outputs = 13;
+        ResultsNotice notice = 24;
+        ResultsAction action = 25;
+    }
+
+    bytes state = 14;
+    Visible visible = 15;
+    repeated string refs = 16;
+}

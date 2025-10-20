@@ -1,0 +1,79 @@
+---
+"$schema": http://json-schema.org/draft-04/schema#
+
+title: UI Definition Schema
+type: object
+additionalProperties: false
+
+properties:
+    name:
+        type: string
+        pattern: "^[A-Za-z][A-Za-z0-9]*$"
+    title:
+        type: string
+    jus:
+        type: string
+        pattern: "^[0-9]+\\.[0-9]+$"
+    stage:
+        type: integer
+    compilerMode:
+        type: enum
+            - aggressive
+            - tame
+    events:
+        type: object
+        additionalProperties: false
+        properties:
+            loaded:
+                type: string
+            update: # old event should use updated instead
+                type: string
+            updated:
+                type: string
+            remoteDataChanged:
+                type: string
+            creating:
+                type: string
+    children:
+        type: array
+        items:
+            properties:
+                name:
+                    type: string
+                label:
+                    type: string
+                type:
+                    type: enum
+                        - Custom
+                        - CheckBox
+                        - Output
+                        - RadioButton
+                        - ComboBox
+                        - TextBox
+                        - ListBox
+                        - TargetListBox
+                        - VariableTargetListBox
+                        - Supplier
+                        - VariableSupplier
+                        - CollapseBox
+                        - Label
+                        - LayoutBox
+                        - ListItem.VariableLabel
+                        - ListItem.ComboBox
+                        - ListItem.Label
+                        - ListItem.TermLabel
+                        - ListItem.TextBox
+                        - RMAnovaFactorsBox
+                        - ModeSelector
+                        - Content
+                customType:
+                    type: string
+                events:
+                    type: string
+                required:
+                    - type
+required:
+    - name
+    - title
+    - jus
+    - children

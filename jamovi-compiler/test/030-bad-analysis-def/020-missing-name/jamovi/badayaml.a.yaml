@@ -1,0 +1,11 @@
+---
+name:  all sorts of bad things
+title: Bruce
+jas:     "1.0"
+version: "1.0"
+
+options:
+    - name: data
+      type: Data
+
+    - name: bruce

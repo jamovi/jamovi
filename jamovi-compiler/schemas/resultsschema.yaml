@@ -1,0 +1,67 @@
+---
+"$schema": http://json-schema.org/draft-04/schema#
+title: Results Definition Schema
+type: object
+additionalProperties: false
+properties:
+    name:
+        type: string
+        pattern: "^[A-Za-z][A-Za-z0-9]*$"
+    title:
+        type: string
+    jrs:
+        type: string
+        pattern: "^[0-9]+\\.[0-9]+$"
+    clearWith:
+        type: array
+        item:
+            type: string
+    refs:
+        type:
+          - array
+          - string
+        items:
+            type: string
+    items:
+        type: array
+        items:
+            type: object
+            properties:
+                name:
+                    type: string
+                    pattern: "^[A-Za-z][A-Za-z0-9_]*$"
+                title:
+                    type: string
+                description:
+                    type: string
+                type:
+                    enum:
+                        - Table
+                        - Group
+                        - Array
+                        - Image
+                        - Preformatted
+                        - Html
+                        - State
+                        - Property
+                        - Output
+                        - Notification
+                        - Action
+                clearWith:
+                    type:
+                      - array
+                      - 'null'
+                    items:
+                        type: string
+                refs:
+                    type:
+                      - string
+                      - array
+            required:
+                - name
+                - type
+required:
+    - name
+    - title
+    - jrs
+    - items

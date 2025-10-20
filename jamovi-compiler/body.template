@@ -1,0 +1,15 @@
+
+# This file is a generated template, your changes will not be overwritten
+
+<%= analysis.name %>Class <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
+    "<%= analysis.name %>Class",
+    inherit = <%= analysis.name %>Base,
+    private = list(
+        .run = function() {
+
+            # `self$data` contains the data
+            # `self$options` contains the options
+            # `self$results` contains the results object (to populate)
+
+        })
+)
