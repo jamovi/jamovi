@@ -29,7 +29,12 @@ export default defineConfig(({ command, mode, ssrBuild }) => {
           resultsview: resolve(__dirname, 'resultsview.html'),
         },
       }
-    }
+    },
+    server: {
+      watch: {
+        usePolling: true,
+      },
+    },
   }
 
   if (command != 'build')
