@@ -351,7 +351,8 @@ class OpenHandler(RequestHandler):
             # jamovi desktop open from path
             file_path = options['path']
             is_temp = options.get('temp', False) is not False
-            file_title = options.get('title')
+            file_title = options.get('title', None)
+            file_ext = options.get('ext', None)
         elif 'file.path' in self.request.body_arguments:
             # jamovi sitting behind a reverse proxy that handles the uploads (nginx)
             file_path = self.get_body_argument('file.path')

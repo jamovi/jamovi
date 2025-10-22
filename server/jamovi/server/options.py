@@ -1,4 +1,6 @@
 
+from typing import Any
+
 from .jamovi_pb2 import AnalysisOption
 from .jamovi_pb2 import AnalysisOptions
 
@@ -45,7 +47,7 @@ def write_value_to_pb(value, pb):
         pb.o = NONE
 
 
-def read_value_from_pb(pb):
+def read_value_from_pb(pb: AnalysisOption):
     if pb.HasField('s'):
         return pb.s
     elif pb.HasField('c'):
@@ -67,6 +69,15 @@ def read_value_from_pb(pb):
         return pb.d
     else:
         return None
+
+
+def read_values_from_pb(pb: AnalysisOptions) -> dict[str, Any]:
+    values = {}
+    for i, opt_pb in enumerate(pb.options):
+        name = pb.names[i]
+        value = read_value_from_pb(opt_pb)
+        values[name] = value
+    return values
 
 
 class Option:
