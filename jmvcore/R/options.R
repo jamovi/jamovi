@@ -429,7 +429,25 @@ OptionBool <- R6::R6Class(
 #' @export
 OptionAction <- R6::R6Class(
     'OptionAction',
-    inherit=OptionBool)
+    inherit=OptionBool,
+    private=list(
+        .action=NA,
+        .params=NA
+    ),
+    public=list(
+        initialize=function(name, value, action, ...) {
+            super$initialize(name, value, ...)
+            private$.action <- action
+            private$.params <- NULL
+        },
+        .setParams=function(values) {
+            private$.params <- values
+        }
+    ),
+    active=list(
+        action=function() private$.action,
+        params=function() private$.params
+    ))
 
 
 #' @rdname Options

@@ -593,6 +593,13 @@ ready(async() => {
         optionspanel.reloadAnalyses(event.name);
     });
 
+    instance.on('resultsAction', (event: CustomEvent) => {
+        const data = event.detail;
+        if (data.action === 'open') {
+            backstageModel.requestOpen(data.result);
+        }
+    });
+
     let currentSplitMode = null;
     let forcedFullScreen = false;
     window.onresize = function(event) {

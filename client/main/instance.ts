@@ -958,6 +958,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
     async _onReceive(payloadType, response?) {
 
         let coms = this.attributes.coms;
+        let complete = false;
 
         if (response === undefined) {
             let message = payloadType;
@@ -965,6 +966,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             if ( ! payloadType)
                 return;
 
+            complete = (message.status === coms.Messages.Status.COMPLETE)
             response = coms.Messages[message.payloadType].decode(message.payload);
         }
 
@@ -978,6 +980,27 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             }
         }
         else if (payloadType === 'AnalysisResponse') {
+
+            if (complete && response.results) {
+                for (const resultsItem of response.results.group.elements) {
+                    if ( ! resultsItem.action)
+                        continue;
+
+                    const { action } = resultsItem.action;
+                    const result = { };
+
+                    for (let i = 0; i < resultsItem.action.result.names.length; i++) {
+                        const name = resultsItem.action.result.names[i];
+                        const value = resultsItem.action.result.options[i].s;
+                        result[name] = value;
+                    }
+
+                    const detail = { action, result };
+                    const event = new CustomEvent('resultsAction', { detail });
+                    this.trigger('resultsAction', event);
+                }
+            }
+
             let id = response.analysisId;
             let analysis = this._analyses.get(id);
 

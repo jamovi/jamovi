@@ -155,13 +155,13 @@ Action:
         name:
             type: string
         type:
-            type: string
+            enum:
+              - "Action"
         title:
             type: string
-        hidden:
-            type: boolean
-        default:
-            type: boolean
+        action:
+            enum:
+              - "open"
         description: *Description
 
 Integer:

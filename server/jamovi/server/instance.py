@@ -94,7 +94,8 @@ class Instance:
 
         self._file_sync_client = None
 
-        os.makedirs(instance_path, exist_ok=True)
+        os.makedirs(self._instance_path, exist_ok=True)
+        os.makedirs(self.temp_path(), exist_ok=True)
         self._buffer_path = posixpath.join(instance_path, 'buffer')
 
         self._mm = None

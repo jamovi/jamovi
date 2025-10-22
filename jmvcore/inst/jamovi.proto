@@ -266,8 +266,8 @@ enum MeasureType {
 }
 
 message ResultsAction {
-    string operation = 1;
-    AnalysisOptions options = 2;
+    string action = 1;
+    AnalysisOptions result = 2;
 }
 
 message ResultsOutput {
