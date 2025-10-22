@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 from asyncio import wait
 from asyncio import create_task
 from asyncio import sleep
@@ -53,15 +55,30 @@ class SessionEvent:
 
 class Session(dict):
 
-    def __init__(self, data_path, id):
+    _path: str
+    _id: str
+    _session_path: str
+    _session_temp: str
+    _analyses: SessionAnalyses
+    _analysis_listeners: list
+    _session_listeners: list
+    _running: bool
+    _ended: Event
+    _settings: Settings
+    _modules: Modules
+
+    def __init__(self, data_path: str, id: str):
         self._path = data_path
         self._id = id
         self._session_path = os.path.join(data_path, id)
+        self._session_temp = os.path.join(self._session_path, 'temp')
         self._analyses = SessionAnalyses(self)
         self._analysis_listeners = [ ]
         self._session_listeners = [ ]
         self._running = False
         self._ended = Event()
+
+        os.makedirs(self._session_temp, exist_ok=True)
 
         language = ''
 
@@ -218,6 +235,10 @@ class Session(dict):
     @property
     def session_path(self):
         return self._session_path
+
+    @property
+    def session_temp(self) -> str:
+        return self._session_temp
 
     def set_update_status(self, status):
 

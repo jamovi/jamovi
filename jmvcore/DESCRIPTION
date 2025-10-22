@@ -26,5 +26,6 @@ Suggests:
     RColorBrewer,
     ragg,
     fastmap,
-    export
+    export,
+    jmvReadWrite
 RoxygenNote: 6.1.1

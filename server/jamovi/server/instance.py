@@ -94,7 +94,8 @@ class Instance:
 
         self._file_sync_client = None
 
-        os.makedirs(instance_path, exist_ok=True)
+        os.makedirs(self._instance_path, exist_ok=True)
+        os.makedirs(self.temp_path(), exist_ok=True)
         self._buffer_path = posixpath.join(instance_path, 'buffer')
 
         self._mm = None
@@ -136,13 +137,15 @@ class Instance:
         return self._session
 
     def _normalise_path(self, path):
-        nor_path = path
+
         if path.startswith('{{Temp}}'):
             base = os.path.basename(path)
             base, ext = os.path.splitext(base)
             temp_path = self.temp_path()
             os.makedirs(temp_path, exist_ok=True)
             nor_path = mktemp(suffix=ext, dir=temp_path)
+        if path.startswith('{{SessionTemp}}'):
+            nor_path = path.replace('{{SessionTemp}}', self._session.session_temp, 1)
         elif path.startswith('{{Documents}}'):
             nor_path = path.replace('{{Documents}}', Dirs.documents_dir())
         elif path.startswith('{{Downloads}}'):
@@ -170,6 +173,8 @@ class Instance:
                     # return something default-y, let somewhere else error
                     module = modules['jmv']
                     nor_path = posixpath.join(module.path, 'data')
+        else:
+            nor_path = path
 
         return nor_path
 

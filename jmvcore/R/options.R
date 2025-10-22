@@ -429,7 +429,106 @@ OptionBool <- R6::R6Class(
 #' @export
 OptionAction <- R6::R6Class(
     'OptionAction',
-    inherit=OptionBool)
+    inherit=OptionBool,
+    private=list(
+        .action=NA,
+        .params=NA
+    ),
+    public=list(
+        initialize=function(name, value, action='open', ...) {
+            super$initialize(name, value, ...)
+            private$.action <- action
+            private$.params <- NULL
+        },
+        .setParams=function(values) {
+            private$.params <- values
+        },
+        perform=function(fun) {
+            if ( ! self$value)
+                stop('Action is not active')
+
+            options <- private$.parent
+            analysis <- options$analysis
+            results <- analysis$results
+
+            if (self$name %in% results$itemNames) {
+                actionArray <- results$get(self$name)
+            } else {
+                actionArray <- Array$new(
+                    options=options,
+                    title='',
+                    visible=FALSE,
+                    template=Action$new(
+                        options=options,
+                        name=self$name,
+                        action=self$action),
+                    name=self$name)
+                results$add(actionArray)
+            }
+
+            index <- length(actionArray) + 1
+            action <- actionArray$addItem(index)
+            sessionTemp <- analysis$.getSessionTemp()
+            fullPath <- tempfile(tmpdir=sessionTemp)
+            filename <- basename(fullPath)
+            path <- paste0('{{SessionTemp}}/', filename)
+
+            params <- list(
+                path=path,
+                fullPath=fullPath
+            )
+
+            action$.setParams(params)
+
+            res <- try(eval(fun(action), envir=parent.frame()))
+            if (inherits(res, 'try-error')) {
+                err <- as.character(attr(res, 'condition'))
+                action$.setResult(list(
+                    status='error',
+                    message=err
+                ))
+            } else if (is.list(res)) {
+
+                data <- res$data
+                if ( ! is.null(data)) {
+                    res2 <- try(eval(
+                        jmvReadWrite::write_omv(
+                            dtaFrm=data,
+                            fleOut=params$fullPath,
+                            frcWrt=TRUE,
+                            vldExt=FALSE)
+                    ))
+                    if (inherits(res2, 'try-error')) {
+                        err <- as.character(attr(res, 'condition'))
+                        action$.setResult(list(
+                            status='error',
+                            message=err
+                        ))
+                        return()
+                    } else {
+                        res$data <- NULL
+                        res$path <- params$path
+                        res$ext <- 'omv'
+                    }
+                }
+
+                if (is.null(res$title))
+                    res$title <- 'Untitled'
+
+                action$.setResult(res)
+
+            } else {
+                action$.setResult(list(
+                    status='error',
+                    message='module developer fail: action result is not a list'
+                ))
+            }
+        }
+    ),
+    active=list(
+        action=function() private$.action,
+        params=function() private$.params
+    ))
 
 
 #' @rdname Options

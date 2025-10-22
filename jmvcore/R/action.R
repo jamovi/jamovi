@@ -4,35 +4,37 @@
 Action <- R6::R6Class("Action",
     inherit=ResultsElement,
     private=list(
-        .operation=NA,
-        .perform=NA,
-        .actionOptions=NA),
-    active=list(),
+        .action=NA,
+        .params=NA,
+        .result=NA),
+    active=list(
+        action=function() private$.action,
+        params=function() private$.params,
+        result=function() private$.result
+    ),
     public=list(
         initialize=function(
             options,
-            name='',
-            title='',
-            visible=TRUE,
-            clearWith='*',
-            refs=character(),
-            operation) {
+            name,
+            action) {
 
             super$initialize(
                 options=options,
                 name=name,
-                title=title,
-                visible=visible,
-                clearWith=clearWith,
-                refs=refs)
+                title='',
+                visible=TRUE,
+                clearWith=character(),
+                refs=character())
 
-            private$.operation <- operation
-            private$.actionOptions <- NULL
-            private$.perform <- FALSE
+            private$.action <- action
+            private$.params <- NULL
+            private$.result <- NULL
         },
-        perform=function(options=NULL) {
-            private$.actionOptions <- options
-            private$.perform <- TRUE
+        .setParams=function(params) {
+            private$.params <- params
+        },
+        .setResult=function(result) {
+            private$.result <- result
         },
         isFilled=function() {
             TRUE
@@ -44,24 +46,20 @@ Action <- R6::R6Class("Action",
 
         },
         asProtoBuf=function(incAsText=FALSE, status=NULL, includeState=TRUE) {
-            if (private$.perform) {
-                element <- super$asProtoBuf(incAsText=incAsText, status=status, includeState=includeState)
-                element$action$operation <- private$.operation
-                if ( ! is.null(private$.actionOptions)) {
-                    optionsPB <- element$action$options
-                    optionsPB$names <- names(private$.actionOptions)
-                    optionsPB$hasNames <- TRUE
-                    for (value in private$.actionOptions) {
-                        optionPB <- RProtoBuf::new(jamovi.coms.AnalysisOption)
-                        optionPB$s <- value
-                        optionsPB$add('options', optionPB)
-                    }
-                    element$action$options <- optionsPB
+            element <- super$asProtoBuf(incAsText=incAsText, status=status, includeState=includeState)
+            element$action$action <- private$.action
+            if ( ! is.null(private$.result)) {
+                optionsPB <- element$action$result
+                optionsPB$names <- names(private$.result)
+                optionsPB$hasNames <- TRUE
+                for (value in private$.result) {
+                    optionPB <- RProtoBuf::new(jamovi.coms.AnalysisOption)
+                    optionPB$s <- value
+                    optionsPB$add('options', optionPB)
                 }
-                return(element)
-            } else {
-                return(NULL)
+                element$action$result <- optionsPB
             }
+            element
         }
     )
 )

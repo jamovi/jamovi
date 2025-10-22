@@ -254,6 +254,11 @@ message ResultsNotice {
     NoticeType type = 2;
 }
 
+message ResultsAction {
+    string action = 1;
+    AnalysisOptions result = 2;
+}
+
 message ResultsOutput {
     string name = 1;
     string title = 2;
@@ -288,6 +293,7 @@ message ResultsElement {
         ResultsHtml html = 12;
         ResultsOutputs outputs = 13;
         ResultsNotice notice = 24;
+        ResultsAction action = 25;
     }
 
     bytes state = 14;
