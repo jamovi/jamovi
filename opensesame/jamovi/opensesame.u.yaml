@@ -1,0 +1,18 @@
+title: openSesame
+name: openSesame
+jus: '3.0'
+stage: 0
+compilerMode: aggressive
+children:
+  - type: LayoutBox
+    margin: large
+    children:
+      - type: ComboBox
+        name: alt
+  - type: LayoutBox
+    margin: large
+    children:
+      - type: CheckBox
+        name: varEq
+      - type: ActionButton
+        name: open
