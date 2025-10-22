@@ -155,14 +155,19 @@ Action:
         name:
             type: string
         type:
-            type: string
+            enum:
+              - "Action"
         title:
             type: string
-        hidden:
-            type: boolean
-        default:
-            type: boolean
+        action:
+            enum:
+              - "open"
+        default:        # to deprecate
+            type: bool  # to deprecate
         description: *Description
+    # required:
+    #     - action
+    #     - title
 
 Integer:
     "$schema": http://json-schema.org/draft-04/schema#
