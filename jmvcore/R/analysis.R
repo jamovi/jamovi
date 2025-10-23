@@ -110,37 +110,7 @@ Analysis <- R6::R6Class('Analysis',
 
             source
         },
-        .formula=function() '',
-        .prepActions=function() {
-
-            for (option in self$options$options) {
-                if ( ! inherits(option, 'OptionAction'))
-                    next()
-                if (option$action != 'open')
-                    next()
-                if ( ! isTRUE(option$value))
-                    next()
-
-                paths <- private$.resourcesPathSource('.', 'bin')
-                sessionTemp <- paste0(dirname(paths$rootPath), '/temp')
-                fullPath <- tempfile(tmpdir=sessionTemp)
-                filename <- basename(fullPath)
-                path <- paste0('{{SessionTemp}}/', filename)
-
-                params <- list(
-                    path=path,
-                    fullPath=fullPath
-                )
-
-                resultsAction <- Action$new(
-                    options=self$options,
-                    name=option$name,
-                    action=option$action
-                )
-                resultsAction$.setParams(params)
-                self$results$add(resultsAction)
-            }
-        }),
+        .formula=function() ''),
     active=list(
         analysisId=function() private$.analysisId,
         name=function() private$.name,
@@ -344,7 +314,6 @@ Analysis <- R6::R6Class('Analysis',
                 addon$.__enclos_env__$private$.dataProvided <- FALSE
             }
 
-            private$.prepActions()
             private$.status <- 'running'
 
             try <- dontTry
@@ -600,6 +569,11 @@ Analysis <- R6::R6Class('Analysis',
 
             if (dataRequired)
                 private$.data <- NULL
+        },
+        .getSessionTemp=function() {
+            # hack
+            paths <- private$.resourcesPathSource('.', 'bin')
+            paste0(dirname(paths$rootPath), '/temp')
         },
         readDataset=function(headerOnly=FALSE) {
 

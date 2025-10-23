@@ -442,6 +442,44 @@ OptionAction <- R6::R6Class(
         },
         .setParams=function(values) {
             private$.params <- values
+        },
+        perform=function() {
+            if ( ! self$value)
+                stop('Action is not active')
+
+            options <- private$.parent
+            analysis <- options$analysis
+            results <- analysis$results
+
+            if (self$name %in% results$itemNames) {
+                actionArray <- results$get(self$name)
+            } else {
+                actionArray <- Array$new(
+                    options=options,
+                    title='',
+                    visible=FALSE,
+                    template=Action$new(
+                        options=options,
+                        name=self$name,
+                        action=self$action),
+                    name=self$name)
+                results$add(actionArray)
+            }
+
+            index <- length(actionArray) + 1
+            action <- actionArray$addItem(index)
+            sessionTemp <- analysis$.getSessionTemp()
+            fullPath <- tempfile(tmpdir=sessionTemp)
+            filename <- basename(fullPath)
+            path <- paste0('{{SessionTemp}}/', filename)
+
+            params <- list(
+                path=path,
+                fullPath=fullPath
+            )
+
+            action$.setParams(params)
+            action
         }
     ),
     active=list(

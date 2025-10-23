@@ -162,6 +162,8 @@ Action:
         action:
             enum:
               - "open"
+        default:        # to deprecate
+            type: bool  # to deprecate
         description: *Description
     # required:
     #     - action

@@ -983,21 +983,26 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
 
             if (complete && response.results) {
                 for (const resultsItem of response.results.group.elements) {
-                    if ( ! resultsItem.action)
+                    if ( ! resultsItem.array)
                         continue;
 
-                    const { action } = resultsItem.action;
-                    const result = { };
+                    for (const child of resultsItem.array.elements) {
+                        if ( ! child.action)
+                            break;
 
-                    for (let i = 0; i < resultsItem.action.result.names.length; i++) {
-                        const name = resultsItem.action.result.names[i];
-                        const value = resultsItem.action.result.options[i].s;
-                        result[name] = value;
+                        const action = child.action.action;  // i.e. 'open'
+                        const result = { };
+
+                        for (let i = 0; i < child.action.result.names.length; i++) {
+                            const name = child.action.result.names[i];
+                            const value = child.action.result.options[i].s;
+                            result[name] = value;
+                        }
+
+                        const detail = { action, result };
+                        const event = new CustomEvent('resultsAction', { detail });
+                        this.trigger('resultsAction', event);
                     }
-
-                    const detail = { action, result };
-                    const event = new CustomEvent('resultsAction', { detail });
-                    this.trigger('resultsAction', event);
                 }
             }
 
