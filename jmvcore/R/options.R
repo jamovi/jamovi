@@ -435,7 +435,7 @@ OptionAction <- R6::R6Class(
         .params=NA
     ),
     public=list(
-        initialize=function(name, value, action, ...) {
+        initialize=function(name, value, action='open', ...) {
             super$initialize(name, value, ...)
             private$.action <- action
             private$.params <- NULL

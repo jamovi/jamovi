@@ -121,11 +121,14 @@ Analysis <- R6::R6Class('Analysis',
                 if ( ! isTRUE(option$value))
                     next()
 
-                filename <- 'xxx.bin'
                 paths <- private$.resourcesPathSource('.', 'bin')
-                fullPath <- paste0(paths$rootPath, '/dl/', filename)
+                sessionTemp <- paste0(dirname(paths$rootPath), '/temp')
+                fullPath <- tempfile(tmpdir=sessionTemp)
+                filename <- basename(fullPath)
+                path <- paste0('{{SessionTemp}}/', filename)
+
                 params <- list(
-                    path=fullPath,
+                    path=path,
                     fullPath=fullPath
                 )
 

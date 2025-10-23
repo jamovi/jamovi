@@ -163,9 +163,9 @@ Action:
             enum:
               - "open"
         description: *Description
-    required:
-        - action
-        - title
+    # required:
+    #     - action
+    #     - title
 
 Integer:
     "$schema": http://json-schema.org/draft-04/schema#
