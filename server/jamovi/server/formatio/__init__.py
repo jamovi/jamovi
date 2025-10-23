@@ -13,57 +13,36 @@ from .exceptions import FileWriteError
 from . import omv
 from . import blank
 
-_readers = None
-_writers = None
-
 
 __all__ = ('FileReadError', 'FileWriteError')  # prevent flake whining F401
 
 
-def _init():
-    global _readers
-    global _writers
+readers = OrderedDict()
+writers = OrderedDict()
 
-    _readers = OrderedDict()
-    _writers = OrderedDict()
+plugins = os.listdir(os.path.dirname(__file__))
+plugins_py = list(filter(lambda x: x.endswith('.py'), plugins))
+if len(plugins_py) > 0:
+    plugins = plugins_py
+    plugins = filter(lambda x: x != '__init__.py', plugins)
+    plugins = map(lambda x: '.' + x[:-3], plugins)
+else:
+    plugins = filter(lambda x: x.endswith('.pyc'), plugins)
+    plugins = filter(lambda x: x != '__init__.pyc', plugins)
+    plugins = map(lambda x: '.' + x[:-4], plugins)
 
-    plugins = os.listdir(os.path.dirname(__file__))
-    plugins_py = list(filter(lambda x: x.endswith('.py'), plugins))
-    if len(plugins_py) > 0:
-        plugins = plugins_py
-        plugins = filter(lambda x: x != '__init__.py', plugins)
-        plugins = map(lambda x: '.' + x[:-3], plugins)
-    else:
-        plugins = filter(lambda x: x.endswith('.pyc'), plugins)
-        plugins = filter(lambda x: x != '__init__.pyc', plugins)
-        plugins = map(lambda x: '.' + x[:-4], plugins)
+plugins = list(sorted(plugins))
 
-    plugins = list(sorted(plugins))
-
-    for plugin in plugins:
-        module = importlib.import_module(plugin, 'jamovi.server.formatio')
-        if hasattr(module, 'get_readers'):
-            module_readers = module.get_readers()
-            module_readers = map(lambda x: (x[0], x), module_readers)
-            _readers.update(module_readers)
-        if hasattr(module, 'get_writers'):
-            module_writers = module.get_writers()
-            module_writers = map(lambda x: (x[0], x), module_writers)
-            _writers.update(module_writers)
-
-
-def get_readers():
-    global _readers
-    if _readers is None:
-        _init()
-    return _readers
-
-
-def get_writers():
-    global _writers
-    if _writers is None:
-        _init()
-    return _writers
+for plugin in plugins:
+    module = importlib.import_module(plugin, 'jamovi.server.formatio')
+    if hasattr(module, 'get_readers'):
+        module_readers = module.get_readers()
+        module_readers = map(lambda x: (x[0], x), module_readers)
+        readers.update(module_readers)
+    if hasattr(module, 'get_writers'):
+        module_writers = module.get_writers()
+        module_writers = map(lambda x: (x[0], x), module_writers)
+        writers.update(module_writers)
 
 
 def read(dataset, path, prog_cb, settings, *, is_temp=False, title=None, ext=None):
@@ -101,7 +80,6 @@ def read(dataset, path, prog_cb, settings, *, is_temp=False, title=None, ext=Non
 
 
 def _import(data, path, prog_cb, settings, ext):
-    readers = get_readers()
 
     if ext is None:
         ext = os.path.splitext(path)[1].lower()[1:]
@@ -128,7 +106,6 @@ def _import(data, path, prog_cb, settings, ext):
 
 
 def write(dataset, path, prog_cb, content=None):
-    writers = get_writers()
     try:
         with dataset.attach(read_only=True):
             temp_path = path + '.tmp'
@@ -149,7 +126,6 @@ def write(dataset, path, prog_cb, content=None):
 
 
 def is_supported(path):
-    readers = get_readers()
     ext = os.path.splitext(path)[1].lower()[1:]
     return (ext in ('omv', 'omt')
             or ext in readers
