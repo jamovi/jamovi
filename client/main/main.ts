@@ -596,7 +596,8 @@ ready(async() => {
     instance.on('resultsAction', (event: CustomEvent) => {
         const data = event.detail;
         if (data.action === 'open') {
-            backstageModel.requestOpen(data.result);
+            const options = Object.assign({}, data.result, { temp: true });
+            backstageModel.requestOpen(options);
         }
     });
 
