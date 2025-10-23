@@ -9,23 +9,27 @@ openSesameClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
 
             if (self$options$open) {
 
-                open <- self$results$get('open')
-                params <- open$params
+                option <- self$options$option('open')
 
-                print(params)
+                for (i in 1:3) {
+                    action <- option$perform()
 
-                # write the file to the fullPath
-                write.csv(datasets::ToothGrowth, file=params$fullPath, row.names=FALSE)
+                    print(action$params)
 
-                # construct a result object using params$path
-                result <- list(
-                    path = params$path,
-                    title = 'the fish was delish',
-                    ext = 'csv'
-                )
+                    # write the file to the fullPath
+                    write.csv(ToothGrowth, file=action$params$fullPath, row.names=FALSE)
+                    ToothGrowth <- rev(ToothGrowth)
 
-                # set the result
-                open$setResult(result)
+                    # construct a result object using params$path
+                    result <- list(
+                        path = action$params$path,
+                        title = 'the fish was delish',
+                        ext = 'csv'
+                    )
+
+                    # set the result
+                    action$setResult(result)
+                }
             }
 
         })
