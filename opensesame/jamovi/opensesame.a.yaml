@@ -27,5 +27,5 @@ options:
     - name: open
       title: Open
       type: Action
-      action: open
+      # action: open
 ...
