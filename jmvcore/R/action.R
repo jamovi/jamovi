@@ -33,7 +33,7 @@ Action <- R6::R6Class("Action",
         .setParams=function(params) {
             private$.params <- params
         },
-        setResult=function(result) {
+        .setResult=function(result) {
             private$.result <- result
         },
         isFilled=function() {

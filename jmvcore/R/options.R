@@ -443,7 +443,7 @@ OptionAction <- R6::R6Class(
         .setParams=function(values) {
             private$.params <- values
         },
-        perform=function() {
+        perform=function(fun) {
             if ( ! self$value)
                 stop('Action is not active')
 
@@ -479,7 +479,22 @@ OptionAction <- R6::R6Class(
             )
 
             action$.setParams(params)
-            action
+
+            res <- try(eval(fun(action), envir=parent.frame()))
+            if (inherits(res, 'try-error')) {
+                err <- as.character(attr(res, 'condition'))
+                action$.setResult(list(
+                    status='error',
+                    message=err
+                ))
+            } else if ( ! is.list(res)) {
+                action$.setResult(list(
+                    status='error',
+                    message='module developer fail: action result is not a list'
+                ))
+            } else {
+                action$.setResult(res)
+            }
         }
     ),
     active=list(

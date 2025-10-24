@@ -596,8 +596,19 @@ ready(async() => {
     instance.on('resultsAction', (event: CustomEvent) => {
         const data = event.detail;
         if (data.action === 'open') {
-            const options = Object.assign({}, data.result, { temp: true });
-            backstageModel.requestOpen(options);
+            if (data.result.status !== 'error') {
+                const options = Object.assign({}, data.result, { temp: true });
+                backstageModel.requestOpen(options);
+            }
+            else {
+                const notif = {
+                    title: _('Unable to open'),
+                    message: data.result.message,
+                    type: 'error',
+                    duration: 3000,
+                };
+                notifications.notify(new Notify(notif));
+            }
         }
     });
 
