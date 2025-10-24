@@ -912,6 +912,8 @@ class Instance:
             if self._perms.open.local is False:
                 temp_dir = conf.get('upload_path', None)
                 # prevent directory traversal attacks
+                if temp_dir is None:
+                    raise PermissionError()
                 path = os.path.join(temp_dir, path)
                 if temp_dir and os.path.commonpath([ temp_dir, path ]) == temp_dir:
                     pass
