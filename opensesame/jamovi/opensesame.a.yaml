@@ -28,4 +28,9 @@ options:
       title: Open
       type: Action
       # action: open
+
+    - name: error
+      title: Error
+      type: Action
+      # action: open
 ...
