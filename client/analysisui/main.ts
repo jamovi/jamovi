@@ -22,7 +22,7 @@ import { applyMagicEvents as ApplyMagicEvents } from './applymagicevents';
 import Keyboard from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
-import I18n, { I18nData } from "../common/i18n";
+import I18ns, { I18n, I18nData } from "../common/i18n";
 import HighContrast from '../common/highcontrast';
 
 declare global {
@@ -32,7 +32,7 @@ declare global {
     }
 }
 
-window.s_ = I18n._;
+window.s_ = I18ns.get('app')._;
 
 function ready(fn: () => void) {
     if (document.readyState !== 'loading')
@@ -123,17 +123,19 @@ document.oncontextmenu = function () { return false; };
 class Analysis {
     View: OptionsView;
     model: IOptionsViewModel;
-    i18n: I18nData;
+    i18nData: I18nData;
     id: number;
     viewTemplate: View;
     inError: boolean;
     errors: string[];
+    moduleI18n: I18n;
 
     constructor(def: string, i18nDef: I18nData, jamoviVersion, id: number) {
 
         this.id = id;
 
-        this.i18n = i18nDef;
+        this.i18nData = i18nDef;
+        this.moduleI18n = I18ns.get(`module: ${id}`)
 
         this.translate = this.translate.bind(this);
         window._ = this.translate.bind(this);
@@ -221,14 +223,10 @@ class Analysis {
     getTitle?(): string;
 
     translate(key: string): string {
-        if (key === null || key === undefined || key.trim() === '' || ! this.i18n)
+        if (key === null || key === undefined || key.trim() === '' || ! this.i18nData)
             return key;
 
-        let value = this.i18n.locale_data.messages[key.trim()];
-        if (value === null || value === undefined || value[0] === '')
-            return key;
-        else
-            return value[0];
+        return this.moduleI18n._(key);
     }
 };
 
@@ -264,11 +262,17 @@ function loadAnalysis(def, i18nDef: I18nData, appI18nDef: I18nData, jamoviVersio
 
     const header = document.querySelector<HTMLElement>('.silky-options-header');
     if (appI18nDef) {
-        I18n.initialise(appI18nDef.locale_data.messages[''].lang, appI18nDef);
-        const moduleCode = i18nDef?.code || 'en';
-        document.body.dir = I18n.isRTL(moduleCode) ? 'rtl' : 'ltr';
+        const appI18n = I18ns.get('app');
+        appI18n.initialise(appI18nDef.locale_data.messages[''].lang, appI18nDef);
 
-        header.dir = I18n.isRTL() ? 'rtl' : 'ltr';
+        const moduleI18n = I18ns.get(`module: ${id}`);
+        if (i18nDef)
+            moduleI18n.initialise(i18nDef?.code || 'en', i18nDef);
+
+        //const moduleCode = i18nDef?.code || 'en';
+        document.body.dir = moduleI18n.isRTL() ? 'rtl' : 'ltr';
+
+        header.dir = appI18n.isRTL() ? 'rtl' : 'ltr';
     }
 
     window.jamoviVersion = jamoviVersion;

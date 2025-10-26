@@ -9,14 +9,14 @@ import { exportElem } from '../common/utils/formatio';
 import b64 from '../common/utils/b64';
 import Annotations, { AnnotationAction } from './annotations';
 import Tracker from './itemtracker';
-import I18n, { I18nData } from '../common/i18n';
+import I18ns, { I18nData } from '../common/i18n';
 import focusLoop from '../common/focusloop';
 import { contextMenuListener } from '../common/utils';
 import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
 import { CollectionView, View } from "./element";
 import HighContrast from '../common/highcontrast';
 
-window._ = I18n._;
+window._ = I18ns.get('app')._;
 
 declare global {
     function s_(key: string, formats?: { [key: string]: (string|number); } | (string|number)[], options?: { prefix: string; postfix: string; }): string;
@@ -256,7 +256,7 @@ class Main {  // this is constructed at the bottom
         let eventData = hostEvent.data;
 
         if (hostEvent.type === 'results') {
-            document.body.dir = I18n.isRTL(eventData.languageCode) ? 'rtl' : 'ltr';
+            document.body.dir = I18ns.get('app').isRTL(eventData.languageCode) ? 'rtl' : 'ltr';
             this.resultsDefn = eventData;
             this._analysisSelected = eventData.selected;
             this._annotationSelected = eventData.annotationSelected;
@@ -361,7 +361,7 @@ class Main {  // this is constructed at the bottom
         else if (hostEvent.type === 'i18nDef') {
             this.moduleI18nDef = eventData.moduleI18n;
             if (eventData.appI18n) {
-                I18n.initialise(eventData.appI18n.locale_data.messages[""].lang, eventData.appI18n);
+                I18ns.get('app').initialise(eventData.appI18n.locale_data.messages[""].lang, eventData.appI18n);
             }
             if (this.resultsDefn)
                 this._render();

@@ -3,7 +3,7 @@
 
 import { EventDistributor } from "../../common/eventmap";
 
-import i18n from '../../common/i18n';
+import I18ns from '../../common/i18n';
 import focusLoop from '../../common/focusloop';
 import host from '../host';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
@@ -236,7 +236,7 @@ export class AppMenuButton extends EventDistributor {
         this.model.settings().on('change:refsMode',     () => this._updateUI());
         this.model.settings().on('change:selectedLanguage', () => this._updateUI());
 
-        let available = i18n.availableLanguages().map((code) => {
+        let available = I18ns.get('app').availableLanguages().map((code) => {
             if (code === '---')
                 return `</optgroup><optgroup label="${ _('In development') }">`;
               

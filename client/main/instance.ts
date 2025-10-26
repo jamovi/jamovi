@@ -13,7 +13,7 @@ import Analyses, { Analysis } from './analyses';
 import DataSetViewModel from './dataset';
 import OptionsPB from './optionspb';
 import { Modules } from './modules';
-import I18n from '../common/i18n';
+import I18ns from '../common/i18n';
 
 import Settings, { Theme } from './settings';
 import ProgressStream from './utils/progressstream';
@@ -140,7 +140,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             editState: false,
             saveFormat: undefined,
             edited: false,
-            resultsLanguage: I18n.language
+            resultsLanguage: I18ns.get('app').language
         })
 
         this._settings = new Settings({ coms: this.attributes.coms });
@@ -268,7 +268,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             let welcomeUrl;
 
             let headers = new Headers();
-            headers.append('Accept-Language', I18n.language);
+            headers.append('Accept-Language', I18ns.get('app').language);
 
             if (options.authToken)
                 headers.append('Authorization', `Bearer ${ options.authToken }`);
