@@ -8,7 +8,7 @@ import yaml from 'js-yaml';
 
 import host from './host';
 import Version from './utils/version';
-import I18n, { I18nData, isI18nData } from '../common/i18n';
+import I18ns, { I18nData, isI18nData } from '../common/i18n';
 
 import { EventMap } from '../common/eventmap';
 
@@ -367,7 +367,8 @@ class Module {
         let code = this.currentI18nCode;
         if ( ! code) {
             let codes = await this.getI18nCodes();
-            code = I18n.findBestMatchingLanguage(I18n.language, codes);
+            const appI18n = I18ns.get('app');
+            code = appI18n.findBestMatchingLanguage(appI18n.language, codes);
             if ( ! code)
                 code = 'en';
             this.currentI18nCode = code;

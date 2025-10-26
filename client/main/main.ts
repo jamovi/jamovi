@@ -21,7 +21,7 @@ import OptionsPanel from './optionspanel';
 import './variableeditor';
 import type { VariableEditor } from './variableeditor';
 import ActionHub from './actionhub';
-import I18n from '../common/i18n';
+import I18ns from '../common/i18n';
 
 import Instance from './instance';
 import Notify from './notification';
@@ -44,8 +44,8 @@ import type { InfoBox } from './infobox';
 import keyboardJS  from 'keyboardjs';
 import HighContrast from '../common/highcontrast';
 
-window._ = I18n._;
-window.n_ = I18n._n;
+window._ = I18ns.get('app')._;
+window.n_ = I18ns.get('app')._n;
 window.A11y = Keyboard;
 
 function ready(fn: () => void) {
@@ -56,6 +56,7 @@ function ready(fn: () => void) {
 }
 
 (async function() {
+const i18n = I18ns.get('app');
 
 try {
     let baseUrl = '../i18n/';
@@ -65,7 +66,8 @@ try {
         throw new Error('Unable to fetch i18n manifest');
 
     let languages = await response.json();
-    I18n.setAvailableLanguages(languages.available);
+    
+    i18n.setAvailableLanguages(languages.available);
     let current = languages.current;
     if ( ! current) {
         let options: {
@@ -74,7 +76,7 @@ try {
         if (host.isElectron)
             // prevent the use of in-dev languages as 'system default' in electron
             options.excludeDev = true;
-        current = I18n.findBestMatchingLanguage(I18n.systemLanguage(), languages.available, options);
+        current = i18n.findBestMatchingLanguage(i18n.systemLanguage(), languages.available, options);
     }
     if ( ! current)
         current = 'en';
@@ -87,9 +89,9 @@ try {
 
     try {
         let def = await response.json();
-        I18n.initialise(current, def);
+        i18n.initialise(current, def);
         document.documentElement.setAttribute('lang', current);
-        document.body.dir = I18n.isRTL() ? 'rtl' : 'ltr';
+        document.body.dir = i18n.isRTL() ? 'rtl' : 'ltr';
         host.setLanguage(current);
     }
     catch (e) {
@@ -100,7 +102,7 @@ catch (e) {
     console.log(e);
 }
 
-Keyboard.setDirection(I18n.isRTL() ? 'rtl' : 'ltr');
+Keyboard.setDirection(i18n.isRTL() ? 'rtl' : 'ltr');
 
 
 keyboardJS.Keyboard.prototype.pause = function(key) {

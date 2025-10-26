@@ -6,7 +6,7 @@ if ('default' in Framesg) // this import is handled differently between browseri
     Framesg = Framesg.default;
 
 import host from './host';
-import I18n, { I18nData } from '../common/i18n';
+import I18ns, { I18nData } from '../common/i18n';
 
 import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
@@ -190,7 +190,7 @@ class AnalysisResources extends EventEmitter {
                 this.jamoviVersion = version;
             })
         ]).then(() => {
-            return this.frameComms.send("setOptionsDefinition", this.def, this.i18nDef, I18n.localeData, this.jamoviVersion, analysis.id, focusLoop.focusMode);
+            return this.frameComms.send("setOptionsDefinition", this.def, this.i18nDef, I18ns.get('app').localeData, this.jamoviVersion, analysis.id, focusLoop.focusMode);
         });
     }
 

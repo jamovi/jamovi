@@ -2,7 +2,7 @@
 
 import Elem, { ElementData, ElementModel } from './element';
 
-import i18n from '../common/i18n';
+import I18ns from '../common/i18n';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { AnalysisStatus } from './create';
 
@@ -81,7 +81,7 @@ export class NoticeView extends Elem.View<Model> {
         let $content = this.querySelector('.content');
         this.querySelectorAll('a[href]').forEach(el => el.removeEventListener('click', this._handleLinkClick));
 
-        const content = i18n.__(doc.content, { prefix: '<strong>', postfix: '</strong>' });
+        const content = I18ns.get('app').__(doc.content, { prefix: '<strong>', postfix: '</strong>' });
         $content.innerHTML = content;
 
         this.querySelectorAll('a[href]').forEach(el => el.addEventListener('click', this._handleLinkClick));

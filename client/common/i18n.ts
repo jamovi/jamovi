@@ -368,6 +368,31 @@ export class I18n {
     }
 }
 
-const _i18n: I18n = new I18n();
 
-export default _i18n;
+
+class I18ns {
+    _i18ns: Map<string, I18n> = new Map<string, I18n>();
+
+    get(name: string) {
+        let i18n = this._i18ns.get(name);
+        if (i18n === undefined) {
+            i18n = new I18n();
+            this._i18ns.set(name, i18n);
+        }
+        return i18n;
+    }
+
+    create(name: string, code: string, data: I18nData) {
+        if (this._i18ns.has(name))
+            throw 'Translations already exist.';
+
+        let i18n = new I18n();
+        i18n.initialise(code, data);
+        this._i18ns.set(name, i18n);
+        return i18n;
+    }
+}
+
+const _i18ns: I18ns = new I18ns();
+
+export default _i18ns;

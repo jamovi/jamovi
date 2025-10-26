@@ -1,6 +1,6 @@
 'use strict';
 
-import I18n from '../common/i18n';
+import I18ns from '../common/i18n';
 import focusLoop from '../common/focusloop';
 
 import { exportElem } from '../common/utils/formatio';
@@ -442,7 +442,7 @@ class ResultsPanel extends EventDistributor {
             type: 'i18nDef',
             data: {
                 moduleI18n: analysis.i18n,
-                appI18n: I18n.localeData
+                appI18n: I18ns.get('app').localeData
             }
         };
         resources.iframe.contentWindow.postMessage(event, this.iframeUrl);
