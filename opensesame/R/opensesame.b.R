@@ -26,12 +26,20 @@ openSesameClass <- if (requireNamespace('jmvcore', quietly=TRUE)) R6::R6Class(
                 })
             }
 
-            x <- 7
+            if (self$options$open2) {
+                option <- self$options$option('open2')
+                option$perform(function(action) {
+                    # return a data frame with a title
+                    list(
+                        data = ToothGrowth,
+                        title = 'the fish was delish'
+                    )
+                })
+            }
 
             if (self$options$error) {
                 option <- self$options$option('error')
                 option$perform(function(action) {
-                    print(x)
                     bruce()  # function which doesn't exist
                 })
             }

@@ -29,6 +29,11 @@ options:
       type: Action
       # action: open
 
+    - name: open2
+      title: Open
+      type: Action
+      # action: open
+
     - name: error
       title: Error
       type: Action
