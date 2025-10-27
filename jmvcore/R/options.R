@@ -487,13 +487,41 @@ OptionAction <- R6::R6Class(
                     status='error',
                     message=err
                 ))
-            } else if ( ! is.list(res)) {
+            } else if (is.list(res)) {
+
+                data <- res$data
+                if ( ! is.null(data)) {
+                    res2 <- try(eval(
+                        jmvReadWrite::write_omv(
+                            dtaFrm=data,
+                            fleOut=params$fullPath,
+                            frcWrt=TRUE,
+                            vldExt=FALSE)
+                    ))
+                    if (inherits(res2, 'try-error')) {
+                        err <- as.character(attr(res, 'condition'))
+                        action$.setResult(list(
+                            status='error',
+                            message=err
+                        ))
+                        return()
+                    } else {
+                        res$data <- NULL
+                        res$path <- params$path
+                        res$ext <- 'omv'
+                    }
+                }
+
+                if (is.null(res$title))
+                    res$title <- 'Untitled'
+
+                action$.setResult(res)
+
+            } else {
                 action$.setResult(list(
                     status='error',
                     message='module developer fail: action result is not a list'
                 ))
-            } else {
-                action$.setResult(res)
             }
         }
     ),
