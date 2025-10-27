@@ -109,6 +109,9 @@ class ModuleMeta:
         return { }
 
     def translate(self, value):
+        if value == '':
+            return value
+
         if self.i18n_msgs is None and self._code:
             self.i18n_msgs = self._load_translations(self._code)
 
@@ -300,11 +303,11 @@ class Modules:
                 modules.append(module)
             except Exception as e:
                 log.exception(e)
-        
+
         modules = list(sorted(modules, key=lambda m: m.index))
-        
+
         return modules
-    
+
 
     def _attach_addons(self):
         # fill in addons
@@ -359,7 +362,7 @@ class Modules:
             self._read = True
         except Exception as e:
             log.exception(e)
-        
+
         self._modules = modules
         self._attach_addons()
 
@@ -433,7 +436,7 @@ class Modules:
             module.description = str(defn['description'])
         else:
             module.description = ''
-        
+
         if 'index' in defn:
             module.index = defn['index']
 
