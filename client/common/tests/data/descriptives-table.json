@@ -1,0 +1,160 @@
+{
+  "type": "table",
+  "title": "Descriptives",
+  "rows": [
+    {
+      "type": "title",
+      "cells": [
+        null,
+        {
+          "content": "len"
+        },
+        {
+          "content": "dose"
+        },
+        {
+          "content": "supp"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "N"
+        },
+        {
+          "content": "60.00"
+        },
+        {
+          "content": "60.00"
+        },
+        {
+          "content": "60.00"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Missing"
+        },
+        {
+          "content": "0.00"
+        },
+        {
+          "content": "0.00"
+        },
+        {
+          "content": "0.00"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Mean"
+        },
+        {
+          "content": "18.81"
+        },
+        {
+          "content": "1.17"
+        },
+        null
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Median"
+        },
+        {
+          "content": "19.25"
+        },
+        {
+          "content": "1.00"
+        },
+        null
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Mode"
+        },
+        {
+          "content": "26.40"
+        },
+        {
+          "content": "0.50",
+          "sups": [
+            "a"
+          ]
+        },
+        null
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Standard deviation"
+        },
+        {
+          "content": "7.65"
+        },
+        {
+          "content": "0.63"
+        },
+        null
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Minimum"
+        },
+        {
+          "content": "4.20"
+        },
+        {
+          "content": "0.50"
+        },
+        null
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Maximum"
+        },
+        {
+          "content": "33.90"
+        },
+        {
+          "content": "2.00"
+        },
+        null
+      ]
+    },
+    {
+      "type": "footnote",
+      "cells": [
+        {
+          "content": "More than one mode exists, only the first is reported",
+          "span": 32,
+          "sups": [
+            "a"
+          ]
+        }
+      ]
+    }
+  ]
+}

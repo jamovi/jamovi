@@ -1,0 +1,1504 @@
+{
+  "type": "group",
+  "title": "ANOVA",
+  "items": [
+    {
+      "type": "table",
+      "title": "ANOVA - len",
+      "rows": [
+        {
+          "type": "title",
+          "cells": [
+            null,
+            {
+              "content": "Sum of Squares"
+            },
+            {
+              "content": "df"
+            },
+            {
+              "content": "Mean Square"
+            },
+            {
+              "content": "F"
+            },
+            {
+              "content": "p"
+            },
+            {
+              "content": "η²"
+            },
+            {
+              "content": "η²p"
+            },
+            {
+              "content": "ω²"
+            }
+          ]
+        },
+        {
+          "type": "body",
+          "cells": [
+            {
+              "content": "dose"
+            },
+            {
+              "content": "2426.43"
+            },
+            {
+              "content": "2"
+            },
+            {
+              "content": "1213.22"
+            },
+            {
+              "content": "92.00"
+            },
+            {
+              "content": "< .001"
+            },
+            {
+              "content": "0.703"
+            },
+            {
+              "content": "0.773"
+            },
+            {
+              "content": "0.693"
+            }
+          ]
+        },
+        {
+          "type": "body",
+          "cells": [
+            {
+              "content": "supp"
+            },
+            {
+              "content": "205.35"
+            },
+            {
+              "content": "1"
+            },
+            {
+              "content": "205.35"
+            },
+            {
+              "content": "15.57"
+            },
+            {
+              "content": "< .001"
+            },
+            {
+              "content": "0.059"
+            },
+            {
+              "content": "0.224"
+            },
+            {
+              "content": "0.055"
+            }
+          ]
+        },
+        {
+          "type": "body",
+          "cells": [
+            {
+              "content": "dose:supp"
+            },
+            {
+              "content": "108.32"
+            },
+            {
+              "content": "2"
+            },
+            {
+              "content": "54.16"
+            },
+            {
+              "content": "4.11"
+            },
+            {
+              "content": "0.022"
+            },
+            {
+              "content": "0.031"
+            },
+            {
+              "content": "0.132"
+            },
+            {
+              "content": "0.024"
+            }
+          ]
+        },
+        {
+          "type": "body",
+          "cells": [
+            {
+              "content": "Residuals"
+            },
+            {
+              "content": "712.11"
+            },
+            {
+              "content": "54"
+            },
+            {
+              "content": "13.19"
+            },
+            null,
+            null,
+            null,
+            null,
+            null
+          ]
+        }
+      ]
+    },
+    {
+      "type": "group",
+      "title": "Post Hoc Tests",
+      "items": [
+        {
+          "type": "table",
+          "title": "Post Hoc Comparisons - dose",
+          "rows": [
+            {
+              "type": "superTitle",
+              "cells": [
+                {
+                  "content": "Comparison",
+                  "span": 1
+                },
+                {
+                  "content": "Comparison",
+                  "span": 1
+                },
+                {
+                  "content": "Comparison",
+                  "span": 1
+                },
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                {
+                  "content": "95% Confidence Interval",
+                  "span": 1
+                },
+                {
+                  "content": "95% Confidence Interval",
+                  "span": 1
+                }
+              ]
+            },
+            {
+              "type": "title",
+              "cells": [
+                {
+                  "content": "dose"
+                },
+                null,
+                {
+                  "content": "dose"
+                },
+                {
+                  "content": "Mean Difference"
+                },
+                {
+                  "content": "SE"
+                },
+                {
+                  "content": "df"
+                },
+                {
+                  "content": "t"
+                },
+                {
+                  "content": "p"
+                },
+                {
+                  "content": "p<sub>tukey</sub>"
+                },
+                {
+                  "content": "p<sub>scheffe</sub>"
+                },
+                {
+                  "content": "p<sub>bonferroni</sub>"
+                },
+                {
+                  "content": "p<sub>holm</sub>"
+                },
+                {
+                  "content": "Cohen's d"
+                },
+                {
+                  "content": "Lower"
+                },
+                {
+                  "content": "Upper"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "0.5"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "1"
+                },
+                {
+                  "content": "-9.13"
+                },
+                {
+                  "content": "1.15"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "-7.95"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "-2.51"
+                },
+                {
+                  "content": "-3.31"
+                },
+                {
+                  "content": "-1.72"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "0.5"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "2"
+                },
+                {
+                  "content": "-15.50"
+                },
+                {
+                  "content": "1.15"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "-13.49"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "-4.27"
+                },
+                {
+                  "content": "-5.31"
+                },
+                {
+                  "content": "-3.23"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "1"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "2"
+                },
+                {
+                  "content": "-6.37"
+                },
+                {
+                  "content": "1.15"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "-5.54"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "-1.75"
+                },
+                {
+                  "content": "-2.47"
+                },
+                {
+                  "content": "-1.03"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Post Hoc Comparisons - supp",
+          "rows": [
+            {
+              "type": "superTitle",
+              "cells": [
+                {
+                  "content": "Comparison",
+                  "span": 1
+                },
+                {
+                  "content": "Comparison",
+                  "span": 1
+                },
+                {
+                  "content": "Comparison",
+                  "span": 1
+                },
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                {
+                  "content": "95% Confidence Interval",
+                  "span": 1
+                },
+                {
+                  "content": "95% Confidence Interval",
+                  "span": 1
+                }
+              ]
+            },
+            {
+              "type": "title",
+              "cells": [
+                {
+                  "content": "supp"
+                },
+                null,
+                {
+                  "content": "supp"
+                },
+                {
+                  "content": "Mean Difference"
+                },
+                {
+                  "content": "SE"
+                },
+                {
+                  "content": "df"
+                },
+                {
+                  "content": "t"
+                },
+                {
+                  "content": "p"
+                },
+                {
+                  "content": "p<sub>tukey</sub>"
+                },
+                {
+                  "content": "p<sub>scheffe</sub>"
+                },
+                {
+                  "content": "p<sub>bonferroni</sub>"
+                },
+                {
+                  "content": "p<sub>holm</sub>"
+                },
+                {
+                  "content": "Cohen's d"
+                },
+                {
+                  "content": "Lower"
+                },
+                {
+                  "content": "Upper"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "3.70"
+                },
+                {
+                  "content": "0.94"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "3.95"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "1.02"
+                },
+                {
+                  "content": "0.47"
+                },
+                {
+                  "content": "1.57"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Post Hoc Comparisons - supp:dose",
+          "rows": [
+            {
+              "type": "superTitle",
+              "cells": [
+                {
+                  "content": "Comparison",
+                  "span": 1
+                },
+                {
+                  "content": "Comparison",
+                  "span": 1
+                },
+                {
+                  "content": "Comparison",
+                  "span": 1
+                },
+                {
+                  "content": "Comparison",
+                  "span": 1
+                },
+                {
+                  "content": "Comparison",
+                  "span": 1
+                },
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                {
+                  "content": "95% Confidence Interval",
+                  "span": 1
+                },
+                {
+                  "content": "95% Confidence Interval",
+                  "span": 1
+                }
+              ]
+            },
+            {
+              "type": "title",
+              "cells": [
+                {
+                  "content": "supp"
+                },
+                {
+                  "content": "dose"
+                },
+                null,
+                {
+                  "content": "supp"
+                },
+                {
+                  "content": "dose"
+                },
+                {
+                  "content": "Mean Difference"
+                },
+                {
+                  "content": "SE"
+                },
+                {
+                  "content": "df"
+                },
+                {
+                  "content": "t"
+                },
+                {
+                  "content": "p"
+                },
+                {
+                  "content": "p<sub>tukey</sub>"
+                },
+                {
+                  "content": "p<sub>scheffe</sub>"
+                },
+                {
+                  "content": "p<sub>bonferroni</sub>"
+                },
+                {
+                  "content": "p<sub>holm</sub>"
+                },
+                {
+                  "content": "Cohen's d"
+                },
+                {
+                  "content": "Lower"
+                },
+                {
+                  "content": "Upper"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "0.5"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "1"
+                },
+                {
+                  "content": "-9.47"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "-5.83"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "-2.61"
+                },
+                {
+                  "content": "-3.64"
+                },
+                {
+                  "content": "-1.58"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "0.5"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "2"
+                },
+                {
+                  "content": "-12.83"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "-7.90"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "-3.53"
+                },
+                {
+                  "content": "-4.66"
+                },
+                {
+                  "content": "-2.41"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "0.5"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "0.5"
+                },
+                {
+                  "content": "5.25"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "3.23"
+                },
+                {
+                  "content": "0.002"
+                },
+                {
+                  "content": "0.024"
+                },
+                {
+                  "content": "0.081"
+                },
+                {
+                  "content": "0.031"
+                },
+                {
+                  "content": "0.010"
+                },
+                {
+                  "content": "1.45"
+                },
+                {
+                  "content": "0.51"
+                },
+                {
+                  "content": "2.38"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "0.5"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "1"
+                },
+                {
+                  "content": "-3.54"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "-2.18"
+                },
+                {
+                  "content": "0.034"
+                },
+                {
+                  "content": "0.264"
+                },
+                {
+                  "content": "0.456"
+                },
+                {
+                  "content": "0.505"
+                },
+                {
+                  "content": "0.135"
+                },
+                {
+                  "content": "-0.97"
+                },
+                {
+                  "content": "-1.89"
+                },
+                {
+                  "content": "-0.06"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "0.5"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "2"
+                },
+                {
+                  "content": "-12.91"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "-7.95"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "-3.56"
+                },
+                {
+                  "content": "-4.68"
+                },
+                {
+                  "content": "-2.43"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "1"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "2"
+                },
+                {
+                  "content": "-3.36"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "-2.07"
+                },
+                {
+                  "content": "0.043"
+                },
+                {
+                  "content": "0.319"
+                },
+                {
+                  "content": "0.517"
+                },
+                {
+                  "content": "0.650"
+                },
+                {
+                  "content": "0.135"
+                },
+                {
+                  "content": "-0.93"
+                },
+                {
+                  "content": "-1.84"
+                },
+                {
+                  "content": "-0.01"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "1"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "0.5"
+                },
+                {
+                  "content": "14.72"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "9.06"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "-4.05"
+                },
+                {
+                  "content": "-5.24"
+                },
+                {
+                  "content": "-2.86"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "1"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "1"
+                },
+                {
+                  "content": "5.93"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "3.65"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "0.007"
+                },
+                {
+                  "content": "0.032"
+                },
+                {
+                  "content": "0.009"
+                },
+                {
+                  "content": "0.004"
+                },
+                {
+                  "content": "1.63"
+                },
+                {
+                  "content": "0.68"
+                },
+                {
+                  "content": "2.58"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "1"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "2"
+                },
+                {
+                  "content": "-3.44"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "-2.12"
+                },
+                {
+                  "content": "0.039"
+                },
+                {
+                  "content": "0.294"
+                },
+                {
+                  "content": "0.490"
+                },
+                {
+                  "content": "0.582"
+                },
+                {
+                  "content": "0.135"
+                },
+                {
+                  "content": "-0.95"
+                },
+                {
+                  "content": "-1.86"
+                },
+                {
+                  "content": "-0.03"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "2"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "0.5"
+                },
+                {
+                  "content": "18.08"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "11.13"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "-4.98"
+                },
+                {
+                  "content": "-6.29"
+                },
+                {
+                  "content": "-3.66"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "2"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "1"
+                },
+                {
+                  "content": "9.29"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "5.72"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "-2.56"
+                },
+                {
+                  "content": "-3.58"
+                },
+                {
+                  "content": "-1.53"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "OJ"
+                },
+                {
+                  "content": "2"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "2"
+                },
+                {
+                  "content": "-0.08"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "-0.05"
+                },
+                {
+                  "content": "0.961"
+                },
+                {
+                  "content": "1.000"
+                },
+                {
+                  "content": "1.000"
+                },
+                {
+                  "content": "1.000"
+                },
+                {
+                  "content": "0.961"
+                },
+                {
+                  "content": "-0.02"
+                },
+                {
+                  "content": "-0.92"
+                },
+                {
+                  "content": "0.87"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "0.5"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "1"
+                },
+                {
+                  "content": "-8.79"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "-5.41"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "-2.42"
+                },
+                {
+                  "content": "-3.43"
+                },
+                {
+                  "content": "-1.41"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "0.5"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "2"
+                },
+                {
+                  "content": "-18.16"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "-11.18"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "-5.00"
+                },
+                {
+                  "content": "-6.32"
+                },
+                {
+                  "content": "-3.68"
+                }
+              ]
+            },
+            {
+              "type": "body",
+              "cells": [
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "1"
+                },
+                {
+                  "content": "-"
+                },
+                {
+                  "content": "VC"
+                },
+                {
+                  "content": "2"
+                },
+                {
+                  "content": "-9.37"
+                },
+                {
+                  "content": "1.62"
+                },
+                {
+                  "content": "54.00"
+                },
+                {
+                  "content": "-5.77"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "< .001"
+                },
+                {
+                  "content": "-2.58"
+                },
+                {
+                  "content": "-3.61"
+                },
+                {
+                  "content": "-1.55"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "group",
+      "title": "Estimated Marginal Means",
+      "items": [
+        {
+          "type": "group",
+          "title": "dose:supp",
+          "items": [
+            {
+              "type": "image",
+              "width": 494,
+              "height": 350
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

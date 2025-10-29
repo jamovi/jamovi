@@ -1,0 +1,154 @@
+{
+  "type": "table",
+  "title": "ANOVA - len",
+  "rows": [
+    {
+      "type": "title",
+      "cells": [
+        null,
+        {
+          "content": "Sum of Squares"
+        },
+        {
+          "content": "df"
+        },
+        {
+          "content": "Mean Square"
+        },
+        {
+          "content": "F"
+        },
+        {
+          "content": "p"
+        },
+        {
+          "content": "η²"
+        },
+        {
+          "content": "η²p"
+        },
+        {
+          "content": "ω²"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "dose"
+        },
+        {
+          "content": "2426.43"
+        },
+        {
+          "content": "2"
+        },
+        {
+          "content": "1213.22"
+        },
+        {
+          "content": "92.00"
+        },
+        {
+          "content": "< .001"
+        },
+        {
+          "content": "0.703"
+        },
+        {
+          "content": "0.773"
+        },
+        {
+          "content": "0.693"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "supp"
+        },
+        {
+          "content": "205.35"
+        },
+        {
+          "content": "1"
+        },
+        {
+          "content": "205.35"
+        },
+        {
+          "content": "15.57"
+        },
+        {
+          "content": "< .001"
+        },
+        {
+          "content": "0.059"
+        },
+        {
+          "content": "0.224"
+        },
+        {
+          "content": "0.055"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "dose:supp"
+        },
+        {
+          "content": "108.32"
+        },
+        {
+          "content": "2"
+        },
+        {
+          "content": "54.16"
+        },
+        {
+          "content": "4.11"
+        },
+        {
+          "content": "0.022"
+        },
+        {
+          "content": "0.031"
+        },
+        {
+          "content": "0.132"
+        },
+        {
+          "content": "0.024"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Residuals"
+        },
+        {
+          "content": "712.11"
+        },
+        {
+          "content": "54"
+        },
+        {
+          "content": "13.19"
+        },
+        null,
+        null,
+        null,
+        null,
+        null
+      ]
+    }
+  ]
+}
