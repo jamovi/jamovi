@@ -1,0 +1,191 @@
+{
+  "type": "table",
+  "title": "Descriptives",
+  "nCols": 32,
+  "rows": [
+    {
+      "type": "title",
+      "cells": [
+        null,
+        {
+          "content": "len",
+          "align": "c"
+        },
+        {
+          "content": "dose",
+          "align": "c"
+        },
+        {
+          "content": "supp",
+          "align": "c"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "N",
+          "align": "l"
+        },
+        {
+          "content": "60.00",
+          "align": "r"
+        },
+        {
+          "content": "60.00",
+          "align": "r"
+        },
+        {
+          "content": "60.00",
+          "align": "r"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Missing",
+          "align": "l"
+        },
+        {
+          "content": "0.00",
+          "align": "r"
+        },
+        {
+          "content": "0.00",
+          "align": "r"
+        },
+        {
+          "content": "0.00",
+          "align": "r"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Mean",
+          "align": "l"
+        },
+        {
+          "content": "18.81",
+          "align": "r"
+        },
+        {
+          "content": "1.17",
+          "align": "r"
+        },
+        null
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Median",
+          "align": "l"
+        },
+        {
+          "content": "19.25",
+          "align": "r"
+        },
+        {
+          "content": "1.00",
+          "align": "r"
+        },
+        null
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Mode",
+          "align": "l"
+        },
+        {
+          "content": "26.40",
+          "align": "r"
+        },
+        {
+          "content": "0.50",
+          "sups": [
+            "a"
+          ],
+          "align": "r"
+        },
+        null
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Standard deviation",
+          "align": "l"
+        },
+        {
+          "content": "7.65",
+          "align": "r"
+        },
+        {
+          "content": "0.63",
+          "align": "r"
+        },
+        null
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Minimum",
+          "align": "l"
+        },
+        {
+          "content": "4.20",
+          "align": "r"
+        },
+        {
+          "content": "0.50",
+          "align": "r"
+        },
+        null
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Maximum",
+          "align": "l"
+        },
+        {
+          "content": "33.90",
+          "align": "r"
+        },
+        {
+          "content": "2.00",
+          "align": "r"
+        },
+        null
+      ]
+    },
+    {
+      "type": "footnote",
+      "cells": [
+        {
+          "content": "More than one mode exists, only the first is reported",
+          "span": 32,
+          "sups": [
+            "a"
+          ],
+          "align": "l"
+        }
+      ]
+    }
+  ]
+}

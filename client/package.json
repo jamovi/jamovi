@@ -9,9 +9,10 @@
     "build": "npm run build:coms && vite build",
     "build:coms": "node -e \"require('fs').copyFileSync('../server/jamovi/server/jamovi.proto', 'assets/coms.proto')\"",
     "vite": "node ./node_modules/vite/bin/vite.js",
+    "test": "./node_modules/vitest/vitest.mjs",
     "": ""
   },
-  "devDependencies": {
+  "dependencies": {
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@vitejs/plugin-vue": "^6.0.1",
@@ -40,5 +41,9 @@
     "underscore": "^1.13.7",
     "vite": "^7.1.4",
     "vue": "^3.5.21"
+  },
+  "devDependencies": {
+    "chai": "^6.2.0",
+    "vitest": "^4.0.4"
   }
 }
