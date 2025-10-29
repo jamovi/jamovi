@@ -30,7 +30,7 @@ interface IImage {
 
 interface IGroup {
     type: 'group',
-    title: string;
+    title?: string;
     items: Array<IGroup | ITable | IImage>;
 }
 
@@ -286,7 +286,9 @@ function hydrateTable(tablePB: any): ITable {
     }
 }
 
-function hydrateArray(arrayPB: any): IGroup {
+function hydrateArray(arrayPB: any): IGroup | null {
+    if (arrayPB.array.elements.length === 0)
+        return null;
     return {
         type: 'group',
         title: arrayPB.title,
@@ -294,7 +296,9 @@ function hydrateArray(arrayPB: any): IGroup {
     }
 }
 
-function hydrateGroup(groupPB: any): IGroup {
+function hydrateGroup(groupPB: any): IGroup | null {
+    if (groupPB.group.elements.length === 0)
+        return null;
     return {
         type: 'group',
         title: groupPB.title,
