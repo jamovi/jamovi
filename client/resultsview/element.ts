@@ -200,7 +200,7 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
     }
 
     _menuOptions() {
-        return [ { name: 'copy', label: _('Copy') }, { name: 'export', label: `${_('Export')}...` }, { name: 'addNote', label: _('Add Note')} ];
+        return [ { name: 'copy', label: _('Copy') }, { name: 'copy2', label: _('Copy 2') }, { name: 'copyLatex', label: _('Copy Latex') }, { name: 'export', label: `${_('Export')}...` }, { name: 'addNote', label: _('Add Note')} ];
     }
 
     address() {

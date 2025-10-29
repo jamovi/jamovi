@@ -1,0 +1,143 @@
+{
+  "type": "table",
+  "title": "ANOVA - len",
+  "nCols": 6,
+  "rows": [
+    {
+      "type": "title",
+      "cells": [
+        null,
+        {
+          "content": "Sum of Squares",
+          "align": "c"
+        },
+        {
+          "content": "df",
+          "align": "c"
+        },
+        {
+          "content": "Mean Square",
+          "align": "c"
+        },
+        {
+          "content": "F",
+          "align": "c"
+        },
+        {
+          "content": "p",
+          "align": "c"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "dose",
+          "align": "l"
+        },
+        {
+          "content": "2426.43",
+          "align": "r"
+        },
+        {
+          "content": "2",
+          "align": "r"
+        },
+        {
+          "content": "1213.22",
+          "align": "r"
+        },
+        {
+          "content": "92.00",
+          "align": "r"
+        },
+        {
+          "content": "< .001",
+          "align": "r"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "supp",
+          "align": "l"
+        },
+        {
+          "content": "205.35",
+          "align": "r"
+        },
+        {
+          "content": "1",
+          "align": "r"
+        },
+        {
+          "content": "205.35",
+          "align": "r"
+        },
+        {
+          "content": "15.57",
+          "align": "r"
+        },
+        {
+          "content": "< .001",
+          "align": "r"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "dose:supp",
+          "align": "l"
+        },
+        {
+          "content": "108.32",
+          "align": "r"
+        },
+        {
+          "content": "2",
+          "align": "r"
+        },
+        {
+          "content": "54.16",
+          "align": "r"
+        },
+        {
+          "content": "4.11",
+          "align": "r"
+        },
+        {
+          "content": "0.022",
+          "align": "r"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Residuals",
+          "align": "l"
+        },
+        {
+          "content": "712.11",
+          "align": "r"
+        },
+        {
+          "content": "54",
+          "align": "r"
+        },
+        {
+          "content": "13.19",
+          "align": "r"
+        },
+        null,
+        null
+      ]
+    }
+  ]
+}
