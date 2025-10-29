@@ -23,6 +23,11 @@ import Instance from './instance';
 import { Analysis } from './analyses';
 import { References } from './references';
 
+import { hydrate } from '../common/hydrate';
+import { htmlify } from '../common/htmlify';
+import { latexify } from '../common/latexify';
+
+
 interface AnalysisResource {
     id: number,
     analysis : Analysis,
@@ -990,6 +995,33 @@ class ResultsPanel extends EventDistributor {
         }
         else if (event.op === 'refsClearSelection') {
             this._refsTable.clearSelection();
+        }
+        else if (['copy2', 'copyLatex'].includes(event.op)) {
+            const address = event.address;
+            const analysisId = parseInt(address[0]);
+            const analysis = this.model.analyses().get(analysisId);
+            const hydrated = hydrate(analysis.results);
+
+            let content;
+            if (event.op === 'copy2') {
+                const html = htmlify(hydrated);
+                content = { html, text: html };
+            }
+            else {
+                const text = latexify(hydrated);
+                content = { text };
+            }
+
+            await host.copyToClipboard(content);
+
+            const note = new Notify({
+                title: _('Copied'),
+                message: _('The content has been copied to the clipboard'),
+                duration: 2000,
+                type: 'success'
+            });
+            this.model.trigger('notification', note);
+
         }
         else {
 
