@@ -8,27 +8,29 @@ const ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
 interface IRawCell {
     value: string | number;
     footnotes: Array<string>;
+    align: 'l' | 'c' | 'r';
 }
 
-interface ICell {
+export interface ICell {
     content: string;
+    align: 'l' | 'c' | 'r';
     span?: number;
     sups?: Array<string>;
 }
 
-interface IRow {
+export interface IRow {
     type: 'superTitle' | 'title' | 'body' | 'footnote';
     cells: Array<ICell | null>;
 }
 
-interface IImage {
+export interface IImage {
     type: 'image',
     path: string;
     width: number;
     height: number;
 }
 
-interface IGroup {
+export interface IGroup {
     type: 'group',
     title?: string;
     items: Array<IGroup | ITable | IImage>;
@@ -37,7 +39,7 @@ interface IGroup {
 export type IElement = IGroup | ITable | IImage;
 
 
-interface ITable {
+export interface ITable {
     type: 'table',
     title: string,
     rows: Array<IRow>,
@@ -71,7 +73,7 @@ function transpose(columns: Array<Array<ICell>>): Array<Array<ICell>> {
     );
 }
 
-function extractValue(cellPB: any): IRawCell | null {
+function extractValue(cellPB: any, align: 'l' | 'c' | 'r'): IRawCell | null {
     let value = cellPB[cellPB.cellType];
     if (cellPB.cellType === 'o') {
         if (value === 1)
@@ -79,7 +81,7 @@ function extractValue(cellPB: any): IRawCell | null {
         else
             value = '.';
     }
-    return { value, footnotes: cellPB.footnotes };
+    return { value, footnotes: cellPB.footnotes, align };
 }
 
 function extractValues(tablePB: any): Array<Array<IRawCell>> {
@@ -88,7 +90,9 @@ function extractValues(tablePB: any): Array<Array<IRawCell>> {
     const cols = new Array(nCols);
     const footnotes = [ ];
     for (let i = 0; i < nCols; i++) {
-        cols[i] = tablePB.table.columns[i].cells.map(extractValue);
+        const columnPB = tablePB.table.columns[i];
+        const align = {'text': 'l', 'integer': 'r', 'number': 'r'}[columnPB.type.toLowerCase()]
+        cols[i] = tablePB.table.columns[i].cells.map((v) => extractValue(v, align));
     }
     return cols;
 }
@@ -105,7 +109,7 @@ function transmogrify(rawCells: Array<Array<IRawCell>>, formats: Array<any>): [ 
     const finalCells: Array<Array<ICell>> = rawCells.map((col, colNo) => {
         const fmt = formats[colNo];
         return col.map((cell) => {
-            if (cell.value === '')
+            if ( ! cell || cell.value === '')
                 return null;
             let indices: Array<number> | undefined;
             for (let fn of cell.footnotes) {
@@ -121,6 +125,7 @@ function transmogrify(rawCells: Array<Array<IRawCell>>, formats: Array<any>): [ 
             }
             const finalCell: ICell = {
                 content: format2(cell.value, fmt),
+                align: cell.align,
             }
             if (indices)
                 finalCell.sups = indices.map(i => ALPHABET[i])
@@ -211,14 +216,14 @@ function hydrateTable(tablePB: any): ITable {
     const columnsPB = tablePB.table.columns;
     const columnNames = columnsPB.map((columnPB) => columnPB.name);
 
-    let superTitles = new Array(nCols).fill(null);
+    let superTitles: Array<ICell | null> = new Array(nCols).fill(null);
     let hasSuperTitles = false;
 
     for (let i = 0; i < nCols; i++) {
         const column = tablePB.table.columns[i];
         if (column.superTitle) {
-            if (i == 0 || superTitles[i-1] === null || superTitles[i-1].title !== column.superTitle) {
-                superTitles[i] = { content: column.superTitle, span: 1 };
+            if (i == 0 || superTitles[i-1] === null || superTitles[i-1].content !== column.superTitle) {
+                superTitles[i] = { content: column.superTitle, span: 1, align: 'c' };
                 hasSuperTitles = true;
             }
             else {
@@ -242,7 +247,9 @@ function hydrateTable(tablePB: any): ITable {
 
 
 
-    let titles = columnsPB.map((columnPB) => { return columnPB.title ? { content: columnPB.title } : null });
+    let titles: Array<ICell | null> = columnsPB.map((columnPB) => {
+        return columnPB.title ? { content: columnPB.title, align: 'c' } : null
+    });
     titles = foldTitles(titles, columnNames);
 
     rows.push({ type: 'title', cells: titles });
@@ -267,7 +274,7 @@ function hydrateTable(tablePB: any): ITable {
         const sup = ALPHABET[i];
         rows.push({
             type: 'footnote',
-            cells: [ { content: fn, span: nCols, sups: [sup] } ]
+            cells: [ { content: fn, span: nCols, sups: [sup], align: 'l' } ]
         })
     }
 

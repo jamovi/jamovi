@@ -1,19 +1,23 @@
 {
   "type": "table",
   "title": "Descriptives",
+  "nCols": 32,
   "rows": [
     {
       "type": "title",
       "cells": [
         null,
         {
-          "content": "len"
+          "content": "len",
+          "align": "c"
         },
         {
-          "content": "dose"
+          "content": "dose",
+          "align": "c"
         },
         {
-          "content": "supp"
+          "content": "supp",
+          "align": "c"
         }
       ]
     },
@@ -21,16 +25,20 @@
       "type": "body",
       "cells": [
         {
-          "content": "N"
+          "content": "N",
+          "align": "l"
         },
         {
-          "content": "60.00"
+          "content": "60.00",
+          "align": "r"
         },
         {
-          "content": "60.00"
+          "content": "60.00",
+          "align": "r"
         },
         {
-          "content": "60.00"
+          "content": "60.00",
+          "align": "r"
         }
       ]
     },
@@ -38,16 +46,20 @@
       "type": "body",
       "cells": [
         {
-          "content": "Missing"
+          "content": "Missing",
+          "align": "l"
         },
         {
-          "content": "0.00"
+          "content": "0.00",
+          "align": "r"
         },
         {
-          "content": "0.00"
+          "content": "0.00",
+          "align": "r"
         },
         {
-          "content": "0.00"
+          "content": "0.00",
+          "align": "r"
         }
       ]
     },
@@ -55,13 +67,16 @@
       "type": "body",
       "cells": [
         {
-          "content": "Mean"
+          "content": "Mean",
+          "align": "l"
         },
         {
-          "content": "18.81"
+          "content": "18.81",
+          "align": "r"
         },
         {
-          "content": "1.17"
+          "content": "1.17",
+          "align": "r"
         },
         null
       ]
@@ -70,13 +85,16 @@
       "type": "body",
       "cells": [
         {
-          "content": "Median"
+          "content": "Median",
+          "align": "l"
         },
         {
-          "content": "19.25"
+          "content": "19.25",
+          "align": "r"
         },
         {
-          "content": "1.00"
+          "content": "1.00",
+          "align": "r"
         },
         null
       ]
@@ -85,16 +103,19 @@
       "type": "body",
       "cells": [
         {
-          "content": "Mode"
+          "content": "Mode",
+          "align": "l"
         },
         {
-          "content": "26.40"
+          "content": "26.40",
+          "align": "r"
         },
         {
           "content": "0.50",
           "sups": [
             "a"
-          ]
+          ],
+          "align": "r"
         },
         null
       ]
@@ -103,28 +124,16 @@
       "type": "body",
       "cells": [
         {
-          "content": "Standard deviation"
+          "content": "Standard deviation",
+          "align": "l"
         },
         {
-          "content": "7.65"
+          "content": "7.65",
+          "align": "r"
         },
         {
-          "content": "0.63"
-        },
-        null
-      ]
-    },
-    {
-      "type": "body",
-      "cells": [
-        {
-          "content": "Minimum"
-        },
-        {
-          "content": "4.20"
-        },
-        {
-          "content": "0.50"
+          "content": "0.63",
+          "align": "r"
         },
         null
       ]
@@ -133,13 +142,34 @@
       "type": "body",
       "cells": [
         {
-          "content": "Maximum"
+          "content": "Minimum",
+          "align": "l"
         },
         {
-          "content": "33.90"
+          "content": "4.20",
+          "align": "r"
         },
         {
-          "content": "2.00"
+          "content": "0.50",
+          "align": "r"
+        },
+        null
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "Maximum",
+          "align": "l"
+        },
+        {
+          "content": "33.90",
+          "align": "r"
+        },
+        {
+          "content": "2.00",
+          "align": "r"
         },
         null
       ]
@@ -152,7 +182,8 @@
           "span": 32,
           "sups": [
             "a"
-          ]
+          ],
+          "align": "l"
         }
       ]
     }

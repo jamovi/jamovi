@@ -43,8 +43,6 @@ describe('hydration of Descriptives table', function () {
     const pb = retrievePB('descriptives-table');
     const hydrated = hydrate(pb);
 
-    // console.log(JSON.stringify(hydrated, null, 2));
-
     it('should be correct', function () {
         expect(hydrated).to.be.deep.equal(expected)
     });

@@ -11,28 +11,36 @@
           "cells": [
             null,
             {
-              "content": "Sum of Squares"
+              "content": "Sum of Squares",
+              "align": "c"
             },
             {
-              "content": "df"
+              "content": "df",
+              "align": "c"
             },
             {
-              "content": "Mean Square"
+              "content": "Mean Square",
+              "align": "c"
             },
             {
-              "content": "F"
+              "content": "F",
+              "align": "c"
             },
             {
-              "content": "p"
+              "content": "p",
+              "align": "c"
             },
             {
-              "content": "η²"
+              "content": "η²",
+              "align": "c"
             },
             {
-              "content": "η²p"
+              "content": "η²p",
+              "align": "c"
             },
             {
-              "content": "ω²"
+              "content": "ω²",
+              "align": "c"
             }
           ]
         },
@@ -40,31 +48,40 @@
           "type": "body",
           "cells": [
             {
-              "content": "dose"
+              "content": "dose",
+              "align": "l"
             },
             {
-              "content": "2426.43"
+              "content": "2426.43",
+              "align": "r"
             },
             {
-              "content": "2"
+              "content": "2",
+              "align": "r"
             },
             {
-              "content": "1213.22"
+              "content": "1213.22",
+              "align": "r"
             },
             {
-              "content": "92.00"
+              "content": "92.00",
+              "align": "r"
             },
             {
-              "content": "< .001"
+              "content": "< .001",
+              "align": "r"
             },
             {
-              "content": "0.703"
+              "content": "0.703",
+              "align": "r"
             },
             {
-              "content": "0.773"
+              "content": "0.773",
+              "align": "r"
             },
             {
-              "content": "0.693"
+              "content": "0.693",
+              "align": "r"
             }
           ]
         },
@@ -72,31 +89,40 @@
           "type": "body",
           "cells": [
             {
-              "content": "supp"
+              "content": "supp",
+              "align": "l"
             },
             {
-              "content": "205.35"
+              "content": "205.35",
+              "align": "r"
             },
             {
-              "content": "1"
+              "content": "1",
+              "align": "r"
             },
             {
-              "content": "205.35"
+              "content": "205.35",
+              "align": "r"
             },
             {
-              "content": "15.57"
+              "content": "15.57",
+              "align": "r"
             },
             {
-              "content": "< .001"
+              "content": "< .001",
+              "align": "r"
             },
             {
-              "content": "0.059"
+              "content": "0.059",
+              "align": "r"
             },
             {
-              "content": "0.224"
+              "content": "0.224",
+              "align": "r"
             },
             {
-              "content": "0.055"
+              "content": "0.055",
+              "align": "r"
             }
           ]
         },
@@ -104,31 +130,40 @@
           "type": "body",
           "cells": [
             {
-              "content": "dose:supp"
+              "content": "dose:supp",
+              "align": "l"
             },
             {
-              "content": "108.32"
+              "content": "108.32",
+              "align": "r"
             },
             {
-              "content": "2"
+              "content": "2",
+              "align": "r"
             },
             {
-              "content": "54.16"
+              "content": "54.16",
+              "align": "r"
             },
             {
-              "content": "4.11"
+              "content": "4.11",
+              "align": "r"
             },
             {
-              "content": "0.022"
+              "content": "0.022",
+              "align": "r"
             },
             {
-              "content": "0.031"
+              "content": "0.031",
+              "align": "r"
             },
             {
-              "content": "0.132"
+              "content": "0.132",
+              "align": "r"
             },
             {
-              "content": "0.024"
+              "content": "0.024",
+              "align": "r"
             }
           ]
         },
@@ -136,16 +171,20 @@
           "type": "body",
           "cells": [
             {
-              "content": "Residuals"
+              "content": "Residuals",
+              "align": "l"
             },
             {
-              "content": "712.11"
+              "content": "712.11",
+              "align": "r"
             },
             {
-              "content": "54"
+              "content": "54",
+              "align": "r"
             },
             {
-              "content": "13.19"
+              "content": "13.19",
+              "align": "r"
             },
             null,
             null,
@@ -154,7 +193,8 @@
             null
           ]
         }
-      ]
+      ],
+      "nCols": 9
     },
     {
       "type": "group",
@@ -169,15 +209,18 @@
               "cells": [
                 {
                   "content": "Comparison",
-                  "span": 1
+                  "span": 3,
+                  "align": "c"
                 },
                 {
                   "content": "Comparison",
-                  "span": 1
+                  "span": 3,
+                  "align": "c"
                 },
                 {
                   "content": "Comparison",
-                  "span": 1
+                  "span": 3,
+                  "align": "c"
                 },
                 null,
                 null,
@@ -191,11 +234,13 @@
                 null,
                 {
                   "content": "95% Confidence Interval",
-                  "span": 1
+                  "span": 2,
+                  "align": "c"
                 },
                 {
                   "content": "95% Confidence Interval",
-                  "span": 1
+                  "span": 2,
+                  "align": "c"
                 }
               ]
             },
@@ -203,47 +248,61 @@
               "type": "title",
               "cells": [
                 {
-                  "content": "dose"
+                  "content": "dose",
+                  "align": "c"
                 },
                 null,
                 {
-                  "content": "dose"
+                  "content": "dose",
+                  "align": "c"
                 },
                 {
-                  "content": "Mean Difference"
+                  "content": "Mean Difference",
+                  "align": "c"
                 },
                 {
-                  "content": "SE"
+                  "content": "SE",
+                  "align": "c"
                 },
                 {
-                  "content": "df"
+                  "content": "df",
+                  "align": "c"
                 },
                 {
-                  "content": "t"
+                  "content": "t",
+                  "align": "c"
                 },
                 {
-                  "content": "p"
+                  "content": "p",
+                  "align": "c"
                 },
                 {
-                  "content": "p<sub>tukey</sub>"
+                  "content": "p<sub>tukey</sub>",
+                  "align": "c"
                 },
                 {
-                  "content": "p<sub>scheffe</sub>"
+                  "content": "p<sub>scheffe</sub>",
+                  "align": "c"
                 },
                 {
-                  "content": "p<sub>bonferroni</sub>"
+                  "content": "p<sub>bonferroni</sub>",
+                  "align": "c"
                 },
                 {
-                  "content": "p<sub>holm</sub>"
+                  "content": "p<sub>holm</sub>",
+                  "align": "c"
                 },
                 {
-                  "content": "Cohen's d"
+                  "content": "Cohen's d",
+                  "align": "c"
                 },
                 {
-                  "content": "Lower"
+                  "content": "Lower",
+                  "align": "c"
                 },
                 {
-                  "content": "Upper"
+                  "content": "Upper",
+                  "align": "c"
                 }
               ]
             },
@@ -251,49 +310,64 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "0.5"
+                  "content": "0.5",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "1"
+                  "content": "1",
+                  "align": "l"
                 },
                 {
-                  "content": "-9.13"
+                  "content": "-9.13",
+                  "align": "r"
                 },
                 {
-                  "content": "1.15"
+                  "content": "1.15",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "-7.95"
+                  "content": "-7.95",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "-2.51"
+                  "content": "-2.51",
+                  "align": "r"
                 },
                 {
-                  "content": "-3.31"
+                  "content": "-3.31",
+                  "align": "r"
                 },
                 {
-                  "content": "-1.72"
+                  "content": "-1.72",
+                  "align": "r"
                 }
               ]
             },
@@ -301,49 +375,64 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "0.5"
+                  "content": "0.5",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "2"
+                  "content": "2",
+                  "align": "l"
                 },
                 {
-                  "content": "-15.50"
+                  "content": "-15.50",
+                  "align": "r"
                 },
                 {
-                  "content": "1.15"
+                  "content": "1.15",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "-13.49"
+                  "content": "-13.49",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "-4.27"
+                  "content": "-4.27",
+                  "align": "r"
                 },
                 {
-                  "content": "-5.31"
+                  "content": "-5.31",
+                  "align": "r"
                 },
                 {
-                  "content": "-3.23"
+                  "content": "-3.23",
+                  "align": "r"
                 }
               ]
             },
@@ -351,53 +440,69 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "1"
+                  "content": "1",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "2"
+                  "content": "2",
+                  "align": "l"
                 },
                 {
-                  "content": "-6.37"
+                  "content": "-6.37",
+                  "align": "r"
                 },
                 {
-                  "content": "1.15"
+                  "content": "1.15",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "-5.54"
+                  "content": "-5.54",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "-1.75"
+                  "content": "-1.75",
+                  "align": "r"
                 },
                 {
-                  "content": "-2.47"
+                  "content": "-2.47",
+                  "align": "r"
                 },
                 {
-                  "content": "-1.03"
+                  "content": "-1.03",
+                  "align": "r"
                 }
               ]
             }
-          ]
+          ],
+          "nCols": 15
         },
         {
           "type": "table",
@@ -408,15 +513,18 @@
               "cells": [
                 {
                   "content": "Comparison",
-                  "span": 1
+                  "span": 3,
+                  "align": "c"
                 },
                 {
                   "content": "Comparison",
-                  "span": 1
+                  "span": 3,
+                  "align": "c"
                 },
                 {
                   "content": "Comparison",
-                  "span": 1
+                  "span": 3,
+                  "align": "c"
                 },
                 null,
                 null,
@@ -430,11 +538,13 @@
                 null,
                 {
                   "content": "95% Confidence Interval",
-                  "span": 1
+                  "span": 2,
+                  "align": "c"
                 },
                 {
                   "content": "95% Confidence Interval",
-                  "span": 1
+                  "span": 2,
+                  "align": "c"
                 }
               ]
             },
@@ -442,47 +552,61 @@
               "type": "title",
               "cells": [
                 {
-                  "content": "supp"
+                  "content": "supp",
+                  "align": "c"
                 },
                 null,
                 {
-                  "content": "supp"
+                  "content": "supp",
+                  "align": "c"
                 },
                 {
-                  "content": "Mean Difference"
+                  "content": "Mean Difference",
+                  "align": "c"
                 },
                 {
-                  "content": "SE"
+                  "content": "SE",
+                  "align": "c"
                 },
                 {
-                  "content": "df"
+                  "content": "df",
+                  "align": "c"
                 },
                 {
-                  "content": "t"
+                  "content": "t",
+                  "align": "c"
                 },
                 {
-                  "content": "p"
+                  "content": "p",
+                  "align": "c"
                 },
                 {
-                  "content": "p<sub>tukey</sub>"
+                  "content": "p<sub>tukey</sub>",
+                  "align": "c"
                 },
                 {
-                  "content": "p<sub>scheffe</sub>"
+                  "content": "p<sub>scheffe</sub>",
+                  "align": "c"
                 },
                 {
-                  "content": "p<sub>bonferroni</sub>"
+                  "content": "p<sub>bonferroni</sub>",
+                  "align": "c"
                 },
                 {
-                  "content": "p<sub>holm</sub>"
+                  "content": "p<sub>holm</sub>",
+                  "align": "c"
                 },
                 {
-                  "content": "Cohen's d"
+                  "content": "Cohen's d",
+                  "align": "c"
                 },
                 {
-                  "content": "Lower"
+                  "content": "Lower",
+                  "align": "c"
                 },
                 {
-                  "content": "Upper"
+                  "content": "Upper",
+                  "align": "c"
                 }
               ]
             },
@@ -490,53 +614,69 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "3.70"
+                  "content": "3.70",
+                  "align": "r"
                 },
                 {
-                  "content": "0.94"
+                  "content": "0.94",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "3.95"
+                  "content": "3.95",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "1.02"
+                  "content": "1.02",
+                  "align": "r"
                 },
                 {
-                  "content": "0.47"
+                  "content": "0.47",
+                  "align": "r"
                 },
                 {
-                  "content": "1.57"
+                  "content": "1.57",
+                  "align": "r"
                 }
               ]
             }
-          ]
+          ],
+          "nCols": 15
         },
         {
           "type": "table",
@@ -547,23 +687,28 @@
               "cells": [
                 {
                   "content": "Comparison",
-                  "span": 1
+                  "span": 5,
+                  "align": "c"
                 },
                 {
                   "content": "Comparison",
-                  "span": 1
+                  "span": 5,
+                  "align": "c"
                 },
                 {
                   "content": "Comparison",
-                  "span": 1
+                  "span": 5,
+                  "align": "c"
                 },
                 {
                   "content": "Comparison",
-                  "span": 1
+                  "span": 5,
+                  "align": "c"
                 },
                 {
                   "content": "Comparison",
-                  "span": 1
+                  "span": 5,
+                  "align": "c"
                 },
                 null,
                 null,
@@ -577,11 +722,13 @@
                 null,
                 {
                   "content": "95% Confidence Interval",
-                  "span": 1
+                  "span": 2,
+                  "align": "c"
                 },
                 {
                   "content": "95% Confidence Interval",
-                  "span": 1
+                  "span": 2,
+                  "align": "c"
                 }
               ]
             },
@@ -589,53 +736,69 @@
               "type": "title",
               "cells": [
                 {
-                  "content": "supp"
+                  "content": "supp",
+                  "align": "c"
                 },
                 {
-                  "content": "dose"
+                  "content": "dose",
+                  "align": "c"
                 },
                 null,
                 {
-                  "content": "supp"
+                  "content": "supp",
+                  "align": "c"
                 },
                 {
-                  "content": "dose"
+                  "content": "dose",
+                  "align": "c"
                 },
                 {
-                  "content": "Mean Difference"
+                  "content": "Mean Difference",
+                  "align": "c"
                 },
                 {
-                  "content": "SE"
+                  "content": "SE",
+                  "align": "c"
                 },
                 {
-                  "content": "df"
+                  "content": "df",
+                  "align": "c"
                 },
                 {
-                  "content": "t"
+                  "content": "t",
+                  "align": "c"
                 },
                 {
-                  "content": "p"
+                  "content": "p",
+                  "align": "c"
                 },
                 {
-                  "content": "p<sub>tukey</sub>"
+                  "content": "p<sub>tukey</sub>",
+                  "align": "c"
                 },
                 {
-                  "content": "p<sub>scheffe</sub>"
+                  "content": "p<sub>scheffe</sub>",
+                  "align": "c"
                 },
                 {
-                  "content": "p<sub>bonferroni</sub>"
+                  "content": "p<sub>bonferroni</sub>",
+                  "align": "c"
                 },
                 {
-                  "content": "p<sub>holm</sub>"
+                  "content": "p<sub>holm</sub>",
+                  "align": "c"
                 },
                 {
-                  "content": "Cohen's d"
+                  "content": "Cohen's d",
+                  "align": "c"
                 },
                 {
-                  "content": "Lower"
+                  "content": "Lower",
+                  "align": "c"
                 },
                 {
-                  "content": "Upper"
+                  "content": "Upper",
+                  "align": "c"
                 }
               ]
             },
@@ -643,55 +806,72 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "0.5"
+                  "content": "0.5",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "1"
+                  "content": "1",
+                  "align": "l"
                 },
                 {
-                  "content": "-9.47"
+                  "content": "-9.47",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "-5.83"
+                  "content": "-5.83",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "-2.61"
+                  "content": "-2.61",
+                  "align": "r"
                 },
                 {
-                  "content": "-3.64"
+                  "content": "-3.64",
+                  "align": "r"
                 },
                 {
-                  "content": "-1.58"
+                  "content": "-1.58",
+                  "align": "r"
                 }
               ]
             },
@@ -699,55 +879,72 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "0.5"
+                  "content": "0.5",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "2"
+                  "content": "2",
+                  "align": "l"
                 },
                 {
-                  "content": "-12.83"
+                  "content": "-12.83",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "-7.90"
+                  "content": "-7.90",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "-3.53"
+                  "content": "-3.53",
+                  "align": "r"
                 },
                 {
-                  "content": "-4.66"
+                  "content": "-4.66",
+                  "align": "r"
                 },
                 {
-                  "content": "-2.41"
+                  "content": "-2.41",
+                  "align": "r"
                 }
               ]
             },
@@ -755,55 +952,72 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "0.5"
+                  "content": "0.5",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "0.5"
+                  "content": "0.5",
+                  "align": "l"
                 },
                 {
-                  "content": "5.25"
+                  "content": "5.25",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "3.23"
+                  "content": "3.23",
+                  "align": "r"
                 },
                 {
-                  "content": "0.002"
+                  "content": "0.002",
+                  "align": "r"
                 },
                 {
-                  "content": "0.024"
+                  "content": "0.024",
+                  "align": "r"
                 },
                 {
-                  "content": "0.081"
+                  "content": "0.081",
+                  "align": "r"
                 },
                 {
-                  "content": "0.031"
+                  "content": "0.031",
+                  "align": "r"
                 },
                 {
-                  "content": "0.010"
+                  "content": "0.010",
+                  "align": "r"
                 },
                 {
-                  "content": "1.45"
+                  "content": "1.45",
+                  "align": "r"
                 },
                 {
-                  "content": "0.51"
+                  "content": "0.51",
+                  "align": "r"
                 },
                 {
-                  "content": "2.38"
+                  "content": "2.38",
+                  "align": "r"
                 }
               ]
             },
@@ -811,55 +1025,72 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "0.5"
+                  "content": "0.5",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "1"
+                  "content": "1",
+                  "align": "l"
                 },
                 {
-                  "content": "-3.54"
+                  "content": "-3.54",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "-2.18"
+                  "content": "-2.18",
+                  "align": "r"
                 },
                 {
-                  "content": "0.034"
+                  "content": "0.034",
+                  "align": "r"
                 },
                 {
-                  "content": "0.264"
+                  "content": "0.264",
+                  "align": "r"
                 },
                 {
-                  "content": "0.456"
+                  "content": "0.456",
+                  "align": "r"
                 },
                 {
-                  "content": "0.505"
+                  "content": "0.505",
+                  "align": "r"
                 },
                 {
-                  "content": "0.135"
+                  "content": "0.135",
+                  "align": "r"
                 },
                 {
-                  "content": "-0.97"
+                  "content": "-0.97",
+                  "align": "r"
                 },
                 {
-                  "content": "-1.89"
+                  "content": "-1.89",
+                  "align": "r"
                 },
                 {
-                  "content": "-0.06"
+                  "content": "-0.06",
+                  "align": "r"
                 }
               ]
             },
@@ -867,55 +1098,72 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "0.5"
+                  "content": "0.5",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "2"
+                  "content": "2",
+                  "align": "l"
                 },
                 {
-                  "content": "-12.91"
+                  "content": "-12.91",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "-7.95"
+                  "content": "-7.95",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "-3.56"
+                  "content": "-3.56",
+                  "align": "r"
                 },
                 {
-                  "content": "-4.68"
+                  "content": "-4.68",
+                  "align": "r"
                 },
                 {
-                  "content": "-2.43"
+                  "content": "-2.43",
+                  "align": "r"
                 }
               ]
             },
@@ -923,55 +1171,72 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "1"
+                  "content": "1",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "2"
+                  "content": "2",
+                  "align": "l"
                 },
                 {
-                  "content": "-3.36"
+                  "content": "-3.36",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "-2.07"
+                  "content": "-2.07",
+                  "align": "r"
                 },
                 {
-                  "content": "0.043"
+                  "content": "0.043",
+                  "align": "r"
                 },
                 {
-                  "content": "0.319"
+                  "content": "0.319",
+                  "align": "r"
                 },
                 {
-                  "content": "0.517"
+                  "content": "0.517",
+                  "align": "r"
                 },
                 {
-                  "content": "0.650"
+                  "content": "0.650",
+                  "align": "r"
                 },
                 {
-                  "content": "0.135"
+                  "content": "0.135",
+                  "align": "r"
                 },
                 {
-                  "content": "-0.93"
+                  "content": "-0.93",
+                  "align": "r"
                 },
                 {
-                  "content": "-1.84"
+                  "content": "-1.84",
+                  "align": "r"
                 },
                 {
-                  "content": "-0.01"
+                  "content": "-0.01",
+                  "align": "r"
                 }
               ]
             },
@@ -979,55 +1244,72 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "1"
+                  "content": "1",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "0.5"
+                  "content": "0.5",
+                  "align": "l"
                 },
                 {
-                  "content": "14.72"
+                  "content": "14.72",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "9.06"
+                  "content": "9.06",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "-4.05"
+                  "content": "-4.05",
+                  "align": "r"
                 },
                 {
-                  "content": "-5.24"
+                  "content": "-5.24",
+                  "align": "r"
                 },
                 {
-                  "content": "-2.86"
+                  "content": "-2.86",
+                  "align": "r"
                 }
               ]
             },
@@ -1035,55 +1317,72 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "1"
+                  "content": "1",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "1"
+                  "content": "1",
+                  "align": "l"
                 },
                 {
-                  "content": "5.93"
+                  "content": "5.93",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "3.65"
+                  "content": "3.65",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "0.007"
+                  "content": "0.007",
+                  "align": "r"
                 },
                 {
-                  "content": "0.032"
+                  "content": "0.032",
+                  "align": "r"
                 },
                 {
-                  "content": "0.009"
+                  "content": "0.009",
+                  "align": "r"
                 },
                 {
-                  "content": "0.004"
+                  "content": "0.004",
+                  "align": "r"
                 },
                 {
-                  "content": "1.63"
+                  "content": "1.63",
+                  "align": "r"
                 },
                 {
-                  "content": "0.68"
+                  "content": "0.68",
+                  "align": "r"
                 },
                 {
-                  "content": "2.58"
+                  "content": "2.58",
+                  "align": "r"
                 }
               ]
             },
@@ -1091,55 +1390,72 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "1"
+                  "content": "1",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "2"
+                  "content": "2",
+                  "align": "l"
                 },
                 {
-                  "content": "-3.44"
+                  "content": "-3.44",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "-2.12"
+                  "content": "-2.12",
+                  "align": "r"
                 },
                 {
-                  "content": "0.039"
+                  "content": "0.039",
+                  "align": "r"
                 },
                 {
-                  "content": "0.294"
+                  "content": "0.294",
+                  "align": "r"
                 },
                 {
-                  "content": "0.490"
+                  "content": "0.490",
+                  "align": "r"
                 },
                 {
-                  "content": "0.582"
+                  "content": "0.582",
+                  "align": "r"
                 },
                 {
-                  "content": "0.135"
+                  "content": "0.135",
+                  "align": "r"
                 },
                 {
-                  "content": "-0.95"
+                  "content": "-0.95",
+                  "align": "r"
                 },
                 {
-                  "content": "-1.86"
+                  "content": "-1.86",
+                  "align": "r"
                 },
                 {
-                  "content": "-0.03"
+                  "content": "-0.03",
+                  "align": "r"
                 }
               ]
             },
@@ -1147,55 +1463,72 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "2"
+                  "content": "2",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "0.5"
+                  "content": "0.5",
+                  "align": "l"
                 },
                 {
-                  "content": "18.08"
+                  "content": "18.08",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "11.13"
+                  "content": "11.13",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "-4.98"
+                  "content": "-4.98",
+                  "align": "r"
                 },
                 {
-                  "content": "-6.29"
+                  "content": "-6.29",
+                  "align": "r"
                 },
                 {
-                  "content": "-3.66"
+                  "content": "-3.66",
+                  "align": "r"
                 }
               ]
             },
@@ -1203,55 +1536,72 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "2"
+                  "content": "2",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "1"
+                  "content": "1",
+                  "align": "l"
                 },
                 {
-                  "content": "9.29"
+                  "content": "9.29",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "5.72"
+                  "content": "5.72",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "-2.56"
+                  "content": "-2.56",
+                  "align": "r"
                 },
                 {
-                  "content": "-3.58"
+                  "content": "-3.58",
+                  "align": "r"
                 },
                 {
-                  "content": "-1.53"
+                  "content": "-1.53",
+                  "align": "r"
                 }
               ]
             },
@@ -1259,55 +1609,72 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "OJ"
+                  "content": "OJ",
+                  "align": "l"
                 },
                 {
-                  "content": "2"
+                  "content": "2",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "2"
+                  "content": "2",
+                  "align": "l"
                 },
                 {
-                  "content": "-0.08"
+                  "content": "-0.08",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "-0.05"
+                  "content": "-0.05",
+                  "align": "r"
                 },
                 {
-                  "content": "0.961"
+                  "content": "0.961",
+                  "align": "r"
                 },
                 {
-                  "content": "1.000"
+                  "content": "1.000",
+                  "align": "r"
                 },
                 {
-                  "content": "1.000"
+                  "content": "1.000",
+                  "align": "r"
                 },
                 {
-                  "content": "1.000"
+                  "content": "1.000",
+                  "align": "r"
                 },
                 {
-                  "content": "0.961"
+                  "content": "0.961",
+                  "align": "r"
                 },
                 {
-                  "content": "-0.02"
+                  "content": "-0.02",
+                  "align": "r"
                 },
                 {
-                  "content": "-0.92"
+                  "content": "-0.92",
+                  "align": "r"
                 },
                 {
-                  "content": "0.87"
+                  "content": "0.87",
+                  "align": "r"
                 }
               ]
             },
@@ -1315,55 +1682,72 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "0.5"
+                  "content": "0.5",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "1"
+                  "content": "1",
+                  "align": "l"
                 },
                 {
-                  "content": "-8.79"
+                  "content": "-8.79",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "-5.41"
+                  "content": "-5.41",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "-2.42"
+                  "content": "-2.42",
+                  "align": "r"
                 },
                 {
-                  "content": "-3.43"
+                  "content": "-3.43",
+                  "align": "r"
                 },
                 {
-                  "content": "-1.41"
+                  "content": "-1.41",
+                  "align": "r"
                 }
               ]
             },
@@ -1371,55 +1755,72 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "0.5"
+                  "content": "0.5",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "2"
+                  "content": "2",
+                  "align": "l"
                 },
                 {
-                  "content": "-18.16"
+                  "content": "-18.16",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "-11.18"
+                  "content": "-11.18",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "-5.00"
+                  "content": "-5.00",
+                  "align": "r"
                 },
                 {
-                  "content": "-6.32"
+                  "content": "-6.32",
+                  "align": "r"
                 },
                 {
-                  "content": "-3.68"
+                  "content": "-3.68",
+                  "align": "r"
                 }
               ]
             },
@@ -1427,59 +1828,77 @@
               "type": "body",
               "cells": [
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "1"
+                  "content": "1",
+                  "align": "l"
                 },
                 {
-                  "content": "-"
+                  "content": "-",
+                  "align": "l"
                 },
                 {
-                  "content": "VC"
+                  "content": "VC",
+                  "align": "l"
                 },
                 {
-                  "content": "2"
+                  "content": "2",
+                  "align": "l"
                 },
                 {
-                  "content": "-9.37"
+                  "content": "-9.37",
+                  "align": "r"
                 },
                 {
-                  "content": "1.62"
+                  "content": "1.62",
+                  "align": "r"
                 },
                 {
-                  "content": "54.00"
+                  "content": "54.00",
+                  "align": "r"
                 },
                 {
-                  "content": "-5.77"
+                  "content": "-5.77",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "< .001"
+                  "content": "< .001",
+                  "align": "r"
                 },
                 {
-                  "content": "-2.58"
+                  "content": "-2.58",
+                  "align": "r"
                 },
                 {
-                  "content": "-3.61"
+                  "content": "-3.61",
+                  "align": "r"
                 },
                 {
-                  "content": "-1.55"
+                  "content": "-1.55",
+                  "align": "r"
                 }
               ]
             }
-          ]
+          ],
+          "nCols": 17
         }
       ]
     },
