@@ -17,7 +17,7 @@ class ClipboardPrompt extends HTMLElement {
             </style>
             <div class="content">
                 <div class="heading"><div class="icon"></div><div class="title">${_('Copy')}</div></div>
-                <p class="message">${_('The content has been prepared, and can be copied with the button below, or by pressing <em>{k}+C</em> on your keyboard', {k: modifier})}</p>
+                <p class="message">${_('The content has been prepared, and can be copied with the button below, or by pressing *{k}+C* on your keyboard', {k: modifier})}</p>
                 <div class="button-box"><button class="copy">${_('Copy')}</button></div>
                 <p class="link"><a href="https://www.jamovi.org/misc/extra_copy_step.html" target="_blank">${_('Why is this additional step necessary?')}'</a></p>
                 <div contenteditable="true" class="text"></div>
