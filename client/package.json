@@ -8,6 +8,7 @@
   "scripts": {
     "build": "npm run build:coms && vite build",
     "build:coms": "node -e \"require('fs').copyFileSync('../server/jamovi/server/jamovi.proto', 'assets/coms.proto')\"",
+    "vite": "node ./node_modules/vite/bin/vite.js",
     "": ""
   },
   "devDependencies": {
