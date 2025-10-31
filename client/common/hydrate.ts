@@ -46,22 +46,37 @@ export interface ITable {
     nCols: number,
 }
 
-export function hydrate(pb: any): IElement | null {
-    if (pb.table) {
-        return hydrateTable(pb);
-    }
-    else if (pb.group) {
+export function hydrate(pb: any, address: Array<string> = []): IElement | null {
+
+    if (pb.group) {
+        if (address.length > 0) {
+            const name = address.shift();
+            for (let elementPB of pb.group.elements) {
+                if (elementPB.name === name)
+                    return hydrate(elementPB, address);
+            }
+            throw Error('Address not valid');
+        }
         return hydrateGroup(pb);
     }
-    else if (pb.array) {
+    if (pb.array) {
+        if (address.length > 0) {
+            const name = address.shift();
+            for (let elementPB of pb.array.elements) {
+                if (elementPB.name === name)
+                    return hydrate(elementPB, address);
+            }
+            throw Error('Address not valid');
+        }
         return hydrateArray(pb);
     }
-    else if (pb.image) {
+    if (address.length > 0)
+        throw Error('Address not valid');
+    if (pb.table)
+        return hydrateTable(pb);
+    if (pb.image)
         return hydrateImage(pb);
-    }
-    else {
-        return null;
-    }
+    return null;
 }
 
 function transpose(columns: Array<Array<ICell>>): Array<Array<ICell>> {

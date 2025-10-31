@@ -998,9 +998,9 @@ class ResultsPanel extends EventDistributor {
         }
         else if (['copy2', 'copyLatex'].includes(event.op)) {
             const address = event.address;
-            const analysisId = parseInt(address[0]);
+            const analysisId = parseInt(address.shift());
             const analysis = this.model.analyses().get(analysisId);
-            const hydrated = hydrate(analysis.results);
+            const hydrated = hydrate(analysis.results, address);
 
             let content;
             if (event.op === 'copy2') {
