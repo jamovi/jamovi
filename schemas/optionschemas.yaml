@@ -159,6 +159,8 @@ Action:
               - "Action"
         title:
             type: string
+        hidden:
+            type: boolean
         action:
             enum:
               - "open"
