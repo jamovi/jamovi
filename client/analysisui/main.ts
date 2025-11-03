@@ -223,7 +223,7 @@ class Analysis {
     getTitle?(): string;
 
     translate(key: string): string {
-        if (key === null || key === undefined || key.trim() === '' || ! this.i18nData)
+        if (key === null || key === undefined || key.trim() === '')
             return key;
 
         return this.moduleI18n._(key);
