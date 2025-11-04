@@ -2,8 +2,6 @@
 
 import { determFormat } from "./formatting";
 import { format } from "./formatting";
-import { Analysis } from "../main/analyses";
-import { Options } from '../main/options';
 
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
 
@@ -46,7 +44,8 @@ export interface ITable {
 }
 
 export interface ITextChunk {
-    text: string,
+    content: string,
+    attributes?: { [name: string]: any };
 }
 
 export interface IText {
@@ -55,20 +54,33 @@ export interface IText {
 }
 
 export type IElement = IGroup | ITable | IImage | IText;
+type IOptionValues = { [ name: string ]: any };
+type IAddress = Array<string>;
 
-export function hydrate(analysis: Analysis, address: Array<string> = []): IElement {
-    return hydrateElement(analysis.results, analysis.options, address)[0];
+
+export function hydrate(pb: any, address: IAddress = [], values: IOptionValues = {}): IElement {
+    return hydrateElement(pb, address, values, [])[0];
 }
 
-function hydrateText(pb: any, top: boolean, options: Options, current: Array<string>): IText | null {
-    const name = `results/${ current.join('/') }/${ top ? 'topText' : 'bottomText' }`;
-    const option = options.getOption(name);
-    if (option) {
-        const { ops } = options.getOption(name).getValue();
-        const chunks = ops.map((x) => {
-            const chunk = { text: x.insert };
-            if (x.attributes)
-                chunk['attributes'] = x.attributes;
+function hydrateText(pb: any, top: boolean, values: IOptionValues, cursor: IAddress): IText | null {
+    const name = `results/${ cursor.join('/') }/${ top ? 'topText' : 'bottomText' }`;
+    const value = values[name];
+    if (value) {
+        const { ops } = value;
+        const chunks: Array<ITextChunk> = ops.map((x) => {
+            const value = x.insert;
+            let chunk: ITextChunk;
+            if (value.formula) {
+                const attributes = x.attributes || {};
+                attributes.formula = true;
+                chunk = { content: value.formula, attributes };
+            }
+            else {
+                if (x.attributes)
+                    chunk = { content: value, attributes: x.attributes };
+                else
+                    chunk = { content: value }
+            }
             return chunk;
         });
         return { type: 'text', chunks };
@@ -78,12 +90,12 @@ function hydrateText(pb: any, top: boolean, options: Options, current: Array<str
     }
 }
 
-function hydrateElement(pb: any, options: Options, target: Array<string>, current: Array<string> = []): Array<IElement> {
+function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor: Array<string>): Array<IElement> {
 
-    current = [... current];  // clone
+    cursor = [... cursor];  // clone
 
-    const before = hydrateText(pb, true, options, current);
-    const after = hydrateText(pb, false, options, current);
+    const before = hydrateText(pb, true, values, cursor);
+    const after = hydrateText(pb, false, values, cursor);
 
     const elements = [];
     if (before)
@@ -92,14 +104,14 @@ function hydrateElement(pb: any, options: Options, target: Array<string>, curren
     if (pb.group) {
         if (target.length > 0) {
             const name = target.shift();
-            current.push(name);
+            cursor.push(name);
             for (let elementPB of pb.group.elements) {
                 if (elementPB.name === name)
-                    return hydrateElement(elementPB, options, target, current);
+                    return hydrateElement(elementPB, target, values, cursor);
             }
             throw Error('Address not valid');
         }
-        const group = hydrateGroup(pb, options, target, current);
+        const group = hydrateGroup(pb, target, values, cursor);
         if (group) {
             // if there's text at the top of the group, we move it down into
             // the body of the group
@@ -113,14 +125,14 @@ function hydrateElement(pb: any, options: Options, target: Array<string>, curren
     else if (pb.array) {
         if (target.length > 0) {
             const name = target.shift();
-            current.push(name);
+            cursor.push(name);
             for (let elementPB of pb.array.elements) {
                 if (elementPB.name === name)
-                    return hydrateElement(elementPB, options, target, current);
+                    return hydrateElement(elementPB, target, values, cursor);
             }
             throw Error('Address not valid');
         }
-        const array = hydrateArray(pb, options, target, current);
+        const array = hydrateArray(pb, target, values, cursor);
         if (array) {
             // if there's text at the top of the group, we move it down into
             // the body of the group
@@ -151,6 +163,52 @@ function hydrateElement(pb: any, options: Options, target: Array<string>, curren
 
     return elements;
 }
+
+
+function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cursor: IAddress): IGroup | null {
+    if (arrayPB.array.elements.length === 0)
+        return null;
+    return {
+        type: 'group',
+        title: arrayPB.title,
+        items: hydrateElements(arrayPB.array.elements, target, values, cursor),
+    }
+}
+
+function hydrateGroup(groupPB: any, target: IAddress, values: IOptionValues, cursor: IAddress): IGroup | null {
+    if (groupPB.group.elements.length === 0)
+        return null;
+    return {
+        type: 'group',
+        title: groupPB.title,
+        items: hydrateElements(groupPB.group.elements, target, values, cursor),
+    }
+}
+
+function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOptionValues, cursor: IAddress): Array<IElement> {
+    const items = [ ]
+    for (const itemPB of elementsPB) {
+        cursor = [...cursor, itemPB.name];
+        if ([0, 2].includes(itemPB.visible)) {
+            const elem = hydrateElement(itemPB, target, values, cursor);
+            if (elem !== null) {
+                for (const item of elem)
+                    items.push(item);
+            }
+        }
+    }
+    return items;
+}
+
+function hydrateImage(imagePB: any): IImage {
+    return {
+        type: 'image',
+        path: imagePB.image.filePath,
+        width: imagePB.image.width,
+        height: imagePB.image.height,
+    };
+}
+
 
 function transpose(columns: Array<Array<ICell>>): Array<Array<ICell>> {
     if ( ! Array.isArray(columns) || columns.length === 0)
@@ -377,49 +435,5 @@ function hydrateTable(tablePB: any): ITable {
         rows,
         nCols: columns.length,
     }
-}
-
-function hydrateArray(arrayPB: any, options: Options, target: Array<string>, current: Array<string>): IGroup | null {
-    if (arrayPB.array.elements.length === 0)
-        return null;
-    return {
-        type: 'group',
-        title: arrayPB.title,
-        items: hydrateElements(arrayPB.array.elements, options, target, current),
-    }
-}
-
-function hydrateGroup(groupPB: any, options: Options, target: Array<string>, current: Array<string>): IGroup | null {
-    if (groupPB.group.elements.length === 0)
-        return null;
-    return {
-        type: 'group',
-        title: groupPB.title,
-        items: hydrateElements(groupPB.group.elements, options, target, current),
-    }
-}
-
-function hydrateElements(elementsPB: Array<any>, options: Options, target: Array<string>, current: Array<string>): Array<IElement> {
-    const items = [ ]
-    for (const itemPB of elementsPB) {
-        const address = [...current, itemPB.name];
-        if ([0, 2].includes(itemPB.visible)) {
-            const elem = hydrateElement(itemPB, options, target, address);
-            if (elem !== null) {
-                for (const item of elem)
-                    items.push(item);
-            }
-        }
-    }
-    return items;
-}
-
-function hydrateImage(imagePB: any): IImage {
-    return {
-        type: 'image',
-        path: imagePB.image.filePath,
-        width: imagePB.image.width,
-        height: imagePB.image.height,
-    };
 }
 

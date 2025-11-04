@@ -1000,7 +1000,9 @@ class ResultsPanel extends EventDistributor {
             const address = event.address;
             const analysisId = parseInt(address.shift());
             const analysis = this.model.analyses().get(analysisId);
-            const hydrated = hydrate(analysis, address);
+            const results = analysis.results;
+            const values = analysis.options.getValues();
+            const hydrated = hydrate(results, address, values);
 
             let content;
             if (event.op === 'copy2') {

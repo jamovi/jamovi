@@ -1,7 +1,7 @@
 {
   "type": "table",
   "title": "ANOVA - len",
-  "nCols": 9,
+  "nCols": 6,
   "rows": [
     {
       "type": "title",
@@ -25,18 +25,6 @@
         },
         {
           "content": "p",
-          "align": "c"
-        },
-        {
-          "content": "η²",
-          "align": "c"
-        },
-        {
-          "content": "η²p",
-          "align": "c"
-        },
-        {
-          "content": "ω²",
           "align": "c"
         }
       ]
@@ -67,18 +55,6 @@
         {
           "content": "< .001",
           "align": "r"
-        },
-        {
-          "content": "0.703",
-          "align": "r"
-        },
-        {
-          "content": "0.773",
-          "align": "r"
-        },
-        {
-          "content": "0.693",
-          "align": "r"
         }
       ]
     },
@@ -107,18 +83,6 @@
         },
         {
           "content": "< .001",
-          "align": "r"
-        },
-        {
-          "content": "0.059",
-          "align": "r"
-        },
-        {
-          "content": "0.224",
-          "align": "r"
-        },
-        {
-          "content": "0.055",
           "align": "r"
         }
       ]
@@ -149,18 +113,6 @@
         {
           "content": "0.022",
           "align": "r"
-        },
-        {
-          "content": "0.031",
-          "align": "r"
-        },
-        {
-          "content": "0.132",
-          "align": "r"
-        },
-        {
-          "content": "0.024",
-          "align": "r"
         }
       ]
     },
@@ -183,9 +135,6 @@
           "content": "13.19",
           "align": "r"
         },
-        null,
-        null,
-        null,
         null,
         null
       ]
