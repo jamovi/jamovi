@@ -2,6 +2,8 @@
 
 import { determFormat } from "./formatting";
 import { format } from "./formatting";
+import { Analysis } from "../main/analyses";
+import { Options } from '../main/options';
 
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
 
@@ -33,11 +35,8 @@ export interface IImage {
 export interface IGroup {
     type: 'group',
     title?: string;
-    items: Array<IGroup | ITable | IImage>;
+    items: Array<IElement>;
 }
-
-export type IElement = IGroup | ITable | IImage;
-
 
 export interface ITable {
     type: 'table',
@@ -46,37 +45,111 @@ export interface ITable {
     nCols: number,
 }
 
-export function hydrate(pb: any, address: Array<string> = []): IElement | null {
+export interface ITextChunk {
+    text: string,
+}
+
+export interface IText {
+    type: 'text',
+    chunks: Array<ITextChunk>,
+}
+
+export type IElement = IGroup | ITable | IImage | IText;
+
+export function hydrate(analysis: Analysis, address: Array<string> = []): IElement {
+    return hydrateElement(analysis.results, analysis.options, address)[0];
+}
+
+function hydrateText(pb: any, top: boolean, options: Options, current: Array<string>): IText | null {
+    const name = `results/${ current.join('/') }/${ top ? 'topText' : 'bottomText' }`;
+    const option = options.getOption(name);
+    if (option) {
+        const { ops } = options.getOption(name).getValue();
+        const chunks = ops.map((x) => {
+            const chunk = { text: x.insert };
+            if (x.attributes)
+                chunk['attributes'] = x.attributes;
+            return chunk;
+        });
+        return { type: 'text', chunks };
+    }
+    else {
+        return null;
+    }
+}
+
+function hydrateElement(pb: any, options: Options, target: Array<string>, current: Array<string> = []): Array<IElement> {
+
+    current = [... current];  // clone
+
+    const before = hydrateText(pb, true, options, current);
+    const after = hydrateText(pb, false, options, current);
+
+    const elements = [];
+    if (before)
+        elements.push(before);
 
     if (pb.group) {
-        if (address.length > 0) {
-            const name = address.shift();
+        if (target.length > 0) {
+            const name = target.shift();
+            current.push(name);
             for (let elementPB of pb.group.elements) {
                 if (elementPB.name === name)
-                    return hydrate(elementPB, address);
+                    return hydrateElement(elementPB, options, target, current);
             }
             throw Error('Address not valid');
         }
-        return hydrateGroup(pb);
+        const group = hydrateGroup(pb, options, target, current);
+        if (group) {
+            // if there's text at the top of the group, we move it down into
+            // the body of the group
+            if (before)
+                elements.shift();
+            elements.push(group);
+            if (before)
+                group.items.unshift(before);
+        }
     }
-    if (pb.array) {
-        if (address.length > 0) {
-            const name = address.shift();
+    else if (pb.array) {
+        if (target.length > 0) {
+            const name = target.shift();
+            current.push(name);
             for (let elementPB of pb.array.elements) {
                 if (elementPB.name === name)
-                    return hydrate(elementPB, address);
+                    return hydrateElement(elementPB, options, target, current);
             }
             throw Error('Address not valid');
         }
-        return hydrateArray(pb);
+        const array = hydrateArray(pb, options, target, current);
+        if (array) {
+            // if there's text at the top of the group, we move it down into
+            // the body of the group
+            if (before)
+                elements.shift();
+            elements.push(array);
+            if (before)
+                array.items.unshift(before);
+        }
     }
-    if (address.length > 0)
+    if (target.length > 0)
         throw Error('Address not valid');
-    if (pb.table)
-        return hydrateTable(pb);
-    if (pb.image)
-        return hydrateImage(pb);
-    return null;
+
+    if (pb.table) {
+        const table = hydrateTable(pb);
+        elements.push(table)
+    }
+    if (pb.image) {
+        const image = hydrateImage(pb);
+        elements.push(image);
+    }
+
+    if (after)
+        elements.push(after);
+
+    if (elements.length === 0)
+        return null;
+
+    return elements;
 }
 
 function transpose(columns: Array<Array<ICell>>): Array<Array<ICell>> {
@@ -306,33 +379,36 @@ function hydrateTable(tablePB: any): ITable {
     }
 }
 
-function hydrateArray(arrayPB: any): IGroup | null {
+function hydrateArray(arrayPB: any, options: Options, target: Array<string>, current: Array<string>): IGroup | null {
     if (arrayPB.array.elements.length === 0)
         return null;
     return {
         type: 'group',
         title: arrayPB.title,
-        items: hydrateElements(arrayPB.array.elements),
+        items: hydrateElements(arrayPB.array.elements, options, target, current),
     }
 }
 
-function hydrateGroup(groupPB: any): IGroup | null {
+function hydrateGroup(groupPB: any, options: Options, target: Array<string>, current: Array<string>): IGroup | null {
     if (groupPB.group.elements.length === 0)
         return null;
     return {
         type: 'group',
         title: groupPB.title,
-        items: hydrateElements(groupPB.group.elements),
+        items: hydrateElements(groupPB.group.elements, options, target, current),
     }
 }
 
-function hydrateElements(elementsPB: Array<any>): Array<IElement> {
+function hydrateElements(elementsPB: Array<any>, options: Options, target: Array<string>, current: Array<string>): Array<IElement> {
     const items = [ ]
     for (const itemPB of elementsPB) {
+        const address = [...current, itemPB.name];
         if ([0, 2].includes(itemPB.visible)) {
-            const item = hydrate(itemPB);
-            if (item !== null)
-                items.push(item);
+            const elem = hydrateElement(itemPB, options, target, address);
+            if (elem !== null) {
+                for (const item of elem)
+                    items.push(item);
+            }
         }
     }
     return items;
