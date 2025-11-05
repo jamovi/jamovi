@@ -26,16 +26,19 @@ function _generateTable(table: ITable): Array<string> {
     output.push('\\toprule');
     for (let row of table.rows) {
         if (row.type == 'superTitle') {
-            output = [...output, ..._fmtSupTtl(row)];
-        } else if (['title', 'body'].includes(row.type)) {
+            output.push(..._fmtSupTtl(row));
+        }
+        else if (['title', 'body'].includes(row.type)) {
             if (row.type == 'body' && rleBody) {
                 output.push('\\midrule');
                 rleBody = false;
             }
             output.push(_fmtTblRow(row, colLength, colAlign));
-        } else if (row.type == 'footnote') {
+        }
+        else if (row.type == 'footnote') {
             notes.push(_fmtNote(row));
-        } else {
+        }
+        else {
             output.push(`% == ${ row.type } ==`);
         }
     }
@@ -45,7 +48,7 @@ function _generateTable(table: ITable): Array<string> {
     if (notes.length > 0) {
         output.push('\\begin{tablenotes}[para,flushleft] {');
         output.push('\\footnotesize');
-        output = [...output, ...notes];
+        output.push(...notes);
         output.push('}');
         output.push('\\end{tablenotes}');
     }
@@ -100,13 +103,16 @@ function _generateHTML(html: IHTML, level: number): Array<string> {
             if (pOrg.includes('ql-align-right')) {
                 pWrp = ['\\begin{flushright}\n\\noindent\n', '\\end{flushright}\n'];
                 pRpl = pRpl.replace('ql-align-right', '');
-            } else if (pOrg.includes('ql-align-center')) {
+            }
+            else if (pOrg.includes('ql-align-center')) {
                 pWrp = ['\\begin{center}\n\\noindent\n', '\\end{center}\n'];
                 pRpl = pRpl.replace('ql-align-center',  '');
-            } else if (pOrg.includes('ql-align-justify')) {
+            }
+            else if (pOrg.includes('ql-align-justify')) {
                 pWrp = ['\\noindent\n', '\n'];
                 pRpl = pRpl.replace('ql-align-justify', '');
-            } else {
+            }
+            else {
                 pWrp = ['\\begin{flushleft}\n\\noindent\n', '\\end{flushleft}\n' ]
             }
             // decode text indentation
@@ -119,7 +125,8 @@ function _generateHTML(html: IHTML, level: number): Array<string> {
             if (pRpl.startsWith('<p>') && pRpl.endsWith('</p>') && pRpl.match('<p>').length == 1 && pRpl.match('</p>').length == 1) {
                 pRpl = pRpl.replace('<p>', pWrp[0]).replace('</p>', '\n' + pWrp[1] + '\n');
                 htmlContent = htmlContent.replace(pOrg, pRpl);
-            } else {
+            }
+            else {
                 htmlContent = htmlContent.replace(pOrg, '');
             }
         }
@@ -182,8 +189,7 @@ function _generateText(text: IText, level: number): Array<string> {
     for (let chunk of text.chunks) {
         // deal with headers ()
         if (_chkAttr(chunk, 'header')) {
-            output = [...output, ..._generateHeading(chunk.content, level + 1)];
-            
+            output.push(..._generateHeading(chunk.content, level + 1));
         }
         // format paragraphs ([1] end previous alignment)
         if (calgn !== (_chkAttr(chunk, 'align') ? chunk.attributes.align : 'left')) {
@@ -220,15 +226,20 @@ function _generateHeading(title: string, level: number): Array<string> {
         if (level == 0) {
             // NB: chapter is not available in apa7
             output.push(`\\chapter{${ title }}`);
-        } else if (level == 1) {
+        }
+        else if (level == 1) {
             output.push(`\\section{${ title }}`);
-        } else if (level == 2) {
+        }
+        else if (level == 2) {
             output.push(`\\subsection{${ title }}`);
-        } else if (level == 3) {
+        }
+        else if (level == 3) {
             output.push(`\\subsubsection{${ title }}`);
-        } else if (level == 4) {
+        }
+        else if (level == 4) {
             output.push(`\\paragraph{${ title }}`);
-        } else {
+        }
+        else {
             output.push(`\\subparagraph{${ title }}`);
         }
         output.push('% ' + '-'.repeat(80) + '\n');
@@ -376,18 +387,16 @@ function _tCellAlign(table: ITable): Array<string> {
 function _tReplace(table: ITable): ITable {
 
     for (let i = 0; i < table.rows.length; i++) {
-        for (let j = 0; j < table.rows[i].cells.length; j++) {
+        const row = table.rows[i];
+        for (let j = 0; j < row.cells.length; j++) {
+            const cell = row.cells[j];
             // handle footnotes (= specific notes)
-            if (table.rows[i].type != 'footnote' && table.rows[i].cells[j] &&
-                table.rows[i].cells[j].sups) {
-                table.rows[i].cells[j].content =
-                  table.rows[i].cells[j].content +
-                  `$^{${ _sReplace(table.rows[i].cells[j].sups.join(',')) }}$`
+            if (row.type != 'footnote' && cell && cell.sups) {
+                cell.content = cell.content + `$^{${ _sReplace(cell.sups.join(',')) }}$`
             }
             // replace non-printable characters
-            if (table.rows[i].cells[j] && table.rows[i].cells[j].content.length > 0) {
-                table.rows[i].cells[j].content =
-                  _sReplace(table.rows[i].cells[j].content);
+            if (cell && cell.content.length > 0) {
+                cell.content = _sReplace(cell.content);
             }
         }
     }
@@ -452,11 +461,13 @@ function _fmtSupTtl(row: IRow): Array<string> {
                     cells.push(`\\multicolumn{${ row.cells[i].span }}{c}{${ row.cells[i].content }}`);
                     mrule.push(`\\cmidrule{${ i + 1 }-${ i + row.cells[i].span }}`);
                     i += (row.cells[i].span - 1);
-                } else {
+                }
+                else {
                     cells.push(row.cells[i].content);
                 }
             }
-        } else {
+        }
+        else {
             empty++
         }
     }
@@ -473,15 +484,18 @@ function _fmtTblRow(row: IRow, colLength: Array<number>, colAlign: Array<string>
     for (let i = 0; i < row.cells.length; i++) {
         if (row.cells[i] && row.cells[i].content.length > 0) {
             crrCll = row.cells[i].content;
-        } else {
+        }
+        else {
             crrCll = '~';
         }
         addSpc = colLength[i] - crrCll.length;
         if (colAlign[i] == 'l') {
             cells.push(crrCll + ' '.repeat(addSpc));
-        } else if (colAlign[i] == 'r') {
+        }
+        else if (colAlign[i] == 'r') {
             cells.push(' '.repeat(addSpc) + crrCll);
-        } else if (colAlign[i] == 'r') {
+        }
+        else if (colAlign[i] == 'r') {
             cells.push(' '.repeat(Math.ceil(addSpc / 2)) + crrCll +
                        ' '.repeat(Math.floor(addSpc / 2)));
         }
@@ -500,7 +514,8 @@ function _fmtNote(row: IRow): Array<string> {
                 // General and significance notes
                 output.push(`\\textit{Note.}~${ row.cells[i].content } \\\\`)
 
-            } else {
+            }
+            else {
                 // Specific notes
                 output.push(`$^{${ row.cells[i].sups.join(',') }}$~${ row.cells[i].content } \\\\`.replace(/(?<=\$)(.*?)\$(?=(.*?)\$)/g, '$1'));
             }
@@ -552,24 +567,29 @@ function _populate(item: IElement, level: number, shwSyn: boolean): Array<string
 
     if (item.type === 'group') {
         if (item.title) {
-            output = [...output, ..._generateHeading(item.title, level)];
+            output.push(..._generateHeading(item.title, level));
         }
         for (let child of item.items) {
             if (level > -1) {
                 level++
             }
-            output = [...output, ..._populate(child, level, shwSyn)];
+            output.push(..._populate(child, level, shwSyn));
         }
-    } else if (item.type === 'image') {
-        output = [...output, ..._generateFigure(item)];
-    } else if (item.type === 'table') {
-        output = [...output, ..._generateTable(item)];
-    } else if (item.type === 'html') {
-        output = [...output, ..._generateHTML(item, level)];
-    } else if (item.type === 'preformatted') {
-        output = [...output, ..._generatePreformatted(item, level, shwSyn)];
-    } else if (item.type === 'text') {
-        output = [...output, ..._generateText(item)];
+    }
+    else if (item.type === 'image') {
+        output.push(..._generateFigure(item));
+    }
+    else if (item.type === 'table') {
+        output.push(..._generateTable(item));
+    }
+    else if (item.type === 'html') {
+        output.push(..._generateHTML(item, level));
+    }
+    else if (item.type === 'preformatted') {
+        output.push(..._generatePreformatted(item, level, shwSyn));
+    }
+    else if (item.type === 'text') {
+        output.push(..._generateText(item));
     }
 
 
@@ -584,9 +604,9 @@ export function latexify(hydrated: IElement, options?: ILatexifyOptions): string
     options.level = options.level ?? -1;
     let output = [ ];
 
-    output = [...output, ..._generateDocBeg(options.addHnF)];
-    output = [...output, ..._populate(hydrated, options.level, options.shwSyn)];
-    output = [...output, ..._generateDocEnd(options.addHnF)];
+    output.push(..._generateDocBeg(options.addHnF));
+    output.push(..._populate(hydrated, options.level, options.shwSyn));
+    output.push(..._generateDocEnd(options.addHnF));
 
     return output.join('\n');
 }

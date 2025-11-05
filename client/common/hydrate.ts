@@ -175,21 +175,20 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
     if (target.length > 0)
         throw Error('Address not valid');
 
+    // append results objects to elements: table, image, preformatted or HTML
     if (pb.table) {
         const table = hydrateTable(pb);
         elements.push(table)
     }
-    if (pb.image) {
+    else if (pb.image) {
         const image = hydrateImage(pb);
         elements.push(image);
     }
-
-    if (pb.preformatted) {
+    else if (pb.preformatted) {
         const preformatted = hydratePreformatted(pb);
         elements.push(preformatted);
     }
-
-    if (pb.html) {
+    else if (pb.html) {
         const html = hydrateHTML(pb);
         elements.push(html);
     }
@@ -484,9 +483,10 @@ function hydrateTable(tablePB: any): ITable {
     }
 
     for (let i = 0; i < tablePB.table.notes.length; i++) {
+        const note = tablePB.table.notes[i].note;
         rows.push({
             type: 'footnote',
-            cells: [ { content: tablePB.table.notes[i].note, span: nCols, sups: ['note'], align: 'l' } ]
+            cells: [ { content: note, span: nCols, sups: ['note'], align: 'l' } ]
         })
     }
 
