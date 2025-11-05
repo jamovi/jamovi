@@ -136,7 +136,37 @@ import './utils/clipboardprompt';
 let clipboardPromptBox;
 let clipboardPrompt;
 
+async function blobify(dataURI: string): Promise<Blob> {
+    const resp = await fetch(dataURI);
+    const blob = await resp.blob();
+    return blob;
+}
+
 export const copyToClipboard = etron.copyToClipboard || (async function(data) {
+
+    if (navigator.clipboard) {
+
+        const clipboardData = {};
+
+        if (data.text)
+            clipboardData['text/plain'] = data.text;
+        if (data.html)
+            clipboardData['text/html'] = data.html;
+        if (data.image)
+            clipboardData['image/png'] = blobify(data.image);
+
+        try {
+            const clipboardItem = new ClipboardItem(clipboardData);
+            await navigator.clipboard.write([ clipboardItem ]);
+            // success!
+            return;
+        }
+        catch (e: unknown) {
+            // clipboard access not allowed
+            if ( ! (e instanceof DOMException))
+                console.log(e);
+        }
+    }
 
     let hasFocus = document.activeElement;
     if ( ! clipboardPromptBox) {
