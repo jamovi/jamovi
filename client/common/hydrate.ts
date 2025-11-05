@@ -67,22 +67,37 @@ function hydrateText(pb: any, top: boolean, values: IOptionValues, cursor: IAddr
     const value = values[name];
     if (value) {
         const { ops } = value;
-        const chunks: Array<ITextChunk> = ops.map((x) => {
-            const value = x.insert;
+        const chunks = new Array(ops.length);
+
+        for (let [i, x] of ops.entries()) {
+            let content = x.insert;
             let chunk: ITextChunk;
-            if (value.formula) {
+            if (content.formula) {
                 const attributes = x.attributes || {};
                 attributes.formula = true;
-                chunk = { content: value.formula, attributes };
+                chunk = { content: content.formula, attributes };
             }
             else {
+                if (content === '\n' && x.attributes && i > 0) {
+                    // quill does some unusual things where it attaches
+                    // formatting information to a subsequent chunk
+                    // we split off the last line of the previous chunk
+                    // and attach it to this chunk
+                    const prev = chunks[i - 1];
+                    const prevPieces = prev.content.split('\n');
+                    const lastLine = prevPieces.pop();
+                    prev.content = prevPieces.join('\n');
+                    chunks[i-1] = prev;
+                    content = lastLine + content;
+                }
                 if (x.attributes)
-                    chunk = { content: value, attributes: x.attributes };
+                    chunk = { content, attributes: x.attributes };
                 else
-                    chunk = { content: value }
+                    chunk = { content }
             }
             return chunk;
-        });
+            chunks[i] = chunk;
+        }
         return { type: 'text', chunks };
     }
     else {
