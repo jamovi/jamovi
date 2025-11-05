@@ -95,7 +95,6 @@ function hydrateText(pb: any, top: boolean, values: IOptionValues, cursor: IAddr
                 else
                     chunk = { content }
             }
-            return chunk;
             chunks[i] = chunk;
         }
         return { type: 'text', chunks };
