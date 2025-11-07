@@ -1,42 +1,42 @@
 import { IElement, IGroup, IImage, ITable, IRow, IHTML, IPreformatted, IText, ITextChunk } from './hydrate';
 
 export interface ILatexifyOptions {
-    addHnF?: boolean;
-    shwSyn?: boolean;
+    addHeaderFooter?: boolean;
+    showSyntax?: boolean;
     level?: number;
 }
 
-function _generateTable(table: ITable): Array<string> {
+function generateTable(table: ITable): Array<string> {
     // replace non-printable characters, handle footnotes
-    table = _tReplace(table);
+    table = cleanTable(table);
 
     // define variables
     let output = [];
     let notes = [];
-    let colLength = _tCellLength(table);
-    let colAlign = _tCellAlign(table);
+    let colLength = tableCellWidth(table);
+    let colAlign = tableCellAlign(table);
     let rleBody = true;
 
     output.push('\\begin{table}[!htbp]');
-    output.push(`\\caption{${ _sReplace(table.title) }}`);
-    output.push(`\\label{tbl:Table_${ _sReplace(table.title).replaceAll(' ', '_') }}`);
+    output.push(`\\caption{${ replace4LaTeX(table.title) }}`);
+    output.push(`\\label{tbl:Table_${ replace4LaTeX(table.title).replaceAll(' ', '_').replace(/\$.*?\$/g, '').replace('__', '_') }}`);
     output.push('\\begin{adjustbox}{max size={\\columnwidth}{\\textheight}}');
     output.push('\\centering');
     output.push(`\\begin{tabular}{${ colAlign.join('') }}`);
     output.push('\\toprule');
     for (let row of table.rows) {
         if (row.type == 'superTitle') {
-            output.push(..._fmtSupTtl(row));
+            output.push(...formatSuperTitle(row));
         }
         else if (['title', 'body'].includes(row.type)) {
             if (row.type == 'body' && rleBody) {
                 output.push('\\midrule');
                 rleBody = false;
             }
-            output.push(_fmtTblRow(row, colLength, colAlign));
+            output.push(formatTableRow(row, colLength, colAlign));
         }
         else if (row.type == 'footnote') {
-            notes.push(_fmtNote(row));
+            notes.push(formatNote(row));
         }
         else {
             output.push(`% == ${ row.type } ==`);
@@ -58,15 +58,15 @@ function _generateTable(table: ITable): Array<string> {
 }
 
 // generate figures
-function _generateFigure(figure: IImage): Array<string> {
+function generateFigure(figure: IImage): Array<string> {
     let output = [];
 
     let title = 'PLACEHOLDER ' + randomString(8);
     if (figure.title)
-        title = _sReplace(figure.title);
+        title = replace4LaTeX(figure.title);
     output.push('\\begin{figure}[htbp]');
     output.push(`\\caption{${ title }}`);
-    output.push(`\\label{fig:Figure_${ title.replace(' ', '_') }}`);
+    output.push(`\\label{fig:Figure_${ title.replace(' ', '_').replace(/\$.*?\$/g, '').replace('__', '_') }}`);
     output.push('\\centering');
     output.push(`\\includegraphics[width=\columnwidth]{${ figure.path }}`);
     // TO CONSIDER: use height / width for scaling
@@ -77,9 +77,9 @@ function _generateFigure(figure: IImage): Array<string> {
 }
 
 // convert HTML to LaTeX
-function _generateHTML(html: IHTML, level: number): Array<string> {
+function generateHTML(html: IHTML, level: number): Array<string> {
     let output = [];
-    let htmlContent = _sReplace(html.content).replace(/<style>.*?<\/style>/, '').trim();
+    let htmlContent = replace4LaTeX(html.content).replace(/<style>.*?<\/style>/, '').trim();
 
     if (htmlContent) {
         // format preformatted and lists
@@ -90,7 +90,7 @@ function _generateHTML(html: IHTML, level: number): Array<string> {
 
         // handle headings
         for (let hOrg of htmlContent.match(/(<h[1-5]>.*?<\/h[1-5]>)/g)) {
-            let hRpl = _generateHeading(hOrg.match(/<h[1-5]>(.*?)<\/h[1-5]>/)[1], level + 1).join('\n');
+            let hRpl = generateHeading(hOrg.match(/<h[1-5]>(.*?)<\/h[1-5]>/)[1], level + 1).join('\n');
             htmlContent = htmlContent.replace(hOrg, hRpl);
         }
 
@@ -117,11 +117,11 @@ function _generateHTML(html: IHTML, level: number): Array<string> {
             }
             // decode text indentation
             if (pOrg.includes('ql-indent-')) {
-                pWrp = [`\\setlength{\\parindent}{${ parseInt(pRpl.match(/ql-indent-([0-9]+)/)[1]) * 12 }pt}\n`,
-                        '\\setlength{\\parindent}{0pt}\n'];
+                pWrp = [`\\setlength{\\leftskip}{${ pRpl.match(/ql-indent-([0-9]+)/)[1] }cm}\n`,
+                        '\\setlength{\\leftskip}{0cm}\n'];
                 pRpl = pRpl.replace(/ql-indent-[0-9]+[;"]/g, '"');
             }
-            pRpl = pRpl.replace(' class=""', '').replace(/<br\/>/g, '\n\n')
+            pRpl = pRpl.replace(' class=""', '').replace(/<br\/>/g, '\\\\\n')
             if (pRpl.startsWith('<p>') && pRpl.endsWith('</p>') && pRpl.match('<p>').length == 1 && pRpl.match('</p>').length == 1) {
                 pRpl = pRpl.replace('<p>', pWrp[0]).replace('</p>', '\n' + pWrp[1] + '\n');
                 htmlContent = htmlContent.replace(pOrg, pRpl);
@@ -144,34 +144,33 @@ function _generateHTML(html: IHTML, level: number): Array<string> {
             }
             // colours: replace hex with X11-names
             if (sOrg.includes('color:#')) {
-                sRpl = _cReplace(sRpl);
                 if (sOrg.includes('background-color:')) {
-                    sWrp = [sWrp[0] + '\\colorbox{' + sRpl.match(/background-color:(\S*?)[;"]/)[1] + '}{', sWrp[1] + '}'];
+                    sWrp = [sWrp[0] + '\\colorbox[rgb]{' + formatRGB(sRpl.match(/background-color:(\S*?)[;"]/)[1]) + '}{', sWrp[1] + '}'];
                     sRpl = sRpl.replace(/background-color:\S*?[;"]/, '"');
                 }
                 if (sOrg.includes('="color:')) {
-                    sWrp = [sWrp[0] + '\\textcolor{' + sRpl.match(/color:(\S*?)[;"]/)[1] + '}{', sWrp[1] + '}'];
+                    sWrp = [sWrp[0] + '\\textcolor[]{' + formatRGB(sRpl.match(/color:(\S*?)[;"]/)[1]) + '}{', sWrp[1] + '}'];
                     sRpl = sRpl.replace(/="color:\S*?[;"]/, '=""');
                 }
             }
             sRpl = (sWrp[0] + sRpl.replace(/<span.*?>([\S\s]*?)<\/span>/, '$1') + sWrp[1]);
-            sRpl = sRpl.replace(/<br\/>/g, '\n\n');
+            sRpl = sRpl.replace(/<br\/>/g, '\\\\\n');
             htmlContent = htmlContent.replace(sOrg, sRpl);
         }
-        output = htmlContent.replace(/<\/p><p>/g, '\n\n').split('\n');
+        output = htmlContent.replace(/<\/p><p>/g, '\\\\\n').split('\n');
     }
 
     return output;
 }
 
 // convert Preformatted to LaTeX
-function _generatePreformatted(preformatted: IPreformatted, level: number, shwSyn: boolean): Array<string> {
+function generatePreformatted(preformatted: IPreformatted, level: number, shwSyn: boolean): Array<string> {
     let output = [];
 
     // if preformatted is either not syntax or syntax is to be shown (shwSyn),
     // add a heading, \begin{verbatim}, the latex array, and \ end{verbatim}
     if (!preformatted.syntax || shwSyn) {
-        output.push(_generateHeading(preformatted.title, level + 1));
+        output.push(generateHeading(preformatted.title, level + 1));
         output.push('\\begin{verbatim}');
         output.push(preformatted.content.split('\n'));
         output.push('\\end{verbatim}\n');
@@ -181,44 +180,63 @@ function _generatePreformatted(preformatted: IPreformatted, level: number, shwSy
 }
 
 // convert Text (annotations) to LaTeX
-function _generateText(text: IText, level: number): Array<string> {
+function generateText(text: IText, level: number): Array<string> {
     let output = ['\\begin{flushleft}\n\\noindent\n'];
     let calgn = 'left';
     let clist = '';
+    let cindt = 0;
 
-    for (let chunk of text.chunks) {
+    // remove those chunks that are empty and do not have an attribute
+    const chunks = text.chunks.filter(c => c.content.length > 0 || 'attributes' in c);
+    for (let chunk of chunks) {
         // deal with headers ()
-        if (_chkAttr(chunk, 'header')) {
-            output.push(..._generateHeading(chunk.content, level + 1));
+        if (hasAttr(chunk, 'header')) {
+            output.push(...generateHeading(chunk.content, level + 1));
         }
-        // format paragraphs ([1] end previous alignment)
-        if (calgn !== (_chkAttr(chunk, 'align') ? chunk.attributes.align : 'left')) {
-            output.push(calgn === 'justify' ? '\n' : ('\\end{' + (calgn === 'center' ? '' : 'flush') + calgn + '}\n\n'));
+        // when the alignment is changed (an attribute that applies to a whole paragraph), and if the first
+        // character is an '\n' it has to be pushed to the previous line before changing the alignment (\end{...})
+        if (hasAttr(chunk, 'align') && chunk.content.charAt(0) === '\n') {
+            chunk.content = chunk.content.slice(1);
+            output.push('\n');
         }
-        // format lists (add begin and end of lists)
-        if (clist !== (_chkAttr(chunk, 'list') ? chunk.attributes.list : '')) {
+        // format lists ([1] end previous list)
+        if (clist !== (hasAttr(chunk, 'list') ? chunk.attributes.list : '')) {
             if (clist !== '')
-                output.push('\\end{'   + (clist === 'ordered' ? 'enumerate' : 'itemize') + '}\n');
-            clist = (_chkAttr(chunk, 'list') ? chunk.attributes.list : '');
+                output.push('\\end{'   + (clist === 'ordered' ? 'enumerate' : 'itemize') + '}\n\n');
+        }
+        // format paragraphs ([1] end previous alignment), 
+        if (calgn !== (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left')) {
+            output.push(calgn === 'justify' ? '\n\n' : ('\\end{' + (calgn === 'center' ? '' : 'flush') + calgn + '}\n\n'));
+        }
+        // format paragraphs ([2] begin new alignment - needs to come after list formatting is finished, list
+        // formatting is embedded in formatting alignment); in addition, ensure that the content (formatting
+        // applies to a paragraph) ends with '\n'
+        if (calgn !== (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left')) {
+            chunk.content += chunk.content.slice(-1) === '\n' ? '' : '\n';
+            calgn = (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left');
+            output.push(calgn !== 'justify' ? '\\begin{' + (calgn == 'center' ? '' : 'flush') + calgn + '}\n' : '');
+            output.push('\\noindent\n');
+        }
+        // format lists ([2] begin new list)
+        if (clist !== (hasAttr(chunk, 'list') ? chunk.attributes.list : '')) {
+            clist = (hasAttr(chunk, 'list') ? chunk.attributes.list : '');
             if (clist !== '')
                 output.push('\\begin{' + (clist === 'ordered' ? 'enumerate' : 'itemize') + '}\n');
         }
-        // format paragraphs ([2] begin previous alignment - needs to come after lists are possibly finished)
-        if (calgn !== (_chkAttr(chunk, 'align') ? chunk.attributes.align : 'left')) {
-            calgn = (_chkAttr(chunk, 'align') ? chunk.attributes.align : 'left');
-            if (calgn !== 'justify')
-                output.push('\\begin{' + (calgn == 'center' ? '' : 'flush') + calgn + '}\n');
-            output.push('\\noindent\n');
+        // format indentation
+        if (cindt !== (hasAttr(chunk, 'indent') ? parseInt(chunk.attributes.indent) : 0)) {
+            cindt = (hasAttr(chunk, 'indent') ? parseInt(chunk.attributes.indent) : 0);
+            output.push(`\\setlength\\leftskip{${ cindt }cm}\n`);
         }
-        // format other attributes (if without attributes, the content remains unchanged)
-        output.push(_fmtAttr(chunk));
+        // format other attributes (if the chunk doesn't contain attributes, the content remains unchanged)
+        output.push(formatAttr(chunk));
     }
     output.push('\n\\end{flushleft}\n');
 
     return output.join('').split('\n');
 }
 
-function _generateHeading(title: string, level: number): Array<string> {
+function generateHeading(title: string, level: number): Array<string> {
     let output = [];
 
     if (level >= 0 && title) {
@@ -249,81 +267,77 @@ function _generateHeading(title: string, level: number): Array<string> {
 }
 
 // generate the document header
-function _generateDocBeg(addHnF: Boolean): Array<string> {
+function generateDocBeg(): Array<string> {
     let output = [];
 
-    if (addHnF) {
-        output.push('\\documentclass[a4paper,man,hidelinks,floatsintext,x11names]{apa7}');
-        output.push('% This LaTeX output is designed to use APA7 style and to run on local ' + 
-                    'TexLive-installation (use pdflatex) as well as on web interfaces (e.g., '+
-                    'overleaf.com).');
-        output.push('% If you prefer postponing your figures and table until after the ' +
-                    'reference list, instead of having them within the body of the text, ' +
-                    'please remove the ",floatsintext" from the documentclass options. Further ' +
-                    'information on these styles can be at: https://www.ctan.org/pkg/apa7.\n');
-        output.push('\\usepackage[british]{babel}');
-        output.push('\\usepackage{xcolor}');
-        output.push('\\usepackage[utf8]{inputenc}');
-        output.push('\\usepackage{amsmath}');
-        output.push('\\usepackage{graphicx}');
-        output.push('\\usepackage[export]{adjustbox}');
-        output.push('\\usepackage{csquotes}');
-        output.push('\\usepackage{soul}');
-        output.push('\\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}');
-        output.push('\\DeclareLanguageMapping{british}{british-apa}');
-        output.push('\\addbibresource{article.bib}\n');
-        output.push('\\title{APA-Style Manuscript with jamovi Results}');
-        output.push('\\shorttitle{jamovi Results}');
-        output.push('\\leftheader{Last name}');
-        output.push('\\authorsnames{Full Name}');
-        output.push('\\authorsaffiliations{{Your Affilitation}}');
-        output.push('% from the CTAN apa7 documentation, 4.2.2');
-        output.push('%\\authorsnames[1,{2,3},1]{Author 1, Author 2, Author 2}');
-        output.push('%\\authorsaffiliations{{Affillition for [1]}, {Affillition for [2]}, {Affillition for [3]}}');
-        output.push('\\authornote{\\addORCIDlink{Full Name}{0000-0000-0000-0000}\\\\');
-        output.push('More detailed information about how to contact you.\\\\');
-        output.push('Can continue over several lines.\\\\');
-        output.push('}\n');
-        output.push('\\abstract{Your abstract here.}');
-        output.push('\\keywords{keyword 1, keyword 2}\n');
-        output.push('\\begin{document}\n');
-        output.push('% \\maketitle\n');
-        output.push('% Your introduction starts here.\n');
-        output.push('% \\section{Methods}');
-        output.push('% Feel free to adjust the subsections below.\n');
-        output.push('% \\subsection{Participants}');
-        output.push('% Your participants description goes here.\n');
-        output.push('% \\subsection{Materials}');
-        output.push('% Your description of the experimental materials goes here.\n');
-        output.push('% \\subsection{Procedure}');
-        output.push('% Your description of the experimental procedures goes here.\n');
-        output.push('% \\subsection{Statistical Analyses}');
-        // TO-DO: add references, once implemented
-        output.push('% Statistical analyses were performed using jamovi \\parencite{jamovi}, ' +
-                    'and the R statistical language \\parencite{R}, as well as the modules / ' +
-                    'packages car and emmeans \\parencite{car, emmeans}.\n');
-        output.push('\\section{Results}');
-    }
+    output.push('\\documentclass[a4paper,man,hidelinks,floatsintext,x11names]{apa7}');
+    output.push('% This LaTeX output is designed to use APA7 style and to run on local ' + 
+                'TexLive-installation (use pdflatex) as well as on web interfaces (e.g., '+
+                'overleaf.com).');
+    output.push('% If you prefer postponing your figures and table until after the ' +
+                'reference list, instead of having them within the body of the text, ' +
+                'please remove the ",floatsintext" from the documentclass options. Further ' +
+                'information on these styles can be at: https://www.ctan.org/pkg/apa7.\n');
+    output.push('\\usepackage[british]{babel}');
+    output.push('\\usepackage{xcolor}');
+    output.push('\\usepackage[utf8]{inputenc}');
+    output.push('\\usepackage{amsmath}');
+    output.push('\\usepackage{graphicx}');
+    output.push('\\usepackage[export]{adjustbox}');
+    output.push('\\usepackage{csquotes}');
+    output.push('\\usepackage{soul}');
+    output.push('\\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}');
+    output.push('\\DeclareLanguageMapping{british}{british-apa}');
+    output.push('\\addbibresource{article.bib}\n');
+    output.push('\\title{APA-Style Manuscript with jamovi Results}');
+    output.push('\\shorttitle{jamovi Results}');
+    output.push('\\leftheader{Last name}');
+    output.push('\\authorsnames{Full Name}');
+    output.push('\\authorsaffiliations{{Your Affilitation}}');
+    output.push('% from the CTAN apa7 documentation, 4.2.2');
+    output.push('%\\authorsnames[1,{2,3},1]{Author 1, Author 2, Author 2}');
+    output.push('%\\authorsaffiliations{{Affillition for [1]}, {Affillition for [2]}, {Affillition for [3]}}');
+    output.push('\\authornote{\\addORCIDlink{Full Name}{0000-0000-0000-0000}\\\\');
+    output.push('More detailed information about how to contact you.\\\\');
+    output.push('Can continue over several lines.\\\\');
+    output.push('}\n');
+    output.push('\\abstract{Your abstract here.}');
+    output.push('\\keywords{keyword 1, keyword 2}\n');
+    output.push('\\begin{document}\n');
+    output.push('% \\maketitle\n');
+    output.push('% Your introduction starts here.\n');
+    output.push('% \\section{Methods}');
+    output.push('% Feel free to adjust the subsections below.\n');
+    output.push('% \\subsection{Participants}');
+    output.push('% Your participants description goes here.\n');
+    output.push('% \\subsection{Materials}');
+    output.push('% Your description of the experimental materials goes here.\n');
+    output.push('% \\subsection{Procedure}');
+    output.push('% Your description of the experimental procedures goes here.\n');
+    output.push('% \\subsection{Statistical Analyses}');
+    // TO-DO: add references, once implemented
+    output.push('% Statistical analyses were performed using jamovi \\parencite{jamovi}, ' +
+                'and the R statistical language \\parencite{R}, as well as the modules / ' +
+                'packages car and emmeans \\parencite{car, emmeans}.\n');
+    output.push('\\section{Results}');
 
     return output;
 }
 
 // generate the document footer
-function _generateDocEnd(addHnF: Boolean): Array<string> {
+function generateDocEnd(): Array<string> {
     let output = [];
 
-    if (addHnF) {
-        output.push('% Report your results here and make reference to tables (see ' +
-                    'Table~\\ref{tbl:Table_...}) or figures (see Figure~\\ref{fig:Figure_...}).');
-        output.push('%\\section{Discussion}');
-        output.push('% Your discussion starts here.\n');
-        output.push('*\\printbibliography\n');
-        output.push('%\\appendix');
-        output.push('%\\section{Additional tables and figures}');
-        output.push('% Your text introducing supplementary tables and figures.');
-        output.push('% If required copy tables and figures from the main results here.');
-        output.push('\\end{document}');
-    }
+    output.push('% Report your results here and make reference to tables (see ' +
+                'Table~\\ref{tbl:Table_...}) or figures (see Figure~\\ref{fig:Figure_...}).');
+    output.push('%\\section{Discussion}');
+    output.push('% Your discussion starts here.\n');
+    output.push('*\\printbibliography\n');
+    output.push('%\\appendix');
+    output.push('%\\section{Additional tables and figures}');
+    output.push('% Your text introducing supplementary tables and figures.');
+    output.push('% If required copy tables and figures from the main results here.');
+    output.push('\\end{document}');
 
     return output;
 }
@@ -340,12 +354,12 @@ function randomString(length: number): string {
 }
 
 // check whether 
-function _chkAttr(chunk: ITextChunk, attr: string): boolean {
+function hasAttr(chunk: ITextChunk, attr: string): boolean {
     return ('attributes' in chunk && attr in chunk.attributes);
 }
 
 // determine maximum (table) cell length
-function _tCellLength(table: ITable): Array<number> {
+function tableCellWidth(table: ITable): Array<number> {
     let colLength = new Array(table.rows[0].cells.length).fill(0);
 
     for (let row of table.rows) {
@@ -362,7 +376,7 @@ function _tCellLength(table: ITable): Array<number> {
 }
 
 // determine the column alignment
-function _tCellAlign(table: ITable): Array<string> {
+function tableCellAlign(table: ITable): Array<string> {
     let colAlign = new Array(table.rows[0].cells.length).fill('r');
     let colCheck = new Array(table.rows[0].cells.length).fill(false);
 
@@ -384,7 +398,7 @@ function _tCellAlign(table: ITable): Array<string> {
 }
 
 // replace non-printable characters in tables, handle footnotes, etc.
-function _tReplace(table: ITable): ITable {
+function cleanTable(table: ITable): ITable {
 
     for (let i = 0; i < table.rows.length; i++) {
         const row = table.rows[i];
@@ -392,11 +406,11 @@ function _tReplace(table: ITable): ITable {
             const cell = row.cells[j];
             // handle footnotes (= specific notes)
             if (row.type != 'footnote' && cell && cell.sups) {
-                cell.content = cell.content + `$^{${ _sReplace(cell.sups.join(',')) }}$`
+                cell.content = cell.content + `$^{${ replace4LaTeX(cell.sups.join(',')) }}$`
             }
             // replace non-printable characters
             if (cell && cell.content.length > 0) {
-                cell.content = _sReplace(cell.content);
+                cell.content = replace4LaTeX(cell.content);
             }
         }
     }
@@ -405,7 +419,7 @@ function _tReplace(table: ITable): ITable {
 }
 
 // replace non-printable characters and HTML attributes in strings
-function _sReplace(content: string): string {
+function replace4LaTeX(content: string): string {
     const stringRepl = {'η²': '$\\eta^{2}$', 'η²p': '$\\eta^{2}_{p}$', 'ω²': '$\\omega^{2}$',
                         '<sup>μ</sup>': '$\\mu$', 'μ': '$\\mu$', '✻': '$\\times$', ' ': '~',
                         '%': '\\%', '\\\\%': '\\%', '⁻': '-', '⁺': '+',
@@ -422,30 +436,22 @@ function _sReplace(content: string): string {
         content = content.replaceAll(target, replace);
     }
 
-    return content;
+    return content.replace(/(?<=\$)(.*?)\$(?=(.*?)\$)/g, '$1');
 }
 
-// replace color hex codes with X11 color codes
-function _cReplace(content: string): string {
-    const colorRepl = {'000000': 'Black', 'e60000': 'Red2', 'ff9900': 'Orange1', 'ffff00': 'Yellow1', '008a00': 'Green3',
-                       '0066cc': 'DodgerBlue3', '9933ff': 'Purple1', 'ffffff': 'White', 'facccc': 'MistyRose2',
-                       'ffebcc': 'Bisque1', 'ffffcc': 'LemonChiffon1', 'cce8cc': 'DarkSeaGreen1',
-                       'cce0f5': 'LightSteelBlue1', 'ebd6ff': 'Thistle2', 'bbbbbb': 'Gray0', 'f06666': 'IndianRed2',
-                       'ffc266': 'Tan1', 'ffff66': 'LightGoldenrod1', '66b966': 'PaleGreen3', '66a3e0': 'SteelBlue2',
-                       'c285ff': 'MediumPurple1', '888888': 'Snow4', 'a10000': 'Red3', 'b26b00': 'DarkOrange3',
-                       'b2b200': 'Gold3', '006100': 'Green4', '0047b2': 'DodgerBlue4', '6b24b2': 'Purple3',
-                       '444444': 'SlateGrey4', '5c0000': 'Red4', '663d00': 'DarkOrange4', '666600': 'DarkGoldenrod4',
-                       '003700': 'Green4', '002966': 'DodgerBlue4', '3d1466': 'Purple4'};
-
-    for (const [code, name] of Object.entries(colorRepl)) {
-        content = content.replaceAll('color:#' + code, 'color:' + name);
+// format color hex codes to be compatible with LaTeX
+function formatRGB(content: string): string {
+    if (content === content.match(/^#[0-f]{6}$/)[0]) {
+        content = [(parseInt(content.slice(1, 3), 16) / 255).toFixed(2),
+                   (parseInt(content.slice(3, 5), 16) / 255).toFixed(2),
+                   (parseInt(content.slice(5, 7), 16) / 255).toFixed(2)].join(', ')
     }
 
     return content;
 }
 
 // format a superTitle row
-function _fmtSupTtl(row: IRow): Array<string> {
+function formatSuperTitle(row: IRow): Array<string> {
     let cells = [];
     let mrule = [];
     let empty = 0;
@@ -476,7 +482,7 @@ function _fmtSupTtl(row: IRow): Array<string> {
 }
 
 // format “usual” table rows (title, body)
-function _fmtTblRow(row: IRow, colLength: Array<number>, colAlign: Array<string>): string {
+function formatTableRow(row: IRow, colLength: Array<number>, colAlign: Array<string>): string {
     let cells = [];
     let crrCll = '';
     let addSpc = 0;
@@ -505,7 +511,7 @@ function _fmtTblRow(row: IRow, colLength: Array<number>, colAlign: Array<string>
 }
 
 // format a footnote row
-function _fmtNote(row: IRow): Array<string> {
+function formatNote(row: IRow): Array<string> {
     let output = [];
 
     for (let i = 0; i < row.cells.length; i++) {
@@ -525,71 +531,71 @@ function _fmtNote(row: IRow): Array<string> {
     return output;
 }
 
-function _fmtAttr(chunk: ITextChunk): string {
+function formatAttr(chunk: ITextChunk): string {
     let output = chunk.content;
 
-    if (_chkAttr(chunk, 'bold'))
+    if (hasAttr(chunk, 'bold'))
         output = '\\textbf{' + output + '}';
-    if (_chkAttr(chunk, 'italic'))
+    if (hasAttr(chunk, 'italic'))
         output = '\\textit{' + output + '}';
-    if (_chkAttr(chunk, 'underline'))
+    if (hasAttr(chunk, 'underline'))
         output = '\\underline{' + output + '}';
-    if (_chkAttr(chunk, 'strike'))
+    if (hasAttr(chunk, 'strike'))
         output = '\\st{' + output + '}';
-    if (_chkAttr(chunk, 'code-block'))
+    if (hasAttr(chunk, 'code-block'))
         output = '\\verbatim{' + output + '}\n';
-    if (_chkAttr(chunk, 'list'))
+    if (hasAttr(chunk, 'list'))
         output = '\\item{' + output.trim() + '}\n';
-    if (_chkAttr(chunk, 'link'))
+    if (hasAttr(chunk, 'link'))
         output = '\\href{' + chunk.attributes.link + '}{' + output + '}';
-    if (_chkAttr(chunk, 'formula'))
-        output = '${' + _fmtFrml(output) + '}$';
-    if (_chkAttr(chunk, 'script') && chunk.attributes.script === 'super')
-        output = '$^{' + + output + '}';
-    if (_chkAttr(chunk, 'script') && chunk.attributes.script === 'sub')
-        output = '$_{' + + output + '}';
-    if (_chkAttr(chunk, 'color'))
-        output = '\\textcolor{' + _cReplace(chunk.attributes.color) + '}{' + output + '}';
-    if (_chkAttr(chunk, 'background'))
-        output = '\\colorbox{' + _cReplace(chunk.attributes.background) + '}{' + output + '}';
+    if (hasAttr(chunk, 'formula'))
+        output = '${' + formatFrml(output) + '}$';
+    if (hasAttr(chunk, 'script') && chunk.attributes.script === 'super')
+        output = '$^{' + + output + '}$';
+    if (hasAttr(chunk, 'script') && chunk.attributes.script === 'sub')
+        output = '$_{' + + output + '}$';
+    if (hasAttr(chunk, 'color'))
+        output = '\\textcolor[rgb]{' + formatRGB(chunk.attributes.color) + '}{' + output + '}';
+    if (hasAttr(chunk, 'background'))
+        output = '\\colorbox[rgb]{' + formatRGB(chunk.attributes.background) + '}{' + output + '}';
 
-    return output
+    return output.replace(/(?<=\$)(.*?)\$(?=(.*?)\$)/g, '$1')
 }
 
-function _fmtFrml(katex: string): string {
+function formatFrml(katex: string): string {
     let output = katex;
 
     return output;
 }
 
-function _populate(item: IElement, level: number, shwSyn: boolean): Array<string> {
+function populateElements(item: IElement, level: number, shwSyn: boolean): Array<string> {
     let output = [];
 
     if (item.type === 'group') {
         if (item.title) {
-            output.push(..._generateHeading(item.title, level));
+            output.push(...generateHeading(item.title, level));
         }
         for (let child of item.items) {
             if (level > -1) {
                 level++
             }
-            output.push(..._populate(child, level, shwSyn));
+            output.push(...populateElements(child, level, shwSyn));
         }
     }
     else if (item.type === 'image') {
-        output.push(..._generateFigure(item));
+        output.push(...generateFigure(item));
     }
     else if (item.type === 'table') {
-        output.push(..._generateTable(item));
+        output.push(...generateTable(item));
     }
     else if (item.type === 'html') {
-        output.push(..._generateHTML(item, level));
+        output.push(...generateHTML(item, level));
     }
     else if (item.type === 'preformatted') {
-        output.push(..._generatePreformatted(item, level, shwSyn));
+        output.push(...generatePreformatted(item, level, shwSyn));
     }
     else if (item.type === 'text') {
-        output.push(..._generateText(item));
+        output.push(...generateText(item, level));
     }
 
 
@@ -599,14 +605,14 @@ function _populate(item: IElement, level: number, shwSyn: boolean): Array<string
 export function latexify(hydrated: IElement, options?: ILatexifyOptions): string {
     // handle falling back to defaults, if the option parameter is not given
     options = options || {};
-    options.addHnF = options.addHnF ?? false;
-    options.shwSyn = options.shwSyn ?? false;
+    options.addHeaderFooter = options.addHeaderFooter ?? false;
+    options.showSyntax = options.showSyntax ?? false;
     options.level = options.level ?? -1;
     let output = [ ];
 
-    output.push(..._generateDocBeg(options.addHnF));
-    output.push(..._populate(hydrated, options.level, options.shwSyn));
-    output.push(..._generateDocEnd(options.addHnF));
+    output.push(...(options.addHeaderFooter ? generateDocBeg() : []));
+    output.push(...populateElements(hydrated, options.level, options.shwSyn));
+    output.push(...(options.addHeaderFooter ? generateDocEnd() : []));
 
     return output.join('\n');
 }

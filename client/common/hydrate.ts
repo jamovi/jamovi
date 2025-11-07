@@ -312,29 +312,22 @@ function transmogrify(rawCells: Array<Array<IRawCell>>, formats: Array<any>): [ 
         return col.map((cell) => {
             if ( ! cell || cell.value === '')
                 return null;
-            let indices: Array<number> | undefined;
+            const indices: Array<number> = [];
             for (let fn of cell.footnotes) {
                 let index = footnotes.indexOf(fn);
                 if (index == -1) {
                     index = footnotes.length;
                     footnotes.push(fn);
                 }
-                if ( ! indices)
-                    indices = [ index ];
-                else
-                    indices.push(index);
+                indices.push(index);
             }
+            const symbols = cell.symbols || [];
+            const sups = indices.map(i => ALPHABET[i]);
             const finalCell: ICell = {
                 content: format2(cell.value, fmt),
                 align: cell.align,
-            }
-            if (cell.symbols && cell.symbols.length > 0)
-                finalCell.sups = cell.symbols;
-            if (indices)
-                if (finalCell.sups)
-                    finalCell.sups = [...finalCell.sups, ...indices.map(i => ALPHABET[i])];
-                else
-                    finalCell.sups = indices.map(i => ALPHABET[i]);
+                sups: [...symbols, ...sups],
+            };
             return finalCell;
         });
     })
