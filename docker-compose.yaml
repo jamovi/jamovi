@@ -59,6 +59,13 @@ services:
         JAMOVI_HOST_A: '127.0.0.1:41337'
         JAMOVI_HOST_B: '127.0.0.1:41338'
         JAMOVI_HOST_C: '127.0.0.1:41339'
+        
+        # when reverse proxying, provide the externally visible hostnames
+        # (and optional ports) without changing the bound ports above
+
+        # JAMOVI_HOSTNAME_A: 'jamovi.example.com:443'
+        # JAMOVI_HOSTNAME_B: 'a.jamovi.example.com:443'
+        # JAMOVI_HOSTNAME_C: 'r.jamovi.example.com:443'
 
         # separate by host (RECOMMENDED)
         # JAMOVI_HOST_A: 'jamovi.127.0.0.1.nip.io:41337'
