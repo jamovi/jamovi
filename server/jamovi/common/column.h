@@ -190,7 +190,11 @@ protected:
 
     int ivalue(int index);
     const char *svalue(int index);
-    double dvalue(int index);
+    double dvalue(int index, bool acceptEuroDecimal=false);
+
+    bool isEuroDecimalTextColumn();
+    bool isEuroDecimalPattern(const std::string &input) const;
+
 
 private:
     MemoryMap *_mm;

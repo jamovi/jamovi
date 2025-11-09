@@ -21,7 +21,7 @@ class CellRange:
     column_end: int
 
 
-CellValue: TypeAlias = str | int | float | None
+CellValue: TypeAlias = str | int | float
 
 
 log = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ class DataCache:
             values = self._cache[cell_range]
             # log.info('cache hit %s', cell_range)
         except KeyError:
-            log.info("cache miss %s", cell_range)
+            # log.info("cache miss %s", cell_range)
             values = self._get_values(row_start, column_start, row_end, column_end)
             self._cache[cell_range] = values
         value = values[row - row_start][column - column_start]
