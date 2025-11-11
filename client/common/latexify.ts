@@ -238,9 +238,10 @@ function generateText(text: IText, level: number): Array<string> {
 
 function generateHeading(title: string, level: number): Array<string> {
     let output = [];
+    const ruler = '% ' + '-'.repeat(80);
 
     if (level >= 0 && title) {
-        output.push('% ' + '-'.repeat(80));
+        output.push(ruler);
         if (level == 0) {
             // NB: chapter is not available in apa7
             output.push(`\\chapter{${ title }}`);
@@ -260,7 +261,7 @@ function generateHeading(title: string, level: number): Array<string> {
         else {
             output.push(`\\subparagraph{${ title }}`);
         }
-        output.push('% ' + '-'.repeat(80) + '\n');
+        output.push(ruler);
     }
 
     return output;
