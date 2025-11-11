@@ -100,7 +100,8 @@ function hydrateText(pb: any, top: boolean, values: IOptionValues, cursor: IAddr
                     // and attach it to this chunk
                     const prev = chunks[i - 1];
                     const prevPieces = prev.content.split('\n');
-                    const lastLine = prevPieces.pop();
+                    const lastLine = prevPieces[prevPieces.length - 1];
+                    prevPieces[prevPieces.length - 1] = '';
                     prev.content = prevPieces.join('\n');
                     chunks[i-1] = prev;
                     content = lastLine + content;
@@ -112,7 +113,26 @@ function hydrateText(pb: any, top: boolean, values: IOptionValues, cursor: IAddr
             }
             chunks[i] = chunk;
         }
-        return { type: 'text', chunks };
+
+        // move new lines from beginning of chunks, to end of previous chunks
+        // not technically necessary, but does make exports a bit neater
+        for (let [i, x] of chunks.entries()) {
+            if (i == 0)
+                continue;
+            let thisChunk = x;
+            if (thisChunk.content.startsWith('\n')) {
+                let prevChunk = chunks[i-1];
+                while (thisChunk.content.length > 0 && thisChunk.content.startsWith('\n')) {
+                    prevChunk.content += '\n';
+                    thisChunk.content = thisChunk.content.substring(1);
+                }
+            }
+        }
+
+        // remove empty chunks
+        const noEmpty = chunks.filter(chunk => chunk.content.length > 0 || chunk.attributes);
+
+        return { type: 'text', chunks: noEmpty };
     }
     else {
         return null;
