@@ -1,7 +1,12 @@
 
 import { IElement } from "./hydrate";
 
+function _alignWord(abbr: string): string {
+    return abbr.replace('l', 'left').replace('r', 'end').replace('c', 'center')
+}
+
 function _populate(item: IElement, parent: HTMLElement, level: number): void {
+    let align = 'left';
 
     if (item.type === 'group') {
         if (item.title) {
@@ -44,6 +49,9 @@ function _populate(item: IElement, parent: HTMLElement, level: number): void {
                     // TODO add superscripts
                     if (cell.span)
                         elem.colSpan = cell.span;
+                    if (cell.align)
+                        elem.setAttribute("style",
+                                          "text-align:" + _alignWord(cell.align) + ";");
                 }
                 tr.appendChild(elem);
             }
@@ -66,7 +74,7 @@ export function htmlify(item: IElement) {
     const doc = document.implementation.createHTMLDocument('Results');
     const body = doc.body;
 
-    _populate(item, body, 0);
+    _populate(item, body, 1);
 
     return '<!doctype html>\n' + doc.documentElement.outerHTML;
 }
