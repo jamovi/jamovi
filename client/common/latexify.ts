@@ -68,9 +68,17 @@ function generateFigure(figure: IImage): Array<string> {
     output.push(`\\caption{${ title }}`);
     output.push(`\\label{fig:Figure_${ title.replace(' ', '_').replace(/\$.*?\$/g, '').replace('__', '_') }}`);
     output.push('\\centering');
-    output.push(`\\includegraphics[width=\columnwidth]{${ figure.path }}`);
+    if ( figure.path === undefined) {
+        output.push('% images can not be copied to the clipboard at the same time as LaTeX code,');
+        output.push('% export them by right-clicking and storing them in the same directory as');
+        output.push('% your LaTeX document, replace the FILENAME_PLACEHOLDER in the line underneath');
+        output.push('% and uncomment it');
+        output.push('% \\includegraphics[width=\columnwidth]{FILENAME_PLACEHOLDER}');
+    }
+    else {
+        output.push(`\\includegraphics[width=\columnwidth]{${ figure.path }}`);
+    }    
     // TO CONSIDER: use height / width for scaling
-    output.push('% image goes here');
     output.push('\\end{figure}\n');
 
     return output;
