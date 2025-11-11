@@ -8,6 +8,7 @@ const ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
 interface IRawCell {
     value: string | number;
     footnotes: Array<string>;
+    symbols: Array<string>;
     align: 'l' | 'c' | 'r';
 }
 
@@ -24,10 +25,24 @@ export interface IRow {
 }
 
 export interface IImage {
-    type: 'image',
+    type: 'image';
+    title?: string;
     path: string;
     width: number;
     height: number;
+}
+
+export interface IPreformatted {
+    type: 'preformatted';
+    title?: string;
+    content: string;
+    syntax: boolean;
+}
+
+export interface IHTML {
+    type: 'html';
+    title?: string;
+    content: string;
 }
 
 export interface IGroup {
@@ -53,7 +68,7 @@ export interface IText {
     chunks: Array<ITextChunk>,
 }
 
-export type IElement = IGroup | ITable | IImage | IText;
+export type IElement = IGroup | ITable | IImage | IText | IPreformatted | IHTML;
 type IOptionValues = { [ name: string ]: any };
 type IAddress = Array<string>;
 
@@ -160,13 +175,22 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
     if (target.length > 0)
         throw Error('Address not valid');
 
+    // append results objects to elements: table, image, preformatted or HTML
     if (pb.table) {
         const table = hydrateTable(pb);
         elements.push(table)
     }
-    if (pb.image) {
+    else if (pb.image) {
         const image = hydrateImage(pb);
         elements.push(image);
+    }
+    else if (pb.preformatted) {
+        const preformatted = hydratePreformatted(pb);
+        elements.push(preformatted);
+    }
+    else if (pb.html) {
+        const html = hydrateHTML(pb);
+        elements.push(html);
     }
 
     if (after)
@@ -217,12 +241,29 @@ function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOpti
 function hydrateImage(imagePB: any): IImage {
     return {
         type: 'image',
+        title: imagePB.title,
         path: imagePB.image.filePath,
         width: imagePB.image.width,
         height: imagePB.image.height,
     };
 }
 
+function hydratePreformatted(preformattedPB: any): IPreformatted {
+    return {
+        type: 'preformatted',
+        title: preformattedPB.title,
+        content: preformattedPB.preformatted,
+        syntax: preformattedPB.name == 'syntax',
+    };
+}
+
+function hydrateHTML(htmlPB: any): IHTML {
+    return {
+        type: 'html',
+        title: htmlPB.title,
+        content: htmlPB.html.content,
+    };
+}
 
 function transpose(columns: Array<Array<ICell>>): Array<Array<ICell>> {
     if ( ! Array.isArray(columns) || columns.length === 0)
@@ -241,19 +282,19 @@ function extractValue(cellPB: any, align: 'l' | 'c' | 'r'): IRawCell | null {
         else
             value = '.';
     }
-    return { value, footnotes: cellPB.footnotes, align };
+    return { value, footnotes: cellPB.footnotes, symbols: cellPB.symbols, align };
 }
 
 function extractValues(columnsPB: any): Array<Array<IRawCell>> {
     const nCols = columnsPB.length;
-    const nRows = columnsPB[0].length;
     const cols = new Array(nCols);
-    const footnotes = [ ];
+
     for (let i = 0; i < nCols; i++) {
         const columnPB = columnsPB[i];
         const align = {'text': 'l', 'integer': 'r', 'number': 'r'}[columnPB.type.toLowerCase()]
         cols[i] = columnsPB[i].cells.map((v) => extractValue(v, align));
     }
+
     return cols;
 }
 
@@ -271,24 +312,22 @@ function transmogrify(rawCells: Array<Array<IRawCell>>, formats: Array<any>): [ 
         return col.map((cell) => {
             if ( ! cell || cell.value === '')
                 return null;
-            let indices: Array<number> | undefined;
+            const indices: Array<number> = [];
             for (let fn of cell.footnotes) {
                 let index = footnotes.indexOf(fn);
                 if (index == -1) {
                     index = footnotes.length;
                     footnotes.push(fn);
                 }
-                if ( ! indices)
-                    indices = [ index ];
-                else
-                    indices.push(index);
+                indices.push(index);
             }
+            const symbols = cell.symbols || [];
+            const sups = indices.map(i => ALPHABET[i]);
             const finalCell: ICell = {
                 content: format2(cell.value, fmt),
                 align: cell.align,
-            }
-            if (indices)
-                finalCell.sups = indices.map(i => ALPHABET[i])
+                sups: [...symbols, ...sups],
+            };
             return finalCell;
         });
     })
@@ -433,6 +472,14 @@ function hydrateTable(tablePB: any): ITable {
         rows.push({
             type: 'footnote',
             cells: [ { content: fn, span: nCols, sups: [sup], align: 'l' } ]
+        })
+    }
+
+    for (let i = 0; i < tablePB.table.notes.length; i++) {
+        const note = tablePB.table.notes[i].note;
+        rows.push({
+            type: 'footnote',
+            cells: [ { content: note, span: nCols, sups: ['note'], align: 'l' } ]
         })
     }
 
