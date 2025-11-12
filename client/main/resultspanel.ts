@@ -791,6 +791,27 @@ class ResultsPanel extends EventDistributor {
         ContextMenu.showResultsMenu(entries, data.pos.left, data.pos.top);
     }
 
+    getAsLatex() {
+
+        const analyses = [ ... this.model.analyses() ];
+        const fragments = [];
+        let first = true;
+
+        for (let analysis of this.model.analyses()) {
+            const results = analysis.results;
+            const values = analysis.options.getValues();
+            const hydrated = hydrate(results, [], values, first);
+            first = false;
+            if (hydrated === null)
+                continue;
+            const latex = latexify(hydrated);
+            if (latex !== null)
+                fragments.push(latex);
+        }
+
+        return fragments.join('\n\n\n');
+    }
+
     getAsHTML(options, part?) {
         if ( ! part) {
 

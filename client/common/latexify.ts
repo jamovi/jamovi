@@ -62,23 +62,12 @@ function generateTable(table: ITable): Array<string> {
 function generateFigure(figure: IImage): Array<string> {
     let output = [];
 
-    let title = 'PLACEHOLDER ' + randomString(8);
-    if (figure.title)
-        title = replace4LaTeX(figure.title);
+    const title = figure.title ? replace4LaTeX(figure.title) : 'PLACEHOLDER ' + randomString(8);
     output.push('\\begin{figure}[htbp]');
     output.push(`\\caption{${ title }}`);
     output.push(`\\label{fig:Figure_${ title.replace(' ', '_').replace(/\$.*?\$/g, '').replace('__', '_') }}`);
     output.push('\\centering');
-    if ( figure.path === undefined) {
-        output.push('% images can not be copied to the clipboard at the same time as LaTeX code,');
-        output.push('% export them by right-clicking and storing them in the same directory as');
-        output.push('% your LaTeX document, replace the FILENAME_PLACEHOLDER in the line underneath');
-        output.push('% and uncomment it');
-        output.push('% \\includegraphics[width=\columnwidth]{FILENAME_PLACEHOLDER}');
-    }
-    else {
-        output.push(`\\includegraphics[width=\columnwidth]{${ figure.path }}`);
-    }    
+    output.push(`\\includegraphics[width=\\columnwidth]{\$\{fig:${ figure.address }\}}`);
     // TO CONSIDER: use height / width for scaling
     output.push('\\end{figure}\n');
 
@@ -469,10 +458,10 @@ function formatSuperTitle(row: IRow): Array<string> {
                     cells.push(`\\multicolumn{${ empty }}{c}{~}`);
                     empty = 0;
                 }
-                if (row.cells[i].span) {
-                    cells.push(`\\multicolumn{${ row.cells[i].span }}{c}{${ row.cells[i].content }}`);
-                    mrule.push(`\\cmidrule{${ i + 1 }-${ i + row.cells[i].span }}`);
-                    i += (row.cells[i].span - 1);
+                if (row.cells[i].colSpan) {
+                    cells.push(`\\multicolumn{${ row.cells[i].colSpan }}{c}{${ row.cells[i].content }}`);
+                    mrule.push(`\\cmidrule{${ i + 1 }-${ i + row.cells[i].colSpan }}`);
+                    i += (row.cells[i].colSpan - 1);
                 }
                 else {
                     cells.push(row.cells[i].content);

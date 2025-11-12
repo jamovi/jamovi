@@ -15,7 +15,8 @@ interface IRawCell {
 export interface ICell {
     content: string;
     align: 'l' | 'c' | 'r';
-    span?: number;
+    colSpan?: number;
+    rowSpan?: number;
     sups?: Array<string>;
 }
 
@@ -30,6 +31,7 @@ export interface IImage {
     path: string;
     width: number;
     height: number;
+    address: string;
 }
 
 export interface IPreformatted {
@@ -73,11 +75,14 @@ type IOptionValues = { [ name: string ]: any };
 type IAddress = Array<string>;
 
 
-export function hydrate(pb: any, address: IAddress = [], values: IOptionValues = {}): IElement {
-    return hydrateElement(pb, address, values, [])[0];
+export function hydrate(pb: any, address: IAddress = [], values: IOptionValues = {}, top: boolean = false): IElement {
+    const elements = hydrateElement(pb, address, values, [], top);
+    if (elements === null)
+        return null;
+    return elements[0];
 }
 
-function hydrateText(pb: any, top: boolean, values: IOptionValues, cursor: IAddress): IText | null {
+function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): IText | null {
     const name = `results/${ cursor.join('/') }/${ top ? 'topText' : 'bottomText' }`;
     const value = values[name];
     if (value) {
@@ -139,12 +144,12 @@ function hydrateText(pb: any, top: boolean, values: IOptionValues, cursor: IAddr
     }
 }
 
-function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor: Array<string>): Array<IElement> {
+function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor: Array<string>, top: boolean): Array<IElement> {
 
     cursor = [... cursor];  // clone
 
-    const before = hydrateText(pb, true, values, cursor);
-    const after = hydrateText(pb, false, values, cursor);
+    const before = hydrateText(true, values, cursor);
+    const after = hydrateText(false, values, cursor);
 
     const elements = [];
     if (before)
@@ -156,11 +161,11 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
             cursor.push(name);
             for (let elementPB of pb.group.elements) {
                 if (elementPB.name === name)
-                    return hydrateElement(elementPB, target, values, cursor);
+                    return hydrateElement(elementPB, target, values, cursor, top);
             }
             throw Error('Address not valid');
         }
-        const group = hydrateGroup(pb, target, values, cursor);
+        const group = hydrateGroup(pb, target, values, cursor, top);
         if (group) {
             // if there's text at the top of the group, we move it down into
             // the body of the group
@@ -177,11 +182,11 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
             cursor.push(name);
             for (let elementPB of pb.array.elements) {
                 if (elementPB.name === name)
-                    return hydrateElement(elementPB, target, values, cursor);
+                    return hydrateElement(elementPB, target, values, cursor, top);
             }
             throw Error('Address not valid');
         }
-        const array = hydrateArray(pb, target, values, cursor);
+        const array = hydrateArray(pb, target, values, cursor, top);
         if (array) {
             // if there's text at the top of the group, we move it down into
             // the body of the group
@@ -201,7 +206,7 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         elements.push(table)
     }
     else if (pb.image) {
-        const image = hydrateImage(pb);
+        const image = hydrateImage(pb, target, cursor);
         elements.push(image);
     }
     else if (pb.preformatted) {
@@ -223,48 +228,58 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
 }
 
 
-function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cursor: IAddress): IGroup | null {
+function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean): IGroup | null {
     if (arrayPB.array.elements.length === 0)
+        return null;
+    const items = hydrateElements(arrayPB.array.elements, target, values, cursor, top);
+    if (items === null)
         return null;
     return {
         type: 'group',
         title: arrayPB.title,
-        items: hydrateElements(arrayPB.array.elements, target, values, cursor),
+        items,
     }
 }
 
-function hydrateGroup(groupPB: any, target: IAddress, values: IOptionValues, cursor: IAddress): IGroup | null {
-    if (groupPB.group.elements.length === 0)
+function hydrateGroup(groupPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean): IGroup | null {
+
+    let title: string = groupPB.title;
+    if (top && cursor.length === 0) {
+        title = values['results//heading'] || title;
+        return { type: 'group', title, items: [] };
+    }
+
+    const items = hydrateElements(groupPB.group.elements, target, values, cursor, top);
+    if (items === null)
         return null;
-    return {
-        type: 'group',
-        title: groupPB.title,
-        items: hydrateElements(groupPB.group.elements, target, values, cursor),
-    }
+    return { type: 'group', title, items };
 }
 
-function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOptionValues, cursor: IAddress): Array<IElement> {
+function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean): Array<IElement> | null {
     const items = [ ]
     for (const itemPB of elementsPB) {
-        cursor = [...cursor, itemPB.name];
+        const itemCursor = [...cursor, itemPB.name];
         if ([0, 2].includes(itemPB.visible)) {
-            const elem = hydrateElement(itemPB, target, values, cursor);
+            const elem = hydrateElement(itemPB, target, values, itemCursor, top);
             if (elem !== null) {
                 for (const item of elem)
                     items.push(item);
             }
         }
     }
+    if (items.length === 0)
+        return null;
     return items;
 }
 
-function hydrateImage(imagePB: any): IImage {
+function hydrateImage(imagePB: any, target: IAddress, cursor: IAddress): IImage {
     return {
         type: 'image',
         title: imagePB.title,
-        path: imagePB.image.filePath,
+        path: null,
         width: imagePB.image.width,
         height: imagePB.image.height,
+        address: [ ...cursor, ...target].join('/'),
     };
 }
 
@@ -343,11 +358,13 @@ function transmogrify(rawCells: Array<Array<IRawCell>>, formats: Array<any>): [ 
             }
             const symbols = cell.symbols || [];
             const sups = indices.map(i => ALPHABET[i]);
+            const finalSups = [...symbols, ...sups];
             const finalCell: ICell = {
                 content: format2(cell.value, fmt),
                 align: cell.align,
-                sups: [...symbols, ...sups],
             };
+            if (finalSups.length > 0)
+                finalCell.sups = finalSups;
             return finalCell;
         });
     })
@@ -437,18 +454,21 @@ function hydrateTable(tablePB: any): ITable {
 
     let superTitles: Array<ICell | null> = new Array(nCols).fill(null);
     let hasSuperTitles = false;
+    let lastSuperTitle: ICell | null = null;
 
     for (let i = 0; i < nCols; i++) {
         const column = columnsPB[i];
         if (column.superTitle) {
-            if (i == 0 || superTitles[i-1] === null || superTitles[i-1].content !== column.superTitle) {
-                superTitles[i] = { content: column.superTitle, span: 1, align: 'c' };
+            if (i == 0 || lastSuperTitle === null || lastSuperTitle.content !== column.superTitle) {
+                lastSuperTitle = superTitles[i] = { content: column.superTitle, colSpan: 1, align: 'c' };
                 hasSuperTitles = true;
             }
             else {
-                superTitles[i] = superTitles[i-1];
-                superTitles[i].span += 1;
+                lastSuperTitle.colSpan += 1;
             }
+        }
+        else {
+            lastSuperTitle = null;
         }
     }
 
@@ -491,7 +511,7 @@ function hydrateTable(tablePB: any): ITable {
         const sup = ALPHABET[i];
         rows.push({
             type: 'footnote',
-            cells: [ { content: fn, span: nCols, sups: [sup], align: 'l' } ]
+            cells: [ { content: fn, colSpan: nCols, sups: [sup], align: 'l' } ]
         })
     }
 
@@ -499,7 +519,7 @@ function hydrateTable(tablePB: any): ITable {
         const note = tablePB.table.notes[i].note;
         rows.push({
             type: 'footnote',
-            cells: [ { content: note, span: nCols, sups: ['note'], align: 'l' } ]
+            cells: [ { content: note, colSpan: nCols, sups: ['note'], align: 'l' } ]
         })
     }
 
