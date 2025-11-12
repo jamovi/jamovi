@@ -30,6 +30,7 @@ export interface IImage {
     path: string;
     width: number;
     height: number;
+    address: string;
 }
 
 export interface IPreformatted {
@@ -201,7 +202,7 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         elements.push(table)
     }
     else if (pb.image) {
-        const image = hydrateImage(pb);
+        const image = hydrateImage(pb, target, cursor);
         elements.push(image);
     }
     else if (pb.preformatted) {
@@ -246,9 +247,9 @@ function hydrateGroup(groupPB: any, target: IAddress, values: IOptionValues, cur
 function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOptionValues, cursor: IAddress): Array<IElement> {
     const items = [ ]
     for (const itemPB of elementsPB) {
-        cursor = [...cursor, itemPB.name];
+        const itemCursor = [...cursor, itemPB.name];
         if ([0, 2].includes(itemPB.visible)) {
-            const elem = hydrateElement(itemPB, target, values, cursor);
+            const elem = hydrateElement(itemPB, target, values, itemCursor);
             if (elem !== null) {
                 for (const item of elem)
                     items.push(item);
@@ -258,13 +259,14 @@ function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOpti
     return items;
 }
 
-function hydrateImage(imagePB: any): IImage {
+function hydrateImage(imagePB: any, target: IAddress, cursor: IAddress): IImage {
     return {
         type: 'image',
         title: imagePB.title,
-        path: imagePB.image.filePath,
+        path: null,
         width: imagePB.image.width,
         height: imagePB.image.height,
+        address: [ ...cursor, ...target].join('/'),
     };
 }
 
