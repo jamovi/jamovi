@@ -1,7 +1,6 @@
 
 from datetime import datetime
 import math
-from numbers import Number
 
 from openpyxl import load_workbook
 from openpyxl import Workbook
@@ -47,11 +46,15 @@ def write(data: InstanceModel, path, prog_cb):
     for row_no in range(data.row_count):
         if data.is_row_filtered(row_no):
             continue
-        row_values = [None] * len(col_nos)
+        row_values: list[int | float | str | None] = [None] * len(col_nos)
         for i, col_no in enumerate(col_nos):
             value = data[col_no][row_no]
+            if isinstance(value, int) and value == -2147483648:
+                continue
+            if isinstance(value, float) and math.isnan(value):
+                continue
             row_values[i] = value
-            if isinstance(value, Number):
+            if isinstance(value, int) or isinstance(value, float):
                 try:
                     width = int(math.log10(value) // 1)
                 except ValueError:
