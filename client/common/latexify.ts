@@ -6,6 +6,7 @@ export interface ILatexifyOptions {
     level?: number;
 }
 
+// generate tables
 function generateTable(table: ITable): Array<string> {
     // replace non-printable characters, handle footnotes
     table = cleanTable(table);
@@ -194,38 +195,29 @@ function generateText(text: IText, level: number): Array<string> {
     let clist = '';
     let cindt = 0;
 
-    // remove those chunks that are empty and do not have an attribute
-    const chunks = text.chunks.filter(c => c.content.length > 0 || 'attributes' in c);
-    for (let chunk of chunks) {
+    for (let chunk of text.chunks) {
         // deal with headers ()
         if (hasAttr(chunk, 'header')) {
             output.push(...generateHeading(chunk.content, level + 1));
         }
-        // when the alignment is changed (an attribute that applies to a whole paragraph), and if the first
-        // character is an '\n' it has to be pushed to the previous line before changing the alignment (\end{...})
-        if (hasAttr(chunk, 'align') && chunk.content.charAt(0) === '\n') {
-            chunk.content = chunk.content.slice(1);
-            output.push('\n');
-        }
-        // format lists ([1] end previous list)
+        // format lists: [1] end previous list
         if (clist !== (hasAttr(chunk, 'list') ? chunk.attributes.list : '')) {
             if (clist !== '')
                 output.push('\\end{'   + (clist === 'ordered' ? 'enumerate' : 'itemize') + '}\n\n');
         }
-        // format paragraphs ([1] end previous alignment), 
+        // format paragraphs: [1] end previous alignment 
         if (calgn !== (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left')) {
             output.push(calgn === 'justify' ? '\n\n' : ('\\end{' + (calgn === 'center' ? '' : 'flush') + calgn + '}\n\n'));
         }
-        // format paragraphs ([2] begin new alignment - needs to come after list formatting is finished, list
-        // formatting is embedded in formatting alignment); in addition, ensure that the content (formatting
-        // applies to a paragraph) ends with '\n'
+        // format paragraphs: [2] begin new alignment
+        // needs to come after list formatting is finished, as list formatting is embedded
+        // in formatting alignment)
         if (calgn !== (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left')) {
-            chunk.content += chunk.content.slice(-1) === '\n' ? '' : '\n';
             calgn = (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left');
-            output.push(calgn !== 'justify' ? '\\begin{' + (calgn == 'center' ? '' : 'flush') + calgn + '}\n' : '');
+            output.push(calgn === 'justify' ? '' : '\\begin{' + (calgn == 'center' ? '' : 'flush') + calgn + '}\n');
             output.push('\\noindent\n');
         }
-        // format lists ([2] begin new list)
+        // format lists: [2] begin new list
         if (clist !== (hasAttr(chunk, 'list') ? chunk.attributes.list : '')) {
             clist = (hasAttr(chunk, 'list') ? chunk.attributes.list : '');
             if (clist !== '')
@@ -236,7 +228,8 @@ function generateText(text: IText, level: number): Array<string> {
             cindt = (hasAttr(chunk, 'indent') ? parseInt(chunk.attributes.indent) : 0);
             output.push(`\\setlength\\leftskip{${ cindt }cm}\n`);
         }
-        // format other attributes (if the chunk doesn't contain attributes, the content remains unchanged)
+        // format other attributes (if the chunk doesn't contain attributes,
+        // then the content remains unchanged)
         output.push(formatAttr(chunk));
     }
     output.push('\n\\end{flushleft}\n');
@@ -244,6 +237,7 @@ function generateText(text: IText, level: number): Array<string> {
     return output.join('').split('\n');
 }
 
+// generate headings at different levels
 function generateHeading(title: string, level: number): Array<string> {
     let output = [];
     const ruler = '% ' + '-'.repeat(80);
@@ -369,7 +363,7 @@ function hasAttr(chunk: ITextChunk, attr: string): boolean {
 
 // determine maximum (table) cell length
 function tableCellWidth(table: ITable): Array<number> {
-    let colLength = new Array(table.rows[0].cells.length).fill(0);
+    let colLength = new Array(table.nCols).fill(0);
 
     for (let row of table.rows) {
         if (['title', 'body'].includes(row.type)) {
@@ -386,8 +380,8 @@ function tableCellWidth(table: ITable): Array<number> {
 
 // determine the column alignment
 function tableCellAlign(table: ITable): Array<string> {
-    let colAlign = new Array(table.rows[0].cells.length).fill('r');
-    let colCheck = new Array(table.rows[0].cells.length).fill(false);
+    let colAlign = new Array(table.nCols).fill('r');
+    let colCheck = new Array(table.nCols).fill(false);
 
     for (let row of table.rows) {
         if (row.type == 'body') {
@@ -413,12 +407,15 @@ function cleanTable(table: ITable): ITable {
         const row = table.rows[i];
         for (let j = 0; j < row.cells.length; j++) {
             const cell = row.cells[j];
-            // handle footnotes (= specific notes)
-            if (row.type != 'footnote' && cell && cell.sups) {
+            if (cell === null) {
+                continue;
+            }
+            // handle superscripts for footnotes (= specific notes)
+            if (row.type != 'footnote' && cell.sups && cell.sups.length > 0) {
                 cell.content = cell.content + `$^{${ replace4LaTeX(cell.sups.join(',')) }}$`
             }
             // replace non-printable characters
-            if (cell && cell.content.length > 0) {
+            if (cell.content.length > 0) {
                 cell.content = replace4LaTeX(cell.content);
             }
         }
@@ -577,6 +574,8 @@ function formatFrml(katex: string): string {
     return output;
 }
 
+// main loop: iterates through the input elements and calls itself when a group element
+// has children
 function populateElements(item: IElement, level: number, shwSyn: boolean): Array<string> {
     let output = [];
 
@@ -584,11 +583,8 @@ function populateElements(item: IElement, level: number, shwSyn: boolean): Array
         if (item.title) {
             output.push(...generateHeading(item.title, level));
         }
-        for (let child of item.items) {
-            if (level > -1) {
-                level++
-            }
-            output.push(...populateElements(child, level, shwSyn));
+        for (let child of item.items) {           
+            output.push(...populateElements(child, level > -1 ? level + 1 : level, shwSyn));
         }
     }
     else if (item.type === 'image') {
@@ -606,7 +602,6 @@ function populateElements(item: IElement, level: number, shwSyn: boolean): Array
     else if (item.type === 'text') {
         output.push(...generateText(item, level));
     }
-
 
     return output;
 }
