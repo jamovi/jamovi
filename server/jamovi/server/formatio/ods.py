@@ -1,19 +1,62 @@
 
-from ezodf import opendoc
+from math import isnan as float_isnan
+from itertools import islice
+from ezodf import opendoc, newdoc, Table
+
+from jamovi.core import DataType
+from jamovi.server.instancemodel import InstanceModel
 
 from .reader import Reader
-
-from itertools import islice
 
 
 def get_readers():
     return [ ( 'ods', read ) ]
 
 
+def get_writers():
+    return [ ( 'ods', write ) ]
+
+
 def read(data, path, prog_cb, *, settings, **kwargs):
 
     reader = ODSReader(settings)
     reader.read_into(data, path, prog_cb)
+
+
+def write(data: InstanceModel, path, prog_cb):
+
+    spreadsheet = newdoc(doctype = "ods", filename = path)
+
+    def should_exclude(column):
+        return column.is_virtual or (column.is_filter and column.active)
+
+    def get_valtype(data_type):
+        return 'float' if data_type in [DataType.DECIMAL, DataType.INTEGER] else 'string'
+
+    def isnan(value):
+        return (isinstance(value, int) and value == -2147483648) or (isinstance(value, float) and float_isnan(value))
+
+    cols = [ col for col in data if not should_exclude(col) ]
+    col_no = [ col.index for col in cols ]
+    col_type = [ get_valtype(col.data_type) for col in cols ]
+
+    ws = spreadsheet.sheets.append(Table('Sheet 1', size = (data.row_count + 1, len(cols))))
+    assert ws is not None
+
+    for i, col in enumerate(cols):
+        ws[0, i].set_value(col.name, value_type = 'string')
+
+    for row_no in range(data.row_count):
+        if data.is_row_filtered(row_no):
+            continue
+        for i, col in enumerate(cols):
+            value = col[row_no]
+            if not isnan(value):
+                ws[row_no + 1, i].set_value(value, value_type = col_type[i])
+        if row_no % 1000 == 0:
+            prog_cb(row_no / data.row_count)
+
+    spreadsheet.save()
 
 
 def to_string(cell):
