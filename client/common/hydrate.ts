@@ -15,7 +15,8 @@ interface IRawCell {
 export interface ICell {
     content: string;
     align: 'l' | 'c' | 'r';
-    span?: number;
+    colSpan?: number;
+    rowSpan?: number;
     sups?: Array<string>;
 }
 
@@ -441,18 +442,21 @@ function hydrateTable(tablePB: any): ITable {
 
     let superTitles: Array<ICell | null> = new Array(nCols).fill(null);
     let hasSuperTitles = false;
+    let lastSuperTitle: ICell | null = null;
 
     for (let i = 0; i < nCols; i++) {
         const column = columnsPB[i];
         if (column.superTitle) {
-            if (i == 0 || superTitles[i-1] === null || superTitles[i-1].content !== column.superTitle) {
-                superTitles[i] = { content: column.superTitle, span: 1, align: 'c' };
+            if (i == 0 || lastSuperTitle === null || lastSuperTitle.content !== column.superTitle) {
+                lastSuperTitle = superTitles[i] = { content: column.superTitle, colSpan: 1, align: 'c' };
                 hasSuperTitles = true;
             }
             else {
-                superTitles[i] = superTitles[i-1];
-                superTitles[i].span += 1;
+                lastSuperTitle.colSpan += 1;
             }
+        }
+        else {
+            lastSuperTitle = null;
         }
     }
 
@@ -495,7 +499,7 @@ function hydrateTable(tablePB: any): ITable {
         const sup = ALPHABET[i];
         rows.push({
             type: 'footnote',
-            cells: [ { content: fn, span: nCols, sups: [sup], align: 'l' } ]
+            cells: [ { content: fn, colSpan: nCols, sups: [sup], align: 'l' } ]
         })
     }
 
@@ -503,7 +507,7 @@ function hydrateTable(tablePB: any): ITable {
         const note = tablePB.table.notes[i].note;
         rows.push({
             type: 'footnote',
-            cells: [ { content: note, span: nCols, sups: ['note'], align: 'l' } ]
+            cells: [ { content: note, colSpan: nCols, sups: ['note'], align: 'l' } ]
         })
     }
 
