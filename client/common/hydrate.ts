@@ -76,7 +76,10 @@ type IAddress = Array<string>;
 
 
 export function hydrate(pb: any, address: IAddress = [], values: IOptionValues = {}): IElement {
-    return hydrateElement(pb, address, values, [])[0];
+    const elements = hydrateElement(pb, address, values, []);
+    if (elements === null)
+        return null;
+    return elements[0];
 }
 
 function hydrateText(pb: any, top: boolean, values: IOptionValues, cursor: IAddress): IText | null {
