@@ -801,13 +801,13 @@ class ResultsPanel extends EventDistributor {
             const hydrated = hydrate(results, [], values);
             if (hydrated === null)
                 return null;
-            const text = latexify(hydrated, { addHeaderFooter: true });
+            const text = latexify(hydrated, { addHeaderFooter: false });
             return text;
         }).filter((fragment) => {
             return fragment !== null;
         });
 
-        return fragments.join('\n\n\n');
+        return fragments.join('\n\n' + '% ' + '='.repeat(78) + '\n');
     }
 
     getAsHTML(options, part?) {
@@ -965,7 +965,7 @@ class ResultsPanel extends EventDistributor {
                 };
 
                 if (part === '')
-                    options.filters.push({ name: _('LaTeX bundle {ext}', { ext: '(.zip)' }), extensions:  [ 'zip' ] });
+                    options.filters.push({ name: 'LaTeX', description: _('LaTeX bundle {ext}', { ext: '(.zip)' }), extensions:  [ 'zip' ] });
 
                 let result = await host.showSaveDialog(options);
                 if (result.cancelled)

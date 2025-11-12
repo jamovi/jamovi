@@ -67,7 +67,7 @@ function generateFigure(figure: IImage): Array<string> {
     output.push(`\\caption{${ title }}`);
     output.push(`\\label{fig:Figure_${ title.replace(' ', '_').replace(/\$.*?\$/g, '').replace('__', '_') }}`);
     output.push('\\centering');
-    output.push(`\\includegraphics[width=\\columnwidth]{\$\{fig:${ figure.address }\}}`);
+    output.push(`\\includegraphics[width=\\columnwidth]{\$\{address:${ figure.address }\}}`);
     // TO CONSIDER: use height / width for scaling
     output.push('\\end{figure}\n');
 
@@ -604,7 +604,7 @@ export function latexify(hydrated: IElement, options?: ILatexifyOptions): string
     let output = [ ];
 
     output.push(...(options.addHeaderFooter ? generateDocBeg() : []));
-    output.push(...populateElements(hydrated, options.level, options.shwSyn));
+    output.push(...populateElements(hydrated, options.level, options.showSyntax));
     output.push(...(options.addHeaderFooter ? generateDocEnd() : []));
 
     return output.join('\n');
