@@ -345,11 +345,13 @@ function transmogrify(rawCells: Array<Array<IRawCell>>, formats: Array<any>): [ 
             }
             const symbols = cell.symbols || [];
             const sups = indices.map(i => ALPHABET[i]);
+            const finalSups = [...symbols, ...sups];
             const finalCell: ICell = {
                 content: format2(cell.value, fmt),
                 align: cell.align,
-                sups: [...symbols, ...sups],
             };
+            if (finalSups.length > 0)
+                finalCell.sups = finalSups;
             return finalCell;
         });
     })
