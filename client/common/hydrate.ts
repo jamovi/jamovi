@@ -75,8 +75,9 @@ type IOptionValues = { [ name: string ]: any };
 type IAddress = Array<string>;
 
 
-export function hydrate(pb: any, address: IAddress = [], values: IOptionValues = {}): IElement {
-    const elements = hydrateElement(pb, address, values, []);
+export function hydrate(pb: any, address: IAddress = [], values: IOptionValues = {}, analysisId?: number): IElement {
+    analysisId = analysisId || 0;
+    const elements = hydrateElement(pb, address, values, [], analysisId);
     if (elements === null)
         return null;
     return elements[0];
@@ -144,7 +145,7 @@ function hydrateText(pb: any, top: boolean, values: IOptionValues, cursor: IAddr
     }
 }
 
-function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor: Array<string>): Array<IElement> {
+function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor: Array<string>, analysisId: number): Array<IElement> {
 
     cursor = [... cursor];  // clone
 
@@ -161,11 +162,11 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
             cursor.push(name);
             for (let elementPB of pb.group.elements) {
                 if (elementPB.name === name)
-                    return hydrateElement(elementPB, target, values, cursor);
+                    return hydrateElement(elementPB, target, values, cursor, analysisId);
             }
             throw Error('Address not valid');
         }
-        const group = hydrateGroup(pb, target, values, cursor);
+        const group = hydrateGroup(pb, target, values, cursor, analysisId);
         if (group) {
             // if there's text at the top of the group, we move it down into
             // the body of the group
@@ -182,11 +183,11 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
             cursor.push(name);
             for (let elementPB of pb.array.elements) {
                 if (elementPB.name === name)
-                    return hydrateElement(elementPB, target, values, cursor);
+                    return hydrateElement(elementPB, target, values, cursor, analysisId);
             }
             throw Error('Address not valid');
         }
-        const array = hydrateArray(pb, target, values, cursor);
+        const array = hydrateArray(pb, target, values, cursor, analysisId);
         if (array) {
             // if there's text at the top of the group, we move it down into
             // the body of the group
@@ -206,7 +207,7 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         elements.push(table)
     }
     else if (pb.image) {
-        const image = hydrateImage(pb, target, cursor);
+        const image = hydrateImage(pb, target, cursor, analysisId);
         elements.push(image);
     }
     else if (pb.preformatted) {
@@ -228,32 +229,32 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
 }
 
 
-function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cursor: IAddress): IGroup | null {
+function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, analysisId: number): IGroup | null {
     if (arrayPB.array.elements.length === 0)
         return null;
     return {
         type: 'group',
         title: arrayPB.title,
-        items: hydrateElements(arrayPB.array.elements, target, values, cursor),
+        items: hydrateElements(arrayPB.array.elements, target, values, cursor, analysisId),
     }
 }
 
-function hydrateGroup(groupPB: any, target: IAddress, values: IOptionValues, cursor: IAddress): IGroup | null {
+function hydrateGroup(groupPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, analysisId: number): IGroup | null {
     if (groupPB.group.elements.length === 0)
         return null;
     return {
         type: 'group',
         title: groupPB.title,
-        items: hydrateElements(groupPB.group.elements, target, values, cursor),
+        items: hydrateElements(groupPB.group.elements, target, values, cursor, analysisId),
     }
 }
 
-function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOptionValues, cursor: IAddress): Array<IElement> {
+function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOptionValues, cursor: IAddress, analysisId: number): Array<IElement> {
     const items = [ ]
     for (const itemPB of elementsPB) {
         const itemCursor = [...cursor, itemPB.name];
         if ([0, 2].includes(itemPB.visible)) {
-            const elem = hydrateElement(itemPB, target, values, itemCursor);
+            const elem = hydrateElement(itemPB, target, values, itemCursor, analysisId);
             if (elem !== null) {
                 for (const item of elem)
                     items.push(item);
@@ -263,14 +264,14 @@ function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOpti
     return items;
 }
 
-function hydrateImage(imagePB: any, target: IAddress, cursor: IAddress): IImage {
+function hydrateImage(imagePB: any, target: IAddress, cursor: IAddress, analysisId: number): IImage {
     return {
         type: 'image',
         title: imagePB.title,
         path: null,
         width: imagePB.image.width,
         height: imagePB.image.height,
-        address: [ ...cursor, ...target].join('/'),
+        address: [ analysisId.toString(), ...cursor, ...target].join('/'),
     };
 }
 
@@ -483,7 +484,7 @@ function hydrateTable(tablePB: any): ITable {
     rows.push({ type: 'title', cells: titles });
 
     const rawCellsByColumn = extractValues(columnsPB);
-    const formatsByColumn = rawCellsByColumn.map((x, i) => determFormat(x, columnsPB[i].type, columnsPB[i].format));
+    const formatsByColumn = rawCellsByColumn.map((x, i) => determFormat(x, columnsPB[i].type, columnsPB[i].format, undefined));
     const [ cellsByColumn, footnotes ] = transmogrify(rawCellsByColumn, formatsByColumn);
 
     const folded = fold(cellsByColumn, columnNames);
