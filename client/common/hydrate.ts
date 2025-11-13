@@ -231,26 +231,31 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
 function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean): IGroup | null {
     if (arrayPB.array.elements.length === 0)
         return null;
+    const items = hydrateElements(arrayPB.array.elements, target, values, cursor, top);
+    if (items === null)
+        return null;
     return {
         type: 'group',
         title: arrayPB.title,
-        items: hydrateElements(arrayPB.array.elements, target, values, cursor, top),
+        items,
     }
 }
 
 function hydrateGroup(groupPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean): IGroup | null {
 
     let title: string = groupPB.title;
-    if (top && cursor.length === 0)
+    if (top && cursor.length === 0) {
         title = values['results//heading'] || title;
-    else if (groupPB.group.elements.length === 0)
-        return null;
+        return { type: 'group', title, items: [] };
+    }
 
     const items = hydrateElements(groupPB.group.elements, target, values, cursor, top);
+    if (items === null)
+        return null;
     return { type: 'group', title, items };
 }
 
-function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean): Array<IElement> {
+function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean): Array<IElement> | null {
     const items = [ ]
     for (const itemPB of elementsPB) {
         const itemCursor = [...cursor, itemPB.name];
@@ -262,6 +267,8 @@ function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOpti
             }
         }
     }
+    if (items.length === 0)
+        return null;
     return items;
 }
 
