@@ -794,18 +794,20 @@ class ResultsPanel extends EventDistributor {
     getAsLatex() {
 
         const analyses = [ ... this.model.analyses() ];
+        const fragments = [];
+        let first = true;
 
-        const fragments = analyses.map(analysis => {
+        for (let analysis of this.model.analyses()) {
             const results = analysis.results;
             const values = analysis.options.getValues();
-            const hydrated = hydrate(results, [], values);
+            const hydrated = hydrate(results, [], values, first);
+            first = false;
             if (hydrated === null)
-                return null;
-            const text = latexify(hydrated, { addHeaderFooter: true });
-            return text;
-        }).filter((fragment) => {
-            return fragment !== null;
-        });
+                continue;
+            const latex = latexify(hydrated);
+            if (latex !== null)
+                fragments.push(latex);
+        }
 
         return fragments.join('\n\n\n');
     }
