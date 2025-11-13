@@ -7,8 +7,6 @@ from io import TextIOWrapper
 from time import localtime
 from urllib.parse import unquote
 
-from .apa7_cls import apa7_cls
-
 log = logging.getLogger(__name__)
 
 async def latexify(content, out, resolve_image):
@@ -36,7 +34,3 @@ async def latexify(content, out, resolve_image):
         with z.open(ZipInfo('article.tex', now), 'w') as f:
             with TextIOWrapper(f, encoding='utf-8') as ft:
                 ft.write(content)
-
-        with z.open(ZipInfo('apa7.cls', now), 'w') as f:
-            with TextIOWrapper(f, encoding='utf-8') as ft:
-                ft.write(apa7_cls)

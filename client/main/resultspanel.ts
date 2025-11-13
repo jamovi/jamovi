@@ -838,9 +838,10 @@ class ResultsPanel extends EventDistributor {
         header.push('\\leftheader{Last name}');
         header.push('\\authorsnames{Full Name}');
         header.push('\\authorsaffiliations{{Your Affilitation}}');
-        header.push('% from the CTAN apa7 documentation, 4.2.2');
+        header.push('% example below from the CTAN apa7 documentation, 4.2.2:')
+        header.push('% authors 1 and 3 share affiliation 1, author 2 has affiliations 2 and 3');
         header.push('%\\authorsnames[1,{2,3},1]{Author 1, Author 2, Author 2}');
-        header.push('%\\authorsaffiliations{{Affillition for [1]}, {Affillition for [2]}, {Affillition for [3]}}');
+        header.push('%\\authorsaffiliations{{Affiliation 1}, {Affiliation 2}, {Affiliation 3}}');
         header.push('\\authornote{\\addORCIDlink{Full Name}{0000-0000-0000-0000}\\\\');
         header.push('More detailed information about how to contact you.\\\\');
         header.push('Can continue over several lines.\\\\');
