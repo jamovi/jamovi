@@ -1,7 +1,6 @@
 import { IElement, IGroup, IImage, ITable, IRow, IHTML, IPreformatted, IText, ITextChunk } from './hydrate';
 
 export interface ILatexifyOptions {
-    addHeaderFooter?: boolean;
     showSyntax?: boolean;
     level?: number;
 }
@@ -67,7 +66,7 @@ function generateFigure(figure: IImage): Array<string> {
     output.push(`\\caption{${ title }}`);
     output.push(`\\label{fig:Figure_${ title.replace(' ', '_').replace(/\$.*?\$/g, '').replace('__', '_') }}`);
     output.push('\\centering');
-    output.push(`\\includegraphics[width=\\columnwidth]{\$\{fig:${ figure.address }\}}`);
+    output.push(`\\includegraphics[width=\\columnwidth]{\$\{address:${ figure.address }\}}`);
     // TO CONSIDER: use height / width for scaling
     output.push('\\end{figure}\n');
 
@@ -254,82 +253,6 @@ function generateHeading(title: string, level: number): Array<string> {
         }
         output.push(ruler);
     }
-
-    return output;
-}
-
-// generate the document header
-function generateDocBeg(): Array<string> {
-    let output = [];
-
-    output.push('\\documentclass[a4paper,man,hidelinks,floatsintext,x11names]{apa7}');
-    output.push('% This LaTeX output is designed to use APA7 style and to run on local ' + 
-                'TexLive-installation (use pdflatex) as well as on web interfaces (e.g., '+
-                'overleaf.com).');
-    output.push('% If you prefer postponing your figures and table until after the ' +
-                'reference list, instead of having them within the body of the text, ' +
-                'please remove the ",floatsintext" from the documentclass options. Further ' +
-                'information on these styles can be at: https://www.ctan.org/pkg/apa7.\n');
-    output.push('\\usepackage[british]{babel}');
-    output.push('\\usepackage{xcolor}');
-    output.push('\\usepackage[utf8]{inputenc}');
-    output.push('\\usepackage{amsmath}');
-    output.push('\\usepackage{graphicx}');
-    output.push('\\usepackage[export]{adjustbox}');
-    output.push('\\usepackage{csquotes}');
-    output.push('\\usepackage{soul}');
-    output.push('\\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}');
-    output.push('\\DeclareLanguageMapping{british}{british-apa}');
-    output.push('\\addbibresource{article.bib}\n');
-    output.push('\\title{APA-Style Manuscript with jamovi Results}');
-    output.push('\\shorttitle{jamovi Results}');
-    output.push('\\leftheader{Last name}');
-    output.push('\\authorsnames{Full Name}');
-    output.push('\\authorsaffiliations{{Your Affilitation}}');
-    output.push('% from the CTAN apa7 documentation, 4.2.2');
-    output.push('%\\authorsnames[1,{2,3},1]{Author 1, Author 2, Author 2}');
-    output.push('%\\authorsaffiliations{{Affillition for [1]}, {Affillition for [2]}, {Affillition for [3]}}');
-    output.push('\\authornote{\\addORCIDlink{Full Name}{0000-0000-0000-0000}\\\\');
-    output.push('More detailed information about how to contact you.\\\\');
-    output.push('Can continue over several lines.\\\\');
-    output.push('}\n');
-    output.push('\\abstract{Your abstract here.}');
-    output.push('\\keywords{keyword 1, keyword 2}\n');
-    output.push('\\begin{document}\n');
-    output.push('% \\maketitle\n');
-    output.push('% Your introduction starts here.\n');
-    output.push('% \\section{Methods}');
-    output.push('% Feel free to adjust the subsections below.\n');
-    output.push('% \\subsection{Participants}');
-    output.push('% Your participants description goes here.\n');
-    output.push('% \\subsection{Materials}');
-    output.push('% Your description of the experimental materials goes here.\n');
-    output.push('% \\subsection{Procedure}');
-    output.push('% Your description of the experimental procedures goes here.\n');
-    output.push('% \\subsection{Statistical Analyses}');
-    // TO-DO: add references, once implemented
-    output.push('% Statistical analyses were performed using jamovi \\parencite{jamovi}, ' +
-                'and the R statistical language \\parencite{R}, as well as the modules / ' +
-                'packages car and emmeans \\parencite{car, emmeans}.\n');
-    output.push('\\section{Results}');
-
-    return output;
-}
-
-// generate the document footer
-function generateDocEnd(): Array<string> {
-    let output = [];
-
-    output.push('% Report your results here and make reference to tables (see ' +
-                'Table~\\ref{tbl:Table_...}) or figures (see Figure~\\ref{fig:Figure_...}).');
-    output.push('%\\section{Discussion}');
-    output.push('% Your discussion starts here.\n');
-    output.push('*\\printbibliography\n');
-    output.push('%\\appendix');
-    output.push('%\\section{Additional tables and figures}');
-    output.push('% Your text introducing supplementary tables and figures.');
-    output.push('% If required copy tables and figures from the main results here.');
-    output.push('\\end{document}');
 
     return output;
 }
@@ -598,14 +521,11 @@ function populateElements(item: IElement, level: number, shwSyn: boolean): Array
 export function latexify(hydrated: IElement, options?: ILatexifyOptions): string {
     // handle falling back to defaults, if the option parameter is not given
     options = options || {};
-    options.addHeaderFooter = options.addHeaderFooter ?? false;
     options.showSyntax = options.showSyntax ?? false;
     options.level = options.level ?? -1;
     let output = [ ];
 
-    output.push(...(options.addHeaderFooter ? generateDocBeg() : []));
-    output.push(...populateElements(hydrated, options.level, options.shwSyn));
-    output.push(...(options.addHeaderFooter ? generateDocEnd() : []));
+    output.push(...populateElements(hydrated, options.level, options.showSyntax));
 
     return output.join('\n');
 }
