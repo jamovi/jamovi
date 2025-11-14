@@ -41,12 +41,6 @@ export interface IPreformatted {
     syntax: boolean;
 }
 
-export interface IHTML {
-    type: 'html';
-    title?: string;
-    content: string;
-}
-
 export interface IGroup {
     type: 'group',
     title?: string;
@@ -70,7 +64,7 @@ export interface IText {
     chunks: Array<ITextChunk>,
 }
 
-export type IElement = IGroup | ITable | IImage | IText | IPreformatted | IHTML;
+export type IElement = IGroup | ITable | IImage | IText | IPreformatted;
 type IOptionValues = { [ name: string ]: any };
 type IAddress = Array<string>;
 
@@ -201,7 +195,7 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
     if (target.length > 0)
         throw Error('Address not valid');
 
-    // append results objects to elements: table, image, preformatted or HTML
+    // append results objects to elements: table, image, or preformatted
     if (pb.table) {
         const table = hydrateTable(pb);
         elements.push(table)
@@ -213,10 +207,6 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
     else if (pb.preformatted) {
         const preformatted = hydratePreformatted(pb);
         elements.push(preformatted);
-    }
-    else if (pb.html) {
-        const html = hydrateHTML(pb);
-        elements.push(html);
     }
 
     if (after)
@@ -290,14 +280,6 @@ function hydratePreformatted(preformattedPB: any): IPreformatted {
         title: preformattedPB.title,
         content: preformattedPB.preformatted,
         syntax: preformattedPB.name == 'syntax',
-    };
-}
-
-function hydrateHTML(htmlPB: any): IHTML {
-    return {
-        type: 'html',
-        title: htmlPB.title,
-        content: htmlPB.html.content,
     };
 }
 

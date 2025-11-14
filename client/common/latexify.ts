@@ -1,8 +1,94 @@
-import { IElement, IGroup, IImage, ITable, IRow, IHTML, IPreformatted, IText, ITextChunk } from './hydrate';
+import { IElement, IGroup, IImage, ITable, IRow, IPreformatted, IText, ITextChunk } from './hydrate';
 
 export interface ILatexifyOptions {
     showSyntax?: boolean;
     level?: number;
+}
+
+export function latexify(hydrated: IElement, options?: ILatexifyOptions): string {
+    // handle falling back to defaults, if the option parameter is not given
+    options = options || {};
+    options.showSyntax = options.showSyntax ?? false;
+    options.level = options.level ?? -1;
+
+    return populateElements(hydrated, options.level, options.showSyntax).join('\n');
+}
+
+// main loop: iterates through the input elements and calls itself when a group element
+// has children
+function populateElements(item: IElement, level: number, shwSyn: boolean): Array<string> {
+    let output = [];
+
+    if (item.type === 'group') {
+        if (item.title) {
+            output.push(...generateHeading(item.title, level));
+        }
+        for (let child of item.items) {           
+            output.push(...populateElements(child, level > -1 ? level + 1 : level, shwSyn));
+        }
+    }
+    else if (item.type === 'image') {
+        output.push(...generateFigure(item));
+    }
+    else if (item.type === 'table') {
+        output.push(...generateTable(item));
+    }
+    else if (item.type === 'preformatted') {
+        output.push(...generatePreformatted(item, level, shwSyn));
+    }
+    else if (item.type === 'text') {
+        output.push(...generateText(item, level));
+    }
+
+    return output;
+}
+
+// generate headings at different levels
+function generateHeading(title: string, level: number): Array<string> {
+    let output = [];
+    const ruler = '% ' + '-'.repeat(80);
+
+    if (level >= 0 && title) {
+        output.push(ruler);
+        if (level == 0) {
+            // NB: chapter is not available in apa7
+            output.push(`\\chapter{${ title }}`);
+        }
+        else if (level == 1) {
+            output.push(`\\section{${ title }}`);
+        }
+        else if (level == 2) {
+            output.push(`\\subsection{${ title }}`);
+        }
+        else if (level == 3) {
+            output.push(`\\subsubsection{${ title }}`);
+        }
+        else if (level == 4) {
+            output.push(`\\paragraph{${ title }}`);
+        }
+        else {
+            output.push(`\\subparagraph{${ title }}`);
+        }
+        output.push(ruler);
+    }
+
+    return output;
+}
+
+// generate figures
+function generateFigure(figure: IImage): Array<string> {
+    let output = [];
+
+    const title = figure.title ? replace4LaTeX(figure.title) : 'PLACEHOLDER ' + randomString(8);
+    output.push('\\begin{figure}[htbp]');
+    output.push(`\\caption{${ title }}`);
+    output.push(`\\label{fig:Figure_${ title.replace(' ', '_').replace(/\$.*?\$/g, '').replace('__', '_') }}`);
+    output.push('\\centering');
+    output.push(`\\includegraphics[width=\\columnwidth]{\$\{address:${ figure.address }\}}`);
+    // TO CONSIDER: use height / width for scaling
+    output.push('\\end{figure}\n');
+
+    return output;
 }
 
 // generate tables
@@ -57,110 +143,7 @@ function generateTable(table: ITable): Array<string> {
     return output;
 }
 
-// generate figures
-function generateFigure(figure: IImage): Array<string> {
-    let output = [];
-
-    const title = figure.title ? replace4LaTeX(figure.title) : 'PLACEHOLDER ' + randomString(8);
-    output.push('\\begin{figure}[htbp]');
-    output.push(`\\caption{${ title }}`);
-    output.push(`\\label{fig:Figure_${ title.replace(' ', '_').replace(/\$.*?\$/g, '').replace('__', '_') }}`);
-    output.push('\\centering');
-    output.push(`\\includegraphics[width=\\columnwidth]{\$\{address:${ figure.address }\}}`);
-    // TO CONSIDER: use height / width for scaling
-    output.push('\\end{figure}\n');
-
-    return output;
-}
-
-// convert HTML to LaTeX
-function generateHTML(html: IHTML, level: number): Array<string> {
-    let output = [];
-    let htmlContent = replace4LaTeX(html.content).replace(/<style>.*?<\/style>/, '').trim();
-
-    if (htmlContent) {
-        // format preformatted and lists
-        htmlContent = htmlContent.replace(/<pre>/g, '\\begin{verbatim}\n').replace(/<\/pre>/g, '\\end{verbatim}\n\n');
-        htmlContent = htmlContent.replace(/<ol>/g, '\\begin{enumerate}\n').replace(/<\/ol>/g, '\\end{enumerate}\n\n');
-        htmlContent = htmlContent.replace(/<ul>/g, '\\begin{itemize}\n').replace(/<\/ul>/g, '\\end{itemize}\n\n');
-        htmlContent = htmlContent.replace(/<li.*?>/g, '\\item ').replace(/<\/li>/g, '\n');
-
-        // handle headings
-        for (let hOrg of htmlContent.match(/(<h[1-5]>.*?<\/h[1-5]>)/g)) {
-            let hRpl = generateHeading(hOrg.match(/<h[1-5]>(.*?)<\/h[1-5]>/)[1], level + 1).join('\n');
-            htmlContent = htmlContent.replace(hOrg, hRpl);
-        }
-
-        // handle paragraphs
-        for (let pOrg of htmlContent.match(/(<p.*?>.*?<\/p>)/g)) {
-            pOrg = pOrg.trim();
-            let pRpl = pOrg;
-            let pWrp = [];
-            // decode text alignment: left as default (NB: LaTeX uses justify as default)
-            if (pOrg.includes('ql-align-right')) {
-                pWrp = ['\\begin{flushright}\n\\noindent\n', '\\end{flushright}\n'];
-                pRpl = pRpl.replace('ql-align-right', '');
-            }
-            else if (pOrg.includes('ql-align-center')) {
-                pWrp = ['\\begin{center}\n\\noindent\n', '\\end{center}\n'];
-                pRpl = pRpl.replace('ql-align-center',  '');
-            }
-            else if (pOrg.includes('ql-align-justify')) {
-                pWrp = ['\\noindent\n', '\n'];
-                pRpl = pRpl.replace('ql-align-justify', '');
-            }
-            else {
-                pWrp = ['\\begin{flushleft}\n\\noindent\n', '\\end{flushleft}\n' ]
-            }
-            // decode text indentation
-            if (pOrg.includes('ql-indent-')) {
-                pWrp = [`\\setlength{\\leftskip}{${ pRpl.match(/ql-indent-([0-9]+)/)[1] }cm}\n`,
-                        '\\setlength{\\leftskip}{0cm}\n'];
-                pRpl = pRpl.replace(/ql-indent-[0-9]+[;"]/g, '"');
-            }
-            pRpl = pRpl.replace(' class=""', '').replace(/<br\/>/g, '\\\\\n')
-            if (pRpl.startsWith('<p>') && pRpl.endsWith('</p>') && pRpl.match('<p>').length == 1 && pRpl.match('</p>').length == 1) {
-                pRpl = pRpl.replace('<p>', pWrp[0]).replace('</p>', '\n' + pWrp[1] + '\n');
-                htmlContent = htmlContent.replace(pOrg, pRpl);
-            }
-            else {
-                htmlContent = htmlContent.replace(pOrg, '');
-            }
-        }
-
-        // handle spans
-        for (let sOrg of htmlContent.match(/(<span.*?>.*?<\/span>)/g)) {
-            // replace(r'<p>', '').replace(r'</p>', '')
-            sOrg = sOrg.trim();
-            let sRpl = sOrg;
-            let sWrp = ['', ''];
-            // formulas
-            if (sRpl.includes('<span class="ql-formula">')) {
-                sRpl = '$' + sRpl.match(/<span class="ql-formula">(.*?)<\/span>/)[1] + '$';
-                sRpl = sRpl.replace(/ class="ql-formula"/, '');
-            }
-            // colours: replace hex with X11-names
-            if (sOrg.includes('color:#')) {
-                if (sOrg.includes('background-color:')) {
-                    sWrp = [sWrp[0] + '\\colorbox[rgb]{' + formatRGB(sRpl.match(/background-color:(\S*?)[;"]/)[1]) + '}{', sWrp[1] + '}'];
-                    sRpl = sRpl.replace(/background-color:\S*?[;"]/, '"');
-                }
-                if (sOrg.includes('="color:')) {
-                    sWrp = [sWrp[0] + '\\textcolor[]{' + formatRGB(sRpl.match(/color:(\S*?)[;"]/)[1]) + '}{', sWrp[1] + '}'];
-                    sRpl = sRpl.replace(/="color:\S*?[;"]/, '=""');
-                }
-            }
-            sRpl = (sWrp[0] + sRpl.replace(/<span.*?>([\S\s]*?)<\/span>/, '$1') + sWrp[1]);
-            sRpl = sRpl.replace(/<br\/>/g, '\\\\\n');
-            htmlContent = htmlContent.replace(sOrg, sRpl);
-        }
-        output = htmlContent.replace(/<\/p><p>/g, '\\\\\n').split('\n');
-    }
-
-    return output;
-}
-
-// convert Preformatted to LaTeX
+// generate preformatted text
 function generatePreformatted(preformatted: IPreformatted, level: number, shwSyn: boolean): Array<string> {
     let output = [];
 
@@ -176,7 +159,7 @@ function generatePreformatted(preformatted: IPreformatted, level: number, shwSyn
     return output;
 }
 
-// convert Text (annotations) to LaTeX
+// generate formatted text (annotations)
 function generateText(text: IText, level: number): Array<string> {
     let output = ['\\begin{flushleft}\n\\noindent\n'];
     let calgn = 'left';
@@ -223,38 +206,6 @@ function generateText(text: IText, level: number): Array<string> {
     output.push('\n\\end{flushleft}\n');
 
     return output.join('').split('\n');
-}
-
-// generate headings at different levels
-function generateHeading(title: string, level: number): Array<string> {
-    let output = [];
-    const ruler = '% ' + '-'.repeat(80);
-
-    if (level >= 0 && title) {
-        output.push(ruler);
-        if (level == 0) {
-            // NB: chapter is not available in apa7
-            output.push(`\\chapter{${ title }}`);
-        }
-        else if (level == 1) {
-            output.push(`\\section{${ title }}`);
-        }
-        else if (level == 2) {
-            output.push(`\\subsection{${ title }}`);
-        }
-        else if (level == 3) {
-            output.push(`\\subsubsection{${ title }}`);
-        }
-        else if (level == 4) {
-            output.push(`\\paragraph{${ title }}`);
-        }
-        else {
-            output.push(`\\subparagraph{${ title }}`);
-        }
-        output.push(ruler);
-    }
-
-    return output;
 }
 
 // generate random string
@@ -484,48 +435,4 @@ function formatFrml(katex: string): string {
     let output = katex;
 
     return output;
-}
-
-// main loop: iterates through the input elements and calls itself when a group element
-// has children
-function populateElements(item: IElement, level: number, shwSyn: boolean): Array<string> {
-    let output = [];
-
-    if (item.type === 'group') {
-        if (item.title) {
-            output.push(...generateHeading(item.title, level));
-        }
-        for (let child of item.items) {           
-            output.push(...populateElements(child, level > -1 ? level + 1 : level, shwSyn));
-        }
-    }
-    else if (item.type === 'image') {
-        output.push(...generateFigure(item));
-    }
-    else if (item.type === 'table') {
-        output.push(...generateTable(item));
-    }
-    else if (item.type === 'html') {
-        output.push(...generateHTML(item, level));
-    }
-    else if (item.type === 'preformatted') {
-        output.push(...generatePreformatted(item, level, shwSyn));
-    }
-    else if (item.type === 'text') {
-        output.push(...generateText(item, level));
-    }
-
-    return output;
-}
-
-export function latexify(hydrated: IElement, options?: ILatexifyOptions): string {
-    // handle falling back to defaults, if the option parameter is not given
-    options = options || {};
-    options.showSyntax = options.showSyntax ?? false;
-    options.level = options.level ?? -1;
-    let output = [ ];
-
-    output.push(...populateElements(hydrated, options.level, options.showSyntax));
-
-    return output.join('\n');
 }
