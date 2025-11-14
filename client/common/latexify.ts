@@ -1,9 +1,166 @@
-import { IElement, IGroup, IImage, ITable, IRow, IHTML, IPreformatted, IText, ITextChunk } from './hydrate';
+import { IElement, IGroup, IImage, ITable, IRow, IPreformatted, IText, ITextChunk } from './hydrate';
 
 export interface ILatexifyOptions {
-    addHeaderFooter?: boolean;
     showSyntax?: boolean;
     level?: number;
+}
+
+export function latexify(hydrated: IElement, options?: ILatexifyOptions): string {
+    // handle falling back to defaults, if the option parameter is not given
+    options = options || {};
+    options.showSyntax = options.showSyntax ?? false;
+    options.level = options.level ?? -1;
+
+    return populateElements(hydrated, options.level, options.showSyntax).join('\n');
+}
+
+export function addHeaderFooter(contents: Array<string>, references?: Array<string>): string {
+    references = references || [];
+    // used to comment out BibTeX-related lines when no references are present
+    let refPrefix = (references.length === 0 ? '%' : '');
+    let header = [];
+    let footer = [];
+
+    // generate LaTeX document header
+    header.push('\\documentclass[a4paper,man,hidelinks,floatsintext,x11names]{apa7}');
+    header.push('% This LaTeX output is designed to use APA7 style and to run on local ' + 
+                'TexLive-installation (use pdflatex) as well as on web interfaces (e.g., '+
+                'overleaf.com).');
+    header.push('% If you prefer postponing your figures and table until after the ' +
+                'reference list, instead of having them within the body of the text, ' +
+                'please remove the ",floatsintext" from the documentclass options. Further ' +
+                'information on these styles can be at: https://www.ctan.org/pkg/apa7.\n');
+    header.push('\\usepackage[british]{babel}');
+    header.push('\\usepackage{xcolor}');
+    header.push('\\usepackage[utf8]{inputenc}');
+    header.push('\\usepackage{amsmath}');
+    header.push('\\usepackage{graphicx}');
+    header.push('\\usepackage[export]{adjustbox}');
+    header.push('\\usepackage{csquotes}');
+    header.push('\\usepackage{soul}');
+    header.push(refPrefix + '\\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}');
+    header.push(refPrefix + '\\DeclareLanguageMapping{british}{british-apa}');
+    header.push(refPrefix + '\\addbibresource{article.bib}\n');
+    header.push('\\title{APA-Style Manuscript with jamovi Results}');
+    header.push('\\shorttitle{jamovi Results}');
+    header.push('\\leftheader{Last name}');
+    header.push('\\authorsnames{Full Name}');
+    header.push('\\authorsaffiliations{{Your Affilitation}}');
+    header.push('% example below from the CTAN apa7 documentation, 4.2.2:')
+    header.push('% authors 1 and 3 share affiliation 1, author 2 has affiliations 2 and 3');
+    header.push('%\\authorsnames[1,{2,3},1]{Author 1, Author 2, Author 2}');
+    header.push('%\\authorsaffiliations{{Affiliation 1}, {Affiliation 2}, {Affiliation 3}}');
+    header.push('\\authornote{\\addORCIDlink{Full Name}{0000-0000-0000-0000}\\\\');
+    header.push('More detailed information about how to contact you.\\\\');
+    header.push('Can continue over several lines.\\\\');
+    header.push('}\n');
+    header.push('\\abstract{Your abstract here.}');
+    header.push('\\keywords{keyword 1, keyword 2}\n');
+    header.push('\\begin{document}\n');
+    header.push('%\\maketitle\n');
+    header.push('% Your introduction starts here.\n');
+    header.push('%\\section{Methods}');
+    header.push('% Feel free to adjust the subsections below.\n');
+    header.push('%\\subsection{Participants}');
+    header.push('% Your participants description goes here.\n');
+    header.push('%\\subsection{Materials}');
+    header.push('% Your description of the experimental materials goes here.\n');
+    header.push('%\\subsection{Procedure}');
+    header.push('% Your description of the experimental procedures goes here.\n');
+    header.push('%\\subsection{Statistical Analyses}');
+    header.push(refDescript(references) + '\n');
+    header.push('\\section{Results}\n');
+
+    // generate LaTeX document footer
+    footer.push('% Report your results here and make reference to tables (see ' +
+                'Table~\\ref{tbl:Table_...}) or figures (see Figure~\\ref{fig:Figure_...}).\n');
+    footer.push('%\\section{Discussion}');
+    footer.push('% Your discussion starts here.\n');
+    footer.push('%\\printbibliography\n');
+    footer.push('%\\appendix');
+    footer.push('%\\section{Additional tables and figures}');
+    footer.push('% Your text introducing supplementary tables and figures.');
+    footer.push('% If required copy tables and figures from the main results here.\n');
+    footer.push('\\end{document}\n');
+
+    return [header.join('\n'), contents, footer.join('\n')].join('\n' + '% ' + '='.repeat(78) + '\n\n')
+}
+
+// main loop: iterates through the input elements and calls itself when a group element
+// has children
+function populateElements(item: IElement, level: number, shwSyn: boolean): Array<string> {
+    let output = [];
+
+    if (item.type === 'group') {
+        if (item.title) {
+            output.push(...generateHeading(item.title, level));
+        }
+        for (let child of item.items) {           
+            output.push(...populateElements(child, level > -1 ? level + 1 : level, shwSyn));
+        }
+    }
+    else if (item.type === 'image') {
+        output.push(...generateFigure(item));
+    }
+    else if (item.type === 'table') {
+        output.push(...generateTable(item));
+    }
+    else if (item.type === 'preformatted') {
+        output.push(...generatePreformatted(item, level, shwSyn));
+    }
+    else if (item.type === 'text') {
+        output.push(...generateText(item, level));
+    }
+
+    return output;
+}
+
+// generate headings at different levels
+function generateHeading(title: string, level: number): Array<string> {
+    let output = [];
+    const ruler = '% ' + '-'.repeat(80);
+
+    if (level >= 0 && title) {
+        output.push(ruler);
+        if (level == 0) {
+            // NB: chapter is not available in apa7
+            output.push(`\\chapter{${ title }}`);
+        }
+        else if (level == 1) {
+            output.push(`\\section{${ title }}`);
+        }
+        else if (level == 2) {
+            output.push(`\\subsection{${ title }}`);
+        }
+        else if (level == 3) {
+            output.push(`\\subsubsection{${ title }}`);
+        }
+        else if (level == 4) {
+            output.push(`\\paragraph{${ title }}`);
+        }
+        else {
+            output.push(`\\subparagraph{${ title }}`);
+        }
+        output.push(ruler);
+    }
+
+    return output;
+}
+
+// generate figures
+function generateFigure(figure: IImage): Array<string> {
+    let output = [];
+
+    const title = figure.title ? replace4LaTeX(figure.title) : 'PLACEHOLDER ' + randomString(8);
+    output.push('\\begin{figure}[htbp]');
+    output.push(`\\caption{${ title }}`);
+    output.push(`\\label{fig:Figure_${ title.replace(' ', '_').replace(/\$.*?\$/g, '').replace('__', '_') }}`);
+    output.push('\\centering');
+    output.push(`\\includegraphics[width=\\columnwidth]{\$\{address:${ figure.address }\}}`);
+    // TO CONSIDER: use height / width for scaling
+    output.push('\\end{figure}\n');
+
+    return output;
 }
 
 // generate tables
@@ -58,110 +215,7 @@ function generateTable(table: ITable): Array<string> {
     return output;
 }
 
-// generate figures
-function generateFigure(figure: IImage): Array<string> {
-    let output = [];
-
-    const title = figure.title ? replace4LaTeX(figure.title) : 'PLACEHOLDER ' + randomString(8);
-    output.push('\\begin{figure}[htbp]');
-    output.push(`\\caption{${ title }}`);
-    output.push(`\\label{fig:Figure_${ title.replace(' ', '_').replace(/\$.*?\$/g, '').replace('__', '_') }}`);
-    output.push('\\centering');
-    output.push(`\\includegraphics[width=\\columnwidth]{\$\{fig:${ figure.address }\}}`);
-    // TO CONSIDER: use height / width for scaling
-    output.push('\\end{figure}\n');
-
-    return output;
-}
-
-// convert HTML to LaTeX
-function generateHTML(html: IHTML, level: number): Array<string> {
-    let output = [];
-    let htmlContent = replace4LaTeX(html.content).replace(/<style>.*?<\/style>/, '').trim();
-
-    if (htmlContent) {
-        // format preformatted and lists
-        htmlContent = htmlContent.replace(/<pre>/g, '\\begin{verbatim}\n').replace(/<\/pre>/g, '\\end{verbatim}\n\n');
-        htmlContent = htmlContent.replace(/<ol>/g, '\\begin{enumerate}\n').replace(/<\/ol>/g, '\\end{enumerate}\n\n');
-        htmlContent = htmlContent.replace(/<ul>/g, '\\begin{itemize}\n').replace(/<\/ul>/g, '\\end{itemize}\n\n');
-        htmlContent = htmlContent.replace(/<li.*?>/g, '\\item ').replace(/<\/li>/g, '\n');
-
-        // handle headings
-        for (let hOrg of htmlContent.match(/(<h[1-5]>.*?<\/h[1-5]>)/g)) {
-            let hRpl = generateHeading(hOrg.match(/<h[1-5]>(.*?)<\/h[1-5]>/)[1], level + 1).join('\n');
-            htmlContent = htmlContent.replace(hOrg, hRpl);
-        }
-
-        // handle paragraphs
-        for (let pOrg of htmlContent.match(/(<p.*?>.*?<\/p>)/g)) {
-            pOrg = pOrg.trim();
-            let pRpl = pOrg;
-            let pWrp = [];
-            // decode text alignment: left as default (NB: LaTeX uses justify as default)
-            if (pOrg.includes('ql-align-right')) {
-                pWrp = ['\\begin{flushright}\n\\noindent\n', '\\end{flushright}\n'];
-                pRpl = pRpl.replace('ql-align-right', '');
-            }
-            else if (pOrg.includes('ql-align-center')) {
-                pWrp = ['\\begin{center}\n\\noindent\n', '\\end{center}\n'];
-                pRpl = pRpl.replace('ql-align-center',  '');
-            }
-            else if (pOrg.includes('ql-align-justify')) {
-                pWrp = ['\\noindent\n', '\n'];
-                pRpl = pRpl.replace('ql-align-justify', '');
-            }
-            else {
-                pWrp = ['\\begin{flushleft}\n\\noindent\n', '\\end{flushleft}\n' ]
-            }
-            // decode text indentation
-            if (pOrg.includes('ql-indent-')) {
-                pWrp = [`\\setlength{\\leftskip}{${ pRpl.match(/ql-indent-([0-9]+)/)[1] }cm}\n`,
-                        '\\setlength{\\leftskip}{0cm}\n'];
-                pRpl = pRpl.replace(/ql-indent-[0-9]+[;"]/g, '"');
-            }
-            pRpl = pRpl.replace(' class=""', '').replace(/<br\/>/g, '\\\\\n')
-            if (pRpl.startsWith('<p>') && pRpl.endsWith('</p>') && pRpl.match('<p>').length == 1 && pRpl.match('</p>').length == 1) {
-                pRpl = pRpl.replace('<p>', pWrp[0]).replace('</p>', '\n' + pWrp[1] + '\n');
-                htmlContent = htmlContent.replace(pOrg, pRpl);
-            }
-            else {
-                htmlContent = htmlContent.replace(pOrg, '');
-            }
-        }
-
-        // handle spans
-        for (let sOrg of htmlContent.match(/(<span.*?>.*?<\/span>)/g)) {
-            // replace(r'<p>', '').replace(r'</p>', '')
-            sOrg = sOrg.trim();
-            let sRpl = sOrg;
-            let sWrp = ['', ''];
-            // formulas
-            if (sRpl.includes('<span class="ql-formula">')) {
-                sRpl = '$' + sRpl.match(/<span class="ql-formula">(.*?)<\/span>/)[1] + '$';
-                sRpl = sRpl.replace(/ class="ql-formula"/, '');
-            }
-            // colours: replace hex with X11-names
-            if (sOrg.includes('color:#')) {
-                if (sOrg.includes('background-color:')) {
-                    sWrp = [sWrp[0] + '\\colorbox[rgb]{' + formatRGB(sRpl.match(/background-color:(\S*?)[;"]/)[1]) + '}{', sWrp[1] + '}'];
-                    sRpl = sRpl.replace(/background-color:\S*?[;"]/, '"');
-                }
-                if (sOrg.includes('="color:')) {
-                    sWrp = [sWrp[0] + '\\textcolor[]{' + formatRGB(sRpl.match(/color:(\S*?)[;"]/)[1]) + '}{', sWrp[1] + '}'];
-                    sRpl = sRpl.replace(/="color:\S*?[;"]/, '=""');
-                }
-            }
-            sRpl = (sWrp[0] + sRpl.replace(/<span.*?>([\S\s]*?)<\/span>/, '$1') + sWrp[1]);
-            sRpl = sRpl.replace(/<br\/>/g, '\\\\\n');
-            htmlContent = htmlContent.replace(sOrg, sRpl);
-        }
-        output = htmlContent.replace(/<\/p><p>/g, '\\\\\n').split('\n');
-    }
-
-    return output;
-}
-
-// convert Preformatted to LaTeX
+// generate preformatted text
 function generatePreformatted(preformatted: IPreformatted, level: number, shwSyn: boolean): Array<string> {
     let output = [];
 
@@ -177,7 +231,7 @@ function generatePreformatted(preformatted: IPreformatted, level: number, shwSyn
     return output;
 }
 
-// convert Text (annotations) to LaTeX
+// generate formatted text (annotations)
 function generateText(text: IText, level: number): Array<string> {
     let output = ['\\begin{flushleft}\n\\noindent\n'];
     let calgn = 'left';
@@ -224,114 +278,6 @@ function generateText(text: IText, level: number): Array<string> {
     output.push('\n\\end{flushleft}\n');
 
     return output.join('').split('\n');
-}
-
-// generate headings at different levels
-function generateHeading(title: string, level: number): Array<string> {
-    let output = [];
-    const ruler = '% ' + '-'.repeat(80);
-
-    if (level >= 0 && title) {
-        output.push(ruler);
-        if (level == 0) {
-            // NB: chapter is not available in apa7
-            output.push(`\\chapter{${ title }}`);
-        }
-        else if (level == 1) {
-            output.push(`\\section{${ title }}`);
-        }
-        else if (level == 2) {
-            output.push(`\\subsection{${ title }}`);
-        }
-        else if (level == 3) {
-            output.push(`\\subsubsection{${ title }}`);
-        }
-        else if (level == 4) {
-            output.push(`\\paragraph{${ title }}`);
-        }
-        else {
-            output.push(`\\subparagraph{${ title }}`);
-        }
-        output.push(ruler);
-    }
-
-    return output;
-}
-
-// generate the document header
-function generateDocBeg(): Array<string> {
-    let output = [];
-
-    output.push('\\documentclass[a4paper,man,hidelinks,floatsintext,x11names]{apa7}');
-    output.push('% This LaTeX output is designed to use APA7 style and to run on local ' + 
-                'TexLive-installation (use pdflatex) as well as on web interfaces (e.g., '+
-                'overleaf.com).');
-    output.push('% If you prefer postponing your figures and table until after the ' +
-                'reference list, instead of having them within the body of the text, ' +
-                'please remove the ",floatsintext" from the documentclass options. Further ' +
-                'information on these styles can be at: https://www.ctan.org/pkg/apa7.\n');
-    output.push('\\usepackage[british]{babel}');
-    output.push('\\usepackage{xcolor}');
-    output.push('\\usepackage[utf8]{inputenc}');
-    output.push('\\usepackage{amsmath}');
-    output.push('\\usepackage{graphicx}');
-    output.push('\\usepackage[export]{adjustbox}');
-    output.push('\\usepackage{csquotes}');
-    output.push('\\usepackage{soul}');
-    output.push('\\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}');
-    output.push('\\DeclareLanguageMapping{british}{british-apa}');
-    output.push('\\addbibresource{article.bib}\n');
-    output.push('\\title{APA-Style Manuscript with jamovi Results}');
-    output.push('\\shorttitle{jamovi Results}');
-    output.push('\\leftheader{Last name}');
-    output.push('\\authorsnames{Full Name}');
-    output.push('\\authorsaffiliations{{Your Affilitation}}');
-    output.push('% from the CTAN apa7 documentation, 4.2.2');
-    output.push('%\\authorsnames[1,{2,3},1]{Author 1, Author 2, Author 2}');
-    output.push('%\\authorsaffiliations{{Affillition for [1]}, {Affillition for [2]}, {Affillition for [3]}}');
-    output.push('\\authornote{\\addORCIDlink{Full Name}{0000-0000-0000-0000}\\\\');
-    output.push('More detailed information about how to contact you.\\\\');
-    output.push('Can continue over several lines.\\\\');
-    output.push('}\n');
-    output.push('\\abstract{Your abstract here.}');
-    output.push('\\keywords{keyword 1, keyword 2}\n');
-    output.push('\\begin{document}\n');
-    output.push('% \\maketitle\n');
-    output.push('% Your introduction starts here.\n');
-    output.push('% \\section{Methods}');
-    output.push('% Feel free to adjust the subsections below.\n');
-    output.push('% \\subsection{Participants}');
-    output.push('% Your participants description goes here.\n');
-    output.push('% \\subsection{Materials}');
-    output.push('% Your description of the experimental materials goes here.\n');
-    output.push('% \\subsection{Procedure}');
-    output.push('% Your description of the experimental procedures goes here.\n');
-    output.push('% \\subsection{Statistical Analyses}');
-    // TO-DO: add references, once implemented
-    output.push('% Statistical analyses were performed using jamovi \\parencite{jamovi}, ' +
-                'and the R statistical language \\parencite{R}, as well as the modules / ' +
-                'packages car and emmeans \\parencite{car, emmeans}.\n');
-    output.push('\\section{Results}');
-
-    return output;
-}
-
-// generate the document footer
-function generateDocEnd(): Array<string> {
-    let output = [];
-
-    output.push('% Report your results here and make reference to tables (see ' +
-                'Table~\\ref{tbl:Table_...}) or figures (see Figure~\\ref{fig:Figure_...}).');
-    output.push('%\\section{Discussion}');
-    output.push('% Your discussion starts here.\n');
-    output.push('*\\printbibliography\n');
-    output.push('%\\appendix');
-    output.push('%\\section{Additional tables and figures}');
-    output.push('% Your text introducing supplementary tables and figures.');
-    output.push('% If required copy tables and figures from the main results here.');
-    output.push('\\end{document}');
-
-    return output;
 }
 
 // generate random string
@@ -563,49 +509,18 @@ function formatFrml(katex: string): string {
     return output;
 }
 
-// main loop: iterates through the input elements and calls itself when a group element
-// has children
-function populateElements(item: IElement, level: number, shwSyn: boolean): Array<string> {
-    let output = [];
+function refDescript(references: Array<string>): string {
+    let refText = '';
 
-    if (item.type === 'group') {
-        if (item.title) {
-            output.push(...generateHeading(item.title, level));
-        }
-        for (let child of item.items) {           
-            output.push(...populateElements(child, level > -1 ? level + 1 : level, shwSyn));
-        }
-    }
-    else if (item.type === 'image') {
-        output.push(...generateFigure(item));
-    }
-    else if (item.type === 'table') {
-        output.push(...generateTable(item));
-    }
-    else if (item.type === 'html') {
-        output.push(...generateHTML(item, level));
-    }
-    else if (item.type === 'preformatted') {
-        output.push(...generatePreformatted(item, level, shwSyn));
-    }
-    else if (item.type === 'text') {
-        output.push(...generateText(item, level));
+    if (references.length > 0) {
+        // TO-DO: generate dynamically, when references are implemented
+        refText = '% Statistical analyses were performed using jamovi \\parencite{jamovi}, ' +
+                  'and the R statistical language \\parencite{R}, as well as the modules / ' +
+                  'packages car and emmeans \\parencite{car, emmeans}. Further describe your ' +
+                  'statistical analyses...'
+    } else {
+        refText = '% Describe your statistical analyses...'
     }
 
-    return output;
-}
-
-export function latexify(hydrated: IElement, options?: ILatexifyOptions): string {
-    // handle falling back to defaults, if the option parameter is not given
-    options = options || {};
-    options.addHeaderFooter = options.addHeaderFooter ?? false;
-    options.showSyntax = options.showSyntax ?? false;
-    options.level = options.level ?? -1;
-    let output = [ ];
-
-    output.push(...(options.addHeaderFooter ? generateDocBeg() : []));
-    output.push(...populateElements(hydrated, options.level, options.shwSyn));
-    output.push(...(options.addHeaderFooter ? generateDocEnd() : []));
-
-    return output.join('\n');
+    return refText;
 }
