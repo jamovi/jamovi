@@ -25,7 +25,7 @@ import { References } from './references';
 
 import { hydrate } from '../common/hydrate';
 import { htmlify } from '../common/htmlify';
-import { latexify } from '../common/latexify';
+import { latexify, addHeaderFooter } from '../common/latexify';
 
 
 interface AnalysisResource {
@@ -793,23 +793,26 @@ class ResultsPanel extends EventDistributor {
 
     getAsLatex() {
 
-        const analyses = [ ... this.model.analyses() ];
+        const analyses = [ ...this.model.analyses() ];
         const fragments = [];
+        const references = [];
         let first = true;
 
-        for (let analysis of this.model.analyses()) {
+        for (let analysis of analyses) {
             const results = analysis.results;
             const values = analysis.options.getValues();
-            const hydrated = hydrate(results, [], values, first);
+            const hydrated = hydrate(results, [], values, first, analysis.id);
             first = false;
             if (hydrated === null)
                 continue;
             const latex = latexify(hydrated);
             if (latex !== null)
                 fragments.push(latex);
+            // get references from results
+            references.push(...analysis.references);
         }
 
-        return fragments.join('\n\n\n');
+        return addHeaderFooter(fragments, references);
     }
 
     getAsHTML(options, part?) {
@@ -967,7 +970,7 @@ class ResultsPanel extends EventDistributor {
                 };
 
                 if (part === '')
-                    options.filters.push({ name: _('LaTeX bundle {ext}', { ext: '(.zip)' }), extensions:  [ 'zip' ] });
+                    options.filters.push({ name: 'LaTeX', description: _('LaTeX bundle {ext}', { ext: '(.zip)' }), extensions:  [ 'zip' ] });
 
                 let result = await host.showSaveDialog(options);
                 if (result.cancelled)

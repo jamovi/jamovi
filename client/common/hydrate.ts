@@ -41,12 +41,6 @@ export interface IPreformatted {
     syntax: boolean;
 }
 
-export interface IHTML {
-    type: 'html';
-    title?: string;
-    content: string;
-}
-
 export interface IGroup {
     type: 'group',
     title?: string;
@@ -70,16 +64,15 @@ export interface IText {
     chunks: Array<ITextChunk>,
 }
 
-export type IElement = IGroup | ITable | IImage | IText | IPreformatted | IHTML;
+export type IElement = IGroup | ITable | IImage | IText | IPreformatted;
 type IOptionValues = { [ name: string ]: any };
 type IAddress = Array<string>;
 
+export function hydrate(pb: any, address: IAddress = [], values: IOptionValues = {}, top: boolean = false, analysisId?: number): IElement {
+    analysisId = analysisId || 0;
 
-export function hydrate(pb: any, address: IAddress = [], values: IOptionValues = {}, top: boolean = false): IElement {
-    const elements = hydrateElement(pb, address, values, [], top);
-    if (elements === null)
-        return null;
-    return elements[0];
+    const elements = hydrateElement(pb, address, values, [], top, analysisId);
+    return elements === null ? null : elements[0];
 }
 
 function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): IText | null {
@@ -144,9 +137,9 @@ function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): ITe
     }
 }
 
-function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor: Array<string>, top: boolean): Array<IElement> {
+function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor: Array<string>, top: boolean, analysisId: number): Array<IElement> {
 
-    cursor = [... cursor];  // clone
+    cursor = [ ...cursor ];  // clone
 
     const before = hydrateText(true, values, cursor);
     const after = hydrateText(false, values, cursor);
@@ -161,11 +154,11 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
             cursor.push(name);
             for (let elementPB of pb.group.elements) {
                 if (elementPB.name === name)
-                    return hydrateElement(elementPB, target, values, cursor, top);
+                    return hydrateElement(elementPB, target, values, cursor, top, analysisId);
             }
             throw Error('Address not valid');
         }
-        const group = hydrateGroup(pb, target, values, cursor, top);
+        const group = hydrateGroup(pb, target, values, cursor, top, analysisId);
         if (group) {
             // if there's text at the top of the group, we move it down into
             // the body of the group
@@ -182,11 +175,11 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
             cursor.push(name);
             for (let elementPB of pb.array.elements) {
                 if (elementPB.name === name)
-                    return hydrateElement(elementPB, target, values, cursor, top);
+                    return hydrateElement(elementPB, target, values, cursor, top, analysisId);
             }
             throw Error('Address not valid');
         }
-        const array = hydrateArray(pb, target, values, cursor, top);
+        const array = hydrateArray(pb, target, values, cursor, top, analysisId);
         if (array) {
             // if there's text at the top of the group, we move it down into
             // the body of the group
@@ -200,22 +193,18 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
     if (target.length > 0)
         throw Error('Address not valid');
 
-    // append results objects to elements: table, image, preformatted or HTML
+    // append results objects to elements: table, image, or preformatted
     if (pb.table) {
         const table = hydrateTable(pb);
         elements.push(table)
     }
     else if (pb.image) {
-        const image = hydrateImage(pb, target, cursor);
+        const image = hydrateImage(pb, target, cursor, analysisId);
         elements.push(image);
     }
     else if (pb.preformatted) {
         const preformatted = hydratePreformatted(pb);
         elements.push(preformatted);
-    }
-    else if (pb.html) {
-        const html = hydrateHTML(pb);
-        elements.push(html);
     }
 
     if (after)
@@ -227,11 +216,10 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
     return elements;
 }
 
-
-function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean): IGroup | null {
+function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean, analysisId: number): IGroup | null {
     if (arrayPB.array.elements.length === 0)
         return null;
-    const items = hydrateElements(arrayPB.array.elements, target, values, cursor, top);
+    const items = hydrateElements(arrayPB.array.elements, target, values, cursor, top, analysisId);
     if (items === null)
         return null;
     return {
@@ -241,7 +229,7 @@ function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cur
     }
 }
 
-function hydrateGroup(groupPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean): IGroup | null {
+function hydrateGroup(groupPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean, analysisId: number): IGroup | null {
 
     let title: string = groupPB.title;
     if (top && cursor.length === 0) {
@@ -249,18 +237,18 @@ function hydrateGroup(groupPB: any, target: IAddress, values: IOptionValues, cur
         return { type: 'group', title, items: [] };
     }
 
-    const items = hydrateElements(groupPB.group.elements, target, values, cursor, top);
+    const items = hydrateElements(groupPB.group.elements, target, values, cursor, top, analysisId);
     if (items === null)
         return null;
     return { type: 'group', title, items };
 }
 
-function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean): Array<IElement> | null {
+function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean, analysisId: number): Array<IElement> | null {
     const items = [ ]
     for (const itemPB of elementsPB) {
         const itemCursor = [...cursor, itemPB.name];
         if ([0, 2].includes(itemPB.visible)) {
-            const elem = hydrateElement(itemPB, target, values, itemCursor, top);
+            const elem = hydrateElement(itemPB, target, values, itemCursor, top, analysisId);
             if (elem !== null) {
                 for (const item of elem)
                     items.push(item);
@@ -272,14 +260,14 @@ function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOpti
     return items;
 }
 
-function hydrateImage(imagePB: any, target: IAddress, cursor: IAddress): IImage {
+function hydrateImage(imagePB: any, target: IAddress, cursor: IAddress, analysisId: number): IImage {
     return {
         type: 'image',
         title: imagePB.title,
         path: null,
         width: imagePB.image.width,
         height: imagePB.image.height,
-        address: [ ...cursor, ...target].join('/'),
+        address: [ analysisId.toString(), ...cursor, ...target].join('/'),
     };
 }
 
@@ -289,14 +277,6 @@ function hydratePreformatted(preformattedPB: any): IPreformatted {
         title: preformattedPB.title,
         content: preformattedPB.preformatted,
         syntax: preformattedPB.name == 'syntax',
-    };
-}
-
-function hydrateHTML(htmlPB: any): IHTML {
-    return {
-        type: 'html',
-        title: htmlPB.title,
-        content: htmlPB.html.content,
     };
 }
 
@@ -333,13 +313,6 @@ function extractValues(columnsPB: any): Array<Array<IRawCell>> {
     return cols;
 }
 
-function format2(value: string | number, fmt: any): string {
-    if (typeof value === 'string')
-        return value;
-    else
-        return format(value, fmt);
-}
-
 function transmogrify(rawCells: Array<Array<IRawCell>>, formats: Array<any>): [ Array<Array<ICell>>, Array<string> ] {
     const footnotes: Array<string> = [];
     const finalCells: Array<Array<ICell>> = rawCells.map((col, colNo) => {
@@ -356,11 +329,9 @@ function transmogrify(rawCells: Array<Array<IRawCell>>, formats: Array<any>): [ 
                 }
                 indices.push(index);
             }
-            const symbols = cell.symbols || [];
-            const sups = indices.map(i => ALPHABET[i]);
-            const finalSups = [...symbols, ...sups];
+            const finalSups = [...cell.symbols, ...indices.map(i => ALPHABET[i])];
             const finalCell: ICell = {
-                content: format2(cell.value, fmt),
+                content: typeof cell.value === 'string' ? cell.value : format(cell.value, fmt),
                 align: cell.align,
             };
             if (finalSups.length > 0)
@@ -447,7 +418,6 @@ function fold(cells: Array<Array<ICell>>, columnNames: Array<string>): Array<Arr
 }
 
 function hydrateTable(tablePB: any): ITable {
-
     const columnsPB = tablePB.table.columns.filter((cPB) => [0, 2].includes(cPB.visible));
     const columnNames = columnsPB.map((columnPB) => columnPB.name);
     const nCols = columnsPB.length;
@@ -492,7 +462,7 @@ function hydrateTable(tablePB: any): ITable {
     rows.push({ type: 'title', cells: titles });
 
     const rawCellsByColumn = extractValues(columnsPB);
-    const formatsByColumn = rawCellsByColumn.map((x, i) => determFormat(x, columnsPB[i].type, columnsPB[i].format));
+    const formatsByColumn = rawCellsByColumn.map((x, i) => determFormat(x, columnsPB[i].type, columnsPB[i].format, undefined));
     const [ cellsByColumn, footnotes ] = transmogrify(rawCellsByColumn, formatsByColumn);
 
     const folded = fold(cellsByColumn, columnNames);
