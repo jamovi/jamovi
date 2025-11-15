@@ -3,9 +3,11 @@ from __future__ import annotations
 from typing import Callable
 from typing import TypeAlias
 from collections import OrderedDict
+from collections import namedtuple
 from dataclasses import dataclass
 
 import logging
+
 
 CACHE_AREA_ROWS = 100
 CACHE_AREA_COLUMNS = 50
@@ -21,7 +23,14 @@ class CellRange:
     column_end: int
 
 
+# FIXME: None is possibly not an option. Missing values will come through as '', -21..., and float('nan'). 
 CellValue: TypeAlias = str | int | float | None
+
+
+# NOTE: A dataclass could be used instead of namedtuple to make future refactoring easier
+# NOTE: Unless you want to use (row_index, col_iid) as an index, CellCoordinate could be renamed 
+# to Cell and changed to include the cell's value: i.e. Cell = namedtuple("Cell", ["row", "column", "value"])
+CellCoordinate = namedtuple("CellCoordinate", ["row_index", "col_iid"])
 
 
 log = logging.getLogger(__name__)
@@ -53,7 +62,7 @@ class LRUCache:
         self._cache.clear()
 
 
-class DataCache:
+class DataReadCache:
     """A cache for spreadsheet cell values"""
 
     _cache: LRUCache
@@ -83,3 +92,37 @@ class DataCache:
             self._cache[cell_range] = values
         value = values[row - row_start][column - column_start]
         return value
+    
+
+class DataWriteBuffer:
+    
+    _write_buffer: dict[CellCoordinate, CellValue]
+    _set_values: Callable[[dict[CellCoordinate, CellValue]], None]
+    _max_items: int
+
+    def __init__(
+            self, 
+            set_values_method: Callable[[dict[CellCoordinate, CellValue]], None],
+            max_items: int = 50
+            ):
+        self._write_buffer = {}
+        self._set_values = set_values_method
+        self._max_items = max_items
+
+    def stage(self, cell_coordinate: CellCoordinate, value: CellValue):
+        """Stage a value for writing to the database"""
+        self._write_buffer[cell_coordinate] = value
+        if len(self._write_buffer) >= self._max_items:
+            self.commit()
+
+    # commit the buffer
+    def commit(self):
+        """Write the contents of the buffer to the database using the set_values(...) 
+        method injected to the constructor"""
+
+        self._set_values(self._write_buffer)
+        self._write_buffer.clear()
+    
+    def dump(self):
+        """Clear the buffer without writing to the database"""
+        self._write_buffer.clear()
