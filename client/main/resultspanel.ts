@@ -25,7 +25,7 @@ import { References } from './references';
 
 import { hydrate } from '../common/hydrate';
 import { htmlify } from '../common/htmlify';
-import { latexify } from '../common/latexify';
+import { latexify, addHeaderFooter } from '../common/latexify';
 
 
 interface AnalysisResource {
@@ -793,11 +793,12 @@ class ResultsPanel extends EventDistributor {
 
     getAsLatex() {
 
-        const analyses = [ ... this.model.analyses() ];
+        const analyses = [ ...this.model.analyses() ];
         const fragments = [];
+        const references = [];
         let first = true;
 
-        for (let analysis of this.model.analyses()) {
+        for (let analysis of analyses) {
             const results = analysis.results;
             const values = analysis.options.getValues();
             const hydrated = hydrate(results, [], values, first, analysis.id);
@@ -807,86 +808,11 @@ class ResultsPanel extends EventDistributor {
             const latex = latexify(hydrated);
             if (latex !== null)
                 fragments.push(latex);
+            // get references from results
+            references.push(...analysis.references);
         }
 
-        return [this.latexHeader(), ...fragments, this.latexFooter()].join('\n' + '% ' + '='.repeat(78) + '\n\n');
-    }
-
-    // generate LaTeX document header
-    latexHeader(): string {
-        let header = [];
-
-        header.push('\\documentclass[a4paper,man,hidelinks,floatsintext,x11names]{apa7}');
-        header.push('% This LaTeX output is designed to use APA7 style and to run on local ' + 
-                    'TexLive-installation (use pdflatex) as well as on web interfaces (e.g., '+
-                    'overleaf.com).');
-        header.push('% If you prefer postponing your figures and table until after the ' +
-                    'reference list, instead of having them within the body of the text, ' +
-                    'please remove the ",floatsintext" from the documentclass options. Further ' +
-                    'information on these styles can be at: https://www.ctan.org/pkg/apa7.\n');
-        header.push('\\usepackage[british]{babel}');
-        header.push('\\usepackage{xcolor}');
-        header.push('\\usepackage[utf8]{inputenc}');
-        header.push('\\usepackage{amsmath}');
-        header.push('\\usepackage{graphicx}');
-        header.push('\\usepackage[export]{adjustbox}');
-        header.push('\\usepackage{csquotes}');
-        header.push('\\usepackage{soul}');
-        header.push('\\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}');
-        header.push('\\DeclareLanguageMapping{british}{british-apa}');
-        header.push('\\addbibresource{article.bib}\n');
-        header.push('\\title{APA-Style Manuscript with jamovi Results}');
-        header.push('\\shorttitle{jamovi Results}');
-        header.push('\\leftheader{Last name}');
-        header.push('\\authorsnames{Full Name}');
-        header.push('\\authorsaffiliations{{Your Affilitation}}');
-        header.push('% example below from the CTAN apa7 documentation, 4.2.2:')
-        header.push('% authors 1 and 3 share affiliation 1, author 2 has affiliations 2 and 3');
-        header.push('%\\authorsnames[1,{2,3},1]{Author 1, Author 2, Author 2}');
-        header.push('%\\authorsaffiliations{{Affiliation 1}, {Affiliation 2}, {Affiliation 3}}');
-        header.push('\\authornote{\\addORCIDlink{Full Name}{0000-0000-0000-0000}\\\\');
-        header.push('More detailed information about how to contact you.\\\\');
-        header.push('Can continue over several lines.\\\\');
-        header.push('}\n');
-        header.push('\\abstract{Your abstract here.}');
-        header.push('\\keywords{keyword 1, keyword 2}\n');
-        header.push('\\begin{document}\n');
-        header.push('%\\maketitle\n');
-        header.push('% Your introduction starts here.\n');
-        header.push('%\\section{Methods}');
-        header.push('% Feel free to adjust the subsections below.\n');
-        header.push('%\\subsection{Participants}');
-        header.push('% Your participants description goes here.\n');
-        header.push('%\\subsection{Materials}');
-        header.push('% Your description of the experimental materials goes here.\n');
-        header.push('%\\subsection{Procedure}');
-        header.push('% Your description of the experimental procedures goes here.\n');
-        header.push('%\\subsection{Statistical Analyses}');
-        // TO-DO: add references, once implemented
-        header.push('% Statistical analyses were performed using jamovi \\parencite{jamovi}, ' +
-                    'and the R statistical language \\parencite{R}, as well as the modules / ' +
-                    'packages car and emmeans \\parencite{car, emmeans}.\n');
-        header.push('\\section{Results}\n');
-
-        return header.join('\n');
-    }
-
-    // generate LaTeX document footer
-    latexFooter(): string {
-        let footer = [];
-
-        footer.push('% Report your results here and make reference to tables (see ' +
-                    'Table~\\ref{tbl:Table_...}) or figures (see Figure~\\ref{fig:Figure_...}).\n');
-        footer.push('%\\section{Discussion}');
-        footer.push('% Your discussion starts here.\n');
-        footer.push('%\\printbibliography\n');
-        footer.push('%\\appendix');
-        footer.push('%\\section{Additional tables and figures}');
-        footer.push('% Your text introducing supplementary tables and figures.');
-        footer.push('% If required copy tables and figures from the main results here.\n');
-        footer.push('\\end{document}\n');
-
-        return footer.join('\n');
+        return addHeaderFooter(fragments, references);
     }
 
     getAsHTML(options, part?) {

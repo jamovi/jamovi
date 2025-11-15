@@ -68,13 +68,11 @@ export type IElement = IGroup | ITable | IImage | IText | IPreformatted;
 type IOptionValues = { [ name: string ]: any };
 type IAddress = Array<string>;
 
-
 export function hydrate(pb: any, address: IAddress = [], values: IOptionValues = {}, top: boolean = false, analysisId?: number): IElement {
     analysisId = analysisId || 0;
+
     const elements = hydrateElement(pb, address, values, [], top, analysisId);
-    if (elements === null)
-        return null;
-    return elements[0];
+    return elements === null ? null : elements[0];
 }
 
 function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): IText | null {
@@ -141,7 +139,7 @@ function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): ITe
 
 function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor: Array<string>, top: boolean, analysisId: number): Array<IElement> {
 
-    cursor = [... cursor];  // clone
+    cursor = [ ...cursor ];  // clone
 
     const before = hydrateText(true, values, cursor);
     const after = hydrateText(false, values, cursor);
@@ -217,7 +215,6 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
 
     return elements;
 }
-
 
 function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean, analysisId: number): IGroup | null {
     if (arrayPB.array.elements.length === 0)
@@ -316,13 +313,6 @@ function extractValues(columnsPB: any): Array<Array<IRawCell>> {
     return cols;
 }
 
-function format2(value: string | number, fmt: any): string {
-    if (typeof value === 'string')
-        return value;
-    else
-        return format(value, fmt);
-}
-
 function transmogrify(rawCells: Array<Array<IRawCell>>, formats: Array<any>): [ Array<Array<ICell>>, Array<string> ] {
     const footnotes: Array<string> = [];
     const finalCells: Array<Array<ICell>> = rawCells.map((col, colNo) => {
@@ -339,11 +329,9 @@ function transmogrify(rawCells: Array<Array<IRawCell>>, formats: Array<any>): [ 
                 }
                 indices.push(index);
             }
-            const symbols = cell.symbols || [];
-            const sups = indices.map(i => ALPHABET[i]);
-            const finalSups = [...symbols, ...sups];
+            const finalSups = [...cell.symbols, ...indices.map(i => ALPHABET[i])];
             const finalCell: ICell = {
-                content: format2(cell.value, fmt),
+                content: typeof cell.value === 'string' ? cell.value : format(cell.value, fmt),
                 align: cell.align,
             };
             if (finalSups.length > 0)
@@ -430,7 +418,6 @@ function fold(cells: Array<Array<ICell>>, columnNames: Array<string>): Array<Arr
 }
 
 function hydrateTable(tablePB: any): ITable {
-
     const columnsPB = tablePB.table.columns.filter((cPB) => [0, 2].includes(cPB.visible));
     const columnNames = columnsPB.map((columnPB) => columnPB.name);
     const nCols = columnsPB.length;

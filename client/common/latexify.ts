@@ -14,6 +14,78 @@ export function latexify(hydrated: IElement, options?: ILatexifyOptions): string
     return populateElements(hydrated, options.level, options.showSyntax).join('\n');
 }
 
+export function addHeaderFooter(contents: Array<string>, references?: Array<string>): string {
+    references = references || [];
+    // used to comment out BibTeX-related lines when no references are present
+    let refPrefix = (references.length === 0 ? '%' : '');
+    let header = [];
+    let footer = [];
+
+    // generate LaTeX document header
+    header.push('\\documentclass[a4paper,man,hidelinks,floatsintext,x11names]{apa7}');
+    header.push('% This LaTeX output is designed to use APA7 style and to run on local ' + 
+                'TexLive-installation (use pdflatex) as well as on web interfaces (e.g., '+
+                'overleaf.com).');
+    header.push('% If you prefer postponing your figures and table until after the ' +
+                'reference list, instead of having them within the body of the text, ' +
+                'please remove the ",floatsintext" from the documentclass options. Further ' +
+                'information on these styles can be at: https://www.ctan.org/pkg/apa7.\n');
+    header.push('\\usepackage[british]{babel}');
+    header.push('\\usepackage{xcolor}');
+    header.push('\\usepackage[utf8]{inputenc}');
+    header.push('\\usepackage{amsmath}');
+    header.push('\\usepackage{graphicx}');
+    header.push('\\usepackage[export]{adjustbox}');
+    header.push('\\usepackage{csquotes}');
+    header.push('\\usepackage{soul}');
+    header.push(refPrefix + '\\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}');
+    header.push(refPrefix + '\\DeclareLanguageMapping{british}{british-apa}');
+    header.push(refPrefix + '\\addbibresource{article.bib}\n');
+    header.push('\\title{APA-Style Manuscript with jamovi Results}');
+    header.push('\\shorttitle{jamovi Results}');
+    header.push('\\leftheader{Last name}');
+    header.push('\\authorsnames{Full Name}');
+    header.push('\\authorsaffiliations{{Your Affilitation}}');
+    header.push('% example below from the CTAN apa7 documentation, 4.2.2:')
+    header.push('% authors 1 and 3 share affiliation 1, author 2 has affiliations 2 and 3');
+    header.push('%\\authorsnames[1,{2,3},1]{Author 1, Author 2, Author 2}');
+    header.push('%\\authorsaffiliations{{Affiliation 1}, {Affiliation 2}, {Affiliation 3}}');
+    header.push('\\authornote{\\addORCIDlink{Full Name}{0000-0000-0000-0000}\\\\');
+    header.push('More detailed information about how to contact you.\\\\');
+    header.push('Can continue over several lines.\\\\');
+    header.push('}\n');
+    header.push('\\abstract{Your abstract here.}');
+    header.push('\\keywords{keyword 1, keyword 2}\n');
+    header.push('\\begin{document}\n');
+    header.push('%\\maketitle\n');
+    header.push('% Your introduction starts here.\n');
+    header.push('%\\section{Methods}');
+    header.push('% Feel free to adjust the subsections below.\n');
+    header.push('%\\subsection{Participants}');
+    header.push('% Your participants description goes here.\n');
+    header.push('%\\subsection{Materials}');
+    header.push('% Your description of the experimental materials goes here.\n');
+    header.push('%\\subsection{Procedure}');
+    header.push('% Your description of the experimental procedures goes here.\n');
+    header.push('%\\subsection{Statistical Analyses}');
+    header.push(refDescript(references) + '\n');
+    header.push('\\section{Results}\n');
+
+    // generate LaTeX document footer
+    footer.push('% Report your results here and make reference to tables (see ' +
+                'Table~\\ref{tbl:Table_...}) or figures (see Figure~\\ref{fig:Figure_...}).\n');
+    footer.push('%\\section{Discussion}');
+    footer.push('% Your discussion starts here.\n');
+    footer.push('%\\printbibliography\n');
+    footer.push('%\\appendix');
+    footer.push('%\\section{Additional tables and figures}');
+    footer.push('% Your text introducing supplementary tables and figures.');
+    footer.push('% If required copy tables and figures from the main results here.\n');
+    footer.push('\\end{document}\n');
+
+    return [header.join('\n'), contents, footer.join('\n')].join('\n' + '% ' + '='.repeat(78) + '\n\n')
+}
+
 // main loop: iterates through the input elements and calls itself when a group element
 // has children
 function populateElements(item: IElement, level: number, shwSyn: boolean): Array<string> {
@@ -435,4 +507,20 @@ function formatFrml(katex: string): string {
     let output = katex;
 
     return output;
+}
+
+function refDescript(references: Array<string>): string {
+    let refText = '';
+
+    if (references.length > 0) {
+        // TO-DO: generate dynamically, when references are implemented
+        refText = '% Statistical analyses were performed using jamovi \\parencite{jamovi}, ' +
+                  'and the R statistical language \\parencite{R}, as well as the modules / ' +
+                  'packages car and emmeans \\parencite{car, emmeans}. Further describe your ' +
+                  'statistical analyses...'
+    } else {
+        refText = '% Describe your statistical analyses...'
+    }
+
+    return refText;
 }
