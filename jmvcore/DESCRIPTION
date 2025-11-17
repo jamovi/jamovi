@@ -1,8 +1,8 @@
 Package: jmvcore
 Type: Package
 Title: Dependencies for the 'jamovi' Framework
-Version: 2.7.7
-Date: 2025-09-18
+Version: 2.7.12
+Date: 2025-10-31
 Authors@R: c(person("Jonathon", "Love", role=c("aut", "cre", "cph"), email="jon@thon.cc"))
 Maintainer: Jonathon Love <jon@thon.cc>
 Description: A framework for creating rich interactive analyses for the jamovi
@@ -26,5 +26,6 @@ Suggests:
     RColorBrewer,
     ragg,
     fastmap,
-    export
+    export,
+    jmvReadWrite
 RoxygenNote: 6.1.1

@@ -18,8 +18,8 @@ class EventHook:
     def __isub__(self, handler):
         try:
             self.handlers.remove(handler)
-        except Exception:
-            raise ValueError('Handler is not handling this event, so cannot unhandle it.')
+        except Exception as e:
+            raise ValueError('Handler is not handling this event, so cannot unhandle it.') from e
         return self
 
     def __call__(self, *args, **kargs):

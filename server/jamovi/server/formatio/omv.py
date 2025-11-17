@@ -17,6 +17,7 @@ from jamovi.core import ColumnType
 from jamovi.core import DataType
 from jamovi.core import MeasureType
 from jamovi.server.appinfo import app_info
+from jamovi.server.instancemodel import InstanceModel
 
 from ..i18n import _
 
@@ -27,7 +28,7 @@ from logging import getLogger
 log = getLogger(__name__)
 
 
-def write(data, path, prog_cb, html=None, is_template=False):
+def write(data: InstanceModel, path, prog_cb, html=None, is_template=False):
 
     with ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as zip:
 

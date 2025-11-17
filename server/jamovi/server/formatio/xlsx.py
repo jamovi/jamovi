@@ -1,20 +1,81 @@
 
+from datetime import datetime
+import math
+
 from openpyxl import load_workbook
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+
+from jamovi.server.instancemodel import InstanceModel
 
 from .reader import Reader
 from .exceptions import FileCorruptError
-
-from datetime import datetime
 
 
 def get_readers():
     return [ ( 'xlsx', read ) ]
 
 
+def get_writers():
+    return [ ( 'xlsx', write ) ]
+
+
 def read(data, path, prog_cb, *, settings, **_):
 
     reader = XLSXReader(settings)
     reader.read_into(data, path, prog_cb)
+
+
+def write(data: InstanceModel, path, prog_cb):
+
+    wb = Workbook()
+    ws = wb.active
+
+    assert ws is not None
+
+    def should_exclude(column):
+        return column.is_virtual or (column.is_filter and column.active)
+
+    cols = [ col for col in data if not should_exclude(col) ]
+    col_nos = [ col.index for col in cols ]
+    col_names = [ col.name for col in cols ]
+    col_widths = [ max(len(name), 13) for name in col_names ]
+
+    ws.append(col_names)
+
+    for row_no in range(data.row_count):
+        if data.is_row_filtered(row_no):
+            continue
+        row_values: list[int | float | str | None] = [None] * len(col_nos)
+        for i, col_no in enumerate(col_nos):
+            value = data[col_no][row_no]
+            if isinstance(value, int) and value == -2147483648:
+                continue
+            if isinstance(value, float) and math.isnan(value):
+                continue
+            row_values[i] = value
+            if isinstance(value, int) or isinstance(value, float):
+                try:
+                    width = int(math.log10(value) // 1)
+                except ValueError:
+                    width = 1
+            else:
+                width = len(str(value))
+            if width > col_widths[i]:
+                col_widths[i] = width
+        ws.append(row_values)
+
+        if row_no % 1000 == 0:
+            prog_cb(row_no / data.row_count)
+
+    for i in range(len(col_nos)):
+        # auto size columns
+        col_letter = get_column_letter(i + 1)
+        ws.column_dimensions[col_letter].width = col_widths[i]
+
+    ws.freeze_panes = 'A2'  # freeze first row
+
+    wb.save(path)
 
 
 def to_string(value):

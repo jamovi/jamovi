@@ -76,3 +76,12 @@ RUN R -e "\
             INSTALL_opts='--no-data --no-help --no-demo --no-html --no-docs --no-multiarch --clean'); \
         library(pkg, character.only=TRUE); \
     }"
+
+RUN R -e "\
+    remotes::install_github( \
+        'sjentsch/jmvReadWrite', \
+        ref='dcc7ecc5772d24c33ddbe7852a2bd6934bdf7635', \
+        lib='$R_HOME/library'); \
+    if ( ! requireNamespace('jmvReadWrite')) \
+        quit(status = 1); \
+    "

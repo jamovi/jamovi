@@ -219,6 +219,8 @@ export class BackstageModel extends EventMap<IBackstageModel> {
             { extensions: ['html', 'htm'], description: _('Web Page {ext}', { ext: '(.html, .htm)' }) },
             { extensions: ['omt'], description: _('jamovi template {ext}', { ext: '(.omt)' }) },
             { extensions: ['csv'], description: _('CSV (Comma delimited) {ext}', { ext: '(.csv)' }) },
+            { extensions: ['ods'], description: _('Open Document (LibreOffice) {ext}', { ext: '(.ods)' }) },
+            { extensions: ['xlsx'], description: _('Excel {ext}', { ext: '(.xlsx)' }) },
             { extensions: ['zip'], description: _('LaTeX bundle {ext}', { ext: '(.zip)' }) },
             { extensions: ['rds'], description: _('R object {ext}', { ext: '(.rds)' }) },
             { extensions: ['RData'], description: _('R object {ext}', { ext: '(.RData)' }) },

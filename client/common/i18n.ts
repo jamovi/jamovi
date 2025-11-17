@@ -2,14 +2,114 @@
 
 import Jed from 'jed';
 
-function s6e(x) {
-    return x.replace(/</g, '&lt;')  //to break html insertion
-        .replace(/>/g, '&gt;')  // to really break html insertion
-        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")  // markdown to html
-        .replace(/__(.*?)__/g, "<strong>$1</strong>")  // markdown to html
-        .replace(/\*(.*?)\*/g, "<i>$1</i>")  // markdown to html
-        .replace(/_(.*?)_/g, "<i>$1</i>");  // markdown to html
+export function s6e(input: string): string {
+
+    // Temporarily protect allowed HTML tags
+    const allowedTags = ["i", "em", "b", "strong", "sub", "sup"] as const;
+
+    for (const tag of allowedTags) {
+        const openTag = new RegExp(`<${tag}>`, "gi");
+        const closeTag = new RegExp(`</${tag}>`, "gi");
+
+        input = input
+            .replace(openTag,  `@@@OPEN_${tag.toUpperCase()}@@@`)
+            .replace(closeTag, `@@@CLOSE_${tag.toUpperCase()}@@@`);
+    }
+
+    // Escape all other HTML brackets
+    input = input
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+    // Restore the allowed tags safely
+    for (const tag of allowedTags) {
+        input = input
+            .replace(new RegExp(`@@@OPEN_${tag.toUpperCase()}@@@`, "g"), `<${tag}>`)
+            .replace(new RegExp(`@@@CLOSE_${tag.toUpperCase()}@@@`, "g"), `</${tag}>`);
+    }
+
+    // markdown parser
+    let out = "";
+    let idx = 0;
+
+    // Track open markdown markers
+    const stack: string[] = [];
+
+    const len = input.length;
+
+    while (idx < len) {
+        const ch = input[idx];
+
+        // ESCAPE
+        if (ch === "\\") {
+            if (idx + 1 < len) {
+                out += input[idx + 1];
+                idx += 2;
+            } else {
+                out += "\\";
+                idx++;
+            }
+            continue;
+        }
+
+        // Helper to insert open/close markers
+        const tryMarker = (
+            marker: string,
+            openHtml: string,
+            closeHtml: string
+        ): boolean => {
+            if (input.startsWith(marker, idx)) {
+                if (stack.length && stack[stack.length - 1] === marker) {
+                    // close it
+                    stack.pop();
+                    out += closeHtml;
+                } else {
+                    // open it
+                    stack.push(marker);
+                    out += openHtml;
+                }
+
+                idx += marker.length;
+                return true;
+            }
+            return false;
+        };
+
+        // MARKDOWN: bold, italic, sub, sup
+        if (tryMarker("**", "<bold>", "</bold>")) continue;
+        if (tryMarker("__", "<strong>", "</strong>")) continue;
+
+        if (tryMarker("*", "<i>", "</i>")) continue;
+        if (tryMarker("_", "<em>", "</em>")) continue;
+
+        if (tryMarker("~", "<sub>", "</sub>")) continue;
+        if (tryMarker("^", "<sup>", "</sup>")) continue;
+
+        // Normal character
+        out += ch;
+        idx++;
+    }
+
+    // Close any unclosed markers
+    while (stack.length > 0) {
+        const m = stack.pop()!;
+        if (m === "**") 
+            out += "</bold>";
+        else if (m === "__") 
+            out += "</strong>";
+        else if (m === "*") 
+            out += "</i>";
+        else if (m === "_") 
+            out += "</em>";
+        else if (m === "~") 
+            out += "</sub>";
+        else if (m === "^") 
+            out += "</sup>";
+    }
+
+    return out;
 }
+
 
 // Represents the header entry ("")
 interface JedLocaleHeaders {

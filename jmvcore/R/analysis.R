@@ -570,6 +570,11 @@ Analysis <- R6::R6Class('Analysis',
             if (dataRequired)
                 private$.data <- NULL
         },
+        .getSessionTemp=function() {
+            # hack
+            paths <- private$.resourcesPathSource('.', 'bin')
+            paste0(dirname(paths$rootPath), '/temp')
+        },
         readDataset=function(headerOnly=FALSE) {
 
             if (headerOnly) {

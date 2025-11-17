@@ -56,9 +56,6 @@ export const determFormat = function(values, type, format, settings, maxNS?, min
         n = settings.p;
         lz = false;
     }
-    else if (formats.includes('zto')) {
-        lz = false;
-    }
 
     if (t === 'dp' && formats.includes('pvalue')) {
         dp = n;
@@ -107,7 +104,9 @@ export const determFormat = function(values, type, format, settings, maxNS?, min
         }
     }
 
-    const expw = isFinite(maxAbsExpnt) ? Math.floor(Math.log10(maxAbsExpnt) + 1) : 0;
+    let expw = 0;
+    if (isFinite(maxAbsExpnt))
+        expw = Math.floor(Math.log10(maxAbsExpnt) + 1);
 
     return { dp, expw, format, sf, maxNS, minNS, t, lz };
 };
