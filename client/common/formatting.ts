@@ -38,7 +38,7 @@ export const determFormat = function(values, type, format, settings, maxNS?, min
                 minAbsNS = absValue;
         }
         else {
-            let exponent = parseInt(Math.log10(absValue));
+            let exponent = Math.floor(Math.log10(absValue));
             let absS = Math.abs(exponent);
             if (absS !== 0 && isFinite(absS) && absS > maxAbsExpnt)
                 maxAbsExpnt = absS;
@@ -54,10 +54,11 @@ export const determFormat = function(values, type, format, settings, maxNS?, min
     if (formats.includes('pvalue')) {
         t = settings.pt;
         n = settings.p;
-        // lz = false;
-    } /*else if (formats.includes('zto')) {
         lz = false;
-    }*/
+    }
+    else if (formats.includes('zto')) {
+        lz = false;
+    }
 
     if (t === 'dp' && formats.includes('pvalue')) {
         dp = n;
@@ -106,12 +107,12 @@ export const determFormat = function(values, type, format, settings, maxNS?, min
         }
     }
 
-    let expw = parseInt(Math.log10(maxAbsExpnt)+1);
+    const expw = isFinite(maxAbsExpnt) ? Math.floor(Math.log10(maxAbsExpnt) + 1) : 0;
 
     return { dp, expw, format, sf, maxNS, minNS, t, lz };
 };
 
-export const format = function(value, format) {
+export const format = function(value, fmt) {
 
     if (isNaN(value)) {
         return 'NaN';
@@ -123,7 +124,7 @@ export const format = function(value, format) {
             return '-Inf';
     }
 
-    if (format.format.includes('log10')) {
+    if (fmt.format.includes('log10')) {
         value = Math.pow(10, value);
         if ( ! isFinite(value)) {
             if (value  > 0)
@@ -133,15 +134,15 @@ export const format = function(value, format) {
         }
     }
 
-    if (format.t === 'dp' && format.format.includes('pvalue') && value < Math.pow(10, -format.dp)) {
-        return '<\u2009' + Math.pow(10,-format.dp).toFixed(format.dp).substring(1);
+    if (fmt.t === 'dp' && fmt.format.includes('pvalue') && value < Math.pow(10, -fmt.dp)) {
+        return '<\u2009' + Math.pow(10, -fmt.dp).toFixed(fmt.dp).substring(1);
     }
-    else if (format.format.includes('pc')) {
-        return '' + (100 * value).toFixed(format.dp - 2) + '\u2009%';
+    else if (fmt.format.includes('pc')) {
+        return '' + (100 * value).toFixed(fmt.dp - 2) + '\u2009%';
     }
-    else if (Math.abs(value) >= format.minNS && Math.abs(value) <= format.maxNS) {
-        let str = value.toFixed(format.dp);
-        if (format.lz === false && str.startsWith('0.'))
+    else if (Math.abs(value) >= fmt.minNS && Math.abs(value) <= fmt.maxNS) {
+        let str = value.toFixed(fmt.dp);
+        if (fmt.lz === false && str.startsWith('0.'))
             str = str.substring(1);
         return str;
     }
@@ -149,12 +150,12 @@ export const format = function(value, format) {
         const exponent = Math.floor(Math.log10(Math.abs(value)));
         const mantissa = value/Math.pow(10, exponent);
         if (value === 0)
-            return value.toFixed(format.dp);
+            return value.toFixed(fmt.dp);
         const expSign = Math.abs(value) < 1 ? '-' : '+';
-        let spaces = format.expw - Math.floor(Math.log10(Math.abs(exponent)));
+        let spaces = fmt.expw - Math.floor(Math.log10(Math.abs(exponent)));
         spaces = Math.max(spaces, 0);
         const gap = Array(spaces).join(' ');
-        return mantissa.toFixed(format.sf-1)+'e'+gap+expSign+Math.abs(exponent);
+        return mantissa.toFixed(fmt.sf - 1) + 'e' + gap + expSign + Math.abs(exponent);
     }
 
 };
