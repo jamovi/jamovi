@@ -25,7 +25,7 @@ import { References } from './references';
 
 import { hydrate } from '../common/hydrate';
 import { htmlify } from '../common/htmlify';
-import { latexify, addHeaderFooter } from '../common/latexify';
+import { latexify, createDoc } from '../common/latexify';
 
 
 interface AnalysisResource {
@@ -795,7 +795,7 @@ class ResultsPanel extends EventDistributor {
 
         const analyses = [ ...this.model.analyses() ];
         const fragments = [];
-        const references = [];
+        let references = [];
         let first = true;
 
         for (let analysis of analyses) {
@@ -808,11 +808,12 @@ class ResultsPanel extends EventDistributor {
             const latex = latexify(hydrated);
             if (latex !== null)
                 fragments.push(latex);
-            // get references from results
             references.push(...analysis.references);
         }
+        // remove duplicate references - references are currently incomplete: jmv and R are missing
+        references = references.filter((elem, index, self) => { return index === self.indexOf(elem) });
 
-        return addHeaderFooter(fragments, references);
+        return createDoc(fragments, references);
     }
 
     getAsHTML(options, part?) {

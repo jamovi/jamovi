@@ -14,7 +14,7 @@ export function latexify(hydrated: IElement, options?: ILatexifyOptions): string
     return populateElements(hydrated, options.level, options.showSyntax).join('\n');
 }
 
-export function addHeaderFooter(contents: Array<string>, references?: Array<string>): string {
+export function createDoc(contents: Array<string>, references?: Array<string>): string {
     references = references || [];
     // used to comment out BibTeX-related lines when no references are present
     let refPrefix = (references.length === 0 ? '%' : '');
