@@ -25,7 +25,7 @@ import { References } from './references';
 
 import { hydrate } from '../common/hydrate';
 import { htmlify } from '../common/htmlify';
-import { latexify, addHeaderFooter } from '../common/latexify';
+import { latexify, createDoc } from '../common/latexify';
 
 
 interface AnalysisResource {
@@ -812,7 +812,7 @@ class ResultsPanel extends EventDistributor {
             references.push(...analysis.references);
         }
 
-        return addHeaderFooter(fragments, references);
+        return createDoc(fragments, references);
     }
 
     getAsHTML(options, part?) {

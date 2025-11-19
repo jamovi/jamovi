@@ -1,8 +1,10 @@
 'use strict';
 
+import { I18n } from './i18n';
 import { determFormat } from "./formatting";
 import { format } from "./formatting";
 
+const currI18n = new I18n;
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
 
 interface IRawCell {
@@ -38,10 +40,11 @@ export interface IRow {
 export interface IImage {
     type: 'image';
     title?: string;
-    path: string;
+    path: string | null;
     width: number;
     height: number;
     address: string;
+    refs?: Array<string>;
 }
 
 export interface IPreformatted {
@@ -49,12 +52,14 @@ export interface IPreformatted {
     title?: string;
     content: string;
     syntax: boolean;
+    refs?: Array<string>;
 }
 
 export interface IGroup {
     type: 'group',
     title?: string;
     items: Array<IElement>;
+    refs?: Array<string>;
 }
 
 export interface ITable {
@@ -82,15 +87,19 @@ export function hydrate(pb: any, address: IAddress = [], values: IOptionValues =
     analysisId = analysisId || 0;
 
     const elements = hydrateElement(pb, address, values, [], top, analysisId);
-    return elements === null ? null : elements[0];
+    if (elements === null)
+        return null;
+    return elements[0];
 }
 
 function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): IText | null {
     const name = `results/${ cursor.join('/') }/${ top ? 'topText' : 'bottomText' }`;
     const value = values[name];
+
     if (value) {
         const { ops } = value;
         const chunks = new Array(ops.length);
+        let prevCR = -1;
 
         for (let [i, x] of ops.entries()) {
             let content = x.insert;
@@ -101,19 +110,41 @@ function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): ITe
                 chunk = { content: content.formula, attributes };
             }
             else {
-                if (content === '\n' && x.attributes && i > 0) {
-                    // quill does some unusual things where it attaches
-                    // formatting information to a subsequent chunk
-                    // we split off the last line of the previous chunk
-                    // and attach it to this chunk
-                    const prev = chunks[i - 1];
-                    const prevPieces = prev.content.split('\n');
-                    const lastLine = prevPieces[prevPieces.length - 1];
-                    prevPieces[prevPieces.length - 1] = '';
-                    prev.content = prevPieces.join('\n');
-                    chunks[i-1] = prev;
-                    content = lastLine + content;
+                // quill does some unusual things where it attaches formatting information
+                // to a subsequent chunk; we are looking for the previous '\n' and attach
+                // all paragraph attributes to the chunks in between
+                const isPara = (x.attributes) &&
+                  ['align', 'indent', 'list'].filter(value => Object.keys(x.attributes).includes(value)).length > 0;
+                if (isPara && content.startsWith('\n') && prevCR > -1) {
+                    const copyObj = Object.keys(x.attributes).reduce((result, key) => {
+                        if (['align', 'indent', 'list'].includes(key)) {
+                            result[key] = x.attributes[key];
+                        }
+                        return result;
+                    }, {});
+                    for (let j = prevCR; j < i; j++) {
+                        // in very few cases, two paragraphs with different alignments
+                        // are combined in one chunk (with the first having the default
+                        // alignment: left), they need to be recombined / rearranged
+                        const splContent = chunks[j].content.split('\n');
+                        if (splContent.filter(c => c.length > 0).length > 1) {
+                            if (i === j + 1 && content === '\n') {
+                                content = splContent.pop() + content;
+                                chunks[j].content = splContent.join('\n') + '\n';
+                                break
+                            }
+                            else {
+                                console.log('splContent: Not yet implemented')
+                            }
+                        }
+                        if (chunks[j].attributes)
+                            chunks[j].attributes = { ...chunks[j].attributes, ...copyObj };
+                        else
+                            chunks[j].attributes = copyObj;
+                    }
                 }
+                if (content.includes('\n'))
+                    prevCR = content.endsWith('\n') ? i + 1 : i;
                 if (x.attributes)
                     chunk = { content, attributes: x.attributes };
                 else
@@ -122,25 +153,7 @@ function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): ITe
             chunks[i] = chunk;
         }
 
-        // move new lines from beginning of chunks, to end of previous chunks
-        // not technically necessary, but does make exports a bit neater
-        for (let [i, x] of chunks.entries()) {
-            if (i == 0)
-                continue;
-            let thisChunk = x;
-            if (thisChunk.content.startsWith('\n')) {
-                let prevChunk = chunks[i-1];
-                while (thisChunk.content.length > 0 && thisChunk.content.startsWith('\n')) {
-                    prevChunk.content += '\n';
-                    thisChunk.content = thisChunk.content.substring(1);
-                }
-            }
-        }
-
-        // remove empty chunks
-        const noEmpty = chunks.filter(chunk => chunk.content.length > 0 || chunk.attributes);
-
-        return { type: 'text', chunks: noEmpty };
+        return { type: 'text', chunks: chunks };
     }
     else {
         return null;
@@ -149,7 +162,7 @@ function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): ITe
 
 function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor: Array<string>, top: boolean, analysisId: number): Array<IElement> {
 
-    cursor = [ ...cursor ];  // clone
+    cursor = [... cursor];  // clone
 
     const before = hydrateText(true, values, cursor);
     const after = hydrateText(false, values, cursor);
@@ -216,6 +229,10 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         const preformatted = hydratePreformatted(pb);
         elements.push(preformatted);
     }
+    else if (pb.notice) {
+        const notice = hydrateNotice(pb);
+        elements.push(notice);
+    }
 
     if (after)
         elements.push(after);
@@ -226,21 +243,30 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
     return elements;
 }
 
+function addRefs(currPB: any) {
+    if (currPB && currPB.refs && currPB.refs.length > 0)
+        return { refs: currPB.refs };
+    else
+        return undefined;
+}
+
 function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean, analysisId: number): IGroup | null {
     if (arrayPB.array.elements.length === 0)
         return null;
     const items = hydrateElements(arrayPB.array.elements, target, values, cursor, top, analysisId);
     if (items === null)
         return null;
-    return {
-        type: 'group',
-        title: arrayPB.title,
-        items,
+    return  {
+        ...{
+            type: 'group',
+            title: arrayPB.title,
+            items,
+        },
+        ...addRefs(arrayPB),
     }
 }
 
 function hydrateGroup(groupPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean, analysisId: number): IGroup | null {
-
     let title: string = groupPB.title;
     if (top && cursor.length === 0) {
         title = values['results//heading'] || title;
@@ -272,21 +298,36 @@ function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOpti
 
 function hydrateImage(imagePB: any, target: IAddress, cursor: IAddress, analysisId: number): IImage {
     return {
-        type: 'image',
-        title: imagePB.title,
-        path: null,
-        width: imagePB.image.width,
-        height: imagePB.image.height,
-        address: [ analysisId.toString(), ...cursor, ...target].join('/'),
+        ...{
+            type: 'image',
+            title: imagePB.title,
+            path: null,
+            width: imagePB.image.width,
+            height: imagePB.image.height,
+            address: [ analysisId.toString(), ...cursor, ...target].join('/'),
+        },
+        ...addRefs(imagePB),
     };
 }
 
 function hydratePreformatted(preformattedPB: any): IPreformatted {
     return {
-        type: 'preformatted',
-        title: preformattedPB.title,
-        content: preformattedPB.preformatted,
-        syntax: preformattedPB.name == 'syntax',
+        ...{
+            type: 'preformatted',
+            title: preformattedPB.title,
+            content: preformattedPB.preformatted,
+            syntax: preformattedPB.name == 'syntax',
+        },
+        ...addRefs(preformattedPB),
+    };
+}
+
+function hydrateNotice(noticePB: any): INotice {
+    return {
+        type: 'notice',
+        title: noticePB.title,
+        content: currI18n.__(noticePB.notice.content, { prefix: '<strong>', postfix: '</strong>' }),
+        msgType: noticePB.notice.type,
     };
 }
 
@@ -344,7 +385,7 @@ function transmogrify(rawCols: Array<IRawColumn>, formats: Array<any>): [ Array<
             }
             const finalSups = [...cell.symbols, ...indices.map(i => ALPHABET[i])];
             const finalCell: ICell = {
-                content: typeof cell.value === 'string' ? cell.value : format(cell.value, fmt),
+                content: (typeof cell.value === 'string') ? cell.value : format(cell.value, fmt),
                 align: cell.align,
             };
             if (finalSups.length > 0)
@@ -544,10 +585,12 @@ function hydrateTable(tablePB: any): ITable {
     });
 
     return {
-        type: 'table',
-        title: tablePB.title,
-        rows,
-        nCols: folded.length,
+        ...{
+            type: 'table',
+            title: tablePB.title,
+            rows,
+            nCols: folded.length,
+        },
+        ...addRefs(tablePB),
     }
 }
-

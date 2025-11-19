@@ -1,4 +1,4 @@
-import { IElement, IGroup, IImage, ITable, IRow, IPreformatted, IText, ITextChunk } from './hydrate';
+import { IElement, IImage, ITable, IRow, IPreformatted, INotice, IText, ITextChunk } from './hydrate';
 
 export interface ILatexifyOptions {
     showSyntax?: boolean;
@@ -11,10 +11,12 @@ export function latexify(hydrated: IElement, options?: ILatexifyOptions): string
     options.showSyntax = options.showSyntax ?? false;
     options.level = options.level ?? -1;
 
+    if (hydrated === null)
+        return null;
     return populateElements(hydrated, options.level, options.showSyntax).join('\n');
 }
 
-export function addHeaderFooter(contents: Array<string>, references?: Array<string>): string {
+export function createDoc(contents: Array<string>, references?: Array<string>): string {
     references = references || [];
     // used to comment out BibTeX-related lines when no references are present
     let refPrefix = (references.length === 0 ? '%' : '');
@@ -36,6 +38,7 @@ export function addHeaderFooter(contents: Array<string>, references?: Array<stri
     header.push('\\usepackage{amsmath}');
     header.push('\\usepackage{graphicx}');
     header.push('\\usepackage[export]{adjustbox}');
+    header.push('\\usepackage{awesomebox}');
     header.push('\\usepackage{csquotes}');
     header.push('\\usepackage{soul}');
     header.push(refPrefix + '\\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}');
@@ -99,6 +102,9 @@ function populateElements(item: IElement, level: number, shwSyn: boolean): Array
             output.push(...populateElements(child, level > -1 ? level + 1 : level, shwSyn));
         }
     }
+    else if (item.type === 'text') {
+        output.push(...generateText(item, level));
+    }
     else if (item.type === 'image') {
         output.push(...generateFigure(item));
     }
@@ -108,8 +114,8 @@ function populateElements(item: IElement, level: number, shwSyn: boolean): Array
     else if (item.type === 'preformatted') {
         output.push(...generatePreformatted(item, level, shwSyn));
     }
-    else if (item.type === 'text') {
-        output.push(...generateText(item, level));
+    else if (item.type === 'notice') {
+        output.push(...generateNotice(item));
     }
 
     return output;
@@ -227,6 +233,15 @@ function generatePreformatted(preformatted: IPreformatted, level: number, shwSyn
         output.push(preformatted.content.split('\n'));
         output.push('\\end{verbatim}\n');
     }
+
+    return output;
+}
+
+// generate notices
+function generateNotice(notice: IPreformatted): Array<string> {
+    let output = [];
+    // cf. https://github.com/jamovi/jamovi/tree/main/client/resultsview/notice.ts#L64-L79
+    // msgType - 1: 'warning-1', 2: 'warning-2', 3: 'info', 4: 'error'
 
     return output;
 }
