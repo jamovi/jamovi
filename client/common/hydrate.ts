@@ -37,6 +37,15 @@ export interface IRow {
     cells: Array<ICell | null>;
 }
 
+
+export interface ITable {
+    type: 'table';
+    title: string;
+    rows: Array<IRow>;
+    nCols: number;
+    refs?: Array<string>;
+}
+
 export interface IImage {
     type: 'image';
     title?: string;
@@ -60,13 +69,6 @@ export interface IGroup {
     title?: string;
     items: Array<IElement>;
     refs?: Array<string>;
-}
-
-export interface ITable {
-    type: 'table',
-    title: string,
-    rows: Array<IRow>,
-    nCols: number,
 }
 
 export interface ITextChunk {
@@ -114,27 +116,27 @@ function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): ITe
                 // to a subsequent chunk; we are looking for the previous '\n' and attach
                 // all paragraph attributes to the chunks in between
                 const isPara = (x.attributes) &&
-                  ['align', 'indent', 'list'].filter(value => Object.keys(x.attributes).includes(value)).length > 0;
+                    ['align', 'indent', 'list'].filter(value => Object.keys(x.attributes).includes(value)).length > 0;
                 if (isPara && content.startsWith('\n') && prevCR > -1) {
-                    const copyObj = Object.keys(x.attributes).reduce((result, key) => {
-                        if (['align', 'indent', 'list'].includes(key)) {
-                            result[key] = x.attributes[key];
-                        }
-                        return result;
-                    }, {});
+                    let copyObj = {};
+                    for (let key of Object.keys(x.attributes)) {
+                        if (['align', 'indent', 'list'].includes(key))
+                            copyObj[key] = x.attributes[key];
+                    }
                     for (let j = prevCR; j < i; j++) {
                         // in very few cases, two paragraphs with different alignments
                         // are combined in one chunk (with the first having the default
                         // alignment: left), they need to be recombined / rearranged
-                        const splContent = chunks[j].content.split('\n');
-                        if (splContent.filter(c => c.length > 0).length > 1) {
-                            if (i === j + 1 && content === '\n') {
+                        const splContent = chunks[j].content.split('\n').filter(c => c.length > 0);
+                        if (splContent.length > 1) {
+                            if (j === i - 1 && content === '\n') {
                                 content = splContent.pop() + content;
                                 chunks[j].content = splContent.join('\n') + '\n';
                                 break
                             }
                             else {
-                                console.log('splContent: Not yet implemented')
+                                // below is just for safety: not expected to ever happen
+                                console.log('splContent: Not yet implemented');
                             }
                         }
                         if (chunks[j].attributes)
@@ -219,7 +221,7 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
     // append results objects to elements: table, image, or preformatted
     if (pb.table) {
         const table = hydrateTable(pb);
-        elements.push(table)
+        elements.push(table);
     }
     else if (pb.image) {
         const image = hydrateImage(pb, target, cursor, analysisId);
@@ -243,7 +245,7 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
     return elements;
 }
 
-function addRefs(currPB: any) {
+function addRefs(currPB: any): { refs: Array<string> } {
     if (currPB && currPB.refs && currPB.refs.length > 0)
         return { refs: currPB.refs };
     else
@@ -256,7 +258,7 @@ function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cur
     const items = hydrateElements(arrayPB.array.elements, target, values, cursor, top, analysisId);
     if (items === null)
         return null;
-    return  {
+    return {
         ...{
             type: 'group',
             title: arrayPB.title,
@@ -394,7 +396,7 @@ function transmogrify(rawCols: Array<IRawColumn>, formats: Array<any>): [ Array<
         });
         const { combineBelow } = col;
         return { cells, combineBelow };
-    })
+    });
     return [ finalCells, footnotes ];
 }
 
@@ -557,7 +559,7 @@ function hydrateTable(tablePB: any): ITable {
             type: 'body',
             cells,
         };
-    })
+    });
     rows.push(...bodyRows);
 
     for (let i = 0; i < footnotes.length; i++) {
@@ -566,7 +568,7 @@ function hydrateTable(tablePB: any): ITable {
         rows.push({
             type: 'footnote',
             cells: [ { content: fn, colSpan: nCols, sups: [sup], align: 'l' } ]
-        })
+        });
     }
 
     for (let i = 0; i < tablePB.table.notes.length; i++) {
@@ -574,7 +576,7 @@ function hydrateTable(tablePB: any): ITable {
         rows.push({
             type: 'footnote',
             cells: [ { content: note, colSpan: nCols, sups: ['note'], align: 'l' } ]
-        })
+        });
     }
 
     const columns = columnsPB.map((column) => {
