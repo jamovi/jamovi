@@ -5,9 +5,12 @@
     "<%= analysis.name %>Options",
     inherit = jmvcore::Options,
     public = list(
-        initialize = function(<%=analysis.options.filter(o => o.type !== 'Data' && o.type !== 'Output' && o.type !== 'Action').map(option => {
-                if (typeof(option['default']) === 'undefined')
+        initialize = function(<%=analysis.options.filter(o => o.type !== 'Data' && o.type !== 'Output').map(option => {
+                if (typeof(option['default']) === 'undefined') {
+                    if (option['type'] === 'Action')
+                        return '\n            ' + option.name + ' = FALSE,';
                     return '\n            ' + option.name + ' = NULL,';
+                }
                 return '\n            ' + option.name + ' = ' + imports.sourcifyOption(option['default']) + ',';
             }).join('')
             %> ...) {
@@ -187,9 +190,13 @@ if (results.items) {
     }
 }
 %>#' @export
-<%= analysis.rename ? analysis.rename : analysis.name %> <- function(<%=analysis.options.filter(o => ( ! o.type.startsWith('Output') && ! o.type.startsWith('Action'))).map(option => {
-    if (_.isUndefined(option['default']))
-        return '\n    ' + option.name;
+<%= analysis.rename ? analysis.rename : analysis.name %> <- function(<%=analysis.options.filter(o => ( ! o.type.startsWith('Output'))).map(option => {
+    if (_.isUndefined(option['default'])) {
+        if (option['type'] === 'Action')
+            return '\n    ' + option.name + ' = FALSE';
+        else
+            return '\n    ' + option.name;
+    }
     return '\n    ' + option.name + ' = ' + imports.sourcifyOption(option['default']);
 }).join()
 %><%= analysis.formula ? ',\n    formula' : '' %>) {
@@ -245,7 +252,7 @@ if (results.items) {
     }).join('')
 %><% } %>
 
-    options <- <%= analysis.name %>Options$new(<%=analysis.options.filter(o => o.type !== 'Data' && ! o.type.startsWith('Output') && o.type !== 'Action').map(option => {
+    options <- <%= analysis.name %>Options$new(<%=analysis.options.filter(o => o.type !== 'Data' && ! o.type.startsWith('Output')).map(option => {
         return '\n        ' + option.name + ' = ' + option.name;
     }).join()
     %>)

@@ -205,12 +205,8 @@ const optionify = function(option, optionName, optionValue, indent) {
 
     if (option.name)
         optionName = option.name;
-    if (typeof optionValue === 'undefined') {
-        if (option.type === 'Action')
-            optionValue = 'FALSE';
-        else
-            optionValue = option.name;
-    }
+    if (typeof optionValue === 'undefined')
+        optionValue = option.name;
     if (typeof indent === 'undefined')
         indent = '                ';
 
