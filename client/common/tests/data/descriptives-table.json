@@ -179,7 +179,7 @@
       "cells": [
         {
           "content": "More than one mode exists, only the first is reported",
-          "span": 32,
+          "colSpan": 32,
           "sups": [
             "a"
           ],
