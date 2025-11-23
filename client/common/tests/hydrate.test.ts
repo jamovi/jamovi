@@ -47,18 +47,3 @@ describe('hydration of Descriptives table', function () {
         expect(hydrated).to.be.deep.equal(expected)
     });
 });
-
-// describe('hydration of ANOVA results', function () {
-
-//     const expected = retrieveExpected('anova-results');
-//     const pb = retrievePB('anova-results');
-//     const hydrated = hydrate(pb);
-
-//     const json = JSON.stringify(hydrated, null, 2);
-//     console.log(json);
-//     //fs.writeFileSync('/Users/c3113592/Downloads/anova-results.json', json);
-
-//     it('should be correct', function () {
-//         expect(hydrated).to.be.deep.equal(expected)
-//     });
-// });
