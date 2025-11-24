@@ -12,12 +12,22 @@ interface IRawCell {
     align: 'l' | 'c' | 'r';
 }
 
+interface IRawColumn {
+    cells: Array<IRawCell>;
+    combineBelow: boolean;
+}
+
 export interface ICell {
     content: string;
     align: 'l' | 'c' | 'r';
     colSpan?: number;
     rowSpan?: number;
     sups?: Array<string>;
+}
+
+interface IColumn {
+    cells: Array<ICell | null>;
+    combineBelow: boolean;
 }
 
 export interface IRow {
@@ -289,7 +299,7 @@ function transpose(columns: Array<Array<ICell>>): Array<Array<ICell>> {
     );
 }
 
-function extractValue(cellPB: any, align: 'l' | 'c' | 'r'): IRawCell | null {
+function extractRawCell(cellPB: any, align: 'l' | 'c' | 'r'): IRawCell | null {
     let value = cellPB[cellPB.cellType];
     if (cellPB.cellType === 'o') {
         if (value === 1)
@@ -300,24 +310,27 @@ function extractValue(cellPB: any, align: 'l' | 'c' | 'r'): IRawCell | null {
     return { value, footnotes: cellPB.footnotes, symbols: cellPB.symbols, align };
 }
 
-function extractValues(columnsPB: any): Array<Array<IRawCell>> {
+function extractRawColumns(columnsPB: any): Array<IRawColumn> {
     const nCols = columnsPB.length;
-    const cols = new Array(nCols);
+    const cols: Array<IRawColumn> = new Array(nCols);
 
     for (let i = 0; i < nCols; i++) {
         const columnPB = columnsPB[i];
         const align = {'text': 'l', 'integer': 'r', 'number': 'r'}[columnPB.type.toLowerCase()]
-        cols[i] = columnsPB[i].cells.map((v) => extractValue(v, align));
+        const cells = columnsPB[i].cells.map((v) => extractRawCell(v, align));
+        const { combineBelow } = columnPB;
+        const column = { cells, combineBelow };
+        cols[i] = column;
     }
 
     return cols;
 }
 
-function transmogrify(rawCells: Array<Array<IRawCell>>, formats: Array<any>): [ Array<Array<ICell>>, Array<string> ] {
+function transmogrify(rawCols: Array<IRawColumn>, formats: Array<any>): [ Array<IColumn>, Array<string> ] {
     const footnotes: Array<string> = [];
-    const finalCells: Array<Array<ICell>> = rawCells.map((col, colNo) => {
+    const finalCells: Array<IColumn> = rawCols.map((col, colNo) => {
         const fmt = formats[colNo];
-        return col.map((cell) => {
+        const cells = col.cells.map((cell) => {
             if ( ! cell || cell.value === '')
                 return null;
             const indices: Array<number> = [];
@@ -338,6 +351,8 @@ function transmogrify(rawCells: Array<Array<IRawCell>>, formats: Array<any>): [ 
                 finalCell.sups = finalSups;
             return finalCell;
         });
+        const { combineBelow } = col;
+        return { cells, combineBelow };
     })
     return [ finalCells, footnotes ];
 }
@@ -361,7 +376,7 @@ function foldTitles(row: Array<ICell>, columnNames: Array<string>): Array<ICell>
     return columnTitles;
 }
 
-function fold(cells: Array<Array<ICell>>, columnNames: Array<string>): Array<Array<ICell | null>> {
+function fold(columns: Array<IColumn>, columnNames: Array<string>): Array<Array<ICell | null>> {
     const foldedColumnNames = new Set();
     const subRowNames = new Set();
 
@@ -376,10 +391,10 @@ function fold(cells: Array<Array<ICell>>, columnNames: Array<string>): Array<Arr
         }
     }
     if (subRowNames.size < 1)
-        return cells;
+        return columns.map(col => col.cells);
 
     const nFoldsInRow = subRowNames.size;
-    const nRows = cells[0].length * nFoldsInRow;
+    const nRows = columns[0].cells.length * nFoldsInRow;
     const nCols = foldedColumnNames.size;
 
     const foldedCells: Array<Array<ICell | null>> = Array.from(
@@ -406,11 +421,40 @@ function fold(cells: Array<Array<ICell>>, columnNames: Array<string>): Array<Arr
         lookup[name] = { rowOffset, colNo };
     }
 
-    for (let i = 0; i < cells.length; i++) {
+    const combines = new Array(newColumnNames.length);
+
+    for (let i = 0; i < columns.length; i++) {
         const columnName = columnNames[i];
         const address = lookup[columnName];
-        for (let j = 0; j < cells[i].length; j++) {
-            foldedCells[address.colNo][j * nFoldsInRow + address.rowOffset] = cells[i][j];
+        for (let j = 0; j < columns[i].cells.length; j++) {
+            foldedCells[address.colNo][j * nFoldsInRow + address.rowOffset] = columns[i].cells[j];
+        }
+        combines[address.colNo] = columns[i].combineBelow;
+    }
+
+    // add row span's for 'combineBelow'
+    for (const [i, combine] of combines.entries()) {
+        if ( ! combine)
+            continue;
+
+        const cells = foldedCells[i];
+
+        let rowSpan = 1;
+        for (let j = cells.length - 1; j >= 0; j--) {
+            const cell: ICell | null = cells[j];
+            const above: ICell | null = (j > 0) ? cells[j - 1] : null;
+            if (cell === null) {
+                continue;
+            }
+            else if (above === null || cell.content !== above.content) {
+                if (rowSpan > 1) {
+                    cell.rowSpan = rowSpan;
+                    rowSpan = 1;
+                }
+            }
+            else {
+                rowSpan += 1;
+            }
         }
     }
 
@@ -461,12 +505,11 @@ function hydrateTable(tablePB: any): ITable {
 
     rows.push({ type: 'title', cells: titles });
 
-    const rawCellsByColumn = extractValues(columnsPB);
-    const formatsByColumn = rawCellsByColumn.map((x, i) => determFormat(x, columnsPB[i].type, columnsPB[i].format, undefined));
-    const [ cellsByColumn, footnotes ] = transmogrify(rawCellsByColumn, formatsByColumn);
+    const rawColumns = extractRawColumns(columnsPB);
+    const formatsByColumn = rawColumns.map((x, i) => determFormat(x.cells, columnsPB[i].type, columnsPB[i].format, undefined));
+    const [ cellsByColumn, footnotes ] = transmogrify(rawColumns, formatsByColumn);
 
     const folded = fold(cellsByColumn, columnNames);
-
     const cellsByRow = transpose(folded);
     const bodyRows: Array<IRow> = cellsByRow.map(cells => {
         return {
@@ -504,7 +547,7 @@ function hydrateTable(tablePB: any): ITable {
         type: 'table',
         title: tablePB.title,
         rows,
-        nCols: columns.length,
+        nCols: folded.length,
     }
 }
 

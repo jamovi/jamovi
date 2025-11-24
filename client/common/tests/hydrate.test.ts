@@ -47,3 +47,14 @@ describe('hydration of Descriptives table', function () {
         expect(hydrated).to.be.deep.equal(expected)
     });
 });
+
+describe('hydration of Correlation Matrix', function () {
+
+    const expected = retrieveExpected('corr-matrix');
+    const pb = retrievePB('corr-matrix');
+    const hydrated = hydrate(pb);
+
+    it('should be correct', function () {
+        expect(hydrated).to.be.deep.equal(expected)
+    });
+});
