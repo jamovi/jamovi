@@ -4,6 +4,7 @@
 import RibbonSeparator from '../ribbon/ribbonseparator';
 import RibbonGroup from '../ribbon/ribbongroup';
 import ContextMenuButton, { ContextMenuButtonOptions } from './contextmenubutton';
+import { MenuSplitButtonOptions, SplitButton, SplitButtonOption } from './contextmenusplitbutton';
 
 export const createRowMenuItems = function(plural) {
     return [
@@ -170,7 +171,15 @@ export const createResultsObjectMenuItems = function(entries, parent?, levelId?:
             params.eventData = { type: 'selected', address: entryData.address, op: entryData.op, target: entryData };
         }
 
-        let button = new ContextMenuButton(params);
+        let button = null;
+        if (entry.split) {
+            const p = params as MenuSplitButtonOptions;
+            p.subItems = new Array<SplitButtonOption>();
+            p.subItems.push(...entry.split);
+            button = new SplitButton(p);
+        }
+        else
+            button = new ContextMenuButton(params);
 
         items.push(button);
     }
