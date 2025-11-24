@@ -25,7 +25,7 @@ import { IReference } from './references';
 import { R } from './references';
 import { jmv } from './references';
 
-import { hydrate, IElement } from '../common/hydrate';
+import { hydrate } from '../common/hydrate';
 import { htmlify } from '../common/htmlify';
 import { latexify } from '../common/latexify';
 import { createDoc } from '../common/latexify';
@@ -1041,6 +1041,9 @@ class ResultsPanel extends EventDistributor {
 
             let content;
             if (event.op === 'copy2') {
+                // TO-DO: unify references and replace the references
+                // (e.g., 'car' with their respective index)
+                // unfifyRefs and assignRefs in htmlify
                 const html = htmlify(hydrated);
                 content = { html, text: html };
             }

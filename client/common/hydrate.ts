@@ -1,8 +1,8 @@
 'use strict';
 
 import { I18n } from './i18n';
-import { determFormat } from "./formatting";
-import { format } from "./formatting";
+import { determFormat } from './formatting';
+import { format } from './formatting';
 
 const currI18n = new I18n;
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
@@ -37,7 +37,6 @@ export interface IRow {
     cells: Array<ICell | null>;
 }
 
-
 export interface ITable {
     type: 'table';
     title: string;
@@ -64,21 +63,22 @@ export interface IPreformatted {
     refs?: Array<string>;
 }
 
-export interface IGroup {
-    type: 'group',
-    title?: string;
-    items: Array<IElement>;
-    refs?: Array<string>;
-}
-
 export interface ITextChunk {
-    content: string,
+    content: string;
     attributes?: { [name: string]: any };
 }
 
 export interface IText {
-    type: 'text',
-    chunks: Array<ITextChunk>,
+    type: 'text';
+    chunks: Array<ITextChunk>;
+    refs?: Array<string>;   
+}
+
+export interface IGroup {
+    type: 'group';
+    title?: string;
+    items: Array<IElement>;
+    refs?: Array<string>;
 }
 
 export type IElement = IGroup | ITable | IImage | IText | IPreformatted;
@@ -94,65 +94,79 @@ export function hydrate(pb: any, address: IAddress = [], values: IOptionValues =
     return elements[0];
 }
 
+function isPara(attr: Object) {
+    if (attr)
+        return ['align', 'indent', 'list'].some(n => Object.keys(attr).includes(n));
+    else
+        return false;
+}
+
 function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): IText | null {
     const name = `results/${ cursor.join('/') }/${ top ? 'topText' : 'bottomText' }`;
     const value = values[name];
 
     if (value) {
         const { ops } = value;
-        const chunks = new Array(ops.length);
+        const chunks = [];
         let prevCR = -1;
+        let addCR = 0;
 
-        for (let [i, x] of ops.entries()) {
+        for (let x of ops) {
             let content = x.insert;
-            let chunk: ITextChunk;
             if (content.formula) {
-                const attributes = x.attributes || {};
-                attributes.formula = true;
-                chunk = { content: content.formula, attributes };
+                chunks.push(createChunk(content.formula, { ...x.attributes, ...{ formula: true } }));
+                continue
             }
-            else {
-                // quill does some unusual things where it attaches formatting information
-                // to a subsequent chunk; we are looking for the previous '\n' and attach
-                // all paragraph attributes to the chunks in between
-                const isPara = (x.attributes) &&
-                    ['align', 'indent', 'list'].filter(value => Object.keys(x.attributes).includes(value)).length > 0;
-                if (isPara && content.startsWith('\n') && prevCR > -1) {
-                    let copyObj = {};
-                    for (let key of Object.keys(x.attributes)) {
-                        if (['align', 'indent', 'list'].includes(key))
-                            copyObj[key] = x.attributes[key];
+            // if the content of a chunk starts with '\n', we create a new chunk with '\n' and no attributes
+            // afterwards, the original content is either shortened (i.e., the leading '\n' is removed) or
+            // if the chunk consisted only of '\n', the next chunk is processed
+            if (content.includes('\n') && content !== '\n') {
+                const splContent = content.split('\n');
+                // remove trailing CRs and store their number in addCR
+                while (splContent[splContent.length - 1] === '') {
+                    splContent.pop();
+                    ++addCR;
+                }
+                for (let i = 0; i < splContent.length; i++) {
+                    if (splContent[i] === '') {
+                        chunks.push(createChunk('\n'));
                     }
-                    for (let j = prevCR; j < i; j++) {
-                        // in very few cases, two paragraphs with different alignments
-                        // are combined in one chunk (with the first having the default
-                        // alignment: left), they need to be recombined / rearranged
-                        const splContent = chunks[j].content.split('\n').filter(c => c.length > 0);
-                        if (splContent.length > 1) {
-                            if (j === i - 1 && content === '\n') {
-                                content = splContent.pop() + content;
-                                chunks[j].content = splContent.join('\n') + '\n';
-                                break
-                            }
-                            else {
-                                // below is just for safety: not expected to ever happen
-                                console.log('splContent: Not yet implemented');
-                            }
+                    else if (i < splContent.length - 1) {
+                        chunks.push(createChunk(splContent[i] + '\n'));
+                    }
+                    else {
+                        content = splContent[i];
+                        if (addCR > 0) {
+                            content = content + '\n';
+                            --addCR;
                         }
-                        if (chunks[j].attributes)
-                            chunks[j].attributes = { ...chunks[j].attributes, ...copyObj };
-                        else
-                            chunks[j].attributes = copyObj;
                     }
                 }
-                if (content.includes('\n'))
-                    prevCR = content.endsWith('\n') ? i + 1 : i;
-                if (x.attributes)
-                    chunk = { content, attributes: x.attributes };
-                else
-                    chunk = { content }
             }
-            chunks[i] = chunk;
+            // quill does some unusual things where it attaches formatting information
+            // to a subsequent chunk; we are looking for the previous '\n' and attach
+            // all paragraph attributes to the chunks in between
+            prevCR = chunks.map(c => c.content.includes('\n')).lastIndexOf(true);
+            if (isPara(x.attributes) && prevCR > -1) {
+                let copyObj = {};
+                for (let key of Object.keys(x.attributes)) {
+                    if (['align', 'indent', 'list'].includes(key))
+                        copyObj[key] = x.attributes[key];
+                }
+                for (let i = prevCR + 1; i < chunks.length; i++) {
+                    chunks[i].attributes = { ...chunks[i].attributes, ...copyObj };
+                }
+            }
+            if (content !== '\n') {
+                chunks.push(createChunk(content, x.attributes));
+            }
+            else {
+                chunks[chunks.length - 1].content += '\n';
+            }
+            while (addCR > 0) {
+                chunks.push(createChunk('\n'));
+                --addCR;
+            }
         }
 
         return { type: 'text', chunks: chunks };
@@ -160,6 +174,20 @@ function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): ITe
     else {
         return null;
     }
+}
+
+function createChunk(content: string, attr?: Object): ITextChunk {
+    if (attr && Object.keys(attr).length > 0)
+        return { content, attributes: attr };
+    else
+        return { content };
+}
+
+function addRefs(currPB: any): { refs: Array<string> } {
+    if (currPB && currPB.refs && currPB.refs.length > 0)
+        return { refs: currPB.refs };
+    else
+        return undefined;
 }
 
 function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor: Array<string>, top: boolean, analysisId: number): Array<IElement> {
@@ -231,6 +259,10 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         const preformatted = hydratePreformatted(pb);
         elements.push(preformatted);
     }
+    else if (pb.html) {
+        const html = hydrateHTML(pb);
+        elements.push(html);
+    }
     else if (pb.notice) {
         const notice = hydrateNotice(pb);
         elements.push(notice);
@@ -243,13 +275,6 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         return null;
 
     return elements;
-}
-
-function addRefs(currPB: any): { refs: Array<string> } {
-    if (currPB && currPB.refs && currPB.refs.length > 0)
-        return { refs: currPB.refs };
-    else
-        return undefined;
 }
 
 function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean, analysisId: number): IGroup | null {
@@ -324,13 +349,113 @@ function hydratePreformatted(preformattedPB: any): IPreformatted {
     };
 }
 
-function hydrateNotice(noticePB: any): INotice {
+function html2Chunks(content: string, title?: string, msgType?: number): IText {
+    const parser = new DOMParser();
+    let chunks: Array<ITextChunk> = [];
+    if (title)
+        chunks.push({ content: title, attributes: { header: 1 } });
+
+    function chunkify(node: Node, prevAttr: { [key: string]: any }) {
+        let currAttr: { [key: string]: any } = { ...prevAttr };
+
+        if (node.nodeType === Node.ELEMENT_NODE) {
+            const element = node as Element;
+           
+            if (['B', 'STRONG'].includes(element.tagName))
+                currAttr['bold'] = true;
+            if (['I', 'EM'].includes(element.tagName))
+                currAttr['italic'] = true;
+            if (['U'].includes(element.tagName))
+                currAttr['underline'] = true;
+            if (['S', 'STRIKE', 'DEL'].includes(element.tagName))
+                currAttr['strike'] = true;
+            if (['CODE', 'PRE'].includes(element.tagName))
+                currAttr['code-block'] = true;
+            if (['SUP', 'SUB'].includes(element.tagName))
+                currAttr['script'] = element.tagName.replace('SUP', 'super').replace('SUB', 'sub');
+            if (['A'].includes(element.tagName))
+                currAttr['link'] = element.attributes['href'].value;
+            if (/H[1-6]/.test(element.tagName))
+                currAttr['header'] = parseInt(element.tagName.charAt(1));
+            if (['UL', 'OL'].includes(element.tagName))
+                currAttr['list'] = element.tagName.replace('OL', 'ordered').replace('UL', 'bullet');
+            if (element.attributes['style']) {
+                const attrValues = element.attributes['style'].value.split(';').map(s => s.trim()).filter(s => s.length);
+                for (let attrValue of attrValues) {
+                    const attrPair = attrValue.split(':');
+                    if (attrPair[0] === 'text-align' && attrPair[1] !== 'left') {
+                        currAttr['align'] = attrPair[1];
+                    }
+                    else if (attrPair[0] === 'padding') {
+                        const indent = Math.floor(parseInt(attrPair[1].replaceAll('px', '').split(' ')[3]) / 36);
+                        if (indent > 0)
+                            currAttr['indent'] = indent;
+                    }
+                    else if (attrPair[0] === 'color') {
+                        currAttr['color'] = rgb2Hex(attrPair[1]);
+                    }
+                    else if (attrPair[0] === 'background-color') {
+                        currAttr['background'] = rgb2Hex(attrPair[1]);
+                    }
+                    else {
+                        console.log(attrValue);
+                    }
+                }
+            }
+        }
+
+        // process child nodes
+        if (node.childNodes) {
+            for (let child of node.childNodes) {
+                if (child.nodeType === Node.TEXT_NODE) {
+                    if (child.textContent) {
+                        if (Object.keys(currAttr).length > 0)
+                            chunks.push({ content: child.textContent, attributes: currAttr });
+                        else
+                            chunks.push({ content: child.textContent});
+                    }
+                } else {
+                    chunkify(child, currAttr);
+                }
+            }
+        }
+    }   
+
+    chunkify(parser.parseFromString(content, 'text/html').body, ((msgType) ? { box: msgType} : {}));
+
+    // combine CR with previous text
+    for (let i = 0; i < chunks.length; ++i) {
+        if (i > 0 && chunks[i].content === '\n' &&
+              ((Object.keys(chunks[i - 1]).length === 0 && Object.keys(chunks[i]).length === 0) ||
+               (JSON.stringify(chunks[i - 1].attributes) === JSON.stringify(chunks[i].attributes)) ||
+               (Object.keys(chunks[i - 1].attributes).filter(k => k !== 'align').length === 0) ||
+               (Object.keys(chunks[i - 1].attributes).filter(k => k !== 'indent').length === 0))) {
+            chunks[i - 1].content = chunks[i - 1].content + '\n';
+            chunks[i - 0].content = '';
+        }
+    }
+    chunks = chunks.filter(c => c.content.length > 0);
+
     return {
-        type: 'notice',
-        title: noticePB.title,
-        content: currI18n.__(noticePB.notice.content, { prefix: '<strong>', postfix: '</strong>' }),
-        msgType: noticePB.notice.type,
+        type: 'text',
+        chunks: chunks,
     };
+}
+
+function hydrateHTML(htmlPB: any): IText {
+    return { ...html2Chunks(htmlPB.html.content, htmlPB.title),
+             ...addRefs(htmlPB.refs) };
+}
+
+function hydrateNotice(noticePB: any): IText {
+    const html = currI18n.__(noticePB.notice.content, { prefix: '<strong>', postfix: '</strong>' });
+
+    return { ...html2Chunks(html, noticePB.title, noticePB.notice.type),
+             ...addRefs(noticePB.refs) };
+}
+
+function rgb2Hex(rgb: string): string {
+    return '#' + Array.from(rgb.match(/[0-9]+/g)).map(c => parseInt(c).toString(16).padStart(2, '0')).join('');
 }
 
 function transpose(columns: Array<Array<ICell>>): Array<Array<ICell>> {
@@ -357,7 +482,7 @@ function extractRawColumns(columnsPB: any): Array<IRawColumn> {
     const nCols = columnsPB.length;
     const cols: Array<IRawColumn> = new Array(nCols);
 
-    for (let i = 0; i < nCols; i++) {
+    for (let i = 0; i < nCols; ++i) {
         const columnPB = columnsPB[i];
         const align = {'text': 'l', 'integer': 'r', 'number': 'r'}[columnPB.type.toLowerCase()]
         const cells = columnsPB[i].cells.map((v) => extractRawCell(v, align));
@@ -404,7 +529,7 @@ function foldTitles(row: Array<ICell>, columnNames: Array<string>): Array<ICell>
     const columnNamesDone = new Set();
     const columnTitles: Array<ICell> = [ ];
 
-    for (let i = 0; i < columnNames.length; i++) {
+    for (let i = 0; i < columnNames.length; ++i) {
         let columnName = columnNames[i];
         const m = columnName.match(/^(.*)\[(.*)\]$/);
         if (m)
@@ -513,7 +638,7 @@ function hydrateTable(tablePB: any): ITable {
     let hasSuperTitles = false;
     let lastSuperTitle: ICell | null = null;
 
-    for (let i = 0; i < nCols; i++) {
+    for (let i = 0; i < nCols; ++i) {
         const column = columnsPB[i];
         if (column.superTitle) {
             if (i == 0 || lastSuperTitle === null || lastSuperTitle.content !== column.superTitle) {
@@ -562,7 +687,7 @@ function hydrateTable(tablePB: any): ITable {
     });
     rows.push(...bodyRows);
 
-    for (let i = 0; i < footnotes.length; i++) {
+    for (let i = 0; i < footnotes.length; ++i) {
         const fn = footnotes[i];
         const sup = ALPHABET[i];
         rows.push({
@@ -571,7 +696,7 @@ function hydrateTable(tablePB: any): ITable {
         });
     }
 
-    for (let i = 0; i < tablePB.table.notes.length; i++) {
+    for (let i = 0; i < tablePB.table.notes.length; ++i) {
         const note = tablePB.table.notes[i].note;
         rows.push({
             type: 'footnote',

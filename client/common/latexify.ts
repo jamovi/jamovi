@@ -1,9 +1,9 @@
+import { hasAttr } from './utils';
 import { IElement } from './hydrate';
 import { IImage } from './hydrate';
 import { ITable } from './hydrate';
 import { IRow } from './hydrate';
 import { IPreformatted } from './hydrate';
-import { INotice } from './hydrate';
 import { IText } from './hydrate';
 import { ITextChunk } from './hydrate';
 import { IReference } from '../main/references';
@@ -145,9 +145,6 @@ function populateElements(item: IElement, level: number, shwSyn: boolean): Array
             output.push(...populateElements(child, level > -1 ? level + 1 : level, shwSyn));
         }
     }
-    else if (item.type === 'text') {
-        output.push(...generateText(item, level));
-    }
     else if (item.type === 'image') {
         output.push(...generateFigure(item));
     }
@@ -157,8 +154,8 @@ function populateElements(item: IElement, level: number, shwSyn: boolean): Array
     else if (item.type === 'preformatted') {
         output.push(...generatePreformatted(item, level, shwSyn));
     }
-    else if (item.type === 'notice') {
-        output.push(...generateNotice(item));
+    else if (item.type === 'text') {
+        output.push(...generateText(item, level));
     }
 
     return output;
@@ -282,29 +279,34 @@ function generatePreformatted(preformatted: IPreformatted, level: number, shwSyn
     return output;
 }
 
-// generate notices
-function generateNotice(notice: INotice): Array<string> {
-    let output = [];
-    // cf. https://github.com/jamovi/jamovi/tree/main/client/resultsview/notice.ts#L64-L79
-    // msgType - 1: 'warning-1', 2: 'warning-2', 3: 'info', 4: 'error'
-
-    return output;
-}
-
 // generate formatted text (annotations)
 function generateText(text: IText, level: number): Array<string> {
-    let output = ['\\begin{flushleft}\n\\noindent\n'];
+    // icons and colours for message boxes for notices
+    // cf. https://github.com/jamovi/jamovi/tree/main/client/resultsview/notice.ts#L64-L79
+    // msgType - 1: 'warning-1', 2: 'warning-2', 3: 'info', 4: 'error'
+    const iconType  = ['\\faExclamationCircle', '\\faExclamationCircle', '\\faInfoCircle', '\\faBolt'];
+    const iconColor = ['gray',                  'orange',                'blue',           'red'];
+    let output = ['\\begin{flushleft}\n'];
     let calgn = 'left';
-    let clist = '';
-    let citem = '';
     let cindt = 0;
+    let citem = '';
+    let clist = '';
+    let cmsgb = 0;
+    let cnotc = '';
 
-//  if (text.refs)
-//      output.push('Created using the ' + concatRefs(preformatted.refs));
+    // add a sentence regarding used references (if present)
+    if (text.refs)
+        output.push('Created using the ' + concatRefs(text.refs) + '.\n');
+
     for (let chunk of text.chunks) {
         // deal with headers ()
         if (hasAttr(chunk, 'header')) {
-            output.push(...generateHeading(chunk.content, level + 1));
+            output.push(...generateHeading(chunk.content.trim(), level + 1));
+        }
+        // format message boxes: [1] end previous box
+        if (cmsgb !== (hasAttr(chunk, 'box') ? chunk.attributes.box : 0)) {
+            if (cmsgb !== 0)
+                output.push(cnotc + '}\n');
         }
         // format lists: [1] end previous list
         if (clist !== (hasAttr(chunk, 'list') ? chunk.attributes.list : '')) {
@@ -312,65 +314,88 @@ function generateText(text: IText, level: number): Array<string> {
                 output.push('\\end{'   + (clist === 'ordered' ? 'enumerate' : 'itemize') + '}\n');
         }
         // format paragraphs: [1] end previous alignment
+        // needs to come after list formatting is finished, as list formatting is embedded
+        // in formatting alignment)
         if (calgn !== (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left')) {
             output.push(calgn === 'justify' ? '\n\n' : ('\\end{' + (calgn === 'center' ? '' : 'flush') + calgn + '}\n\n'));
         }
         // format paragraphs: [2] begin new alignment
-        // needs to come after list formatting is finished, as list formatting is embedded
-        // in formatting alignment)
         if (calgn !== (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left')) {
             calgn = (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left');
             output.push(calgn === 'justify' ? '' : '\\begin{' + (calgn == 'center' ? '' : 'flush') + calgn + '}\n');
-            output.push('\\noindent\n');
         }
         // format lists: [2] begin new list
         if (clist !== (hasAttr(chunk, 'list') ? chunk.attributes.list : '')) {
             clist = (hasAttr(chunk, 'list') ? chunk.attributes.list : '');
             if (clist !== '')
-                output.push('\\begin{' + (clist === 'ordered' ? 'enumerate' : 'itemize') + '}');
+                output.push('\\begin{' + (clist === 'ordered' ? 'enumerate' : 'itemize') + '}\n');
                 citem = '\\item{';
+        }
+        // format message boxes: [2] begin new box
+        if (cmsgb !== (hasAttr(chunk, 'box') ? chunk.attributes.box : 0)) {
+            cmsgb = (hasAttr(chunk, 'box') ? chunk.attributes.box : 0);
+            if (cmsgb !== 0) {
+                output.push('\\awesomebox{4pt}{' + iconType[chunk.attributes.box - 1] +
+                            '}{' + iconColor[chunk.attributes.box - 1] + '}{\n');
+                cnotc = '    ';
+            }
         }
         // format indentation
         if (cindt !== (hasAttr(chunk, 'indent') ? parseInt(chunk.attributes.indent) : 0)) {
             cindt = (hasAttr(chunk, 'indent') ? parseInt(chunk.attributes.indent) : 0);
-            output.push('\\setlength\\leftskip{' + cindt + 'cm}\n');
+            output.push('\n\\setlength\\leftskip{' + cindt + 'cm}\n\n');
         }
+        // concatenate or push chunks
         if (hasAttr(chunk, 'list')) {
-            // list items may consist of several chunks which need to be concatenated
-            // until a CR is encountered at which point it is pushed and a new item is
-            // started
+            // list items may consist of several chunks which need to be concatenated;
+            // when a CR is encountered, the item is pushed and a new item is started
             if (chunk.content.endsWith('\n')) {
-                output.push(citem + formatAttr(chunk).trim() + '}')
+                output.push(citem + formatAttr(chunk).trim() + '}\n')
                 citem = '\\item{';
             }
             else {
                 citem += formatAttr(chunk);
             }
+        }
+        else if (hasAttr(chunk, 'box')) {
+            // message boxes may also consist of several chunks which need concatenation;
+            // when a CR is encountered a LaTeX line feed (\\) is pushed and a new line
+            // is started
+            if (chunk.content.endsWith('\n')) {
+                output.push(cnotc + formatAttr(chunk).trim() + ' \\\\\n')
+                cnotc = '    ';
+            }
+            else {
+                cnotc += formatAttr(chunk);
+            }
         } else {
             // format other attributes (if the chunk doesn't contain attributes,
             // then the content remains unchanged)
-            output.push(formatAttr(chunk));
+            output.push(formatAttr(chunk) +
+                (chunk.content.endsWith('\n') ? ((chunk.content.length > 1 ? ' \\\\' : '') + '\n') : ''));
         }
     }
-    output.push('\n\\end{flushleft}\n');
+    // finish unfinished business: write out notices and list items, and end the paragrpah alignment
+    if (cmsgb !== 0 && cnotc.length > 0) {
+        output.push(cnotc + '\n}\n');
+    }
+    if (clist !== '' && clist.length > 0) {
+        output.push(clist + '}\n\\end{'   + (clist === 'ordered' ? 'enumerate' : 'itemize') + '}\n');
+    }
+    output.push(calgn === 'justify' ? '\n' : ('\\end{' + (calgn === 'center' ? '' : 'flush') + calgn + '}\n'));
 
     return output.join('').split('\n');
 }
 
 // generate random string
 function randomString(length: number): string {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
 
-  for (let i = 0; i < length; i++)
-    result += characters.charAt(Math.floor(Math.random() * characters.length));
+    for (let i = 0; i < length; i++)
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
 
-  return result;
-}
-
-// check whether text chunk has a certain attribute
-function hasAttr(chunk: ITextChunk, attr: string): boolean {
-    return ('attributes' in chunk && attr in chunk.attributes);
+    return result;
 }
 
 // determine maximum (table) cell length
@@ -551,7 +576,7 @@ function formatNote(row: IRow): Array<string> {
 }
 
 function formatAttr(chunk: ITextChunk): string {
-    let output = chunk.content;
+    let output = chunk.content.substring(0, chunk.content.length - (chunk.content.endsWith('\n') ? 1 : 0));
 
     if (hasAttr(chunk, 'bold'))
         output = '\\textbf{' + output + '}';
@@ -575,8 +600,6 @@ function formatAttr(chunk: ITextChunk): string {
         output = '\\textcolor[rgb]{' + formatRGB(chunk.attributes.color) + '}{' + output + '}';
     if (hasAttr(chunk, 'background'))
         output = '\\colorbox[rgb]{' + formatRGB(chunk.attributes.background) + '}{' + output + '}';
-    if (hasAttr(chunk, 'list'))
-        output = output.trim()
 
     return output.replace(/(?<=\$)(.*?)\$(?=(.*?)\$)/g, '$1');
 }
@@ -591,9 +614,9 @@ function concatRefs(refNames: Array<string>): string {
     if (!refNames || refNames.length === 0)
         return '';
     else if (refNames.length === 1)
-        return ('module / package ' + refNames[0] + ' \\parencite{' + refNames[0] + '}');
+        return ('module, package or reference ' + refNames[0] + ' \\parencite{' + refNames[0] + '}');
     else
-        return ('modules / packages ' + refNames.slice(0, -1).join(', ') + ' and ' + refNames.slice(-1)[0] +
+        return ('modules, packages or references ' + refNames.slice(0, -1).join(', ') + ' and ' + refNames.slice(-1)[0] +
                 ' \\parencite{' + refNames.join(', ') + '}');
 }
 

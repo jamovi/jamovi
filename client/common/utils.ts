@@ -1,4 +1,5 @@
 'use strict';
+import { ITextChunk } from './hydrate';
 
 export function s6e(x) {
     return x.replace(/&/g, '&amp;')
@@ -80,6 +81,11 @@ export function contextMenuListener(element, callback) {
             }, 500);
         });
     }
+}
+
+// check whether text chunk has a certain attribute
+export function hasAttr(chunk: ITextChunk, attr: string): boolean {
+    return ('attributes' in chunk && attr in chunk.attributes);
 }
 
 export default { s6e, contextMenuListener }
