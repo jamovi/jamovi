@@ -7,7 +7,6 @@ import dropdown from './dropdown';
 import MissingValueEditor from '../editors/missingvalueeditor';
 import MeasureList from './measurelist';
 import _dialogs from 'dialogs';
-const dialogs = _dialogs({cancel:false});
 import focusLoop from '../../common/focusloop';
 import { s6e } from '../../common/utils';
 import { DataType, MeasureType } from '../dataset';
@@ -16,6 +15,7 @@ import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
 class DataVarWidget extends HTMLElement {
 
+    dialogs: any;
     attached: boolean = false;
     model: VariableModel;
     _focusLeaving: boolean;
@@ -44,6 +44,8 @@ class DataVarWidget extends HTMLElement {
         super();
 
         this.model = model;
+
+        this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('Ok')});
 
         this._clickLevel = this._clickLevel.bind(this);
 
@@ -124,7 +126,7 @@ class DataVarWidget extends HTMLElement {
                 let response = await new Promise((resolve, reject) => {
                     let msg = _('Enter level value');
                     focusLoop.speakMessage(msg);
-                    dialogs.prompt(msg, '', (result) => {
+                    this.dialogs.prompt(msg, '', (result) => {
                         let widget = document.body.querySelector<HTMLElement>('.dialog-widget.prompt');
                         focusLoop.leaveFocusLoop(widget);
                         if (result === undefined)
