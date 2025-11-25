@@ -71,7 +71,7 @@ export interface ITextChunk {
 export interface IText {
     type: 'text';
     chunks: Array<ITextChunk>;
-    refs?: Array<string>;   
+    refs?: Array<string>;
 }
 
 export interface IGroup {
@@ -89,16 +89,19 @@ export function hydrate(pb: any, address: IAddress = [], values: IOptionValues =
     analysisId = analysisId || 0;
 
     const elements = hydrateElement(pb, address, values, [], top, analysisId);
-    if (elements === null)
+    if (elements === null) {
         return null;
+    }
     return elements[0];
 }
 
 function isPara(attr: Object) {
-    if (attr)
+    if (attr) {
         return ['align', 'indent', 'list'].some(n => Object.keys(attr).includes(n));
-    else
+    }
+    else {
         return false;
+    }
 }
 
 function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): IText | null {
@@ -150,8 +153,9 @@ function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): ITe
             if (isPara(x.attributes) && prevCR > -1) {
                 let copyObj = {};
                 for (let key of Object.keys(x.attributes)) {
-                    if (['align', 'indent', 'list'].includes(key))
+                    if (['align', 'indent', 'list'].includes(key)) {
                         copyObj[key] = x.attributes[key];
+                    }
                 }
                 for (let i = prevCR + 1; i < chunks.length; i++) {
                     chunks[i].attributes = { ...chunks[i].attributes, ...copyObj };
@@ -177,17 +181,21 @@ function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): ITe
 }
 
 function createChunk(content: string, attr?: Object): ITextChunk {
-    if (attr && Object.keys(attr).length > 0)
+    if (attr && Object.keys(attr).length > 0) {
         return { content, attributes: attr };
-    else
+    }
+    else {
         return { content };
+    }
 }
 
 function addRefs(currPB: any): { refs: Array<string> } {
-    if (currPB && currPB.refs && currPB.refs.length > 0)
+    if (currPB && currPB.refs && currPB.refs.length > 0) {
         return { refs: currPB.refs };
-    else
+    }
+    else {
         return undefined;
+    }
 }
 
 function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor: Array<string>, top: boolean, analysisId: number): Array<IElement> {
@@ -198,16 +206,18 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
     const after = hydrateText(false, values, cursor);
 
     const elements = [];
-    if (before)
+    if (before) {
         elements.push(before);
+    }
 
     if (pb.group) {
         if (target.length > 0) {
             const name = target.shift();
             cursor.push(name);
             for (let elementPB of pb.group.elements) {
-                if (elementPB.name === name)
+                if (elementPB.name === name) {
                     return hydrateElement(elementPB, target, values, cursor, top, analysisId);
+                }
             }
             throw Error('Address not valid');
         }
@@ -215,11 +225,13 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         if (group) {
             // if there's text at the top of the group, we move it down into
             // the body of the group
-            if (before)
+            if (before) {
                 elements.shift();
+            }
             elements.push(group);
-            if (before)
+            if (before) {
                 group.items.unshift(before);
+            }
         }
     }
     else if (pb.array) {
@@ -227,8 +239,9 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
             const name = target.shift();
             cursor.push(name);
             for (let elementPB of pb.array.elements) {
-                if (elementPB.name === name)
+                if (elementPB.name === name) {
                     return hydrateElement(elementPB, target, values, cursor, top, analysisId);
+                }
             }
             throw Error('Address not valid');
         }
@@ -236,15 +249,18 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         if (array) {
             // if there's text at the top of the group, we move it down into
             // the body of the group
-            if (before)
+            if (before) {
                 elements.shift();
+            }
             elements.push(array);
-            if (before)
+            if (before) {
                 array.items.unshift(before);
+            }
         }
     }
-    if (target.length > 0)
+    if (target.length > 0) {
         throw Error('Address not valid');
+    }
 
     // append results objects to elements: table, image, or preformatted
     if (pb.table) {
@@ -268,21 +284,25 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         elements.push(notice);
     }
 
-    if (after)
+    if (after) {
         elements.push(after);
+    }
 
-    if (elements.length === 0)
+    if (elements.length === 0) {
         return null;
+    }
 
     return elements;
 }
 
 function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean, analysisId: number): IGroup | null {
-    if (arrayPB.array.elements.length === 0)
+    if (arrayPB.array.elements.length === 0) {
         return null;
+    }
     const items = hydrateElements(arrayPB.array.elements, target, values, cursor, top, analysisId);
-    if (items === null)
+    if (items === null) {
         return null;
+    }
     return {
         ...{
             type: 'group',
@@ -301,8 +321,9 @@ function hydrateGroup(groupPB: any, target: IAddress, values: IOptionValues, cur
     }
 
     const items = hydrateElements(groupPB.group.elements, target, values, cursor, top, analysisId);
-    if (items === null)
+    if (items === null) {
         return null;
+    }
     return { type: 'group', title, items };
 }
 
@@ -313,13 +334,15 @@ function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOpti
         if ([0, 2].includes(itemPB.visible)) {
             const elem = hydrateElement(itemPB, target, values, itemCursor, top, analysisId);
             if (elem !== null) {
-                for (const item of elem)
+                for (const item of elem) {
                     items.push(item);
+                }
             }
         }
     }
-    if (items.length === 0)
+    if (items.length === 0) {
         return null;
+    }
     return items;
 }
 
@@ -352,33 +375,43 @@ function hydratePreformatted(preformattedPB: any): IPreformatted {
 function html2Chunks(content: string, title?: string, msgType?: number): IText {
     const parser = new DOMParser();
     let chunks: Array<ITextChunk> = [];
-    if (title)
+    if (title) {
         chunks.push({ content: title, attributes: { header: 1 } });
+    }
 
     function chunkify(node: Node, prevAttr: { [key: string]: any }) {
         let currAttr: { [key: string]: any } = { ...prevAttr };
 
         if (node.nodeType === Node.ELEMENT_NODE) {
             const element = node as Element;
-           
-            if (['B', 'STRONG'].includes(element.tagName))
+
+            if (['B', 'STRONG'].includes(element.tagName)) {
                 currAttr['bold'] = true;
-            if (['I', 'EM'].includes(element.tagName))
+            }
+            if (['I', 'EM'].includes(element.tagName)) {
                 currAttr['italic'] = true;
-            if (['U'].includes(element.tagName))
+            }
+            if (['U'].includes(element.tagName)) {
                 currAttr['underline'] = true;
-            if (['S', 'STRIKE', 'DEL'].includes(element.tagName))
+            }
+            if (['S', 'STRIKE', 'DEL'].includes(element.tagName)) {
                 currAttr['strike'] = true;
-            if (['CODE', 'PRE'].includes(element.tagName))
+            }
+            if (['CODE', 'PRE'].includes(element.tagName)) {
                 currAttr['code-block'] = true;
-            if (['SUP', 'SUB'].includes(element.tagName))
+            }
+            if (['SUP', 'SUB'].includes(element.tagName)) {
                 currAttr['script'] = element.tagName.replace('SUP', 'super').replace('SUB', 'sub');
-            if (['A'].includes(element.tagName))
+            }
+            if (['A'].includes(element.tagName)) {
                 currAttr['link'] = element.attributes['href'].value;
-            if (/H[1-6]/.test(element.tagName))
+            }
+            if (/H[1-6]/.test(element.tagName)) {
                 currAttr['header'] = parseInt(element.tagName.charAt(1));
-            if (['UL', 'OL'].includes(element.tagName))
+            }
+            if (['UL', 'OL'].includes(element.tagName)) {
                 currAttr['list'] = element.tagName.replace('OL', 'ordered').replace('UL', 'bullet');
+            }
             if (element.attributes['style']) {
                 const attrValues = element.attributes['style'].value.split(';').map(s => s.trim()).filter(s => s.length);
                 for (let attrValue of attrValues) {
@@ -388,8 +421,9 @@ function html2Chunks(content: string, title?: string, msgType?: number): IText {
                     }
                     else if (attrPair[0] === 'padding') {
                         const indent = Math.floor(parseInt(attrPair[1].replaceAll('px', '').split(' ')[3]) / 36);
-                        if (indent > 0)
+                        if (indent > 0) {
                             currAttr['indent'] = indent;
+                        }
                     }
                     else if (attrPair[0] === 'color') {
                         currAttr['color'] = rgb2Hex(attrPair[1]);
@@ -409,17 +443,19 @@ function html2Chunks(content: string, title?: string, msgType?: number): IText {
             for (let child of node.childNodes) {
                 if (child.nodeType === Node.TEXT_NODE) {
                     if (child.textContent) {
-                        if (Object.keys(currAttr).length > 0)
+                        if (Object.keys(currAttr).length > 0) {
                             chunks.push({ content: child.textContent, attributes: currAttr });
-                        else
+                        }
+                        else {
                             chunks.push({ content: child.textContent});
+                        }
                     }
                 } else {
                     chunkify(child, currAttr);
                 }
             }
         }
-    }   
+    }
 
     chunkify(parser.parseFromString(content, 'text/html').body, ((msgType) ? { box: msgType} : {}));
 
@@ -459,8 +495,9 @@ function rgb2Hex(rgb: string): string {
 }
 
 function transpose(columns: Array<Array<ICell>>): Array<Array<ICell>> {
-    if ( ! Array.isArray(columns) || columns.length === 0)
+    if ( ! Array.isArray(columns) || columns.length === 0) {
         return [];
+    }
     return Array.from(
         { length: columns[0].length },
         (_, rowIdx) => columns.map(col => col[rowIdx])
@@ -470,10 +507,12 @@ function transpose(columns: Array<Array<ICell>>): Array<Array<ICell>> {
 function extractRawCell(cellPB: any, align: 'l' | 'c' | 'r'): IRawCell | null {
     let value = cellPB[cellPB.cellType];
     if (cellPB.cellType === 'o') {
-        if (value === 1)
+        if (value === 1) {
             value = 'NaN';
-        else
+        }
+        else {
             value = '.';
+        }
     }
     return { value, footnotes: cellPB.footnotes, symbols: cellPB.symbols, align };
 }
@@ -499,8 +538,9 @@ function transmogrify(rawCols: Array<IRawColumn>, formats: Array<any>): [ Array<
     const finalCells: Array<IColumn> = rawCols.map((col, colNo) => {
         const fmt = formats[colNo];
         const cells = col.cells.map((cell) => {
-            if ( ! cell || cell.value === '')
+            if ( ! cell || cell.value === '') {
                 return null;
+            }
             const indices: Array<number> = [];
             for (let fn of cell.footnotes) {
                 let index = footnotes.indexOf(fn);
@@ -515,8 +555,9 @@ function transmogrify(rawCols: Array<IRawColumn>, formats: Array<any>): [ Array<
                 content: (typeof cell.value === 'string') ? cell.value : format(cell.value, fmt),
                 align: cell.align,
             };
-            if (finalSups.length > 0)
+            if (finalSups.length > 0) {
                 finalCell.sups = finalSups;
+            }
             return finalCell;
         });
         const { combineBelow } = col;
@@ -532,8 +573,9 @@ function foldTitles(row: Array<ICell>, columnNames: Array<string>): Array<ICell>
     for (let i = 0; i < columnNames.length; ++i) {
         let columnName = columnNames[i];
         const m = columnName.match(/^(.*)\[(.*)\]$/);
-        if (m)
+        if (m) {
             columnName = m[1];
+        }
 
         if ( ! columnNamesDone.has(columnName)) {
             columnTitles.push(row[i]);
@@ -558,8 +600,9 @@ function fold(columns: Array<IColumn>, columnNames: Array<string>): Array<Array<
             foldedColumnNames.add(name);
         }
     }
-    if (subRowNames.size < 1)
+    if (subRowNames.size < 1) {
         return columns.map(col => col.cells);
+    }
 
     const nFoldsInRow = subRowNames.size;
     const nRows = columns[0].cells.length * nFoldsInRow;
@@ -602,8 +645,9 @@ function fold(columns: Array<IColumn>, columnNames: Array<string>): Array<Array<
 
     // add row span's for 'combineBelow'
     for (const [i, combine] of combines.entries()) {
-        if ( ! combine)
+        if ( ! combine) {
             continue;
+        }
 
         const cells = foldedCells[i];
 
@@ -687,20 +731,20 @@ function hydrateTable(tablePB: any): ITable {
     });
     rows.push(...bodyRows);
 
+    for (let i = 0; i < tablePB.table.notes.length; ++i) {
+        const note = tablePB.table.notes[i].note;
+        rows.push({
+            type: 'footnote',
+            cells: [ { content: note, colSpan: folded.length, sups: ['note'], align: 'l' } ]
+        });
+    }
+
     for (let i = 0; i < footnotes.length; ++i) {
         const fn = footnotes[i];
         const sup = ALPHABET[i];
         rows.push({
             type: 'footnote',
-            cells: [ { content: fn, colSpan: nCols, sups: [sup], align: 'l' } ]
-        });
-    }
-
-    for (let i = 0; i < tablePB.table.notes.length; ++i) {
-        const note = tablePB.table.notes[i].note;
-        rows.push({
-            type: 'footnote',
-            cells: [ { content: note, colSpan: nCols, sups: ['note'], align: 'l' } ]
+            cells: [ { content: fn, colSpan: folded.length, sups: [sup], align: 'l' } ]
         });
     }
 
