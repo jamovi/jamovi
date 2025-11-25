@@ -26,7 +26,7 @@ body.windows.electron .jmv-ribbon-appmenu-menu-panel {
 }
 
 .jmv-ribbon-appmenu-menu-panel.activated {
-    width: 250px;
+    width: 280px;
     visibility: visible;
 }
 
@@ -108,6 +108,7 @@ body[dir="ltr"] .jmv-ribbon-appmenu-back-button > div {
     justify-content: space-between;
     align-items: center;
     padding: 6px 16px ;
+    gap: 10px
 }
 
 .jmv-ribbon-appmenu-item.checkbox:hover,
