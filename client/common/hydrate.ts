@@ -1,10 +1,9 @@
 'use strict';
 
-import { I18n } from './i18n';
+import I18ns from './i18n';
 import { determFormat } from './formatting';
 import { format } from './formatting';
 
-const currI18n = new I18n;
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
 
 interface IRawCell {
@@ -484,7 +483,7 @@ function hydrateHTML(htmlPB: any): IText {
 }
 
 function hydrateNotice(noticePB: any): IText {
-    const html = currI18n.__(noticePB.notice.content, { prefix: '<strong>', postfix: '</strong>' });
+    const html = I18ns.get('app').__(noticePB.notice.content, { prefix: '<strong>', postfix: '</strong>' });
 
     return { ...html2Chunks(html, noticePB.title, noticePB.notice.type),
              ...addRefs(noticePB.refs) };
