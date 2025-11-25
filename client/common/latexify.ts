@@ -19,8 +19,9 @@ export function latexify(hydrated: IElement, options?: ILatexifyOptions): string
     options.showSyntax = options.showSyntax ?? false;
     options.level = options.level ?? -1;
 
-    if (hydrated === null)
+    if (hydrated === null) {
         return null;
+    }
     return populateElements(hydrated, options.level, options.showSyntax).join('\n');
 }
 
@@ -101,8 +102,9 @@ export function createBibTex(references?: Array<IReference>): string {
     const bibTex = [];
     let ref2Tex = [];
 
-    if (!references || references.length === 0)
+    if (!references || references.length === 0) {
         return null;
+    }
 
     for (const currRef of references) {
         ref2Tex.push('@' + currRef['type'].replace('software', 'misc') + '{' + currRef['name']);
@@ -111,19 +113,21 @@ export function createBibTex(references?: Array<IReference>): string {
         if (splAuthor.length === 1) {
             ref2Tex.push('  author = \"' + splAuthor[0] + '\"');
         }
-        else if (splAuthor.length % 2 == 0) {
+        else if (splAuthor.length % 2 === 0) {
             let currAuth = [];
-            for (let i = 0; i < splAuthor.length; i += 2)
+            for (let i = 0; i < splAuthor.length; i += 2) {
                 currAuth.push(splAuthor[i] + ', ' + splAuthor[i + 1]);
+            }
             ref2Tex.push('  author = \"' + currAuth.join(' and ') + '\"');
         }
         else {
             ref2Tex.push('  author = \"[NEEDS MANUAL FORMATTING] ' + splAuthor.join(', ') + '\"');
         }
         for (const currKey of Object.keys(currRef).filter(k => !['name', 'type', 'authors'].includes(k))) {
-            if (String(currRef[currKey]) !== '')
+            if (String(currRef[currKey]) !== '') {
                 ref2Tex.push(('  ' + (currRef.type === 'article' && currKey === 'publisher' ? 'journal' : currKey) +
                               ' = \"' + String(currRef[currKey]) + '\"'));
+            }
         }
         bibTex.push(ref2Tex.join(',\n') + '\n}');
         ref2Tex = [];
@@ -168,20 +172,20 @@ function generateHeading(title: string, level: number): Array<string> {
 
     if (level >= 0 && title) {
         output.push(ruler);
-        if (level == 0) {
+        if (level === 0) {
             // NB: chapter is not available in apa7
             output.push('\\chapter{' + title + '}');
         }
-        else if (level == 1) {
+        else if (level === 1) {
             output.push('\\section{' + title + '}');
         }
-        else if (level == 2) {
+        else if (level === 2) {
             output.push('\\subsection{' + title + '}');
         }
-        else if (level == 3) {
+        else if (level === 3) {
             output.push('\\subsubsection{' + title + '}');
         }
-        else if (level == 4) {
+        else if (level === 4) {
             output.push('\\paragraph{' + title + '}');
         }
         else {
@@ -230,17 +234,17 @@ function generateTable(table: ITable): Array<string> {
     output.push('\\begin{tabular}{' + colAlign.join('') + '}');
     output.push('\\toprule');
     for (let row of table.rows) {
-        if (row.type == 'superTitle') {
+        if (row.type === 'superTitle') {
             output.push(...formatSuperTitle(row));
         }
         else if (['title', 'body'].includes(row.type)) {
-            if (row.type == 'body' && rleBody) {
+            if (row.type === 'body' && rleBody) {
                 output.push('\\midrule');
                 rleBody = false;
             }
             output.push(formatTableRow(row, colLength, colAlign));
         }
-        else if (row.type == 'footnote') {
+        else if (row.type === 'footnote') {
             notes.push(formatNote(row));
         }
         else {
@@ -269,8 +273,9 @@ function generatePreformatted(preformatted: IPreformatted, level: number, shwSyn
     // add a heading, \begin{verbatim}, the latex array, and \ end{verbatim}
     if (!preformatted.syntax || shwSyn) {
         output.push(generateHeading(preformatted.title, level + 1));
-        if (preformatted.refs)
+        if (preformatted.refs) {
             output.push('Created using the ' + concatRefs(preformatted.refs));
+        }
         output.push('\\begin{verbatim}');
         output.push(preformatted.content.split('\n'));
         output.push('\\end{verbatim}\n');
@@ -295,23 +300,26 @@ function generateText(text: IText, level: number): Array<string> {
     let cnotc = '';
 
     // add a sentence regarding used references (if present)
-    if (text.refs)
+    if (text.refs) {
         output.push('Created using the ' + concatRefs(text.refs) + '.\n');
+    }
 
     for (let chunk of text.chunks) {
-        // deal with headers ()
+        // deal with headers
         if (hasAttr(chunk, 'header')) {
             output.push(...generateHeading(chunk.content.trim(), level + 1));
         }
         // format message boxes: [1] end previous box
         if (cmsgb !== (hasAttr(chunk, 'box') ? chunk.attributes.box : 0)) {
-            if (cmsgb !== 0)
+            if (cmsgb !== 0) {
                 output.push(cnotc + '}\n');
+            }
         }
         // format lists: [1] end previous list
         if (clist !== (hasAttr(chunk, 'list') ? chunk.attributes.list : '')) {
-            if (clist !== '')
+            if (clist !== '') {
                 output.push('\\end{'   + (clist === 'ordered' ? 'enumerate' : 'itemize') + '}\n');
+            }
         }
         // format paragraphs: [1] end previous alignment
         // needs to come after list formatting is finished, as list formatting is embedded
@@ -322,14 +330,15 @@ function generateText(text: IText, level: number): Array<string> {
         // format paragraphs: [2] begin new alignment
         if (calgn !== (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left')) {
             calgn = (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left');
-            output.push(calgn === 'justify' ? '' : '\\begin{' + (calgn == 'center' ? '' : 'flush') + calgn + '}\n');
+            output.push(calgn === 'justify' ? '' : '\\begin{' + (calgn === 'center' ? '' : 'flush') + calgn + '}\n');
         }
         // format lists: [2] begin new list
         if (clist !== (hasAttr(chunk, 'list') ? chunk.attributes.list : '')) {
             clist = (hasAttr(chunk, 'list') ? chunk.attributes.list : '');
-            if (clist !== '')
+            if (clist !== '') {
                 output.push('\\begin{' + (clist === 'ordered' ? 'enumerate' : 'itemize') + '}\n');
                 citem = '\\item{';
+            }
         }
         // format message boxes: [2] begin new box
         if (cmsgb !== (hasAttr(chunk, 'box') ? chunk.attributes.box : 0)) {
@@ -350,7 +359,7 @@ function generateText(text: IText, level: number): Array<string> {
             // list items may consist of several chunks which need to be concatenated;
             // when a CR is encountered, the item is pushed and a new item is started
             if (chunk.content.endsWith('\n')) {
-                output.push(citem + formatAttr(chunk).trim() + '}\n')
+                output.push(citem + formatAttr(chunk).trim() + '}\n');
                 citem = '\\item{';
             }
             else {
@@ -362,7 +371,7 @@ function generateText(text: IText, level: number): Array<string> {
             // when a CR is encountered a LaTeX line feed (\\) is pushed and a new line
             // is started
             if (chunk.content.endsWith('\n')) {
-                output.push(cnotc + formatAttr(chunk).trim() + ' \\\\\n')
+                output.push(cnotc + formatAttr(chunk).trim() + ' \\\\\n');
                 cnotc = '    ';
             }
             else {
@@ -392,8 +401,9 @@ function randomString(length: number): string {
     const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
 
-    for (let i = 0; i < length; i++)
+    for (let i = 0; i < length; ++i) {
         result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
 
     return result;
 }
@@ -404,7 +414,7 @@ function tableCellWidth(table: ITable): Array<number> {
 
     for (let row of table.rows) {
         if (['title', 'body'].includes(row.type)) {
-            for (let i = 0; i < row.cells.length; i++) {
+            for (let i = 0; i < row.cells.length; ++i) {
                 if (row.cells[i] && row.cells[i].content) {
                     colLength[i] = Math.max(row.cells[i].content.length, colLength[i]);
                 }
@@ -421,8 +431,8 @@ function tableCellAlign(table: ITable): Array<string> {
     let colCheck = new Array(table.nCols).fill(false);
 
     for (let row of table.rows) {
-        if (row.type == 'body') {
-            for (let i = 0; i < row.cells.length; i++) {
+        if (row.type === 'body') {
+            for (let i = 0; i < row.cells.length; ++i) {
                 if (row.cells[i] && row.cells[i].align) {
                     colAlign[i] = row.cells[i].align
                     colCheck[i] = true
@@ -440,12 +450,19 @@ function tableCellAlign(table: ITable): Array<string> {
 // replace non-printable characters in tables, handle footnotes, etc.
 function cleanTable(table: ITable): ITable {
 
-    for (let i = 0; i < table.rows.length; i++) {
+    for (let i = 0; i < table.rows.length; ++i) {
         const row = table.rows[i];
-        for (let j = 0; j < row.cells.length; j++) {
+        for (let j = 0; j < row.cells.length; ++j) {
             const cell = row.cells[j];
             if (cell === null) {
                 continue;
+            }
+            // handle row spans
+            if (cell.rowSpan) {
+                for (let k = 1; k < cell.rowSpan; ++k) {
+                    table.rows[i + k].cells[j].content = '~';
+                }
+
             }
             // handle superscripts for footnotes (= specific notes)
             if (row.type != 'footnote' && cell.sups && cell.sups.length > 0) {
@@ -501,7 +518,7 @@ function formatSuperTitle(row: IRow): Array<string> {
     let mrule = [];
     let empty = 0;
 
-    for (let i = 0; i < row.cells.length; i++) {
+    for (let i = 0; i < row.cells.length; ++i) {
         if (row.cells[i]) {
             if (row.cells[i].content) {
                 if (empty > 0) {
@@ -519,7 +536,7 @@ function formatSuperTitle(row: IRow): Array<string> {
             }
         }
         else {
-            empty++
+            ++empty
         }
     }
 
@@ -532,7 +549,7 @@ function formatTableRow(row: IRow, colLength: Array<number>, colAlign: Array<str
     let crrCll = '';
     let addSpc = 0;
 
-    for (let i = 0; i < row.cells.length; i++) {
+    for (let i = 0; i < row.cells.length; ++i) {
         if (row.cells[i] && row.cells[i].content.length > 0) {
             crrCll = row.cells[i].content;
         }
@@ -540,13 +557,13 @@ function formatTableRow(row: IRow, colLength: Array<number>, colAlign: Array<str
             crrCll = '~';
         }
         addSpc = colLength[i] - crrCll.length;
-        if (colAlign[i] == 'l') {
+        if (colAlign[i] === 'l') {
             cells.push(crrCll + ' '.repeat(addSpc));
         }
-        else if (colAlign[i] == 'r') {
+        else if (colAlign[i] === 'r') {
             cells.push(' '.repeat(addSpc) + crrCll);
         }
-        else if (colAlign[i] == 'r') {
+        else if (colAlign[i] === 'r') {
             cells.push(' '.repeat(Math.ceil(addSpc / 2)) + crrCll +
                        ' '.repeat(Math.floor(addSpc / 2)));
         }
@@ -559,9 +576,9 @@ function formatTableRow(row: IRow, colLength: Array<number>, colAlign: Array<str
 function formatNote(row: IRow): Array<string> {
     let output = [];
 
-    for (let i = 0; i < row.cells.length; i++) {
+    for (let i = 0; i < row.cells.length; ++i) {
         if (row.cells[i].content.length > 0 && row.cells[i].sups.length > 0) {
-            if (row.cells[i].sups[0] == 'note') {
+            if (row.cells[i].sups[0] === 'note') {
                 // General and significance notes
                 output.push('\\textit{Note.}~' + row.cells[i].content.trim() + ' \\\\');
             }
@@ -578,28 +595,39 @@ function formatNote(row: IRow): Array<string> {
 function formatAttr(chunk: ITextChunk): string {
     let output = chunk.content.substring(0, chunk.content.length - (chunk.content.endsWith('\n') ? 1 : 0));
 
-    if (hasAttr(chunk, 'bold'))
+    if (hasAttr(chunk, 'bold')) {
         output = '\\textbf{' + output + '}';
-    if (hasAttr(chunk, 'italic'))
+    }
+    if (hasAttr(chunk, 'italic')) {
         output = '\\textit{' + output + '}';
-    if (hasAttr(chunk, 'underline'))
+    }
+    if (hasAttr(chunk, 'underline')) {
         output = '\\underline{' + output + '}';
-    if (hasAttr(chunk, 'strike'))
+    }
+    if (hasAttr(chunk, 'strike')) {
         output = '\\st{' + output + '}';
-    if (hasAttr(chunk, 'code-block'))
+    }
+    if (hasAttr(chunk, 'code-block')) {
         output = '\\verbatim{' + output + '}\n';
-    if (hasAttr(chunk, 'link'))
+    }
+    if (hasAttr(chunk, 'link')) {
         output = '\\href{' + chunk.attributes.link + '}{' + output + '}';
-    if (hasAttr(chunk, 'formula'))
+    }
+    if (hasAttr(chunk, 'formula')) {
         output = '${' + formatFrml(output) + '}$';
-    if (hasAttr(chunk, 'script') && chunk.attributes.script === 'super')
+    }
+    if (hasAttr(chunk, 'script') && chunk.attributes.script === 'super') {
         output = '$^{' + + output + '}$';
-    if (hasAttr(chunk, 'script') && chunk.attributes.script === 'sub')
+    }
+    if (hasAttr(chunk, 'script') && chunk.attributes.script === 'sub') {
         output = '$_{' + + output + '}$';
-    if (hasAttr(chunk, 'color'))
+    }
+    if (hasAttr(chunk, 'color')) {
         output = '\\textcolor[rgb]{' + formatRGB(chunk.attributes.color) + '}{' + output + '}';
-    if (hasAttr(chunk, 'background'))
+    }
+    if (hasAttr(chunk, 'background')) {
         output = '\\colorbox[rgb]{' + formatRGB(chunk.attributes.background) + '}{' + output + '}';
+    }
 
     return output.replace(/(?<=\$)(.*?)\$(?=(.*?)\$)/g, '$1');
 }
@@ -611,13 +639,16 @@ function formatFrml(katex: string): string {
 }
 
 function concatRefs(refNames: Array<string>): string {
-    if (!refNames || refNames.length === 0)
+    if (!refNames || refNames.length === 0) {
         return '';
-    else if (refNames.length === 1)
+    }
+    else if (refNames.length === 1) {
         return ('module, package or reference ' + refNames[0] + ' \\parencite{' + refNames[0] + '}');
-    else
+    }
+    else {
         return ('modules, packages or references ' + refNames.slice(0, -1).join(', ') + ' and ' + refNames.slice(-1)[0] +
                 ' \\parencite{' + refNames.join(', ') + '}');
+    }
 }
 
 function describeRefs(refNames: Array<string>): string {
