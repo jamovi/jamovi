@@ -6,6 +6,7 @@ import focusLoop from '../common/focusloop';
 import Elem, { ElementModel } from './element';
 import { AnalysisStatus } from './create';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { s6e } from '../common/i18n';
 
 const SUPSCRIPTS = ["\u1D43", "\u1D47", "\u1D48", "\u1D49", "\u1DA0", "\u1D4D", "\u02B0", "\u2071",
                 "\u02B2", "\u1D4F", "\u02E1", "\u1D50", "\u207F", "\u1D52", "\u1D56", "\u02B3", "\u02E2",
@@ -337,7 +338,7 @@ export class View extends Elem.View<Model> {
         }
 
         if (this.model.attributes.title)
-            this.$titleText.innerText = this.model.attributes.title;
+            this.$titleText.innerHTML = s6e(this.model.attributes.title);
 
         let columnCount = 0;
         let rowCount = 0;
@@ -453,7 +454,7 @@ export class View extends Elem.View<Model> {
                     cell.value = value;
                 }
                 else if (isStringCell(sourceCell)) {
-                    cell.value = sourceCell.s;
+                    cell.value = s6e(sourceCell.s);
                 }
                 else if (isOtherCell(sourceCell)) {
                     if (sourceCell.o === CellValueOther.MISSING)
@@ -643,7 +644,7 @@ export class View extends Elem.View<Model> {
                     span++;
                 }
                 else {
-                    html += '<th scope="colgroup" class="jmv-results-table-cell" colspan="' + (span) + '">' + content + '</th>';
+                    html += '<th scope="colgroup" class="jmv-results-table-cell" colspan="' + (span) + '">' + s6e(content) + '</th>';
                     span = 1;
                 }
             }
@@ -679,7 +680,7 @@ export class View extends Elem.View<Model> {
                 }
                 sortStuff = `<button aria-label="Sort Column - Ascending" class="${asc}" data-name="${head.name}" data-sort="asc"></button><button class="${desc}" aria-label="Sort Column - decending" data-name="${head.name}" data-sort="desc"></button>`;
             }
-            html += '<th scope="col" class="jmv-results-table-cell' + classes + '">' + content + sortStuff + '</th>';
+            html += '<th scope="col" class="jmv-results-table-cell' + classes + '">' + s6e(content) + sortStuff + '</th>';
         }
 
         this.$columnHeaderRow.innerHTML = html;
@@ -727,7 +728,7 @@ export class View extends Elem.View<Model> {
                         if (cell.combineBelow || colNo < rowHeadingCount) {
                             let rowIndex = rowNo + 1;
                             if (rowIndex < cells.body.length) {
-                                let nextCell = cells.body[rowIndex][colNo];;
+                                let nextCell = cells.body[rowIndex][colNo];
                                 while (! nextCell || nextCell.value === '') {
                                     rowSpan += 1
                                     rowIndex += 1;
@@ -778,10 +779,10 @@ export class View extends Elem.View<Model> {
         html = '';
 
         for (let i = 0; i < table.notes.length; i++)
-            html += `<tr><td colspan="${ nPhysCols }"><span style="font-style: italic ;">${ _('Note') }.</span> ${ table.notes[i].note }</td></tr>`;
+            html += `<tr><td colspan="${ nPhysCols }"><span style="font-style: italic ;">${ _('Note') }.</span> ${ s6e(table.notes[i].note) }</td></tr>`;
 
         for (let i = 0; i < footnotes.length; i++)
-            html += `<tr><td colspan="${ nPhysCols }">${ SUPSCRIPTS[i] } ${ footnotes[i] }</td></tr>`;
+            html += `<tr><td colspan="${ nPhysCols }">${ SUPSCRIPTS[i] } ${ s6e(footnotes[i]) }</td></tr>`;
 
         //html += `<tr><td colspan="${ nPhysCols }"></td></tr>`;
         this.$tableFooter.innerHTML = html;

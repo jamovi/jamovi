@@ -134,8 +134,8 @@ function allFunctions(functionsContent) : Descriptions {
     ]);
 
     addGroup('Text', [
-        { name: 'CONTAINS', label: 'CONTAINS( <i>item1, item2, item3, ..., in1, in2, in3, ...</i> )', content: _('Determines if any of the items appear in in1, in2, in3, .... Note that most of these arguments are optional -- it is possible to simply use __CONTAINS(needle, haystack)__.' ) },
-        { name: 'SPLIT', label: 'SPLIT( <i>variable</i>, sep=\',\', piece )', content: _('Splits text into pieces based on a separator. _piece_ specifies the desired piece by index.') },
+        { name: 'CONTAINS', label: 'CONTAINS( <i>item1, item2, item3, ..., in1, in2, in3, ...</i> )', content: _('Determines if any of the items appear in in1, in2, in3, .... Note that most of these arguments are optional -- it is possible to simply use <b>CONTAINS(needle, haystack)</b>.' ) },
+        { name: 'SPLIT', label: 'SPLIT( <i>variable</i>, sep=\',\', piece )', content: _('Splits text into pieces based on a separator. <i>piece</i> specifies the desired piece by index.') },
         { name: 'TEXT', label: 'TEXT( <i>number</i> )', content: _('Converts the value to text.') },
         { name: 'VALUE', label: 'VALUE( <i>text</i> )', content: _('Converts text to a number (if possible).') }
     ]);
