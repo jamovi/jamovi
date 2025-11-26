@@ -111,7 +111,7 @@ export function createBibTex(references?: Array<IReference>): string {
         // handle authors
         const splAuthor = currRef['authors']['complete'].split(/,|&/).map(s => s.trim()).filter(s => s !== '');
         if (splAuthor.length === 1) {
-            ref2Tex.push('  author = \"' + splAuthor[0] + '\"');
+            ref2Tex.push('  author = \"{' + splAuthor[0] + '}\"');
         }
         else if (splAuthor.length % 2 === 0) {
             let currAuth = [];
@@ -125,8 +125,14 @@ export function createBibTex(references?: Array<IReference>): string {
         }
         for (const currKey of Object.keys(currRef).filter(k => !['name', 'type', 'authors'].includes(k))) {
             if (String(currRef[currKey]) !== '') {
+                let currVal = currRef[currKey].toString().replace('&', '\\&');
+                if (currKey === 'title') {
+                    // prevents misformatting of packages, etc. due to APA7's title capitalization
+                    currVal = currVal.replace(currRef.name, '{' + currRef.name + '}');
+                }
                 ref2Tex.push(('  ' + (currRef.type === 'article' && currKey === 'publisher' ? 'journal' : currKey) +
-                              ' = \"' + String(currRef[currKey]) + '\"'));
+                              ' = \"' + currVal + '\"'));
+
             }
         }
         bibTex.push(ref2Tex.join(',\n') + '\n}');
@@ -289,7 +295,7 @@ function generateText(text: IText, level: number): Array<string> {
     // icons and colours for message boxes for notices
     // cf. https://github.com/jamovi/jamovi/tree/main/client/resultsview/notice.ts#L64-L79
     // msgType - 1: 'warning-1', 2: 'warning-2', 3: 'info', 4: 'error'
-    const iconType  = ['\\faExclamationCircle', '\\faExclamationCircle', '\\faInfoCircle', '\\faBolt'];
+    const iconType  = ['\\faExclamationTriangle', '\\faExclamationTriangle', '\\faInfoCircle', '\\faBolt'];
     const iconColor = ['gray',                  'orange',                'blue',           'red'];
     let output = ['\\begin{flushleft}\n'];
     let calgn = 'left';
