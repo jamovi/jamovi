@@ -1,8 +1,6 @@
 import { hasAttr } from './utils';
 import { IElement } from './hydrate';
-import { IImage } from './hydrate';
 import { ITable } from './hydrate';
-import { IPreformatted } from './hydrate';
 import { IText } from './hydrate';
 import { ITextChunk } from './hydrate';
 import { IReference } from '../main/references';
@@ -39,9 +37,7 @@ export function assignRefs(): Array<string> {
 function _populate(item: IElement, parent: HTMLElement, level: number): void {
     if (item.type === 'group') {
         if (item.title) {
-            const h = document.createElement(`h${ level }`);
-            h.textContent = item.title;
-            parent.appendChild(h);
+            parent.appendChild(hdrFragm(level, item.title))
         }
         for (let child of item.items) {
             _populate(child, parent, level + 1);
@@ -59,9 +55,9 @@ function _populate(item: IElement, parent: HTMLElement, level: number): void {
         generateTable(item, parent);
     }
     else if (item.type === 'preformatted') {
-        const preformatted = document.createElement('pre');
-        preformatted.textContent = item.content;
-        parent.appendChild(preformatted);
+        const para = document.createElement('p');
+        para.appendChild(createFragm('<code>\n' + item.content.replace(/\n/g, '</br>\n') + '\n</code>'));
+        parent.appendChild(padText(para));
     }
     else if (item.type === 'text') {
         generateText(item, parent, level);
@@ -73,6 +69,76 @@ function dcdAlign(abbr: string): string {
     return abbr.replace('l', 'left').replace('r', 'right').replace('c', 'center').replace('j', 'justify');
 }
 
+function hdrFragm(level, title): HTMLElement {
+    const hl = 'h' + level.toString();
+    const hdr = document.createElement(hl)
+    hdr.textContent = title;
+
+    return hdr;
+}
+
+function padVals2Str(padVals: Array<number>): string {
+    return padVals.map(v => v.toString() + "px").join(' ')
+}
+
+function padText(elem: HTMLElement, indent?: number, prevNode?: string): HTMLElement {
+    indent = indent || 0;
+    prevNode = prevNode || '';
+    const padVals = [0, 0, 0, 0];
+
+    if (['OL', 'UL'].includes(elem.nodeName)) {
+        padVals[3] += 18;
+    }
+    else if (['LI'].includes(elem.nodeName)) {
+        padVals[3] += 18;
+    }
+    else if (['P'].includes(elem.nodeName)) {
+        padVals[0] += ['P', 'UL', 'OL'].includes(prevNode) ? 12 : 0;
+    }
+
+    if (indent > 0) {
+        padVals[3] += indent * 36;
+    }
+
+    elem.style.padding = padVals2Str(padVals);
+
+    return elem
+}
+
+function padCell(elem: HTMLElement, cellFmt: number, isFtr?: boolean, isTtl?: boolean): HTMLElement {
+    cellFmt = cellFmt || 0;
+    isFtr = isFtr || false;
+    isTtl = isTtl || false;
+    const padVals = isFtr ? [2, 8, 2, 8] : [4, 8, 4, 8];
+
+    if (isTtl) {
+        padVals[3] = 0;
+    }
+    if ((cellFmt & 1) === 1) {
+        padVals[0] += 4;
+    }
+    if ((cellFmt & 2) === 2) {
+        padVals[2] += 4;
+    }
+    // cellFmt is NEGATIVE (red) and doesn't affect padding
+    if ((cellFmt & 8) === 8) {
+        padVals[3] += 16;
+    }
+    if (elem.style.textAlign && elem.style.textAlign === 'right') {
+        padVals[1] += 12;
+    }
+
+    elem.style.padding = padVals2Str(padVals);
+
+    return elem
+}
+
+function emptyPara(): HTMLElement {
+    const para = document.createElement('p');
+
+    return padText(para);
+}
+
 function generateTable(item: ITable, parent: HTMLElement): void {
     let skipRows = new Array(item.nCols).fill(0);
     let tr: HTMLTableRowElement;
@@ -80,25 +146,33 @@ function generateTable(item: ITable, parent: HTMLElement): void {
     const table = document.createElement('table');
     const thead = document.createElement('thead');
     const tbody = document.createElement('tbody');
-    const bottomRow = item.rows.map(r => r.type != "footnote").lastIndexOf(true);
+    const rowType = item.rows.map(r => r.type);
+    const rowBorder = [rowType.indexOf('body') - 1, rowType.lastIndexOf('body')];
+    const styBorder = '1px solid rgb(51, 51, 51)';
 
     // create header with table title
     tr = document.createElement('tr');
     tc = document.createElement('th');
     tc.textContent = item.title;
     tc.style.textAlign = 'left';
-    tc.style.borderBottom = '1px solid black';
+    tc.style.borderBottom = styBorder;
     tc.colSpan = item.nCols;
-    tr.appendChild(tc);
+    tr.appendChild(padCell(tc, 0, false, true));
     thead.appendChild(tr);
 
     // create table
     for (let [i, row] of item.rows.entries()) {
         let skipCols = 0;
         const cellType = ['superTitle', 'title'].includes(row.type) ? 'th' : 'td';
+        // bit to set in cellFmt (see below) if the line is either the first (bitBfr) or
+        // the last line (bitAft) of the table body
+        const bitBfr = (i === (rowBorder[0] + 1) ? 1 : 0);
+        const bitAft = (i === (rowBorder[1] + 0) ? 2 : 0);
 
         tr = document.createElement('tr');
         for (let [j, cell] of row.cells.entries()) {
+            const cellFmt = (cell && cell.format ? cell.format : 0) | bitBfr | bitAft;
+
             if (skipCols > 0) {
                 --skipCols;
                 continue;
@@ -111,21 +185,9 @@ function generateTable(item: ITable, parent: HTMLElement): void {
             if (cell) {
                 let content = cell.content;
                 if (cell.sups && cell.sups.length > 0) {
-                    if (['footnote'].includes(row.type)) {
-                        if (cell.sups[0] === 'note') {
-                            // general and significance notes
-                            content = '<em>Note.</em>&nbsp;' + content;
-                        }
-                        else {
-                            // specific notes
-                            content = '<sup>' + cell.sups.join(',') + '</sup>&nbsp' + content;
-                        }
-                    }
-                    else {
-                        content = content + ' <sup>' + cell.sups.join(', ') + '</<sup>';
-                    }
+                    content = formatSups(content, cell.sups, ['footnote'].includes(row.type))
                 }
-                tc.appendChild(formatAttr({content: content}));
+                tc.appendChild(createFragm(content));
                 if (cell.colSpan) {
                     tc.colSpan = cell.colSpan;
                     skipCols = cell.colSpan - 1;
@@ -139,17 +201,14 @@ function generateTable(item: ITable, parent: HTMLElement): void {
                     tc.style.textAlign = dcdAlign(cell.align);
                 }
                 if (['superTitle'].includes(row.type)) {
-                    tc.style.borderBottom = '1px solid black';
+                    tc.style.borderBottom = styBorder;
                 }
             }
-            if (['title'].includes(row.type)) {
-                tc.style.borderBottom = '1px solid black';
-            }
-            if (i === bottomRow || (cell && cell.rowSpan && bottomRow === i + cell.rowSpan - 1)) {
-                tc.style.borderBottom = '1px solid black';
+            if (rowBorder.includes(i)) {
+                tc.style.borderBottom = styBorder;
             }
 
-            tr.appendChild(tc);
+            tr.appendChild(padCell(tc, cellFmt, row.type === 'footnote'));
         }
         if (cellType === 'th') {
             thead.appendChild(tr);
@@ -167,7 +226,6 @@ function generateTable(item: ITable, parent: HTMLElement): void {
 function generateText(item: IText, parent: HTMLElement, level: number): void {
     let calgn = 'left';
     let clist = '';
-    let citem = '';
     let cindt = 0;
     let elem: HTMLElement = undefined;
     let list: HTMLElement = undefined;
@@ -175,6 +233,8 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
     let para: HTMLElement = document.createElement('p');
 
     for (const chunk of item.chunks) {
+        const prevNode = parent.lastElementChild.nodeName;
+
         // headers
         if (hasAttr(chunk, 'header')) {
             elem = document.createElement('h' + (chunk.attributes.header + level).toString());
@@ -184,16 +244,16 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
         // lists: [1] append previous list
         if (clist !== (hasAttr(chunk, 'list') ? chunk.attributes.list : '')) {
             if (clist !== '' && list.children.length + list.childNodes.length > 0) {
-                parent.appendChild(list);
+                parent.appendChild(padText(list, cindt, prevNode));
             }
         }
         // paragraphs: [1] append previous paragraph if alignment or indentation changes
         // needs to come after list formatting is finished, as list formatting is embedded
         // in formatting alignment)
-        if (calgn !== (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left')) {
+        if (calgn !== (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left') ||
+            cindt !== (hasAttr(chunk, 'indent') ? parseInt(chunk.attributes.indent) : 0)) {
             if (para.children.length + para.childNodes.length > 0) {
-                para.style.paddingTop = (['P', 'UL', 'OL'].includes(parent.lastElementChild.nodeName)  ? '12px' : '0px');
-                parent.appendChild(para);
+                parent.appendChild(padText(para, cindt, prevNode));
             }
         }
         // format paragraphs: [2] begin new alignment or indentation
@@ -205,15 +265,13 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
                 if (calgn !== 'left') {
                     para.style.textAlign = calgn;
                 }
-                if (cindt > 0) {
-                    para.style.marginLeft = (36 * cindt).toString() + 'px';
-                }
         }
         // format lists: [2] begin new list
         if (clist !== (hasAttr(chunk, 'list') ? chunk.attributes.list : '')) {
             clist = (hasAttr(chunk, 'list') ? chunk.attributes.list : '');
             if (clist !== '') {
                 list = document.createElement(clist === 'ordered' ? 'ol' : 'ul');
+                litm = document.createElement('li');
             }
         }
         // list items as well as paragraphs may consist of several chunks which need to be
@@ -222,16 +280,10 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
         // formatAttr formats other attributes (if the chunk doesn't contain attributes,
         // then the content is appended without any formatting
         if (hasAttr(chunk, 'list')) {
-            if (chunk.content === '\n') {
-                console.log('list - is \'\n\'');
-            }
-            else if (chunk.content.startsWith('\n')) {
-                console.log('list - startsWith(\'\n\')');
-            }
-            else if (chunk.content.endsWith('\n')) {
-                litm = document.createElement('li');
+            if (chunk.content.endsWith('\n')) {
                 litm.appendChild(formatAttr(chunk));
-                list.appendChild(litm);
+                list.appendChild(padText(litm, cindt, prevNode));
+                litm = document.createElement('li');
             }
             else {
                 // format other attributes (if the chunk doesn't contain attributes,
@@ -244,8 +296,7 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
                 if (chunk.content !== '\n') {
                     para.appendChild(formatAttr(chunk));
                 }
-                para.style.paddingTop = (['P', 'UL', 'OL'].includes(parent.lastElementChild.nodeName)  ? '12px' : '0px');
-                parent.appendChild(para);
+                parent.appendChild(padText(para, cindt, prevNode));
                 para = document.createElement('p');
             }
             else {
@@ -257,8 +308,7 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
     if (item.refs) {
         para = document.createElement('p');
         para.textContent = item.refs.join(', ');
-        para.style.padding = (['P', 'UL', 'OL'].includes(parent.lastElementChild.nodeName)  ? '12px' : '0px');
-        parent.appendChild(para);
+        parent.appendChild(padText(para, 0, parent.lastElementChild.nodeName));
     }
 }
 
@@ -291,7 +341,7 @@ function formatAttr(chunk: ITextChunk): DocumentFragment {
         html = '<a href=\"' + chunk.attributes.link + '\">' + html + '</a>';
     }
     if (hasAttr(chunk, 'formula')) {
-        html = 'Please copy the formula into a web page that converts LaTeX to images and insert it into your document: ' + 
+        html = 'Please copy the formula into a web page that converts LaTeX to images and insert it into your document: ' +
                '<code>' + html + '</code>';
     }
 
@@ -305,11 +355,27 @@ function formatAttr(chunk: ITextChunk): DocumentFragment {
         html = '<span style=\"' + style.trim() + '\">' + html + '</span>';
     }
 
-    return document.createRange().createContextualFragment(html);
+    return createFragm(html);
 }
 
-function emptyPara(): DocumentFragment {
-    return document.createRange().createContextualFragment('<p style="padding-top:0px;">&nbsp;</p>\n');
+function formatSups(content: string, sups: Array<string>, isFN: boolean): string {
+    if (isFN) {
+        if (sups[0] === 'note') {
+            // general and significance notes
+            return '<em>Note.</em>&nbsp;' + content;
+        }
+        else {
+            // specific notes
+            return '<sup>' + sups.join(',') + '</sup>&nbsp' + content;
+        }
+    }
+    else {
+        return content + ' <sup>' + sups.join(', ') + '</<sup>';
+    }
+}
+
+function createFragm(html: string): DocumentFragment {
+    return document.createRange().createContextualFragment(html);
 }
 
 function formatRefs(refs: IReference, level: number): DocumentFragment {
