@@ -11,6 +11,7 @@ interface IRawCell {
     footnotes: Array<string>;
     symbols: Array<string>;
     align: 'l' | 'c' | 'r';
+    format: number;
 }
 
 interface IRawColumn {
@@ -21,6 +22,7 @@ interface IRawColumn {
 export interface ICell {
     content: string;
     align: 'l' | 'c' | 'r';
+    format: number;
     colSpan?: number;
     rowSpan?: number;
     sups?: Array<string>;
@@ -513,7 +515,7 @@ function extractRawCell(cellPB: any, align: 'l' | 'c' | 'r'): IRawCell | null {
             value = '.';
         }
     }
-    return { value, footnotes: cellPB.footnotes, symbols: cellPB.symbols, align };
+    return { value, footnotes: cellPB.footnotes, symbols: cellPB.symbols, align, format: cellPB.format };
 }
 
 function extractRawColumns(columnsPB: any): Array<IRawColumn> {
@@ -553,6 +555,7 @@ function transmogrify(rawCols: Array<IRawColumn>, formats: Array<any>): [ Array<
             const finalCell: ICell = {
                 content: (typeof cell.value === 'string') ? cell.value : format(cell.value, fmt),
                 align: cell.align,
+                format: cell.format,
             };
             if (finalSups.length > 0) {
                 finalCell.sups = finalSups;
@@ -672,6 +675,29 @@ function fold(columns: Array<IColumn>, columnNames: Array<string>): Array<Array<
     return foldedCells;
 }
 
+// ensure that the first two bits of the cell format (BEGIN.GROUP / END.GROUP) are consistent for all cells in a row
+function ensureFormat(cellsByRow: Array<Array<ICell>>): Array<Array<ICell>> {
+    // first determine what the maximum value of format (BEGIN.GROUP: 1, END.GROUP: 2) is, while ensuring
+    // that the other format markers (NEGATIVE: 4, INDENT: 8) remain unaffected
+    const maxFormat = cellsByRow.map(r => Math.max(...r.map(c => (c && c.format) ? c.format & 3 : 0)));
+    // afterwards, if there is any occurrence of BEGIN.GROUP or END.GROUP (indicated by the row entry in
+    // maxFormat being larger than 0), apply maxFormat for that row (again, ensuring by using | that
+    // NEGATIVE and INDENT are unaffected)
+    if (maxFormat.some(v => v > 0)) {
+        for (let [i, row] of cellsByRow.entries() ) {
+            if (maxFormat[i] > 0) {
+                for (let cell of row) {
+                    if (cell && Object.keys(cell).includes('format')) {
+                        cell.format = (cell.format | maxFormat[i]);
+                    }
+                }
+            }
+        }
+    }
+
+    return cellsByRow;
+}
+
 function hydrateTable(tablePB: any): ITable {
     const columnsPB = tablePB.table.columns.filter((cPB) => [0, 2].includes(cPB.visible));
     const columnNames = columnsPB.map((columnPB) => columnPB.name);
@@ -685,7 +711,7 @@ function hydrateTable(tablePB: any): ITable {
         const column = columnsPB[i];
         if (column.superTitle) {
             if (i == 0 || lastSuperTitle === null || lastSuperTitle.content !== column.superTitle) {
-                lastSuperTitle = superTitles[i] = { content: column.superTitle, colSpan: 1, align: 'c' };
+                lastSuperTitle = superTitles[i] = { content: column.superTitle, colSpan: 1, align: 'c', format: 0 };
                 hasSuperTitles = true;
             }
             else {
@@ -721,7 +747,7 @@ function hydrateTable(tablePB: any): ITable {
     const [ cellsByColumn, footnotes ] = transmogrify(rawColumns, formatsByColumn);
 
     const folded = fold(cellsByColumn, columnNames);
-    const cellsByRow = transpose(folded);
+    const cellsByRow = ensureFormat(transpose(folded));
     const bodyRows: Array<IRow> = cellsByRow.map(cells => {
         return {
             type: 'body',
@@ -734,7 +760,7 @@ function hydrateTable(tablePB: any): ITable {
         const note = tablePB.table.notes[i].note;
         rows.push({
             type: 'footnote',
-            cells: [ { content: note, colSpan: folded.length, sups: ['note'], align: 'l' } ]
+            cells: [ { content: note, colSpan: folded.length, sups: ['note'], align: 'l', format: 0 } ]
         });
     }
 
@@ -743,7 +769,7 @@ function hydrateTable(tablePB: any): ITable {
         const sup = ALPHABET[i];
         rows.push({
             type: 'footnote',
-            cells: [ { content: fn, colSpan: folded.length, sups: [sup], align: 'l' } ]
+            cells: [ { content: fn, colSpan: folded.length, sups: [sup], align: 'l', format: 0 } ]
         });
     }
 
