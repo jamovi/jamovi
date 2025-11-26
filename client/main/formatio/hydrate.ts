@@ -90,10 +90,22 @@ export function hasAttr(chunk: ITextChunk, attr: string): boolean {
     return ('attributes' in chunk && attr in chunk.attributes);
 }
 
-export function hydrate(pb: any, address: IAddress = [], values: IOptionValues = {}, top: boolean = false, analysisId?: number): IElement {
-    analysisId = analysisId || 0;
+type RetrieveImageFun = (address: Array<string | number>, options: { [key: string]: any }) => Promise<{ image: string }>;
 
-    const elements = hydrateElement(pb, address, values, [], top, analysisId);
+export interface IHydrateOptions {
+    analysisId: number;
+    values: IOptionValues;
+    target?: IAddress;
+    top?: boolean;
+    retrieveImages?: boolean;
+    retrieveImage?: RetrieveImageFun;
+}
+
+export async function hydrate(pb: any, options: IHydrateOptions | null = null): Promise<IElement> {
+    options = options || { analysisId: 0, target: [], values: {} };
+    if ( ! options.target)
+        options.target = [];
+    const elements = await hydrateElement(pb, options, []);
     if (elements === null) {
         return null;
     }
@@ -109,10 +121,9 @@ function isPara(attr: Object) {
     }
 }
 
-function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): IText | null {
+function hydrateText(top: boolean, options: IHydrateOptions, cursor: IAddress): IText | null {
     const name = `results/${ cursor.join('/') }/${ top ? 'topText' : 'bottomText' }`;
-    const value = values[name];
-
+    const value = options.values[name];
     if (value) {
         const { ops } = value;
         const chunks = [];
@@ -200,12 +211,12 @@ function hydrateRefs(currPB: any): Array<string> {
     return [];
 }
 
-function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor: Array<string>, top: boolean, analysisId: number): Array<IElement> {
+async function hydrateElement(pb: any, options: IHydrateOptions, cursor: Array<string>): Promise<Array<IElement>> {
 
     cursor = [ ...cursor ];  // clone
 
-    const before = hydrateText(true, values, cursor);
-    const after = hydrateText(false, values, cursor);
+    const before = hydrateText(true, options, cursor);
+    const after = hydrateText(false, options, cursor);
 
     let element: IElement | null = null;
     const elements = [];
@@ -214,16 +225,16 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         elements.push(before);
 
     if (pb.group) {
-        if (target.length > 0) {
-            const name = target.shift();
+        if (options.target.length > 0) {
+            const name = options.target.shift();
             cursor.push(name);
             for (let elementPB of pb.group.elements) {
                 if (elementPB.name === name)
-                    return hydrateElement(elementPB, target, values, cursor, top, analysisId);
+                    return await hydrateElement(elementPB, options, cursor);
             }
             throw Error('Address not valid');
         }
-        const group = hydrateGroup(pb, target, values, cursor, top, analysisId);
+        const group = await hydrateGroup(pb, options, cursor);
         if (group) {
             // if there's text at the top of the group, we move it down into
             // the body of the group
@@ -236,16 +247,16 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         }
     }
     else if (pb.array) {
-        if (target.length > 0) {
-            const name = target.shift();
+        if (options.target.length > 0) {
+            const name = options.target.shift();
             cursor.push(name);
             for (let elementPB of pb.array.elements) {
                 if (elementPB.name === name)
-                    return hydrateElement(elementPB, target, values, cursor, top, analysisId);
+                    return await hydrateElement(elementPB, options, cursor);
             }
             throw Error('Address not valid');
         }
-        const array = hydrateArray(pb, target, values, cursor, top, analysisId);
+        const array = await hydrateArray(pb, options, cursor);
         if (array) {
             // if there's text at the top of the group, we move it down into
             // the body of the group
@@ -257,7 +268,7 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
             element = array;
         }
     }
-    if (target.length > 0)
+    if (options.target.length > 0)
         throw Error('Address not valid');
 
     // append results objects to elements: table, image, or preformatted
@@ -266,7 +277,7 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         elements.push(element);
     }
     else if (pb.image) {
-        element = hydrateImage(pb, target, cursor, analysisId);
+        element = await hydrateImage(pb, options, cursor);
         elements.push(element);
     }
     else if (pb.preformatted) {
@@ -297,10 +308,10 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
     return elements;
 }
 
-function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean, analysisId: number): IGroup | null {
+async function hydrateArray(arrayPB: any, options: IHydrateOptions, cursor: IAddress): Promise<IGroup | null> {
     if (arrayPB.array.elements.length === 0)
         return null;
-    const items = hydrateElements(arrayPB.array.elements, target, values, cursor, top, analysisId);
+    const items = await hydrateElements(arrayPB.array.elements, options, cursor);
     if (items === null)
         return null;
     return {
@@ -310,26 +321,26 @@ function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cur
     }
 }
 
-function hydrateGroup(groupPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean, analysisId: number): IGroup | null {
+async function hydrateGroup(groupPB: any, options: IHydrateOptions, cursor: IAddress): Promise<IGroup | null> {
 
     let title: string = groupPB.title;
-    if (top && cursor.length === 0) {
-        title = values['results//heading'] || title;
+    if (options.top && cursor.length === 0) {
+        title = options.values['results//heading'] || title;
         return { type: 'group', title, items: [] };
     }
 
-    const items = hydrateElements(groupPB.group.elements, target, values, cursor, top, analysisId);
+    const items = await hydrateElements(groupPB.group.elements, options, cursor);
     if (items === null)
         return null;
     return { type: 'group', title, items };
 }
 
-function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean, analysisId: number): Array<IElement> | null {
+async function hydrateElements(elementsPB: Array<any>, options: IHydrateOptions, cursor: IAddress): Promise<Array<IElement> | null> {
     const items = [ ]
     for (const itemPB of elementsPB) {
         const itemCursor = [...cursor, itemPB.name];
         if ([0, 2].includes(itemPB.visible)) {
-            const elem = hydrateElement(itemPB, target, values, itemCursor, top, analysisId);
+            const elem = await hydrateElement(itemPB, options, itemCursor);
             if (elem !== null) {
                 for (const item of elem)
                     items.push(item);
@@ -341,14 +352,22 @@ function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOpti
     return items;
 }
 
-function hydrateImage(imagePB: any, target: IAddress, cursor: IAddress, analysisId: number): IImage {
+async function hydrateImage(imagePB: any, options: IHydrateOptions, cursor: IAddress): Promise<IImage> {
+
+    let path: string | null = null;
+    if (options.retrieveImages) {
+        const address = [ options.analysisId, ... cursor ];
+        const image = await options.retrieveImage(address, {});
+        path = image.image;
+    }
+
     return {
         type: 'image',
         title: imagePB.title,
-        path: null,
+        path,
         width: imagePB.image.width,
         height: imagePB.image.height,
-        address: [ analysisId.toString(), ...cursor, ...target].join('/'),
+        address: [ options.analysisId.toString(), ...cursor, ...options.target].join('/'),
     };
 }
 
@@ -478,6 +497,10 @@ function hydrateNotice(noticePB: any): IText {
 
 function rgb2Hex(rgb: string): string {
     return '#' + Array.from(rgb.match(/[0-9]+/g)).map(c => parseInt(c).toString(16).padStart(2, '0')).join('');
+}
+
+function hydrateHtml(pb: any): null {
+    return null;
 }
 
 function transpose(columns: Array<Array<ICell>>): Array<Array<ICell>> {
