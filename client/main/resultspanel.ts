@@ -797,7 +797,8 @@ class ResultsPanel extends EventDistributor {
         ContextMenu.showResultsMenu(entries, data.pos.left, data.pos.top);
     }
 
-    getAsLatex() {
+    async getAsLatex() {
+
         const analyses = [ ...this.model.analyses() ];
         const fragments: Array<string> = [];
         let references: Array<IReference> = [ R, jmv ];
@@ -805,8 +806,16 @@ class ResultsPanel extends EventDistributor {
 
         for (let analysis of analyses) {
             const results = analysis.results;
-            const values = analysis.options.getValues();
-            const hydrated = hydrate(results, [], values, first, analysis.id);
+            const values: { [key: string]: any } = analysis.options.getValues();
+            const analysisId = analysis.id;
+            const retrieveImage = this._getContent.bind(this);
+            const options = {
+                analysisId,
+                values,
+                retrieveImages: true,
+                retrieveImage,
+            }
+            const hydrated = await hydrate(results, options);
             first = false;
             if (hydrated === null)
                 continue;
@@ -1035,12 +1044,20 @@ class ResultsPanel extends EventDistributor {
             this._refsTable.clearSelection();
         }
         else if (['copy2', 'copyLatex'].includes(event.op)) {
-            const address = event.address;
-            const analysisId = parseInt(address.shift());
+            const target = event.address;
+            const analysisId = parseInt(target.shift());
             const analysis = this.model.analyses().get(analysisId);
             const results = analysis.results;
-            const values = analysis.options.getValues();
-            const hydrated = hydrate(results, address, values);
+            const values: { [key: string]: any } = analysis.options.getValues();
+            const retrieveImage = this._getContent.bind(this);
+            const options = {
+                analysisId,
+                values,
+                retrieveImages: true,
+                retrieveImage,
+                target,
+            }
+            const hydrated = await hydrate(results, options);
 
             let content;
             if (event.op === 'copy2') {
