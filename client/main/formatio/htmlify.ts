@@ -21,6 +21,8 @@ function _populate(item: IElement, parent: HTMLElement, level: number): void {
         const image = document.createElement('img');
         image.width = item.width;
         image.height = item.height;
+        if (item.path)
+            image.src = item.path;
         parent.appendChild(image);
     }
     else if (item.type === 'table') {

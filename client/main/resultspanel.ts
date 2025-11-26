@@ -25,7 +25,7 @@ import { IReference } from './references';
 import { R } from './references';
 import { jmv } from './references';
 
-import { hydrate } from './formatio/hydrate';
+import { hydrate, IElement } from './formatio/hydrate';
 import { htmlify } from './formatio/htmlify';
 import { latexify } from './formatio/latexify';
 import { createDoc } from './formatio/latexify';
@@ -840,6 +840,23 @@ class ResultsPanel extends EventDistributor {
         return { items, references };
     }
 
+    // hydration leaves an image's path empty (it doesn't have access to the
+    // rendered figure); this fills them in, from the results view, as png
+    // data urls
+    private async _fillImages(element: IElement): Promise<void> {
+        if (element === null)
+            return;
+        if (element.type === 'group') {
+            for (const item of element.items)
+                await this._fillImages(item);
+        }
+        else if (element.type === 'image') {
+            const content = await this._getContent(unflatten(element.address), { });
+            if (content && content.image)
+                element.path = content.image;
+        }
+    }
+
     getAsLatex() {
         const { items, references } = this._hydrateAll();
         const fragments = items
@@ -1194,10 +1211,13 @@ class ResultsPanel extends EventDistributor {
             const analysis = this.model.analyses().get(analysisId);
             const results = analysis.results;
             const values = analysis.options.getValues();
-            const hydrated = hydrate(results, address, values);
+            const hydrated = hydrate(results, address, values, false, analysis.id);
 
             let content;
             if (event.op === 'copy2') {
+                // so the figures travel with the html, rather than as empty
+                // <img>s (see htmlify())
+                await this._fillImages(hydrated);
                 const html = htmlify(hydrated);
                 content = { html, text: html };
             }
