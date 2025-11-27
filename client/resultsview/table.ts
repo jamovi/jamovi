@@ -878,7 +878,10 @@ export class View extends Elem.View<Model> {
 
                 lastCellValue = cellValue;
                 let newHeading = rowHeadings[rowNo]  + ' ' + cellValue;
-                if (rowHeadings.includes(newHeading))
+                //if the calculated heading already exists then it means the next column must be used to differentiate. 
+                //Except when the next column has a column heading, then the assumption is that the column must have sub headings in it 
+                // and so the headings end at this column. This is not a perfect assumption be good enough until otherwise determined.
+                if (rowHeadings.includes(newHeading) && colNo + 1 < cells.header.length  && cells.header[colNo+1].value.trim() === '') 
                     includeNext = true;
                 rowHeadings[rowNo] = newHeading;
             }
