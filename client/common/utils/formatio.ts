@@ -406,7 +406,8 @@ function _htmlify(el, options) {
                 'text-align',
                 'padding',
                 'border',
-                'vertical-align'
+                'vertical-align',
+                'font-weight'
             ];
             break;
         case 'style':
@@ -469,8 +470,10 @@ function _htmlify(el, options) {
                     }
                     else if (style === 'text-align') {
                         let value = cs.getPropertyValue(style);
-                        if (value !== 'start')
-                            html += `${ style }:${ value };`;
+                        if (value === 'start') {
+                            value = 'left';
+                        }
+                        html += `${ style }:${ value };`;
                     }
                     else {
                         let value = cs.getPropertyValue(style);
