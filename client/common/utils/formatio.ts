@@ -470,9 +470,10 @@ function _htmlify(el, options) {
                     }
                     else if (style === 'text-align') {
                         let value = cs.getPropertyValue(style);
-                        if (value === 'start') {
+                        if (value === 'start')
                             value = 'left';
-                        }
+                        else if (value === 'end')
+                            value = 'right';
                         html += `${ style }:${ value };`;
                     }
                     else {
