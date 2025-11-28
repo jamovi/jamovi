@@ -194,13 +194,10 @@ function createChunk(content: string, attr?: Object): ITextChunk {
     }
 }
 
-function addRefs(currPB: any): { refs: Array<string> } {
-    if (currPB && currPB.refs && currPB.refs.length > 0) {
-        return { refs: currPB.refs };
-    }
-    else {
-        return undefined;
-    }
+function hydrateRefs(currPB: any): Array<string> {
+    if (currPB && currPB.refs)
+        return currPB.refs;
+    return [];
 }
 
 function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor: Array<string>, top: boolean, analysisId: number): Array<IElement> {
@@ -210,7 +207,9 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
     const before = hydrateText(true, values, cursor);
     const after = hydrateText(false, values, cursor);
 
+    let element: IElement | null = null;
     const elements = [];
+
     if (before)
         elements.push(before);
 
@@ -233,6 +232,7 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
             elements.push(group);
             if (before)
                 group.items.unshift(before);
+            element = group;
         }
     }
     else if (pb.array) {
@@ -254,31 +254,29 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
             elements.push(array);
             if (before)
                 array.items.unshift(before);
+            element = array;
         }
     }
     if (target.length > 0)
         throw Error('Address not valid');
 
     // append results objects to elements: table, image, or preformatted
-    if (pb.table) {
-        const table = hydrateTable(pb);
-        elements.push(table);
-    }
-    else if (pb.image) {
-        const image = hydrateImage(pb, target, cursor, analysisId);
-        elements.push(image);
-    }
-    else if (pb.preformatted) {
-        const preformatted = hydratePreformatted(pb);
-        elements.push(preformatted);
-    }
-    else if (pb.html) {
-        const html = hydrateHTML(pb);
-        elements.push(html);
-    }
-    else if (pb.notice) {
-        const notice = hydrateNotice(pb);
-        elements.push(notice);
+    if (pb.table)
+        element = hydrateTable(pb);
+    else if (pb.image)
+        element = hydrateImage(pb, target, cursor, analysisId);
+    else if (pb.preformatted)
+        element = hydratePreformatted(pb);
+    else if (pb.html)
+        element = hydrateHTML(pb);
+    else if (pb.notice)
+        element = hydrateNotice(pb);
+
+    if (element) {
+        const refs = hydrateRefs(pb)
+        if (refs.length > 0)
+            element.refs = refs;
+        elements.push(element)
     }
 
     if (after)
@@ -297,12 +295,9 @@ function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cur
     if (items === null)
         return null;
     return {
-        ...{
-            type: 'group',
-            title: arrayPB.title,
-            items,
-        },
-        ...addRefs(arrayPB),
+        type: 'group',
+        title: arrayPB.title,
+        items,
     }
 }
 
@@ -339,27 +334,21 @@ function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOpti
 
 function hydrateImage(imagePB: any, target: IAddress, cursor: IAddress, analysisId: number): IImage {
     return {
-        ...{
-            type: 'image',
-            title: imagePB.title,
-            path: null,
-            width: imagePB.image.width,
-            height: imagePB.image.height,
-            address: [ analysisId.toString(), ...cursor, ...target].join('/'),
-        },
-        ...addRefs(imagePB),
+        type: 'image',
+        title: imagePB.title,
+        path: null,
+        width: imagePB.image.width,
+        height: imagePB.image.height,
+        address: [ analysisId.toString(), ...cursor, ...target].join('/'),
     };
 }
 
 function hydratePreformatted(preformattedPB: any): IPreformatted {
     return {
-        ...{
-            type: 'preformatted',
-            title: preformattedPB.title,
-            content: preformattedPB.preformatted,
-            syntax: preformattedPB.name == 'syntax',
-        },
-        ...addRefs(preformattedPB),
+        type: 'preformatted',
+        title: preformattedPB.title,
+        content: preformattedPB.preformatted,
+        syntax: preformattedPB.name == 'syntax',
     };
 }
 
@@ -470,15 +459,12 @@ function html2Chunks(content: string, title?: string, msgType?: number): IText {
 }
 
 function hydrateHTML(htmlPB: any): IText {
-    return { ...html2Chunks(htmlPB.html.content, htmlPB.title),
-             ...addRefs(htmlPB.refs) };
+    return html2Chunks(htmlPB.html.content, htmlPB.title);
 }
 
 function hydrateNotice(noticePB: any): IText {
     const html = I18ns.get('app').__(noticePB.notice.content, { prefix: '<strong>', postfix: '</strong>' });
-
-    return { ...html2Chunks(html, noticePB.title, noticePB.notice.type),
-             ...addRefs(noticePB.refs) };
+    return html2Chunks(html, noticePB.title, noticePB.notice.type);
 }
 
 function rgb2Hex(rgb: string): string {
@@ -763,13 +749,10 @@ function hydrateTable(tablePB: any): ITable {
     });
 
     return {
-        ...{
-            type: 'table',
-            title: tablePB.title,
-            rows,
-            nCols: folded.length,
-        },
-        ...addRefs(tablePB),
+        type: 'table',
+        title: tablePB.title,
+        rows,
+        nCols: folded.length,
     }
 }
 
