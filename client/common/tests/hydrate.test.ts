@@ -9,7 +9,7 @@ import ProtoBuf from 'protobufjs';
 
 import { hydrate } from '../hydrate';
 
-const protoPath = path.join(__dirname, '../../assets/coms.proto');
+const protoPath = path.join(__dirname, '../../../server/jamovi/server/jamovi.proto');
 const protoDefn = fs.readFileSync(protoPath);
 const builder = ProtoBuf.loadProto(protoDefn);
 const Messages = builder.build().jamovi.coms;

@@ -2,6 +2,9 @@
   "type": "table",
   "title": "ANOVA - len",
   "nCols": 6,
+  "refs": [
+    "car"
+  ],
   "rows": [
     {
       "type": "title",
@@ -34,7 +37,8 @@
       "cells": [
         {
           "content": "dose",
-          "align": "l"
+          "align": "l",
+          "format": 1
         },
         {
           "content": "2426.43",
@@ -92,7 +96,8 @@
       "cells": [
         {
           "content": "dose:supp",
-          "align": "l"
+          "align": "l",
+          "format": 2
         },
         {
           "content": "108.32",
@@ -121,7 +126,8 @@
       "cells": [
         {
           "content": "Residuals",
-          "align": "l"
+          "align": "l",
+          "format": 3
         },
         {
           "content": "712.11",
