@@ -22,7 +22,7 @@ interface IRawColumn {
 export interface ICell {
     content: string;
     align: 'l' | 'c' | 'r';
-    format: number;
+    format?: number;
     colSpan?: number;
     rowSpan?: number;
     sups?: Array<string>;
@@ -527,10 +527,11 @@ function transmogrify(rawCols: Array<IRawColumn>, formats: Array<any>): [ Array<
             const finalCell: ICell = {
                 content: (typeof cell.value === 'string') ? cell.value : format(cell.value, fmt),
                 align: cell.align,
-                format: cell.format,
             };
             if (finalSups.length > 0)
                 finalCell.sups = finalSups;
+            if (cell.format)
+                finalCell.format = cell.format;
             return finalCell;
         });
         const { combineBelow } = col;
@@ -656,7 +657,9 @@ function ensureFormat(cellsByRow: Array<Array<ICell>>): Array<Array<ICell>> {
             if (maxFormat[i] > 0) {
                 for (let cell of row) {
                     if (cell && Object.keys(cell).includes('format')) {
-                        cell.format = (cell.format | maxFormat[i]);
+                        const fmt = (cell.format | maxFormat[i]);
+                        if (fmt > 0)
+                            cell.format = fmt;
                     }
                 }
             }
@@ -679,7 +682,7 @@ function hydrateTable(tablePB: any): ITable {
         const column = columnsPB[i];
         if (column.superTitle) {
             if (i == 0 || lastSuperTitle === null || lastSuperTitle.content !== column.superTitle) {
-                lastSuperTitle = superTitles[i] = { content: column.superTitle, colSpan: 1, align: 'c', format: 0 };
+                lastSuperTitle = superTitles[i] = { content: column.superTitle, colSpan: 1, align: 'c' };
                 hasSuperTitles = true;
             }
             else {
@@ -728,7 +731,7 @@ function hydrateTable(tablePB: any): ITable {
         const note = tablePB.table.notes[i].note;
         rows.push({
             type: 'footnote',
-            cells: [ { content: note, colSpan: folded.length, sups: ['note'], align: 'l', format: 0 } ]
+            cells: [ { content: note, colSpan: folded.length, sups: ['note'], align: 'l' } ]
         });
     }
 
@@ -737,7 +740,7 @@ function hydrateTable(tablePB: any): ITable {
         const sup = ALPHABET[i];
         rows.push({
             type: 'footnote',
-            cells: [ { content: fn, colSpan: folded.length, sups: [sup], align: 'l', format: 0 } ]
+            cells: [ { content: fn, colSpan: folded.length, sups: [sup], align: 'l' } ]
         });
     }
 
