@@ -1,4 +1,12 @@
-import { IElement, IGroup, IImage, ITable, IRow, IPreformatted, IText, ITextChunk } from './hydrate';
+import { hasAttr } from './utils';
+import { IElement } from './hydrate';
+import { IImage } from './hydrate';
+import { ITable } from './hydrate';
+import { IRow } from './hydrate';
+import { IPreformatted } from './hydrate';
+import { IText } from './hydrate';
+import { ITextChunk } from './hydrate';
+import { IReference } from '../main/references';
 
 export interface ILatexifyOptions {
     showSyntax?: boolean;
@@ -11,19 +19,22 @@ export function latexify(hydrated: IElement, options?: ILatexifyOptions): string
     options.showSyntax = options.showSyntax ?? false;
     options.level = options.level ?? -1;
 
+    if (hydrated === null) {
+        return null;
+    }
     return populateElements(hydrated, options.level, options.showSyntax).join('\n');
 }
 
-export function addHeaderFooter(contents: Array<string>, references?: Array<string>): string {
-    references = references || [];
+export function createDoc(contents: Array<string>, refNames?: Array<string>): string {
+    refNames = refNames || [];
     // used to comment out BibTeX-related lines when no references are present
-    let refPrefix = (references.length === 0 ? '%' : '');
+    let refPrefix = (refNames.length === 0 ? '%' : '');
     let header = [];
     let footer = [];
 
     // generate LaTeX document header
     header.push('\\documentclass[a4paper,man,hidelinks,floatsintext,x11names]{apa7}');
-    header.push('% This LaTeX output is designed to use APA7 style and to run on local ' + 
+    header.push('% This LaTeX output is designed to use APA7 style and to run on local ' +
                 'TexLive-installation (use pdflatex) as well as on web interfaces (e.g., '+
                 'overleaf.com).');
     header.push('% If you prefer postponing your figures and table until after the ' +
@@ -36,6 +47,7 @@ export function addHeaderFooter(contents: Array<string>, references?: Array<stri
     header.push('\\usepackage{amsmath}');
     header.push('\\usepackage{graphicx}');
     header.push('\\usepackage[export]{adjustbox}');
+    header.push('\\usepackage{awesomebox}');
     header.push('\\usepackage{csquotes}');
     header.push('\\usepackage{soul}');
     header.push(refPrefix + '\\usepackage[style=apa,sortcites=true,sorting=nyt,backend=biber]{biblatex}');
@@ -46,7 +58,7 @@ export function addHeaderFooter(contents: Array<string>, references?: Array<stri
     header.push('\\leftheader{Last name}');
     header.push('\\authorsnames{Full Name}');
     header.push('\\authorsaffiliations{{Your Affilitation}}');
-    header.push('% example below from the CTAN apa7 documentation, 4.2.2:')
+    header.push('% example below from the CTAN apa7 documentation, 4.2.2:');
     header.push('% authors 1 and 3 share affiliation 1, author 2 has affiliations 2 and 3');
     header.push('%\\authorsnames[1,{2,3},1]{Author 1, Author 2, Author 2}');
     header.push('%\\authorsaffiliations{{Affiliation 1}, {Affiliation 2}, {Affiliation 3}}');
@@ -68,7 +80,7 @@ export function addHeaderFooter(contents: Array<string>, references?: Array<stri
     header.push('%\\subsection{Procedure}');
     header.push('% Your description of the experimental procedures goes here.\n');
     header.push('%\\subsection{Statistical Analyses}');
-    header.push(refDescript(references) + '\n');
+    header.push(describeRefs(refNames) + '\n');
     header.push('\\section{Results}\n');
 
     // generate LaTeX document footer
@@ -76,14 +88,58 @@ export function addHeaderFooter(contents: Array<string>, references?: Array<stri
                 'Table~\\ref{tbl:Table_...}) or figures (see Figure~\\ref{fig:Figure_...}).\n');
     footer.push('%\\section{Discussion}');
     footer.push('% Your discussion starts here.\n');
-    footer.push('%\\printbibliography\n');
+    footer.push(refPrefix + '\\printbibliography\n');
     footer.push('%\\appendix');
     footer.push('%\\section{Additional tables and figures}');
     footer.push('% Your text introducing supplementary tables and figures.');
     footer.push('% If required copy tables and figures from the main results here.\n');
     footer.push('\\end{document}\n');
 
-    return [header.join('\n'), contents, footer.join('\n')].join('\n' + '% ' + '='.repeat(78) + '\n\n')
+    return [header.join('\n'), ...contents, footer.join('\n')].join('\n' + '% ' + '='.repeat(78) + '\n\n');
+}
+
+export function createBibTex(references?: Array<IReference>): string {
+    const bibTex = [];
+    let ref2Tex = [];
+
+    if (!references || references.length === 0) {
+        return null;
+    }
+
+    for (const currRef of references) {
+        ref2Tex.push('@' + currRef['type'].replace('software', 'misc') + '{' + currRef['name']);
+        // handle authors
+        const splAuthor = currRef['authors']['complete'].split(/,|&/).map(s => s.trim()).filter(s => s !== '');
+        if (splAuthor.length === 1) {
+            ref2Tex.push('  author = \"{' + splAuthor[0] + '}\"');
+        }
+        else if (splAuthor.length % 2 === 0) {
+            let currAuth = [];
+            for (let i = 0; i < splAuthor.length; i += 2) {
+                currAuth.push(splAuthor[i] + ', ' + splAuthor[i + 1]);
+            }
+            ref2Tex.push('  author = \"' + currAuth.join(' and ') + '\"');
+        }
+        else {
+            ref2Tex.push('  author = \"[NEEDS MANUAL FORMATTING] ' + splAuthor.join(', ') + '\"');
+        }
+        for (const currKey of Object.keys(currRef).filter(k => !['name', 'type', 'authors'].includes(k))) {
+            if (String(currRef[currKey]) !== '') {
+                let currVal = currRef[currKey].toString().replace('&', '\\&');
+                if (currKey === 'title') {
+                    // prevents misformatting of packages, etc. due to APA7's title capitalization
+                    currVal = currVal.replace(currRef.name, '{' + currRef.name + '}');
+                }
+                ref2Tex.push(('  ' + (currRef.type === 'article' && currKey === 'publisher' ? 'journal' : currKey) +
+                              ' = \"' + currVal + '\"'));
+
+            }
+        }
+        bibTex.push(ref2Tex.join(',\n') + '\n}');
+        ref2Tex = [];
+    }
+
+    return bibTex.join('\n\n');
 }
 
 // main loop: iterates through the input elements and calls itself when a group element
@@ -95,7 +151,7 @@ function populateElements(item: IElement, level: number, shwSyn: boolean): Array
         if (item.title) {
             output.push(...generateHeading(item.title, level));
         }
-        for (let child of item.items) {           
+        for (let child of item.items) {
             output.push(...populateElements(child, level > -1 ? level + 1 : level, shwSyn));
         }
     }
@@ -122,24 +178,24 @@ function generateHeading(title: string, level: number): Array<string> {
 
     if (level >= 0 && title) {
         output.push(ruler);
-        if (level == 0) {
+        if (level === 0) {
             // NB: chapter is not available in apa7
-            output.push(`\\chapter{${ title }}`);
+            output.push('\\chapter{' + title + '}');
         }
-        else if (level == 1) {
-            output.push(`\\section{${ title }}`);
+        else if (level === 1) {
+            output.push('\\section{' + title + '}');
         }
-        else if (level == 2) {
-            output.push(`\\subsection{${ title }}`);
+        else if (level === 2) {
+            output.push('\\subsection{' + title + '}');
         }
-        else if (level == 3) {
-            output.push(`\\subsubsection{${ title }}`);
+        else if (level === 3) {
+            output.push('\\subsubsection{' + title + '}');
         }
-        else if (level == 4) {
-            output.push(`\\paragraph{${ title }}`);
+        else if (level === 4) {
+            output.push('\\paragraph{' + title + '}');
         }
         else {
-            output.push(`\\subparagraph{${ title }}`);
+            output.push('\\subparagraph{' + title  + '}');
         }
         output.push(ruler);
     }
@@ -151,12 +207,12 @@ function generateHeading(title: string, level: number): Array<string> {
 function generateFigure(figure: IImage): Array<string> {
     let output = [];
 
-    const title = figure.title ? replace4LaTeX(figure.title) : 'PLACEHOLDER ' + randomString(8);
+    const figTitle = figure.title ? replace4LaTeX(figure.title) : 'PLACEHOLDER ' + randomString(8);
     output.push('\\begin{figure}[htbp]');
-    output.push(`\\caption{${ title }}`);
-    output.push(`\\label{fig:Figure_${ title.replace(' ', '_').replace(/\$.*?\$/g, '').replace('__', '_') }}`);
+    output.push('\\caption{' + figTitle + (figure.refs ? (', created using the ' + concatRefs(figure.refs)) : '') + '}');
+    output.push('\\label{fig:Figure_' + figTitle.replace(' ', '_').replace(/\$.*?\$/g, '').replace('__', '_') + '}');
     output.push('\\centering');
-    output.push(`\\includegraphics[width=\\columnwidth]{\$\{address:${ figure.address }\}}`);
+    output.push('\\includegraphics[width=\\columnwidth]{${address:' + figure.address + '}}');
     // TO CONSIDER: use height / width for scaling
     output.push('\\end{figure}\n');
 
@@ -171,43 +227,43 @@ function generateTable(table: ITable): Array<string> {
     // define variables
     let output = [];
     let notes = [];
-    let colLength = tableCellWidth(table);
-    let colAlign = tableCellAlign(table);
+    const colLength = tableCellWidth(table);
+    const colAlign = tableCellAlign(table);
+    const tblTitle = replace4LaTeX(table.title);
     let rleBody = true;
 
     output.push('\\begin{table}[!htbp]');
-    output.push(`\\caption{${ replace4LaTeX(table.title) }}`);
-    output.push(`\\label{tbl:Table_${ replace4LaTeX(table.title).replaceAll(' ', '_').replace(/\$.*?\$/g, '').replace('__', '_') }}`);
+    output.push(('\\caption{' + tblTitle + (table.refs ? (', created using the ' + concatRefs(table.refs)) : '') + '}'));
+    output.push('\\label{tbl:Table_' + tblTitle.replaceAll(' ', '_').replace(/\$.*?\$/g, '').replace('__', '_') + '}');
     output.push('\\begin{adjustbox}{max size={\\columnwidth}{\\textheight}}');
     output.push('\\centering');
-    output.push(`\\begin{tabular}{${ colAlign.join('') }}`);
+    output.push('\\begin{tabular}{' + colAlign.join('') + '}');
     output.push('\\toprule');
     for (let row of table.rows) {
-        if (row.type == 'superTitle') {
+        if (row.type === 'superTitle') {
             output.push(...formatSuperTitle(row));
         }
         else if (['title', 'body'].includes(row.type)) {
-            if (row.type == 'body' && rleBody) {
+            if (row.type === 'body' && rleBody) {
                 output.push('\\midrule');
                 rleBody = false;
             }
             output.push(formatTableRow(row, colLength, colAlign));
         }
-        else if (row.type == 'footnote') {
+        else if (row.type === 'footnote') {
             notes.push(formatNote(row));
         }
         else {
-            output.push(`% == ${ row.type } ==`);
+            output.push('% == ' + row.type + ' ==');
         }
     }
     output.push('\\bottomrule');
     output.push('\\end{tabular}');
     output.push('\\end{adjustbox}');
     if (notes.length > 0) {
-        output.push('\\begin{tablenotes}[para,flushleft] {');
+        output.push('\\begin{tablenotes}[para,flushleft]');
         output.push('\\footnotesize');
         output.push(...notes);
-        output.push('}');
         output.push('\\end{tablenotes}');
     }
     output.push('\\end{table}\n');
@@ -223,6 +279,9 @@ function generatePreformatted(preformatted: IPreformatted, level: number, shwSyn
     // add a heading, \begin{verbatim}, the latex array, and \ end{verbatim}
     if (!preformatted.syntax || shwSyn) {
         output.push(generateHeading(preformatted.title, level + 1));
+        if (preformatted.refs) {
+            output.push('Created using the ' + concatRefs(preformatted.refs));
+        }
         output.push('\\begin{verbatim}');
         output.push(preformatted.content.split('\n'));
         output.push('\\end{verbatim}\n');
@@ -233,67 +292,126 @@ function generatePreformatted(preformatted: IPreformatted, level: number, shwSyn
 
 // generate formatted text (annotations)
 function generateText(text: IText, level: number): Array<string> {
-    let output = ['\\begin{flushleft}\n\\noindent\n'];
+    // icons and colours for message boxes for notices
+    // cf. https://github.com/jamovi/jamovi/tree/main/client/resultsview/notice.ts#L64-L79
+    // msgType - 1: 'warning-1', 2: 'warning-2', 3: 'info', 4: 'error'
+    const iconType  = ['\\faExclamationTriangle', '\\faExclamationTriangle', '\\faInfoCircle', '\\faBolt'];
+    const iconColor = ['gray',                  'orange',                'blue',           'red'];
+    let output = ['\\begin{flushleft}\n'];
     let calgn = 'left';
-    let clist = '';
     let cindt = 0;
+    let citem = '';
+    let clist = '';
+    let cmsgb = 0;
+    let cnotc = '';
+
+    // add a sentence regarding used references (if present)
+    if (text.refs) {
+        output.push('Created using the ' + concatRefs(text.refs) + '.\n');
+    }
 
     for (let chunk of text.chunks) {
-        // deal with headers ()
+        // deal with headers
         if (hasAttr(chunk, 'header')) {
-            output.push(...generateHeading(chunk.content, level + 1));
+            output.push(...generateHeading(chunk.content.trim(), level + 1));
+        }
+        // format message boxes: [1] end previous box
+        if (cmsgb !== (hasAttr(chunk, 'box') ? chunk.attributes.box : 0)) {
+            if (cmsgb !== 0) {
+                output.push(cnotc + '}\n');
+            }
         }
         // format lists: [1] end previous list
         if (clist !== (hasAttr(chunk, 'list') ? chunk.attributes.list : '')) {
-            if (clist !== '')
-                output.push('\\end{'   + (clist === 'ordered' ? 'enumerate' : 'itemize') + '}\n\n');
+            if (clist !== '') {
+                output.push('\\end{'   + (clist === 'ordered' ? 'enumerate' : 'itemize') + '}\n');
+            }
         }
-        // format paragraphs: [1] end previous alignment 
+        // format paragraphs: [1] end previous alignment
+        // needs to come after list formatting is finished, as list formatting is embedded
+        // in formatting alignment)
         if (calgn !== (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left')) {
             output.push(calgn === 'justify' ? '\n\n' : ('\\end{' + (calgn === 'center' ? '' : 'flush') + calgn + '}\n\n'));
         }
         // format paragraphs: [2] begin new alignment
-        // needs to come after list formatting is finished, as list formatting is embedded
-        // in formatting alignment)
         if (calgn !== (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left')) {
             calgn = (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left');
-            output.push(calgn === 'justify' ? '' : '\\begin{' + (calgn == 'center' ? '' : 'flush') + calgn + '}\n');
-            output.push('\\noindent\n');
+            output.push(calgn === 'justify' ? '' : '\\begin{' + (calgn === 'center' ? '' : 'flush') + calgn + '}\n');
         }
         // format lists: [2] begin new list
         if (clist !== (hasAttr(chunk, 'list') ? chunk.attributes.list : '')) {
             clist = (hasAttr(chunk, 'list') ? chunk.attributes.list : '');
-            if (clist !== '')
+            if (clist !== '') {
                 output.push('\\begin{' + (clist === 'ordered' ? 'enumerate' : 'itemize') + '}\n');
+                citem = '\\item{';
+            }
+        }
+        // format message boxes: [2] begin new box
+        if (cmsgb !== (hasAttr(chunk, 'box') ? chunk.attributes.box : 0)) {
+            cmsgb = (hasAttr(chunk, 'box') ? chunk.attributes.box : 0);
+            if (cmsgb !== 0) {
+                output.push('\\awesomebox{4pt}{' + iconType[chunk.attributes.box - 1] +
+                            '}{' + iconColor[chunk.attributes.box - 1] + '}{\n');
+                cnotc = '    ';
+            }
         }
         // format indentation
         if (cindt !== (hasAttr(chunk, 'indent') ? parseInt(chunk.attributes.indent) : 0)) {
             cindt = (hasAttr(chunk, 'indent') ? parseInt(chunk.attributes.indent) : 0);
-            output.push(`\\setlength\\leftskip{${ cindt }cm}\n`);
+            output.push('\n\\setlength\\leftskip{' + cindt + 'cm}\n\n');
         }
-        // format other attributes (if the chunk doesn't contain attributes,
-        // then the content remains unchanged)
-        output.push(formatAttr(chunk));
+        // concatenate or push chunks
+        if (hasAttr(chunk, 'list')) {
+            // list items may consist of several chunks which need to be concatenated;
+            // when a CR is encountered, the item is pushed and a new item is started
+            if (chunk.content.endsWith('\n')) {
+                output.push(citem + formatAttr(chunk).trim() + '}\n');
+                citem = '\\item{';
+            }
+            else {
+                citem += formatAttr(chunk);
+            }
+        }
+        else if (hasAttr(chunk, 'box')) {
+            // message boxes may also consist of several chunks which need concatenation;
+            // when a CR is encountered a LaTeX line feed (\\) is pushed and a new line
+            // is started
+            if (chunk.content.endsWith('\n')) {
+                output.push(cnotc + formatAttr(chunk).trim() + ' \\\\\n');
+                cnotc = '    ';
+            }
+            else {
+                cnotc += formatAttr(chunk);
+            }
+        } else {
+            // format other attributes (if the chunk doesn't contain attributes,
+            // then the content remains unchanged)
+            output.push(formatAttr(chunk) +
+                (chunk.content.endsWith('\n') ? ((chunk.content.length > 1 ? ' \\\\' : '') + '\n') : ''));
+        }
     }
-    output.push('\n\\end{flushleft}\n');
+    // finish unfinished business: write out notices and list items, and end the paragrpah alignment
+    if (cmsgb !== 0 && cnotc.length > 0) {
+        output.push(cnotc + '\n}\n');
+    }
+    if (clist !== '' && clist.length > 0) {
+        output.push(clist + '}\n\\end{'   + (clist === 'ordered' ? 'enumerate' : 'itemize') + '}\n');
+    }
+    output.push(calgn === 'justify' ? '\n' : ('\\end{' + (calgn === 'center' ? '' : 'flush') + calgn + '}\n'));
 
     return output.join('').split('\n');
 }
 
 // generate random string
 function randomString(length: number): string {
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-  let result = '';
+    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
 
-  for (let i = 0; i < length; i++)
-    result += characters.charAt(Math.floor(Math.random() * characters.length))
+    for (let i = 0; i < length; ++i) {
+        result += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
 
-  return result;
-}
-
-// check whether 
-function hasAttr(chunk: ITextChunk, attr: string): boolean {
-    return ('attributes' in chunk && attr in chunk.attributes);
+    return result;
 }
 
 // determine maximum (table) cell length
@@ -302,7 +420,7 @@ function tableCellWidth(table: ITable): Array<number> {
 
     for (let row of table.rows) {
         if (['title', 'body'].includes(row.type)) {
-            for (let i = 0; i < row.cells.length; i++) {
+            for (let i = 0; i < row.cells.length; ++i) {
                 if (row.cells[i] && row.cells[i].content) {
                     colLength[i] = Math.max(row.cells[i].content.length, colLength[i]);
                 }
@@ -319,8 +437,8 @@ function tableCellAlign(table: ITable): Array<string> {
     let colCheck = new Array(table.nCols).fill(false);
 
     for (let row of table.rows) {
-        if (row.type == 'body') {
-            for (let i = 0; i < row.cells.length; i++) {
+        if (row.type === 'body') {
+            for (let i = 0; i < row.cells.length; ++i) {
                 if (row.cells[i] && row.cells[i].align) {
                     colAlign[i] = row.cells[i].align
                     colCheck[i] = true
@@ -338,16 +456,23 @@ function tableCellAlign(table: ITable): Array<string> {
 // replace non-printable characters in tables, handle footnotes, etc.
 function cleanTable(table: ITable): ITable {
 
-    for (let i = 0; i < table.rows.length; i++) {
+    for (let i = 0; i < table.rows.length; ++i) {
         const row = table.rows[i];
-        for (let j = 0; j < row.cells.length; j++) {
+        for (let j = 0; j < row.cells.length; ++j) {
             const cell = row.cells[j];
             if (cell === null) {
                 continue;
             }
+            // handle row spans
+            if (cell.rowSpan) {
+                for (let k = 1; k < cell.rowSpan; ++k) {
+                    table.rows[i + k].cells[j].content = '~';
+                }
+
+            }
             // handle superscripts for footnotes (= specific notes)
             if (row.type != 'footnote' && cell.sups && cell.sups.length > 0) {
-                cell.content = cell.content + `$^{${ replace4LaTeX(cell.sups.join(',')) }}$`
+                cell.content = cell.content + '$^{' + replace4LaTeX(cell.sups.join(',')) + '}$';
             }
             // replace non-printable characters
             if (cell.content.length > 0) {
@@ -362,6 +487,8 @@ function cleanTable(table: ITable): ITable {
 // replace non-printable characters and HTML attributes in strings
 function replace4LaTeX(content: string): string {
     const stringRepl = {'η²': '$\\eta^{2}$', 'η²p': '$\\eta^{2}_{p}$', 'ω²': '$\\omega^{2}$',
+                        'χ²': '$\\chi^{2}$',
+                        '₁₀': '$_{10}$', '₀₁': '$_{01}$', 'ₐ': '$_{a}$', '≠': '$\\neq$',
                         '<sup>μ</sup>': '$\\mu$', 'μ': '$\\mu$', '✻': '$\\times$', ' ': '~',
                         '%': '\\%', '\\\\%': '\\%', '⁻': '-', '⁺': '+',
                         // HTML attributes
@@ -385,7 +512,7 @@ function formatRGB(content: string): string {
     if (content === content.match(/^#[0-f]{6}$/)[0]) {
         content = [(parseInt(content.slice(1, 3), 16) / 255).toFixed(2),
                    (parseInt(content.slice(3, 5), 16) / 255).toFixed(2),
-                   (parseInt(content.slice(5, 7), 16) / 255).toFixed(2)].join(', ')
+                   (parseInt(content.slice(5, 7), 16) / 255).toFixed(2)].join(', ');
     }
 
     return content;
@@ -397,16 +524,16 @@ function formatSuperTitle(row: IRow): Array<string> {
     let mrule = [];
     let empty = 0;
 
-    for (let i = 0; i < row.cells.length; i++) {
+    for (let i = 0; i < row.cells.length; ++i) {
         if (row.cells[i]) {
             if (row.cells[i].content) {
                 if (empty > 0) {
-                    cells.push(`\\multicolumn{${ empty }}{c}{~}`);
+                    cells.push('\\multicolumn{' + empty + '}{c}{~}');
                     empty = 0;
                 }
                 if (row.cells[i].colSpan) {
-                    cells.push(`\\multicolumn{${ row.cells[i].colSpan }}{c}{${ row.cells[i].content }}`);
-                    mrule.push(`\\cmidrule{${ i + 1 }-${ i + row.cells[i].colSpan }}`);
+                    cells.push('\\multicolumn{' + row.cells[i].colSpan + '}{c}{' + row.cells[i].content + '}');
+                    mrule.push('\\cmidrule{' + (i + 1) + '-' + (i + row.cells[i].colSpan) + '}');
                     i += (row.cells[i].colSpan - 1);
                 }
                 else {
@@ -415,7 +542,7 @@ function formatSuperTitle(row: IRow): Array<string> {
             }
         }
         else {
-            empty++
+            ++empty
         }
     }
 
@@ -428,7 +555,7 @@ function formatTableRow(row: IRow, colLength: Array<number>, colAlign: Array<str
     let crrCll = '';
     let addSpc = 0;
 
-    for (let i = 0; i < row.cells.length; i++) {
+    for (let i = 0; i < row.cells.length; ++i) {
         if (row.cells[i] && row.cells[i].content.length > 0) {
             crrCll = row.cells[i].content;
         }
@@ -436,13 +563,13 @@ function formatTableRow(row: IRow, colLength: Array<number>, colAlign: Array<str
             crrCll = '~';
         }
         addSpc = colLength[i] - crrCll.length;
-        if (colAlign[i] == 'l') {
+        if (colAlign[i] === 'l') {
             cells.push(crrCll + ' '.repeat(addSpc));
         }
-        else if (colAlign[i] == 'r') {
+        else if (colAlign[i] === 'r') {
             cells.push(' '.repeat(addSpc) + crrCll);
         }
-        else if (colAlign[i] == 'r') {
+        else if (colAlign[i] === 'r') {
             cells.push(' '.repeat(Math.ceil(addSpc / 2)) + crrCll +
                        ' '.repeat(Math.floor(addSpc / 2)));
         }
@@ -455,16 +582,15 @@ function formatTableRow(row: IRow, colLength: Array<number>, colAlign: Array<str
 function formatNote(row: IRow): Array<string> {
     let output = [];
 
-    for (let i = 0; i < row.cells.length; i++) {
+    for (let i = 0; i < row.cells.length; ++i) {
         if (row.cells[i].content.length > 0 && row.cells[i].sups.length > 0) {
-            if (row.cells[i].sups[0] == 'note') {
+            if (row.cells[i].sups[0] === 'note') {
                 // General and significance notes
-                output.push(`\\textit{Note.}~${ row.cells[i].content } \\\\`)
-
+                output.push('\\textit{Note.}~' + row.cells[i].content.trim() + ' \\\\');
             }
             else {
                 // Specific notes
-                output.push(`$^{${ row.cells[i].sups.join(',') }}$~${ row.cells[i].content } \\\\`.replace(/(?<=\$)(.*?)\$(?=(.*?)\$)/g, '$1'));
+                output.push('$^{' + row.cells[i].sups.join(',') + '}$~' + row.cells[i].content.trim() + ' \\\\'.replace(/(?<=\$)(.*?)\$(?=(.*?)\$)/g, '$1'));
             }
         }
     }
@@ -473,34 +599,43 @@ function formatNote(row: IRow): Array<string> {
 }
 
 function formatAttr(chunk: ITextChunk): string {
-    let output = chunk.content;
+    let output = chunk.content.substring(0, chunk.content.length - (chunk.content.endsWith('\n') ? 1 : 0));
 
-    if (hasAttr(chunk, 'bold'))
+    if (hasAttr(chunk, 'bold')) {
         output = '\\textbf{' + output + '}';
-    if (hasAttr(chunk, 'italic'))
+    }
+    if (hasAttr(chunk, 'italic')) {
         output = '\\textit{' + output + '}';
-    if (hasAttr(chunk, 'underline'))
+    }
+    if (hasAttr(chunk, 'underline')) {
         output = '\\underline{' + output + '}';
-    if (hasAttr(chunk, 'strike'))
+    }
+    if (hasAttr(chunk, 'strike')) {
         output = '\\st{' + output + '}';
-    if (hasAttr(chunk, 'code-block'))
+    }
+    if (hasAttr(chunk, 'code-block')) {
         output = '\\verbatim{' + output + '}\n';
-    if (hasAttr(chunk, 'list'))
-        output = '\\item{' + output.trim() + '}\n';
-    if (hasAttr(chunk, 'link'))
+    }
+    if (hasAttr(chunk, 'link')) {
         output = '\\href{' + chunk.attributes.link + '}{' + output + '}';
-    if (hasAttr(chunk, 'formula'))
+    }
+    if (hasAttr(chunk, 'formula')) {
         output = '${' + formatFrml(output) + '}$';
-    if (hasAttr(chunk, 'script') && chunk.attributes.script === 'super')
+    }
+    if (hasAttr(chunk, 'script') && chunk.attributes.script === 'super') {
         output = '$^{' + + output + '}$';
-    if (hasAttr(chunk, 'script') && chunk.attributes.script === 'sub')
+    }
+    if (hasAttr(chunk, 'script') && chunk.attributes.script === 'sub') {
         output = '$_{' + + output + '}$';
-    if (hasAttr(chunk, 'color'))
+    }
+    if (hasAttr(chunk, 'color')) {
         output = '\\textcolor[rgb]{' + formatRGB(chunk.attributes.color) + '}{' + output + '}';
-    if (hasAttr(chunk, 'background'))
+    }
+    if (hasAttr(chunk, 'background')) {
         output = '\\colorbox[rgb]{' + formatRGB(chunk.attributes.background) + '}{' + output + '}';
+    }
 
-    return output.replace(/(?<=\$)(.*?)\$(?=(.*?)\$)/g, '$1')
+    return output.replace(/(?<=\$)(.*?)\$(?=(.*?)\$)/g, '$1');
 }
 
 function formatFrml(katex: string): string {
@@ -509,15 +644,28 @@ function formatFrml(katex: string): string {
     return output;
 }
 
-function refDescript(references: Array<string>): string {
-    let refText = '';
+function concatRefs(refNames: Array<string>): string {
+    if (!refNames || refNames.length === 0) {
+        return '';
+    }
+    else if (refNames.length === 1) {
+        return ('module, package or reference ' + refNames[0] + ' \\parencite{' + refNames[0] + '}');
+    }
+    else {
+        return ('modules, packages or references ' + refNames.slice(0, -1).join(', ') + ' and ' + refNames.slice(-1)[0] +
+                ' \\parencite{' + refNames.join(', ') + '}');
+    }
+}
 
-    if (references.length > 0) {
-        // TO-DO: generate dynamically, when references are implemented
+function describeRefs(refNames: Array<string>): string {
+    let refText = '';
+    const refPlrl = refNames.length > 1 ? 's ' : ' ';
+
+    if (refNames.length > 0) {
+        refNames = refNames.filter(n => n !== 'R' && n !== 'jamovi');
         refText = '% Statistical analyses were performed using jamovi \\parencite{jamovi}, ' +
-                  'and the R statistical language \\parencite{R}, as well as the modules / ' +
-                  'packages car and emmeans \\parencite{car, emmeans}. Further describe your ' +
-                  'statistical analyses...'
+                  'and the R statistical language \\parencite{R}, as well as the ' +
+                  concatRefs(refNames) + '. Further describe your statistical analyses...'
     } else {
         refText = '% Describe your statistical analyses...'
     }

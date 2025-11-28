@@ -9,9 +9,11 @@ from urllib.parse import unquote
 
 log = logging.getLogger(__name__)
 
-async def latexify(content, out, resolve_image):
+async def latexify(content_refs, out, resolve_image):
 
     now = localtime()[0:6]
+
+    [content, refs] = map(str.strip, content_refs.split('[--BIBTEX_FROM_HERE--]'))
 
     with ZipFile(out, 'w') as z:
         # replace image placeholders and write images
@@ -34,3 +36,8 @@ async def latexify(content, out, resolve_image):
         with z.open(ZipInfo('article.tex', now), 'w') as f:
             with TextIOWrapper(f, encoding='utf-8') as ft:
                 ft.write(content)
+        
+        if len(refs) > 0:
+            with z.open(ZipInfo('article.bib', now), 'w') as f:
+                with TextIOWrapper(f, encoding='utf-8') as ft:
+                    ft.write(refs)

@@ -14,19 +14,22 @@ import ContextMenuButton from './contextmenu/contextmenubutton';
 import { flatten, unflatten } from '../common/utils/addresses';
 import { contextMenuListener } from '../common/utils';
 
-import './references';
-
 import path from 'path';
 import { EventDistributor } from '../common/eventmap';
 import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
 import Instance from './instance';
 import { Analysis } from './analyses';
+
 import { References } from './references';
+import { IReference } from './references';
+import { R } from './references';
+import { jmv } from './references';
 
 import { hydrate } from '../common/hydrate';
 import { htmlify } from '../common/htmlify';
-import { latexify, addHeaderFooter } from '../common/latexify';
-
+import { latexify } from '../common/latexify';
+import { createDoc } from '../common/latexify';
+import { createBibTex } from '../common/latexify';
 
 interface AnalysisResource {
     id: number,
@@ -792,10 +795,9 @@ class ResultsPanel extends EventDistributor {
     }
 
     getAsLatex() {
-
         const analyses = [ ...this.model.analyses() ];
-        const fragments = [];
-        const references = [];
+        const fragments: Array<string> = [];
+        const references: Array<IReference> = [ R, jmv ];
         let first = true;
 
         for (let analysis of analyses) {
@@ -806,13 +808,22 @@ class ResultsPanel extends EventDistributor {
             if (hydrated === null)
                 continue;
             const latex = latexify(hydrated);
-            if (latex !== null)
+            if (latex !== null && latex !== '')
                 fragments.push(latex);
             // get references from results
             references.push(...analysis.references);
         }
 
-        return addHeaderFooter(fragments, references);
+        // remove duplicated references: [1] determine reference names, [2] get an index which references are duplicated
+        // (returns an index of the last occurence if duplicated, otherwise <null>), [3] filter <null> from duplicate
+        // index, sort it (smallest first), reverse it (need to remove elements from the end for not messing up the
+        // index position) and remove the respective reference(s) using the index
+        const refNames = references.map(r => r.name)
+        const refDupl = refNames.map((item, index) => refNames.includes(item, index + 1) ? refNames.lastIndexOf(item) : null)
+        refDupl.filter(i => i).sort().reverse().forEach(i => references.splice(i, 1))
+
+        return createDoc(fragments, references.map(r => r.name)) +
+               '[--BIBTEX_FROM_HERE--]\n' + createBibTex(references);
     }
 
     getAsHTML(options, part?) {
