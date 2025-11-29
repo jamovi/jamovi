@@ -797,7 +797,7 @@ class ResultsPanel extends EventDistributor {
     getAsLatex() {
         const analyses = [ ...this.model.analyses() ];
         const fragments: Array<string> = [];
-        const references: Array<IReference> = [ R, jmv ];
+        let references: Array<IReference> = [ R, jmv ];
         let first = true;
 
         for (let analysis of analyses) {
@@ -814,16 +814,16 @@ class ResultsPanel extends EventDistributor {
             references.push(...analysis.references);
         }
 
-        // remove duplicated references: [1] determine reference names, [2] get an index which references are duplicated
-        // (returns an index of the last occurence if duplicated, otherwise <null>), [3] filter <null> from duplicate
-        // index, sort it (smallest first), reverse it (need to remove elements from the end for not messing up the
-        // index position) and remove the respective reference(s) using the index
-        const refNames = references.map(r => r.name)
-        const refDupl = refNames.map((item, index) => refNames.includes(item, index + 1) ? refNames.lastIndexOf(item) : null)
-        refDupl.filter(i => i).sort().reverse().forEach(i => references.splice(i, 1))
+        // remove duplicate references
+        const nameRefPairs = references.map(ref => [ref.name, ref]);
+        const refsByName = Object.fromEntries(nameRefPairs);
+        references = Object.values(refsByName);
+        const refNames = Object.keys(refsByName);
 
-        return createDoc(fragments, references.map(r => r.name)) +
-               '[--BIBTEX_FROM_HERE--]\n' + createBibTex(references);
+        const doc = createDoc(fragments, refNames);
+        const bibtex = createBibTex(references);
+
+        return `${ doc }[--BIBTEX_FROM_HERE--]\n${ bibtex }`;
     }
 
     getAsHTML(options, part?) {
