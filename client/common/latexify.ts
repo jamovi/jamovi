@@ -1,4 +1,5 @@
-import { hasAttr } from './utils';
+
+import { hasAttr } from './hydrate';
 import { IElement } from './hydrate';
 import { IImage } from './hydrate';
 import { ITable } from './hydrate';
