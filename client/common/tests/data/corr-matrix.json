@@ -1,0 +1,141 @@
+{
+  "type": "table",
+  "title": "Correlation Matrix",
+  "nCols": 4,
+  "rows": [
+    {
+      "type": "title",
+      "cells": [
+        null,
+        null,
+        {
+          "content": "len",
+          "align": "c"
+        },
+        {
+          "content": "dose",
+          "align": "c"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "len",
+          "align": "l",
+          "rowSpan": 3
+        },
+        {
+          "content": "Pearson's r",
+          "align": "l"
+        },
+        {
+          "content": "—",
+          "align": "r"
+        },
+        null
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "len",
+          "align": "l"
+        },
+        {
+          "content": "df",
+          "align": "l"
+        },
+        {
+          "content": "—",
+          "align": "r"
+        },
+        null
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "len",
+          "align": "l"
+        },
+        {
+          "content": "p-value",
+          "align": "l"
+        },
+        {
+          "content": "—",
+          "align": "r"
+        },
+        null
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "dose",
+          "align": "l",
+          "rowSpan": 3
+        },
+        {
+          "content": "Pearson's r",
+          "align": "l"
+        },
+        {
+          "content": "0.803",
+          "align": "r"
+        },
+        {
+          "content": "—",
+          "align": "r"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "dose",
+          "align": "l"
+        },
+        {
+          "content": "df",
+          "align": "l"
+        },
+        {
+          "content": "58",
+          "align": "r"
+        },
+        {
+          "content": "—",
+          "align": "r"
+        }
+      ]
+    },
+    {
+      "type": "body",
+      "cells": [
+        {
+          "content": "dose",
+          "align": "l"
+        },
+        {
+          "content": "p-value",
+          "align": "l"
+        },
+        {
+          "content": "< .001",
+          "align": "r"
+        },
+        {
+          "content": "—",
+          "align": "r"
+        }
+      ]
+    }
+  ]
+}
