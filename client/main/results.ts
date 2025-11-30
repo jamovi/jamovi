@@ -30,13 +30,13 @@ export class ResultsView extends HTMLElement {
             this.icon = new jamoviIcon(version);
             this.appendChild(this.icon.el);
         });
-        
+
 
         this.classList.add('jmv-results');
         this.setAttribute('tabindex', '-1');
         focusLoop.applyShortcutOptions(this, {
                 key: 'R',
-                maintainAccessibility: true, 
+                maintainAccessibility: true,
                 action: (event) => {
                     this.hideWelcome();
                     this.selectedView.setFocus();
@@ -134,7 +134,7 @@ export class ResultsView extends HTMLElement {
     hideWelcome() {
         if (this.welcome)
             this.welcome.classList.add('jmv-welcome-panel-hidden');
-        
+
         this.hidePlaceHolder();
     }
 
@@ -145,6 +145,10 @@ export class ResultsView extends HTMLElement {
 
     getAsHTML(options, part) {
         return this.richView.getAsHTML(options, part);
+    }
+
+    getAsLatex() {
+        return this.richView.getAsLatex();
     }
 }
 

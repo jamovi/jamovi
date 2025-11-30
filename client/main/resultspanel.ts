@@ -14,14 +14,22 @@ import ContextMenuButton from './contextmenu/contextmenubutton';
 import { flatten, unflatten } from '../common/utils/addresses';
 import { contextMenuListener } from '../common/utils';
 
-import './references';
-
 import path from 'path';
 import { EventDistributor } from '../common/eventmap';
 import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
 import Instance from './instance';
 import { Analysis } from './analyses';
+
 import { References } from './references';
+import { IReference } from './references';
+import { R } from './references';
+import { jmv } from './references';
+
+import { hydrate } from '../common/hydrate';
+import { htmlify } from '../common/htmlify';
+import { latexify } from '../common/latexify';
+import { createDoc } from '../common/latexify';
+import { createBibTex } from '../common/latexify';
 
 interface AnalysisResource {
     id: number,
@@ -786,6 +794,38 @@ class ResultsPanel extends EventDistributor {
         ContextMenu.showResultsMenu(entries, data.pos.left, data.pos.top);
     }
 
+    getAsLatex() {
+        const analyses = [ ...this.model.analyses() ];
+        const fragments: Array<string> = [];
+        let references: Array<IReference> = [ R, jmv ];
+        let first = true;
+
+        for (let analysis of analyses) {
+            const results = analysis.results;
+            const values = analysis.options.getValues();
+            const hydrated = hydrate(results, [], values, first, analysis.id);
+            first = false;
+            if (hydrated === null)
+                continue;
+            const latex = latexify(hydrated);
+            if (latex !== null && latex !== '')
+                fragments.push(latex);
+            // get references from results
+            references.push(...analysis.references);
+        }
+
+        // remove duplicate references
+        const nameRefPairs = references.map(ref => [ref.name, ref]);
+        const refsByName = Object.fromEntries(nameRefPairs);
+        references = Object.values(refsByName);
+        const refNames = Object.keys(refsByName);
+
+        const doc = createDoc(fragments, refNames);
+        const bibtex = createBibTex(references);
+
+        return `${ doc }[--BIBTEX_FROM_HERE--]\n${ bibtex }`;
+    }
+
     getAsHTML(options, part?) {
         if ( ! part) {
 
@@ -941,7 +981,7 @@ class ResultsPanel extends EventDistributor {
                 };
 
                 if (part === '')
-                    options.filters.push({ name: _('LaTeX bundle {ext}', { ext: '(.zip)' }), extensions:  [ 'zip' ] });
+                    options.filters.push({ name: 'LaTeX', description: _('LaTeX bundle {ext}', { ext: '(.zip)' }), extensions:  [ 'zip' ] });
 
                 let result = await host.showSaveDialog(options);
                 if (result.cancelled)
@@ -990,6 +1030,35 @@ class ResultsPanel extends EventDistributor {
         }
         else if (event.op === 'refsClearSelection') {
             this._refsTable.clearSelection();
+        }
+        else if (['copy2', 'copyLatex'].includes(event.op)) {
+            const address = event.address;
+            const analysisId = parseInt(address.shift());
+            const analysis = this.model.analyses().get(analysisId);
+            const results = analysis.results;
+            const values = analysis.options.getValues();
+            const hydrated = hydrate(results, address, values);
+
+            let content;
+            if (event.op === 'copy2') {
+                const html = htmlify(hydrated);
+                content = { html, text: html };
+            }
+            else {
+                const text = latexify(hydrated);
+                content = { text };
+            }
+
+            await host.copyToClipboard(content);
+
+            const note = new Notify({
+                title: _('Copied'),
+                message: _('The content has been copied to the clipboard'),
+                duration: 2000,
+                type: 'success'
+            });
+            this.model.trigger('notification', note);
+
         }
         else {
 

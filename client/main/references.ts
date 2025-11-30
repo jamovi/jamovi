@@ -4,7 +4,6 @@
 import focusLoop from '../common/focusloop';
 import Analyses from './analyses';
 
-
 interface IReferenceDetails {
     addresses: {
         module: string;
@@ -32,6 +31,27 @@ export interface IReference {
     year2?: string;
     extra?: string;
 }
+
+export const jmv = {
+    name: 'jamovi',
+    type: 'software',
+    authors: { complete: 'The jamovi project' },
+    year: 2025,
+    title: 'jamovi',
+    publisher: '(Version 2.7) [Computer Software]. Retrieved from https://www.jamovi.org',
+    url: 'https://www.jamovi.org',
+};
+
+export const R = {
+    name: 'R',
+    type: 'software',
+    authors: { complete: 'R Core Team' },
+    year: 2025,
+    title: 'R: A Language and environment for statistical computing',
+    publisher: '(Version 4.5) [Computer software]. Retrieved from https://cran.r-project.org',
+    url: 'https://cran.r-project.org',
+    extra: 'R packages retrieved from CRAN snapshot 2025-05-25'
+};
 
 export class References extends HTMLElement {
     _root: ShadowRoot;
@@ -174,27 +194,7 @@ export class References extends HTMLElement {
         let refs = [ ];
         let modules = new Set<string>();
 
-        refs.push(this.resolve('jmv', {
-            name: 'jamovi',
-            type: 'software',
-            authors: { complete: 'The jamovi project' },
-            year: 2025,
-            title: 'jamovi',
-            publisher: '(Version 2.7) [Computer Software]. Retrieved from https://www.jamovi.org',
-            url: 'https://www.jamovi.org',
-        }));
-
-        const R = {
-            name: 'R',
-            type: 'software',
-            authors: { complete: 'R Core Team' },
-            year: 2025,
-            title: 'R: A Language and environment for statistical computing',
-            publisher: '(Version 4.5) [Computer software]. Retrieved from https://cran.r-project.org',
-            url: 'https://cran.r-project.org',
-            extra: 'R packages retrieved from CRAN snapshot 2025-05-25'
-        };
-
+        refs.push(this.resolve('jmv', jmv));
         refs.push(this.resolve('R', R));
 
         for (let analysis of this._analyses) {

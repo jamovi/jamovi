@@ -21,6 +21,7 @@
 @import "store.css";
 @import "store/pages.css";
 @import "contextmenu/contextmenubutton.css";
+@import "contextmenu/contextmenusplitbutton.css";
 @import "contextmenu/contextmenus.css";
 
 @import "jamovi.css";
