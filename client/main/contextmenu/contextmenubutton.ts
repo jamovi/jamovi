@@ -18,10 +18,12 @@ export interface ContextMenuButtonOptions {
     enabled?: boolean;
     iconId?: string;
     tabName?: string;
+    size?: 'medium' | 'small';
     eventData?: any;
     subItems?: any[];
 }
 import ButtonElement from '../utils/buttonelement';
+import { s6e } from '../../common/utils';
 
 export class ContextMenuButton extends ButtonElement implements RibbonItem {
     eventData: any;
@@ -36,6 +38,7 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
     level: number;
     _definedTabName: boolean;
     name: string;
+    labelId: string;
 
 
     /*
@@ -57,7 +60,7 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
 
         let title = options.title === undefined ? null : options.title;
         let name = options.name;
-        let size = 'medium';
+        let size = options.size === undefined ? 'medium' : options.size;
         let right = options.right === undefined ? false : options.right;
         let level = options.level === undefined ? 0 : options.level;
         this.eventData = options.eventData  === undefined ? null : options.eventData;
@@ -72,6 +75,8 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
         this.id = focusLoop.getNextAriaElementId('menu-btn');
         this.setAttribute('id', this.id);
 
+        this.labelId = focusLoop.getNextAriaElementId('label');
+
         this.tabName = null;
         this._definedTabName = false;
         if (options.tabName !== undefined) {
@@ -84,6 +89,9 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
         this.name = name;
         this.level = level;
         this.dock = right ? 'right' : 'left';
+
+        if (this.size === 'small' && this.title !== null)
+            this.setAttribute('title', this.title);
 
         this.setAttribute('data-name', this.name.toLowerCase());
         if (this._iconId !== null)
@@ -208,8 +216,13 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
     _refresh() {
         let html = '';
         html += '   <div class="jmv-ribbon-button-icon"></div>';
-        html += '   <div class="jmv-ribbon-button-label">' + this.title + '</div>';
-
+        if (this.size === 'medium' || this.size === 'large') {
+            html += `   <div id="${this.labelId}" class="jmv-ribbon-button-label">${s6e(this.title)}</div>`;
+            if ( ! this.ariaLabel)
+                this.setAttribute('aria-labelledby', this.labelId);
+        }
+        else
+            this.setAttribute('aria-label', this.ariaLabel || this.title);
         this.innerHTML = html;
     }
 

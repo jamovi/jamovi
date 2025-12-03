@@ -265,7 +265,7 @@ export class View extends CollectionView<Model> {
         if (this.isEmptyAnalysis)
             return [ { name: 'copy', label: _('Copy') } ];
         else if (this.isRoot())
-            return [ { name: 'copy', label: _('Copy'), split: [ { name: 'copyLatex', label: _('Copy Latex') }] }, { name: 'duplicate', label: _('Duplicate') }, { name: 'export', label: `${_('Export')}...` } ];
+            return [ { name: 'copy', label: _('Copy'), splitType: 'options', split: [ { name: 'copyLatex', label: _('Copy Latex') }] }, { name: 'duplicate', label: _('Duplicate') }, { name: 'export', label: `${_('Export')}...` } ];
         else
             return super._menuOptions();
     }

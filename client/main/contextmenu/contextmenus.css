@@ -1,5 +1,36 @@
 
 
+.context-options-group {
+    margin-inline-start: 33px;
+}
+
+.context-options-group >  .jmv-ribbon-group-label {
+    padding-inline-start: 0px !important;
+    color: #555555;
+}
+
+.context-options-group > .jmv-ribbon-group-body {
+    margin-inline-start: 10px;
+    justify-content: start;
+    gap: 5px;
+    margin: 4px 0;
+}
+
+.context-options-group > .jmv-ribbon-group-body > .jmv-context-menu-button {
+    height: 30px !important;
+    width: 30px !important;
+}
+
+.context-options-group > .jmv-ribbon-group-body > .jmv-context-menu-button > .jmv-ribbon-button-icon {
+    height: 20px !important;
+    width: 20px !important;
+}
+
+.jmv-context-menu-button[data-icon='copylatex'] > .jmv-ribbon-button-icon {
+    background-image: url('../../assets/menu-data-copy-latex.svg');
+}
+
+
 .jmv-context-menu-button[data-icon='copy'] > .jmv-ribbon-button-icon {
     background-image: url('../../assets/menu-data-copy.svg');
 }
