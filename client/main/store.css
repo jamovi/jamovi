@@ -31,7 +31,7 @@
     margin-left: -400px ;
     width: 800px ;
     overflow: hidden ;
-    transition: all .3s ;
+    transition: opacity .3s, visibility .3s, height .3s ;
     background-color: #F0F0F0 ;
     box-sizing: border-box;
     z-index: 110 ;
@@ -101,7 +101,7 @@
     background-color: #E0E0E0 ;
     box-sizing: border-box ;
     border-bottom: 2px solid #5E8BC4 ;
-    transition: all .2s ;
+    transition: left .2s ;
     z-index: 5 ;
 }
 
