@@ -200,7 +200,11 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
     }
 
     _menuOptions() {
-        return [ { name: 'copy', label: _('Copy'), split: [ { name: 'copyLatex', label: _('Copy Latex') }] }, { name: 'export', label: `${_('Export')}...` }, { name: 'addNote', label: _('Add Note')} ];
+        const split = [];
+        if (this.type() !== 'Image')
+            split.push({ name: 'copyLatex', label: _('Copy Latex') });
+
+        return [ { name: 'copy', label: _('Copy'), splitType: 'options', split }, { name: 'export', label: `${_('Export')}...` }, { name: 'addNote', label: _('Add Note')} ];
     }
 
     address() {

@@ -171,17 +171,34 @@ export const createResultsObjectMenuItems = function(entries, parent?, levelId?:
             params.eventData = { type: 'selected', address: entryData.address, op: entryData.op, target: entryData };
         }
 
-        let button = null;
         if (entry.split) {
-            const p = params as MenuSplitButtonOptions;
-            p.subItems = new Array<SplitButtonOption>();
-            p.subItems.push(...entry.split);
-            button = new SplitButton(p);
+            switch (entry.splitType) {
+                case 'options':
+                    params.size = 'small';
+                    params.iconId = entry.name;
+
+                    const splitItems = [ new ContextMenuButton(params) ];
+                    for (let splitItem of entry.split) {
+                        let cloneEventData = structuredClone(params.eventData);
+                        cloneEventData.target.op = splitItem.name;
+                        cloneEventData.op = splitItem.name;
+                        splitItems.push( new ContextMenuButton({ title: splitItem.label, name: splitItem.name, iconId: splitItem.name, size: 'small', eventData: cloneEventData }));
+                    }
+                    const groupItem = new RibbonGroup({ title: _('{} Options:', entry.label), orientation: 'horizontal', titlePosition: 'top', items: splitItems });
+                    groupItem.classList.add('context-options-group')
+                    items.push(groupItem);
+                    items.push(new RibbonSeparator());
+                    break;
+                default:
+                    const p = params as MenuSplitButtonOptions;
+                    p.subItems = new Array<SplitButtonOption>();
+                    p.subItems.push(...entry.split);
+                    items.push(new SplitButton(p));
+                break;
+            }
         }
         else
-            button = new ContextMenuButton(params);
-
-        items.push(button);
+            items.push(new ContextMenuButton(params));
     }
 
 

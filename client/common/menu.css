@@ -11,6 +11,7 @@
     opacity: 1;
     z-index: 200;
     visibility: visible;
+    min-width: 150px;
 }
 
 @media (forced-colors: active) {
