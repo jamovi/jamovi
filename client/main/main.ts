@@ -661,9 +661,9 @@ ready(async() => {
     splitPanel.render();
 
     let selection = new Selection(dataSetModel);
-    let viewController = new ViewController(dataSetModel, selection);
+    let viewController = new ViewController(dataSetModel, selection, instance.settings());
 
-    let mainTable = new TableView(dataSetModel, viewController);
+    let mainTable = new TableView(dataSetModel, viewController, instance.settings());
     mainTable.id = 'spreadsheet';
     $mainTable.append(mainTable);
 
