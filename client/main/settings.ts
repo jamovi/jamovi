@@ -31,6 +31,7 @@ interface SettingsData {
     updateStatus: string,
     format: string,
     settingsRecieved: boolean,
+    decSymbol: '.' | ',',
     [key: string]: any,
 }
 

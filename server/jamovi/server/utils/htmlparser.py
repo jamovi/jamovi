@@ -1,7 +1,7 @@
 
 from enum import Enum
 from html.parser import HTMLParser as Parser
-
+from . import utils
 
 class HTMLParser(Parser):
 
@@ -137,11 +137,5 @@ class HTMLParser(Parser):
         value = value.strip()
         if value == '':
             return None
-        try:
-            return int(value)
-        except ValueError:
-            try:
-                return float(value)
-            except ValueError:
-                pass
-        return value
+        
+        return utils.parse_number(value)

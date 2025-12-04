@@ -13,6 +13,7 @@ import focusLoop from '../common/focusloop';
 import { EventEmitter } from 'tsee';
 import DataSetViewModel, { Column, ColumnType, MeasureType } from './dataset';
 import Selection, { ISelection } from './selection';
+import Settings from './settings';
 
 export type DataSetView = HTMLElement & {
     selectionIncludesHidden?: boolean;
@@ -30,7 +31,7 @@ class ViewController extends EventEmitter {
     focusedOn: DataSetView;
     _modifiedFromSelection: boolean;
     _views: { [name: string]: { view: DataSetView, options: { title: string } }} = { };
-    constructor(model, selection) {
+    constructor(model, selection, public settings: Settings) {
         super();
 
         this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('Ok')});
@@ -478,7 +479,7 @@ class ViewController extends EventEmitter {
             let cells = await this.model.requestCells(this.selection);
             let values = cells.data[0].values;
             values = values.map(col => col.map(cell => cell.value));
-            let data = { text: csvifyCells(values), html: htmlifyCells(values) };
+            let data = { text: csvifyCells(values, this.settings.getSetting('decSymbol', '.')), html: htmlifyCells(values, { decSymbol: this.settings.getSetting('decSymbol', '.') }) };
 
             await host.copyToClipboard(data);
             this._notifyCopying();

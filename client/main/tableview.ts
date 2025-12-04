@@ -17,6 +17,8 @@ import { s6e, contextMenuListener } from '../common/utils';
 import DataSetViewModel, { Column, ColumnActiveChangedEvent, ColumnEvent, ColumnType, DataType, MeasureType, Viewport } from './dataset';
 import Selection, { IAreaSelection, ISelection } from './selection';
 import ViewController, { DataSetView } from './viewcontroller';
+import Settings from './settings';
+import { displayNum } from '../common/utils/formatio';
 
 interface Pos {
     rowNo: number,
@@ -126,7 +128,7 @@ class TableView extends HTMLElement implements DataSetView {
     _resizingColumn: { $resizer: HTMLElement, startPageX: number, column: Column };
 
 
-    constructor(model: DataSetViewModel, controller: ViewController) {
+    constructor(model: DataSetViewModel, controller: ViewController, protected settings: Settings) {
         super();
         this.classList.add('tableview');
         this._loaded = false;
@@ -141,6 +143,8 @@ class TableView extends HTMLElement implements DataSetView {
 
         window.addEventListener('resize', event => this._resizeHandler());
         this.addEventListener('resized', event => this._resizeHandler());
+
+        this.settings.on('change:decSymbol', () => this._updateCells());
 
         this.model.on('dataSetLoaded', this._dataSetLoaded, this);
         this.model.on('change:cells',  this._updateCells, this);
@@ -1698,7 +1702,9 @@ class TableView extends HTMLElement implements DataSetView {
                     break;
                 }
             }
-
+            let number = Number(value);
+            if (value !== null && Number.isNaN(number) === false)
+                value = displayNum(value, { decSymbol: this.settings.getSetting('decSymbol', '.') });
             this._focusCell.value = value;
             this._focusCell.select();
         }
@@ -1729,7 +1735,8 @@ class TableView extends HTMLElement implements DataSetView {
                 value = null; // missing value
             }
             else {
-                let number = Number(value);
+
+                let number = Number(value.replace(',', '.'));
                 if (this.currentColumn.measureType === MeasureType.CONTINUOUS) {
                     if ( ! Number.isNaN(number))
                         value = number;
@@ -2570,6 +2577,8 @@ class TableView extends HTMLElement implements DataSetView {
         else if (typeof(content) === 'number') {
             if (dps !== null)
                 content = asNumber.toFixed(dps);
+            
+            content = displayNum(content, { decSymbol: this.settings.getSetting('decSymbol', '.') });
             type = 'number';
         }
         else if (Number.isNaN(asNumber)) {

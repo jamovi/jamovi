@@ -12,7 +12,7 @@ export function registerNodeObject(node, object) {
     _registeredNodeObjs.set(node, object);
 }
 
-export function csvifyCells(cells) {
+export function csvifyCells(cells, decSymbol: '.' | ',') {
     if (cells.length === 0)
         return '';
 
@@ -28,8 +28,8 @@ export function csvifyCells(cells) {
             else if (typeof cell === 'string')
                 row += sep + '"' + cell.replace(/"/g, '""') + '"';
             else
-                row += sep + cell;
-            sep = ',';
+                row += sep + displayNum(cell, { decSymbol }); 
+            sep = '\t';
         }
         rows[rowNo] = row;
     }
@@ -37,7 +37,62 @@ export function csvifyCells(cells) {
     return rows.join('\n');
 }
 
-export function htmlifyCells(cells, options={}) {
+export interface IHtmlifyOptions extends IDisplayOptions {
+    generator?: string;
+}
+
+export interface IDisplayOptions {
+    decSymbol?: '.' | ',';
+}
+
+export function parseNum(value: string, options: IDisplayOptions): number | string {
+    const decimal = options.decSymbol ? options.decSymbol : '.';
+    let s = value.trim().replace(/\s/g, '');
+
+    const comma = s.includes(",");
+    const dot = s.includes(".");
+
+    if (comma && dot) {
+        const lastComma = s.lastIndexOf(",");
+        const lastDot = s.lastIndexOf(".");
+
+        if (lastComma > lastDot)
+            s = s.replace(/\./g, "").replace(",", ".");
+        else 
+            s = s.replace(/,/g, "");
+    }
+    else if (comma) {
+        if (decimal === ',')
+            s = s.replace(/,/g, '.');
+        else {
+            const re = /^-?\d{1,3}(?:,\d{3})*(?:.\d+)?$/;
+            if (re.test(s))
+                s = s.replace(/,/g, "");
+
+            /*let dec = true;
+            const parts = s.split(",");
+            if (parts.length >= 2) {
+                for (let i = 0; i < parts.length; i++) {
+                    if (i === 0 && parts[i].length > 3 || i > 0 && parts[i].length !== 3) {
+                        dec = false;
+                        break;
+                    }
+                }
+            }
+            if (dec) 
+                s = s.replace(/,/g, "");*/
+        }
+    }
+
+    const number = Number(s);
+    return isNaN(number) ? value : number;
+}
+
+export function displayNum(value: number, options: IDisplayOptions) {
+    return value.toString().replace('.', options.decSymbol);
+}
+
+export function htmlifyCells(cells, options: IHtmlifyOptions={}) {
     if (cells.length === 0)
         return '';
 
@@ -52,8 +107,12 @@ export function htmlifyCells(cells, options={}) {
                 row += sep + '';
             else if (typeof cell === 'string')
                 row += sep + cell.replace('\u2212', '-');  // minus to dash
-            else
-                row += sep + cell;
+            else {
+                if (options.decSymbol)
+                    row += sep + displayNum(cell, options);
+                else
+                    row += sep + cell.toString();
+            }
             sep = '</td><td>';
         }
         row += '</td></tr>';
