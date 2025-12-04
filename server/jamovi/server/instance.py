@@ -2359,7 +2359,7 @@ class Instance:
             changes['data_changed'].add(column)
 
     def _parse_cells(self, request):
-
+        main_settings = self._settings.group('main')
         if request.incData:
             block_count = len(request.data)
             blocks = [None] * block_count
@@ -2383,7 +2383,7 @@ class Instance:
                         size += self._mod_tracker.get_size_of(block_pb.cbHtml)
                     else:
                         parser = CSVParser()
-                        parser.feed(block_pb.cbText)
+                        parser.feed(block_pb.cbText, main_settings.get('decSymbol', '.'))
                         parser.close()
                         cells = parser.result()
                         size += self._mod_tracker.get_size_of(block_pb.cbText)
