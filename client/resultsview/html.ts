@@ -48,8 +48,7 @@ export class View extends Elem.View<Model> {
         }
 
         for (let script of doc.scripts)
-            this.$head.append('<script src="module/' + script + '" class="module-asset"></script>');
-
+            document.head.appendChild(HTML.create('script', { src: `module/${ script }`, class: 'module-asset' }));
 
         this.render();
     }
