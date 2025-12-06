@@ -51,7 +51,23 @@ Html <- R6::R6Class("Html",
 
             private$.content <- content
         },
-        setContent=function(value) {
+        setContent=function(content) {
+            private$.content <- content
+            private$.stale <- FALSE
+        },
+        setScripts=function(scripts) {
+            package <- self$analysis$package
+            scripts <- paste0(package, "/", scripts)
+            private$.scripts <- scripts
+            private$.stale <- FALSE
+        },
+        setStylesheets=function(stylesheets) {
+            package <- self$analysis$package
+            stylesheets <- paste0(package, "/", stylesheets)
+            private$.stylesheets <- stylesheets
+            private$.stale <- FALSE
+        },
+        knit=function(value) {
 
             knitted <- knitr::knit(text=value)
 
