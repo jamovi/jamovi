@@ -10,7 +10,11 @@ Image <- R6::R6Class("Image",
         .renderInitFun=NA,
         .renderFun=NA,
         .requiresData=FALSE,
-        .plot=NA),
+        .plot=NA,
+        .widthM=1,
+        .widthB=0,
+        .heightM=1,
+        .heightB=0),
     active=list(
         width=function() private$.width,
         height=function() private$.height,
@@ -33,7 +37,8 @@ Image <- R6::R6Class("Image",
             title='',
             visible=TRUE,
             clearWith='*',
-            refs=character()) {
+            refs=character(),
+            ...) {
 
             super$initialize(
                 options=options,
@@ -51,10 +56,21 @@ Image <- R6::R6Class("Image",
 
             private$.filePath <- NULL
             private$.plot <- NULL
+
+            private$.widthM <- 0
+            private$.widthB <- 0
+            private$.heightM <- 0
+            private$.widthB <- 0
         },
         setSize=function(width, height) {
             private$.width  <- width
             private$.height <- height
+        },
+        setScaleCoeffs=function(widthM, widthB, heightM, heightB) {
+            private$.widthM <- widthM
+            private$.widthB <- widthB
+            private$.heightM <- heightM
+            private$.widthB <- widthB
         },
         isFilled=function() {
             if (is.null(private$.filePath))
