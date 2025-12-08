@@ -212,6 +212,10 @@ message ResultsImage {
     string path = 1;
     int32 width = 2;
     int32 height = 3;
+    int32 widthM = 4;
+    int32 widthB = 5;
+    int32 heightM = 6;
+    int32 heightB = 7;
 }
 
 message ResultsArray {
