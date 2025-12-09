@@ -965,7 +965,7 @@ class Instance:
                     norm_path = self._normalise_path(path)
 
                 old_mm = self._mm
-                self._mm = StoreFactory.create(self._buffer_path, 'shmem')
+                self._mm = StoreFactory.create(self._buffer_path, 'duckdb')
                 dataset = self._mm.create_dataset()
                 self._data.dataset = dataset
 
@@ -1116,7 +1116,7 @@ class Instance:
 
                 assert self._buffer_path is not None
 
-                self._mm = StoreFactory.create(self._buffer_path, 'shmem')
+                self._mm = StoreFactory.create(self._buffer_path, 'duckdb')
                 model.dataset = self._mm.create_dataset()
 
                 ioloop = asyncio.get_event_loop()
