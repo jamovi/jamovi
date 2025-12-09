@@ -13,3 +13,5 @@ protobuf
 loguru
 certifi
 duckdb
+appdirs
+rpy2

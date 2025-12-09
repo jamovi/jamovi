@@ -186,8 +186,8 @@ class Worker:
     def _setup_module_load_path(self, module_name: str = "jmv"):
         if self._lib_paths is None:
             self._lib_paths = cast(Callable[[StrVector], None], r("base::.libPaths"))
-        base_path = f"{ self._module_roots[0] }/base/R"
-        jmv_path = f"{ self._module_roots[0] }/jmv/R"
+        base_path = f"{ self._module_roots[1] }/base/R"
+        jmv_path = f"{ self._module_roots[1] }/jmv/R"
         paths = list(
             map(lambda root: f"{ root }/{ module_name }/R", self._module_roots)
         )
@@ -213,6 +213,8 @@ class Worker:
 
     async def _run_analysis(self, payload_bytes: bytes) -> None:
         # this function has many sleep(0)s to allow it to be cancelled
+
+        logger.debug('running analysis')
 
         message = ComsMessage()
         message.ParseFromString(payload_bytes)
@@ -355,6 +357,8 @@ class Worker:
                 self._send_analysis(analysis, True)
                 await sleep(0)
                 analysis[".save"]()
+
+            logger.debug('finished analysis')
 
         except (RRuntimeError, CancelledError) as e:
             lang = "python" if isinstance(e, CancelledError) else "R"

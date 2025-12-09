@@ -6,10 +6,14 @@ aiohttp==3.12.15
     # via -r requirements.in
 aiosignal==1.4.0
     # via aiohttp
+appdirs==1.4.4
+    # via -r requirements.in
 attrs==25.3.0
     # via aiohttp
 certifi==2025.8.3
     # via -r requirements.in
+cffi==2.0.0
+    # via rpy2-rinterface
 chardet==5.2.0
     # via -r requirements.in
 cython==3.1.3
@@ -24,10 +28,14 @@ frozenlist==1.7.0
     #   aiosignal
 idna==3.10
     # via yarl
+jinja2==3.1.6
+    # via rpy2-robjects
 loguru==0.7.3
     # via -r requirements.in
 lxml==6.0.1
     # via pyexcel-ezodf
+markupsafe==3.0.3
+    # via jinja2
 multidict==6.6.4
     # via
     #   aiohttp
@@ -46,15 +54,27 @@ propcache==0.3.2
     #   yarl
 protobuf==6.32.0
     # via -r requirements.in
+pycparser==2.23
+    # via cffi
 pyexcel-ezodf==0.3.4
     # via -r requirements.in
 pyyaml==6.0.2
     # via -r requirements.in
+rpy2==3.6.4
+    # via -r requirements.in
+rpy2-rinterface==3.6.3
+    # via
+    #   rpy2
+    #   rpy2-robjects
+rpy2-robjects==3.6.3
+    # via rpy2
 scipy==1.14.1
     # via -r requirements.in
 tornado==6.5.2
     # via -r requirements.in
 typing-extensions==4.15.0
     # via aiosignal
+tzlocal==5.3.1
+    # via rpy2-robjects
 yarl==1.20.1
     # via aiohttp

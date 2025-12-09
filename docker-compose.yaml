@@ -75,7 +75,7 @@ services:
         # then access jamovi with ?access_key=yourpasswordhere added to the url
         # i.e. 127.0.0.1:41337/?access_key=yourpasswordhere
         # or alternatively, remove the password requirement:
-        # JAMOVI_ACCESS_KEY: ''
+        JAMOVI_ACCESS_KEY: ''
 
     volumes:
       - $HOME/Documents:/root/Documents
