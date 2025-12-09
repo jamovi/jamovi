@@ -136,6 +136,9 @@ RUN mkdir -p /usr/lib/jamovi/modules/base/R
 COPY $JAMOVI_ROOT/jmvcore /tmp/source/jmvcore
 RUN R CMD INSTALL /tmp/source/jmvcore --library=/usr/lib/jamovi/modules/base/R
 
+# add duckdb
+RUN R -e "install.packages(c('DBI', 'duckdb'), lib='/usr/lib/jamovi/modules/base/R', repos='https://packagemanager.posit.co/cran/__linux__/jammy/latest')"
+
 ENV R_LIBS /usr/lib/jamovi/modules/base/R
 
 ##### COMPILER #####
@@ -231,6 +234,7 @@ COPY --from=server  /usr/lib/jamovi/ /usr/lib/jamovi/
 
 ENV LD_LIBRARY_PATH $R_HOME/lib
 ENV JAMOVI_HOME /usr/lib/jamovi
+ENV JAMOVI_MODULES_PATH /usr/lib/jamovi/modules
 ENV PYTHONPATH /usr/lib/jamovi/server
 ENV R_LIBS $R_HOME/library
 ENV JAMOVI_SESSION_EXPIRES 0
