@@ -16,6 +16,8 @@ cryptography==50.0.2
     # via -r requirements.in
 cython==3.3.0
     # via -r requirements.in
+duckdb==1.4.2
+    # via -r requirements.in
 et-xmlfile==2.0.0
     # via openpyxl
 frozenlist==1.8.0

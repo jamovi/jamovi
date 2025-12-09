@@ -137,7 +137,7 @@ class Instance:
     def create_store(self):
         """Create the backing store for a data set. The engine expects to
         find it at {instance}/buffer."""
-        return StoreFactory.create(self._buffer_path, 'shmem')
+        return StoreFactory.create(self._buffer_path, 'duckdb')
 
     def _sync_controllers(self):
         """Create controllers for data sets which don't have one yet (the
@@ -1258,7 +1258,7 @@ class Instance:
 
                 assert self._buffer_path is not None
 
-                self._mm = StoreFactory.create(self._buffer_path, 'shmem')
+                self._mm = StoreFactory.create(self._buffer_path, 'duckdb')
                 model.dataset = self._mm.create_dataset()
 
                 ioloop = asyncio.get_event_loop()

@@ -18,3 +18,5 @@ loguru
 truststore
 pytest
 pytest_asyncio
+
+duckdb
