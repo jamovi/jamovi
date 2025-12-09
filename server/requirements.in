@@ -12,3 +12,4 @@ aiohttp
 protobuf
 loguru
 certifi
+duckdb
