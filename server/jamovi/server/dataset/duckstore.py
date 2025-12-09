@@ -56,14 +56,14 @@ class DuckStore(Store):
         raise NotImplementedError
 
     def execute(
-        self, query: object, params: object = None, multiple_parameter_sets=False
+        self, query: object, params: object = None
     ):
         """execute SQL in the duckdb database"""
         if not self._attached:
             raise ValueError("Store not attached")
         if self._db is None:
             self._db = connect(self._path, read_only=self._attached_read_only)
-        return self._db.execute(query, params, multiple_parameter_sets)
+        return self._db.execute(query, params)
 
     def close(self) -> None:
         pass

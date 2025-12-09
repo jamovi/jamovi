@@ -167,9 +167,9 @@ class DuckDataSet(DataSet):
         self._store.detach()
 
     def _execute(
-        self, query: object, args: object = None, multiple_parameter_sets=False
+        self, query: object, args: object = None
     ):
-        return self._store.execute(query, args, multiple_parameter_sets)
+        return self._store.execute(query, args)
 
     def __getitem__(self, index_or_name: Union[str, int]) -> DuckColumn:
         if isinstance(index_or_name, int):
