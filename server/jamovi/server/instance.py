@@ -2383,14 +2383,16 @@ class Instance:
                 if block_pb.incCBData:
                     cells = None
                     if block_pb.cbHtml != '':
-                        parser = HTMLParser()
+                        dec_symbol = main_settings.get('decSymbol', '.')
+                        parser = HTMLParser(dec_symbol=dec_symbol)
                         parser.feed(block_pb.cbHtml)
                         parser.close()
                         cells = parser.result()
                         size += self._mod_tracker.get_size_of(block_pb.cbHtml)
                     else:
-                        parser = CSVParser()
-                        parser.feed(block_pb.cbText, main_settings.get('decSymbol', '.'))
+                        dec_symbol = main_settings.get('decSymbol', '.')
+                        parser = CSVParser(dec_symbol=dec_symbol)
+                        parser.feed(block_pb.cbText)
                         parser.close()
                         cells = parser.result()
                         size += self._mod_tracker.get_size_of(block_pb.cbText)

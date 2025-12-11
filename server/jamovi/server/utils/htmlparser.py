@@ -1,6 +1,10 @@
 
 from enum import Enum
 from html.parser import HTMLParser as Parser
+
+from typing import Literal
+
+
 from . import utils
 
 class HTMLParser(Parser):
@@ -10,8 +14,11 @@ class HTMLParser(Parser):
         TABLE = 1
         PARA = 2
 
-    def __init__(self):
+    _dec_symbol: Literal['.', ',']
+
+    def __init__(self, dec_symbol: Literal['.', ',']):
         Parser.__init__(self)
+        self._dec_symbol = dec_symbol
         self._result = None
         self._current_row = None
         self._current_cell = None
@@ -137,5 +144,5 @@ class HTMLParser(Parser):
         value = value.strip()
         if value == '':
             return None
-        
-        return utils.parse_number(value)
+
+        return utils.parse_number(value, self._dec_symbol)
