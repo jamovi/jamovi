@@ -28,7 +28,7 @@ export function csvifyCells(cells, decSymbol: '.' | ',') {
             else if (typeof cell === 'string')
                 row += sep + '"' + cell.replace(/"/g, '""') + '"';
             else
-                row += sep + displayNum(cell, { decSymbol }); 
+                row += sep + displayNum(cell, { decSymbol });
             sep = '\t';
         }
         rows[rowNo] = row;
@@ -58,7 +58,7 @@ export function parseNum(value: string, options: IDisplayOptions): number | stri
 
         if (lastComma > lastDot)
             s = s.replace(/\./g, "").replace(",", ".");
-        else 
+        else
             s = s.replace(/,/g, "");
     }
     else if (comma) {
@@ -68,19 +68,6 @@ export function parseNum(value: string, options: IDisplayOptions): number | stri
             const re = /^-?\d{1,3}(?:,\d{3})*(?:.\d+)?$/;
             if (re.test(s))
                 s = s.replace(/,/g, "");
-
-            /*let dec = true;
-            const parts = s.split(",");
-            if (parts.length >= 2) {
-                for (let i = 0; i < parts.length; i++) {
-                    if (i === 0 && parts[i].length > 3 || i > 0 && parts[i].length !== 3) {
-                        dec = false;
-                        break;
-                    }
-                }
-            }
-            if (dec) 
-                s = s.replace(/,/g, "");*/
         }
     }
 
