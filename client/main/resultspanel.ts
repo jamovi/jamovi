@@ -25,11 +25,11 @@ import { IReference } from './references';
 import { R } from './references';
 import { jmv } from './references';
 
-import { hydrate } from '../common/hydrate';
-import { htmlify } from '../common/htmlify';
-import { latexify } from '../common/latexify';
-import { createDoc } from '../common/latexify';
-import { createBibTex } from '../common/latexify';
+import { hydrate } from './formatio/hydrate';
+import { htmlify } from './formatio/htmlify';
+import { latexify } from './formatio/latexify';
+import { createDoc } from './formatio/latexify';
+import { createBibTex } from './formatio/latexify';
 
 interface AnalysisResource {
     id: number,
