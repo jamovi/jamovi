@@ -1,8 +1,8 @@
 'use strict';
 
-import I18ns from './i18n';
-import { determFormat } from './formatting';
-import { format } from './formatting';
+import I18ns from '../../common/i18n';
+import { determFormat } from '../../common/formatting';
+import { format } from '../../common/formatting';
 
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
 

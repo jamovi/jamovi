@@ -7,7 +7,7 @@ import { IRow } from './hydrate';
 import { IPreformatted } from './hydrate';
 import { IText } from './hydrate';
 import { ITextChunk } from './hydrate';
-import { IReference } from '../main/references';
+import { IReference } from '../references';
 
 export interface ILatexifyOptions {
     showSyntax?: boolean;
