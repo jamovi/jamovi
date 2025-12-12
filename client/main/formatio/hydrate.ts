@@ -261,22 +261,31 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         throw Error('Address not valid');
 
     // append results objects to elements: table, image, or preformatted
-    if (pb.table)
+    if (pb.table) {
         element = hydrateTable(pb);
-    else if (pb.image)
+        elements.push(element);
+    }
+    else if (pb.image) {
         element = hydrateImage(pb, target, cursor, analysisId);
-    else if (pb.preformatted)
+        elements.push(element);
+    }
+    else if (pb.preformatted) {
         element = hydratePreformatted(pb);
-    else if (pb.html)
+        elements.push(element);
+    }
+    else if (pb.html) {
         element = hydrateHTML(pb);
-    else if (pb.notice)
+        elements.push(element);
+    }
+    else if (pb.notice) {
         element = hydrateNotice(pb);
+        elements.push(element);
+    }
 
     if (element) {
         const refs = hydrateRefs(pb)
         if (refs.length > 0)
             element.refs = refs;
-        elements.push(element)
     }
 
     if (after)
