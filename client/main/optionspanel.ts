@@ -13,6 +13,8 @@ import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
 import { EventEmitter } from 'tsee';
 import DataSetViewModel from './dataset';
 import { Analysis } from './analyses';
+import Settings from './settings';
+import Instance from './instance';
 
 interface IFrameCommsApi {
     frameDocumentReady: (data: any) => void;
@@ -41,7 +43,7 @@ class AnalysisResources extends EventEmitter {
     notifyAborted: (reason?: any) => void;
     jamoviVersion: string;
 
-    constructor(analysis: Analysis, target: HTMLElement, iframeUrl: string, instanceId: string) {
+    constructor(analysis: Analysis, target: HTMLElement, iframeUrl: string, instanceId: string, public settings: Settings) {
         super();
 
         this.analysis = analysis;
@@ -62,6 +64,8 @@ class AnalysisResources extends EventEmitter {
 
         this.frame = HTML.parse(element);
         target.append(this.frame);
+
+        this.settings.on('change:decSymbol', () => this.updateSettings());
 
         this.frameCommsApi = {
             frameDocumentReady: data => {
@@ -199,6 +203,12 @@ class AnalysisResources extends EventEmitter {
             this.frameComms.send("setTitle", title);
     }
 
+    updateSettings() {
+        this.frameComms.send("updateSettings", {
+            decSymbol: this.settings.getSetting('decSymbol', '.')
+        });
+    }
+
     destroy() {
         this.frame.remove();
         //this.frameComms.disconnect(); //This function doesn't yet exist which is a problem and a slight memory leak, i have submitted an issue to the project.
@@ -242,12 +252,12 @@ class AnalysisResources extends EventEmitter {
 class OptionsPanel {
     _currentResources: AnalysisResources;
     _analysesResources: { [key: string]: AnalysisResources } ;
-    model: any;
+    model: Instance;
     el: HTMLElement;
     iframeUrl: string;
     dataSetModel: DataSetViewModel
 
-    constructor(args: { el: HTMLElement, model: any, iframeUrl: string }) {
+    constructor(args: { el: HTMLElement, model: Instance, iframeUrl: string }) {
         this.el = args.el;
 
         if ('iframeUrl' in args)
@@ -323,7 +333,7 @@ class OptionsPanel {
         let createdNew = false;
 
         if (resources === undefined) {
-            resources = new AnalysisResources(analysis, this.el, this.iframeUrl, this.model.instanceId());
+            resources = new AnalysisResources(analysis, this.el, this.iframeUrl, this.model.instanceId(), this.model.settings());
             resources.setDataModel(this.dataSetModel);
             this._analysesResources[analysesKey] = resources;
             createdNew = true;

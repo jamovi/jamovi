@@ -79,6 +79,12 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
         this.registerSimpleProperty('alignText', HorizontalAlignment.Left, new EnumPropertyFilter(HorizontalAlignment, HorizontalAlignment.Left));
         this.registerSimpleProperty('width', Size.Normal, new EnumPropertyFilter(Size, Size.Normal));
         this.registerSimpleProperty('suggestedValues', null);
+
+        let format = this.getPropertyValue('format');
+        format.on('displayFormatChanged', () => {
+            if (this.input)
+                this.input.value = this.getValueAsString();
+        });
     }
 
     override onPropertyChanged<K extends keyof GridTextboxProperties>(name: K) {
@@ -120,7 +126,7 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
             label = '';
 
         label = this.translate(label);
-        
+
         let id = focusLoop.getNextAriaElementId('ctrl');
         this.valueId = id
 
@@ -141,7 +147,7 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
         let suffix = this.getPropertyValue('suffix');
         if (suffix === null)
             suffix = '';
-        
+
         suffix = suffix.trim();
 
         let subgrid = new LayoutGrid();
@@ -157,8 +163,8 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
         cell = grid.addCell(column + valueOffset, row, subgrid, { spans, vAlign });
         cell.setStretchFactor(this.getPropertyValue('stretchFactor'));
         cell.blockInsert('left');
-        
-        
+
+
         let dd = '';
         let suggestedValues = this.getPropertyValue('suggestedValues');
         let optionsName = suggestedValues === null ? null : this.getPropertyValue('name') + '_suggestedValues';
@@ -190,7 +196,7 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
         if (format.name === 'number')
             t += ' pattern="^-?[0-9]*\\.?[0-9]+$"';*/
         t += '>';
-        
+
 
         this.input = HTML.parse(t);
         this.$input = $(this.input);
@@ -273,7 +279,7 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
             cell = subgrid.addCell(1, 0, this.suffix);
             cell.setAlignment('left', 'center');
         }
-        
+
         return { height: 1, width: 1 + valueOffset };
     };
 
