@@ -1,11 +1,17 @@
 
 'use strict';
 
+import { DefaultEventMap, EventEmitter, Listener } from "tsee";
 import type { FormattedValue } from "./formatdef";
 
-export class Format<T> {
+type FormatEventMap = {
+    displayFormatChanged : Listener;
+}
+
+export class Format<T> extends EventEmitter<FormatEventMap> {
 
     constructor(legacy?: any) {
+        super();
         if (legacy)  // To keep backwards compatible, shouldn't be used
             Object.assign(this, legacy);
     }

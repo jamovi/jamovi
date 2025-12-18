@@ -13,7 +13,7 @@ import Options from './options';
 import OptionsView, { IOptionsViewModel } from './optionsview';
 import ui from './layoutdef';
 import Format from './format';
-import { FormatDef } from './formatdef';
+import { FormatDef, NumberFormat } from './formatdef';
 import DefaultControls from './defaultcontrols';
 import LayoutUpdateCheck from './layoutupdatecheck';
 import View, { utils } from './actions';
@@ -61,7 +61,18 @@ const frameCommsApi = {
 
     setTitle: setTitle,
 
-    updateOptions: updateOptions
+    updateOptions: updateOptions,
+
+    updateSettings: settings => {
+        if (analysis !== null && analysis.inError === false) {
+            for (let settingName in settings) {
+                let value = settings[settingName];
+                if (settingName === 'decSymbol') {
+                    FormatDef.number.setDecSymbol(value);
+                }
+            }
+        }
+    }
 };
 
 let parentFrame = new Framesg(window.parent, window.name, frameCommsApi);

@@ -26,6 +26,8 @@ export class ContextableEventEmittier extends EventEmitter {
         this.emit = (eventName: string | symbol, ...args: any[]) => {
             throw 'Use trigger(...) instead!';
         };
+
+        this.setMaxListeners(20);
     }
 
     public override on(eventName: string | symbol, callback: (...args: any[]) => void, context?: any): this {

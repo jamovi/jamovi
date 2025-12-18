@@ -1,11 +1,12 @@
 'use strict';
 
+import { displayNum, parseNum } from '../common/utils/formatio.js';
 import Format from './format.js';
 
 export class VariablesFormat extends Format<string[]> {
-    
+
     name = 'variables';
-    
+
     static default = null;
 
     override toString(raw: string[]) {
@@ -352,13 +353,23 @@ export class NumberFormat extends Format<number> {
     name = 'number';
 
     static default: 0;
+    decSymbol: ',' | '.' = '.';
+
+    public setDecSymbol(decSymbol: ',' | '.') {
+        this.decSymbol = decSymbol;
+        this.emit('displayFormatChanged');
+    }
 
     override toString(raw: number): string {
-        return raw.toString();
+        return displayNum(raw, { decSymbol: this.decSymbol }); //raw.toString().replace('.', NumberFormat.decSymbol);
     }
 
     parse(value: string): number {
-        return parseFloat(value);
+        const number = parseNum(value, { decSymbol: this.decSymbol });
+        if (typeof number === 'number')
+            return number;
+
+        return Number.NaN;
     }
 
     override isValid(raw: any): boolean {
