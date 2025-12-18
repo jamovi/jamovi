@@ -79,6 +79,12 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
         this.registerSimpleProperty('alignText', HorizontalAlignment.Left, new EnumPropertyFilter(HorizontalAlignment, HorizontalAlignment.Left));
         this.registerSimpleProperty('width', Size.Normal, new EnumPropertyFilter(Size, Size.Normal));
         this.registerSimpleProperty('suggestedValues', null);
+
+        let format = this.getPropertyValue('format');
+        format.on('displayFormattingChanged', () => {
+            if (this.input)
+                this.input.value = this.getValueAsString();
+        });
     }
 
     override onPropertyChanged<K extends keyof GridTextboxProperties>(name: K) {
