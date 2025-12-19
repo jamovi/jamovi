@@ -1,0 +1,1 @@
+export type ResultsContextMenuItem = { splitter?: boolean, label?: string, options?: ResultsContextMenuItem[], address?: string[], op?: string, name?: string, split?: { name: string, label: string }[], splitType?: 'options' | any };

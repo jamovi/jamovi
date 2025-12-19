@@ -5,6 +5,7 @@ import RibbonSeparator from '../ribbon/ribbonseparator';
 import RibbonGroup from '../ribbon/ribbongroup';
 import ContextMenuButton, { ContextMenuButtonOptions } from './contextmenubutton';
 import { MenuSplitButtonOptions, SplitButton, SplitButtonOption } from './contextmenusplitbutton';
+import { ResultsContextMenuItem } from '../../common/contextmenutypes';
 
 export const createRowMenuItems = function(plural) {
     return [
@@ -143,12 +144,13 @@ export const createFilterMenuItems = function(noData) {
     }
 };
 
-export const createResultsObjectMenuItems = function(entries, parent?, levelId?: number) {
+export const createResultsObjectMenuItems = function(entries: ResultsContextMenuItem[], parent?, levelId?: number) {
     let items = [];
     for (let entry of entries) {
 
-        if (entry.splitter)
+        if (entry.splitter) {
             items.push(new RibbonSeparator());
+        }
 
         let title = entry.label;
         let iconId = null;

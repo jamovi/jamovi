@@ -7,6 +7,7 @@ import Menu from '../common/menu';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { EventEmitter } from 'events';
 import { RibbonItem } from './ribbon/ribbontab';
+import { ResultsContextMenuItem } from '../common/contextmenutypes';
 
 
 export class ContextMenu extends EventEmitter { // this is constructed at the bottom
@@ -109,7 +110,7 @@ export class ContextMenu extends EventEmitter { // this is constructed at the bo
         this.show(ContextMenus.createFilterMenuItems(noData), x, y);
     }
 
-    showResultsMenu(entries, x:number, y:number) {
+    showResultsMenu(entries: ResultsContextMenuItem[], x:number, y:number) {
         let menu = ContextMenus.createResultsObjectMenuItems(entries);
         let openPath = [];
         if (menu[0].items.length > 0)

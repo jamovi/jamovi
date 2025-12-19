@@ -26,9 +26,9 @@ import I18ns, { I18n, I18nData } from "../common/i18n";
 import HighContrast from '../common/highcontrast';
 
 declare global {
-    function s_(key: string, formats?: { [key: string]: (string|number); } | (string|number)[], options?: { prefix: string; postfix: string; }): string;
+    function s_(key: string, formats?: { [key: string]: (string|number); } | (string|number)[] | string, options?: { prefix: string; postfix: string; }): string;
     interface Window {
-        s_: (key: string, formats?: { [key: string]: (string|number); } | (string|number)[], options?: { prefix: string; postfix: string; }) => string;
+        s_: (key: string, formats?: { [key: string]: (string|number); } | (string|number)[] | string, options?: { prefix: string; postfix: string; }) => string;
     }
 }
 

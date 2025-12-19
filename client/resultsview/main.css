@@ -554,6 +554,21 @@ table.row-selectable tr.selected th[scope=rowgroup] {
     position: relative ;
 }
 
+.jmv-results-image-image {
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 100% 100%;
+}
+
+.jmv-results-image:focus > .jmv-results-image-image {
+    resize: both;
+    overflow: auto;
+    min-height: 50px;
+    max-height: 2000px;
+    min-width: 50px;
+    max-width: 2000px;
+}
+
 .jmv-results-image-status-indicator {
     position: absolute ;
     inset-inline-start: 50% ;
@@ -570,6 +585,16 @@ table.row-selectable tr.selected th[scope=rowgroup] {
 .jmv-results-image[data-status="inited"] .jmv-results-image-status-indicator,
 .jmv-results-image[data-status="running"] .jmv-results-image-status-indicator {
     display: block ;
+}
+
+.size-display {
+    position: absolute;
+    top: 0px;
+    opacity: 0;
+    right: 0px;
+    background-color: #ededed;
+    padding: 3px 5px;
+    transition: 0.2s opacity;
 }
 
 .jmv-results-array > .jmv-results-array-container > .jmv-results-image {

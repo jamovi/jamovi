@@ -36,6 +36,7 @@ import { parse as parseJsonLines } from './utils/jsonlines';
 import { ISaveOptions } from './backstage/fsentry';
 import Q from 'q';
 import Coms, { QQ } from './coms';
+import { ResultsView } from './results';
 
 export interface IInstanceOpenOptions {
     path?: string,
@@ -94,7 +95,7 @@ export interface IInstanceModel {
     path : string,
     title : string,
     blank : boolean,
-    resultsSupplier: any,
+    resultsSupplier: ResultsView,
     arbitraryCodePresent: boolean,
     editState: boolean,
     saveFormat: string,
@@ -1163,7 +1164,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         }
     }
 
-    _requestPDF(html) {
+    _requestPDF(html: string) {
         return fetch('../utils/to-pdf', {
                 method: 'POST',
                 body: html,

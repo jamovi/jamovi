@@ -118,7 +118,7 @@ export class I18n {
         return { key: key, context: undefined };
     }
 
-    _(key: string, formats?: { [key: string]: (string|number) } | (string|number)[], options: { prefix: string, postfix: string } = { prefix: '', postfix: '' }): string {
+    _(key: string, formats?: { [key: string]: (string|number) } | (string|number)[] | string, options: { prefix: string, postfix: string } = { prefix: '', postfix: '' }): string {
         let value = null;
 
         const extracted = this.extractContext(key);
@@ -138,7 +138,7 @@ export class I18n {
         return value;
     }
 
-    _c(context: string, key: string, formats?: { [key: string]: (string|number) } | (string|number)[]): string {
+    _c(context: string, key: string, formats?: { [key: string]: (string|number) } | (string|number)[] | string): string {
         let value = null;
         if (!this.jed)
             value = key;
@@ -219,7 +219,7 @@ export class I18n {
         }
     }
 
-    format(fstring: string, values: { [key: string]: (string|number) } | (string|number)[], options: { prefix: string, postfix: string } = { prefix: '', postfix: '' }): string {
+    format(fstring: string, values: { [key: string]: (string|number) } | (string|number)[] | string, options: { prefix: string, postfix: string } = { prefix: '', postfix: '' }): string {
         const { prefix, postfix } = options;
         if (typeof values === 'string') {
             return fstring.replace('{}', `${prefix}${values}${postfix}`);
