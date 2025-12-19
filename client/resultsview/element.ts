@@ -11,6 +11,7 @@ import './refs';
 import { EventMap } from '../common/eventmap';
 import { ReferenceNumbers } from './refs';
 import { AnalysisStatus, IElement } from './create';
+import { ResultsContextMenuItem } from '../common/contextmenutypes';
 
 export interface ElementData {
     level?: number;
@@ -199,8 +200,8 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
         }
     }
 
-    _menuOptions() {
-        const split = [];
+    _menuOptions() : ResultsContextMenuItem[] {
+        const split: { name:string, label: string }[] = [];
         if (this.type() !== 'Image')
             split.push({ name: 'copyLatex', label: _('Copy Latex') });
 

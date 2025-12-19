@@ -19,9 +19,9 @@ import HighContrast from '../common/highcontrast';
 window._ = I18ns.get('app')._;
 
 declare global {
-    function s_(key: string, formats?: { [key: string]: (string|number); } | (string|number)[], options?: { prefix: string; postfix: string; }): string;
+    function s_(key: string, formats?: { [key: string]: (string|number); } | (string|number)[] | string, options?: { prefix: string; postfix: string; }): string;
     interface Window {
-        s_: (key: string, formats?: { [key: string]: (string|number); } | (string|number)[], options?: { prefix: string; postfix: string; }) => string;
+        s_: (key: string, formats?: { [key: string]: (string|number); } | (string|number)[] | string, options?: { prefix: string; postfix: string; }) => string;
 
         setOption: (name: string, value: any) => void;
         setParam: (address: string[], options: any) => void;
