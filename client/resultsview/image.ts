@@ -11,7 +11,11 @@ import { AnalysisStatus } from './create';
 export interface IImageElementData {
     path: string,
     width: number,
-    height: number
+    height: number,
+    widthM: number,
+    widthB: number,
+    heightM: number,
+    heightB: number
 }
 
 export class Model extends Elem.Model<ElementModel<IImageElementData>> {
@@ -23,7 +27,11 @@ export class Model extends Elem.Model<ElementModel<IImageElementData>> {
             element: {
                 path: '',
                 width: 400,
-                height: 300
+                height: 300,
+                widthM: 1,
+                widthB: 0,
+                heightM: 1,
+                heightB: 0
             },
             error: null,
             status: AnalysisStatus.ANALYSIS_COMPLETE,
@@ -37,6 +45,13 @@ export class View extends Elem.View<Model> {
 
     $title: HTMLHeadingElement;
     $image: HTMLElement;
+    resizeObserver: ResizeObserver;
+
+    updating: boolean = false;
+
+    widthOfImage = 0;
+    heightOfImage = 0;
+
 
     constructor(model: Model, data: ElementData) {
         super(model, data);
@@ -60,7 +75,45 @@ export class View extends Elem.View<Model> {
         this.$image = HTML.parse(`<div class="jmv-results-image-image" data-address="${ encodeURI(address) }">`);
         this.append(this.$image);
 
+        document.addEventListener('pointerup', () => {
+            if (this.updating) {
+                this.updateScaleValues(this.widthOfImage, this.heightOfImage);
+                this.updating = false;
+            }
+        });
+        this.resizeObserver = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                if (entry.contentBoxSize) {
+                    const contentBoxSize = entry.contentBoxSize[0];
+                    this.$image.style.backgroundSize = '';
+                    this.widthOfImage = entry.contentRect.width;
+                    this.heightOfImage = entry.contentRect.height;
+                    this.updating = true;
+                }
+            }
+        });
+
         this.render();
+
+        this.resizeObserver.observe(this.$image);
+    }
+
+    applyScaleValues() {
+
+    }
+
+    updateScaleValues(widthOfImage: number, heightOfImage: number) {
+        let element = this.model.attributes.element
+
+        let widthM = element.widthM === 0 ? 1 : element.widthM;
+        let heightM = element.heightM === 0 ? 1 : element.heightM;
+
+        const widthScale = (widthOfImage - element.widthB) / widthM;
+        const heightScale = (heightOfImage - element.heightB) / heightM;
+
+        window.setParam(this.address(), { widthScale, heightScale });
+
+        //console.log(`${widthScale}, ${heightScale}`);
     }
 
     type() {
@@ -72,7 +125,6 @@ export class View extends Elem.View<Model> {
     }
 
     render() {
-
         if (this.$title) {
             if (this.model.attributes.title) {
                 this.$title.textContent = this.model.attributes.title;
@@ -108,7 +160,6 @@ export class View extends Elem.View<Model> {
         this.$image.style.width = element.width + 'px';
         this.$image.style.height = element.height + 'px';
         this.$image.style.backgroundSize = element.width + 'px';
-
     }
 }
 
