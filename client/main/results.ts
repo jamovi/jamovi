@@ -143,7 +143,7 @@ export class ResultsView extends HTMLElement {
             this.icon.el.classList.add('hidden');
     }
 
-    getAsHTML(options, part) {
+    getAsHTML(options, part?) {
         return this.richView.getAsHTML(options, part);
     }
 
