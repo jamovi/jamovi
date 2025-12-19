@@ -554,6 +554,17 @@ table.row-selectable tr.selected th[scope=rowgroup] {
     position: relative ;
 }
 
+.jmv-results-image-image {
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: 100% 100%;
+}
+
+.jmv-results-image:focus > .jmv-results-image-image {
+    resize: both;
+    overflow: auto;
+}
+
 .jmv-results-image-status-indicator {
     position: absolute ;
     inset-inline-start: 50% ;
