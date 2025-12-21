@@ -62,6 +62,10 @@ def parse_number(input_str: str, dec_symbol: Literal['.', ',']='.') -> float | i
                 return int(s)
             else:
                 return float(s)
+
+        else:
+           return int(input_str)
+
     except ValueError:
         pass
 
