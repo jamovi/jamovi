@@ -170,7 +170,11 @@ Image <- R6::R6Class("Image",
             image <- RProtoBuf_new(jamovi.coms.ResultsImage,
                 width=private$.width,
                 height=private$.height,
-                path=path)
+                path=path,
+                widthM=private$.widthM,
+                widthB=private$.widthB,
+                heightM=private$.heightM,
+                heightB=private$.heightB)
 
             result <- super$asProtoBuf(incAsText=incAsText, status=status, includeState=includeState)
 
