@@ -102,6 +102,10 @@ Image:
         height:
             type: integer
             min: 32
+        widthB:
+            type: integer
+        heightB:
+            type: integer
         renderFun:
             type: string
         requiresData:
