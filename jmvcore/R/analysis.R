@@ -451,13 +451,11 @@ Analysis <- R6::R6Class('Analysis',
                 else if (Sys.info()['sysname'] == 'Darwin')
                     grType <- 'quartz'
 
-                width <- image$width * multip
-                height <- image$height * multip
-
-                if (width < 32)
-                    width <- 32
-                if (height < 32)
-                    height <- 32
+                size <- image$size
+                image$.__enclos_env__$private$.width <- size$width
+                image$.__enclos_env__$private$.height <- size$height
+                width <- size$width * multip
+                height <- size$height * multip
 
                 if (requireNamespace('ragg', quietly=TRUE)) {
                     ragg::agg_png(

@@ -347,7 +347,10 @@ class Options:
 
             if changed:
                 if name.startswith('results/'):
-                    pass
+                    # 'results/' options don't change the analysis, except these ones
+                    if (name.endswith('/widthScale')
+                            or name.endswith('/heightScale')):
+                        changes = True
                 elif name not in self._options or not self._options[name].passive:
                     changes = True
 

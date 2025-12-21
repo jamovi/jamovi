@@ -11,9 +11,9 @@ Image <- R6::R6Class("Image",
         .renderFun=NA,
         .requiresData=FALSE,
         .plot=NA,
-        .widthM=1,
+        .widthM=400,
         .widthB=0,
-        .heightM=1,
+        .heightM=300,
         .heightB=0),
     active=list(
         width=function() private$.width,
@@ -24,6 +24,45 @@ Image <- R6::R6Class("Image",
             if (is.null(private$.plot))
                 private$.plot <- self$analysis$.createPlotObject(funName=private$.renderFun, image=self)
             return(private$.plot)
+        },
+        size=function() {
+
+            widthScaleOptionName <- paste('results', self$path, 'widthScale', sep='/')
+            heightScaleOptionName <- paste('results', self$path, 'heightScale', sep='/')
+            widthScaleOption <- self$options$option(widthScaleOptionName)
+            heightScaleOption <- self$options$option(heightScaleOptionName)
+            if ( ! is.null(widthScaleOption)) {
+                widthScale <- widthScaleOption$value
+            } else {
+                widthScale <- 1
+            }
+            if ( ! is.null(heightScaleOption)) {
+                heightScale <- heightScaleOption$value
+            } else {
+                heightScale <- 1
+            }
+
+            if (private$.widthM == 0
+                && private$.widthB == 0
+                && private$.heightM == 0
+                && private$.heightB == 0)
+            {
+                width <- private$.width * widthScale
+                height <- private$.height * heightScale
+            } else {
+                width <- private$.widthM * widthScale + private$.widthB
+                height <- private$.heightM * heightScale + private$.heightB
+            }
+
+            width <- as.integer(round(width))
+            height <- as.integer(round(height))
+
+            if (width < 32)
+                width <- 32
+            if (height < 32)
+                height <- 32
+
+            list(width=width, height=height)
         }),
     public=list(
         initialize=function(
@@ -57,19 +96,23 @@ Image <- R6::R6Class("Image",
             private$.filePath <- NULL
             private$.plot <- NULL
 
-            private$.widthM <- 0
+            private$.widthM <- width
             private$.widthB <- 0
-            private$.heightM <- 0
+            private$.heightM <- height
             private$.widthB <- 0
         },
         setSize=function(width, height) {
-            private$.width  <- width
+            private$.width <- width
             private$.height <- height
+            private$.widthM <- width
+            private$.heightM <- height
         },
-        setScaleCoeffs=function(widthM, widthB, heightM, heightB) {
+        setSize2=function(widthM, heightM, widthB=0, heightB=0) {
+            private$.width <- widthM
+            private$.height <- heightM
             private$.widthM <- widthM
-            private$.widthB <- widthB
             private$.heightM <- heightM
+            private$.widthB <- widthB
             private$.widthB <- widthB
         },
         isFilled=function() {
@@ -82,12 +125,14 @@ Image <- R6::R6Class("Image",
         },
         saveAs=function(path, ...) {
 
+            size <- self$size
+
             if (endsWith(tolower(path), '.pptx')) {
                 requireNamespace('export', quietly=TRUE, mustWork=TRUE)
                 export::graph2ppt(
                     file=path,
-                    width=private$.width/72,
-                    height=private$.height/72,
+                    width=size$width/72,
+                    height=size$height/72,
                     fun=self$print,
                     margins=c(0, 0, 0, 0))
                 return()
@@ -96,18 +141,18 @@ Image <- R6::R6Class("Image",
             if (endsWith(tolower(path), '.pdf')) {
                 cairo_pdf(
                     file=path,
-                    width=private$.width/72,
-                    height=private$.height/72)
+                    width=size$width/72,
+                    height=size$height/72)
             } else if (endsWith(tolower(path), '.svg')) {
                 svg(
                     file=path,
-                    width=private$.width/72,
-                    height=private$.height/72)
+                    width=size$width/72,
+                    height=size$height/72)
             } else if (endsWith(tolower(path), '.eps')) {
                 cairo_ps(
                     file=path,
-                    width=private$.width/72,
-                    height=private$.height/72)
+                    width=size$width/72,
+                    height=size$height/72)
             } else if (endsWith(tolower(path), '.png')) {
 
                 multip <- 144 / 72
@@ -117,13 +162,8 @@ Image <- R6::R6Class("Image",
                 else if (Sys.info()['sysname'] == 'Darwin')
                     grType <- 'quartz'
 
-                width <- self$width * multip
-                height <- self$height * multip
-
-                if (width < 32)
-                    width <- 32
-                if (height < 32)
-                    height <- 32
+                width <- size$width * multip
+                height <- size$height * multip
 
                 if (requireNamespace('ragg', quietly=TRUE)) {
                     ragg::agg_png(
@@ -167,10 +207,16 @@ Image <- R6::R6Class("Image",
             if (is.null(path))
                 path=''
 
+            size = self$size
+
             image <- RProtoBuf_new(jamovi.coms.ResultsImage,
-                width=private$.width,
-                height=private$.height,
-                path=path)
+                width=size$width,
+                height=size$height,
+                path=path,
+                widthM=private$.widthM,
+                widthB=private$.widthB,
+                heightM=private$.heightM,
+                heightB=private$.heightB)
 
             result <- super$asProtoBuf(incAsText=incAsText, status=status, includeState=includeState)
 
@@ -205,12 +251,17 @@ Image <- R6::R6Class("Image",
 
             image <- element$image
 
-            private$.width <- image$width
-            private$.height <- image$height
-            if (image$path == '' || 'theme' %in% oChanges || 'palette' %in% oChanges)
+            size <- self$size
+            sizeChanged <- (size$width != image$width || size$height != image$height)
+
+            private$.width <- size$width
+            private$.height <- size$height
+
+            if (sizeChanged || image$path == '' || 'theme' %in% oChanges || 'palette' %in% oChanges) {
                 private$.filePath <- NULL
-            else
+            } else {
                 private$.filePath <- image$path
+            }
         },
         .setPlot=function(plot) {
             private$.plot <- plot
