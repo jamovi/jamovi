@@ -583,6 +583,15 @@ table.row-selectable tr.selected th[scope=rowgroup] {
     display: block ;
 }
 
+.size-display {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    background-color: #ededed;
+    padding: 3px 5px;
+    transition: 0.2s opacity;
+}
+
 .jmv-results-array > .jmv-results-array-container > .jmv-results-image {
     margin-top: 0 ;
 }

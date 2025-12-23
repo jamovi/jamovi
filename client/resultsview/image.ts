@@ -45,12 +45,14 @@ export class View extends Elem.View<Model> {
 
     $title: HTMLHeadingElement;
     $image: HTMLElement;
+    $size: HTMLElement;
     resizeObserver: ResizeObserver;
 
     updating: boolean = false;
 
     widthOfImage = -1;
     heightOfImage = -1;
+    initalised = false;
 
 
     constructor(model: Model, data: ElementData) {
@@ -75,41 +77,59 @@ export class View extends Elem.View<Model> {
         this.$image = HTML.parse(`<div class="jmv-results-image-image" data-address="${ encodeURI(address) }">`);
         this.append(this.$image);
 
+        this.$size = HTML.parse('<div class="size-display"></div>');
+        this.append(this.$size);
+
         this.resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 if (entry.contentBoxSize) {
                     const contentBoxSize = entry.contentBoxSize[0];
                     this.$image.style.backgroundSize = '';
-                    const initalised = this.widthOfImage !== -1 || this.heightOfImage !== -1;
+
                     const different = this.widthOfImage !== entry.contentRect.width || this.heightOfImage !== entry.contentRect.height;
                     this.widthOfImage = entry.contentRect.width;
                     this.heightOfImage = entry.contentRect.height;
-
-                    if (initalised && different)
-                        this.updating = true;
                     
+                    if (this.initalised && different)
+                        this.updating = true;
+
+                    this.initalised = true;
+
+                    this.updateSizeDisplay();
                 }
             }
         });
 
         this.applyScaleValues = this.applyScaleValues.bind(this);
-
+        this.imagePointerDown = this.imagePointerDown.bind(this);
     }
 
     disconnectedCallback() {
+        this.$image.removeEventListener('pointerdown',  this.imagePointerDown);
         document.removeEventListener('pointerup', this.applyScaleValues);
         this.resizeObserver.unobserve(this.$image);
     }
 
     connectedCallback() {
-        this.$image.addEventListener('pointerdown', () => {
-            this.resizeObserver.observe(this.$image);
-        }, { once: true });
+        this.$image.addEventListener('pointerdown',  this.imagePointerDown);
         document.addEventListener('pointerup', this.applyScaleValues);
         this.render();
     }
 
+    imagePointerDown() {
+        if (this.initalised === false)
+            this.resizeObserver.observe(this.$image);
+
+        this.$size.style.opacity = '1';
+        this.updateSizeDisplay();
+    }
+
+    updateSizeDisplay() {
+        this.$size.innerText = `${this.widthOfImage} x ${this.heightOfImage}`;
+    }
+
     applyScaleValues() {
+        this.$size.style.opacity = '0';
         if (this.updating) {
             this.updateScaleValues(this.widthOfImage, this.heightOfImage);
             this.updating = false;
