@@ -139,8 +139,8 @@ export class View extends Elem.View<Model> {
     updateScaleValues(widthOfImage: number, heightOfImage: number) {
         let element = this.model.attributes.element
 
-        let widthM = element.widthM === 0 ? 1 : element.widthM;
-        let heightM = element.heightM === 0 ? 1 : element.heightM;
+        let widthM = element.widthM === 0 ? widthOfImage : element.widthM;
+        let heightM = element.heightM === 0 ? heightOfImage : element.heightM;
 
         const widthScale = (widthOfImage - element.widthB) / widthM;
         const heightScale = (heightOfImage - element.heightB) / heightM;
