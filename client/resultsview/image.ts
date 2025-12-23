@@ -49,8 +49,8 @@ export class View extends Elem.View<Model> {
 
     updating: boolean = false;
 
-    widthOfImage = 0;
-    heightOfImage = 0;
+    widthOfImage = -1;
+    heightOfImage = -1;
 
 
     constructor(model: Model, data: ElementData) {
@@ -75,31 +75,45 @@ export class View extends Elem.View<Model> {
         this.$image = HTML.parse(`<div class="jmv-results-image-image" data-address="${ encodeURI(address) }">`);
         this.append(this.$image);
 
-        document.addEventListener('pointerup', () => {
-            if (this.updating) {
-                this.updateScaleValues(this.widthOfImage, this.heightOfImage);
-                this.updating = false;
-            }
-        });
         this.resizeObserver = new ResizeObserver((entries) => {
             for (const entry of entries) {
                 if (entry.contentBoxSize) {
                     const contentBoxSize = entry.contentBoxSize[0];
                     this.$image.style.backgroundSize = '';
+                    const initalised = this.widthOfImage !== -1 || this.heightOfImage !== -1;
+                    const different = this.widthOfImage !== entry.contentRect.width || this.heightOfImage !== entry.contentRect.height;
                     this.widthOfImage = entry.contentRect.width;
                     this.heightOfImage = entry.contentRect.height;
-                    this.updating = true;
+
+                    if (initalised && different)
+                        this.updating = true;
+                    
                 }
             }
         });
 
-        this.render();
+        this.applyScaleValues = this.applyScaleValues.bind(this);
 
-        this.resizeObserver.observe(this.$image);
+    }
+
+    disconnectedCallback() {
+        document.removeEventListener('pointerup', this.applyScaleValues);
+        this.resizeObserver.unobserve(this.$image);
+    }
+
+    connectedCallback() {
+        this.$image.addEventListener('pointerdown', () => {
+            this.resizeObserver.observe(this.$image);
+        }, { once: true });
+        document.addEventListener('pointerup', this.applyScaleValues);
+        this.render();
     }
 
     applyScaleValues() {
-
+        if (this.updating) {
+            this.updateScaleValues(this.widthOfImage, this.heightOfImage);
+            this.updating = false;
+        }
     }
 
     updateScaleValues(widthOfImage: number, heightOfImage: number) {
