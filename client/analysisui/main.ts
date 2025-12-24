@@ -233,11 +233,11 @@ class Analysis {
 
     getTitle?(): string;
 
-    translate(key: string): string {
+    translate(key: string, formats?: (string | number)[] | { [key: string]: string | number; }, options?: { prefix: string; postfix: string; }): string {
         if (key === null || key === undefined || key.trim() === '')
             return key;
 
-        return this.moduleI18n._(key);
+        return this.moduleI18n._(key, formats, options);
     }
 };
 
@@ -349,6 +349,9 @@ function loadAnalysis(def, i18nDef: I18nData, appI18nDef: I18nData, jamoviVersio
             else {
                 $optionsBlock.append(analysis.View.el);
                 analysis.View.render();
+
+                if (analysis.View.runActionButton)
+                    $hide.before(analysis.View.runActionButton.el);
                 
                 $optionsBlock.querySelectorAll('.placeholder-options')?.forEach(el => el.remove());
 

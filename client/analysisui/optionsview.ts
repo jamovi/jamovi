@@ -10,6 +10,8 @@ import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import Options from './options';
 import PropertySupplier, { EventHandlers } from './propertysupplier';
 import LayoutActionManager from './layoutactionmanager';
+import GridRunButton, { GridRunButtonProperties, IsGridRunButtonProperties } from './gridrunbutton';
+import { TranslateFunction } from '../common/i18n';
 
 export class ControlOption<T> {
     options: Options;
@@ -239,7 +241,7 @@ export class OptionsView extends EventEmitter implements IControlProvider {
      * @deprecated Should not be used. Rather use `(property) Control.el: HTMLElement`.
      */
     $el: any
-    _i18nSource: { translate: (key: string) => string } = null;
+    _i18nSource: { translate: TranslateFunction } = null;
     _nextControlID = 0;
     _loaded = false;
     _allCtrls: { ctrl: Control<any>, resourceId: number }[] = [];
@@ -249,6 +251,7 @@ export class OptionsView extends EventEmitter implements IControlProvider {
     model: IOptionsViewModel;
     _ctrlOptions: {[key:string]: ControlOption<any>};
     layoutActionManager: any;
+    runActionButton: GridRunButton = null;
     
     constructor(uiModel: IOptionsViewModel) {
         super();
@@ -355,7 +358,7 @@ export class OptionsView extends EventEmitter implements IControlProvider {
         this._requestedDataSource = source;
     }
 
-    setI18nSource(source: { translate: (key: string) => string }) {
+    setI18nSource(source: { translate: TranslateFunction }) {
         this._i18nSource = source;
     }
 
@@ -376,12 +379,76 @@ export class OptionsView extends EventEmitter implements IControlProvider {
         }
     }
 
+    addRunAction(uiDef: GridRunButtonProperties) {
+        if (this.runActionButton === null) {
+            let name = uiDef.name === undefined ? null :  uiDef.name;
+
+            if (uiDef.controlID !== undefined)
+                throw 'This control definition has already been assigned a control id. It has already been used by a control';
+
+            uiDef.controlID = this._nextControlID++;
+
+            const ctrl = new GridRunButton(uiDef, null);
+
+            /*if (ctrl.setRequestedDataSource)
+                ctrl.setRequestedDataSource(this._requestedDataSource);
+        
+            if (ctrl.setControlManager)
+                ctrl.setControlManager(this);*/
+            
+            if (uiDef.name !== undefined || ctrl.hasProperty("optionName")) {
+                if (ctrl.setOption) {
+                    let id = ctrl.getPropertyValue("optionName");
+                    let isVirtual = false;
+                    if (id === null) {
+                        id = name;
+                        isVirtual = ctrl.getPropertyValue("isVirtual");
+                    }
+                    let option: ControlOption<any> = null;
+                    if (isVirtual)
+                        option = this._getVirtualOption();
+                    else
+                        option = this._getOption(id);
+
+                    if (option !== null)
+                        ctrl.setOption(option);
+                }
+            }
+
+            if (ctrl.setI18nSource)
+                ctrl.setI18nSource(this._i18nSource);
+
+            let resourceId = null;
+            if (ctrl !== null) {
+                resourceId = this.model.actionManager.addResource(name, ctrl);
+            }
+
+            ctrl.on('disposing', () => {
+                if (this._ctrlListValid === true) {
+                    this._ctrlListValid = false;
+                    setTimeout(() => { this._validateControlList(); }, 0);
+                }
+            });
+
+
+            this._allCtrls.push( { ctrl: ctrl as Control<GridRunButtonProperties>, resourceId: resourceId } );
+
+            this.runActionButton = ctrl;
+            this.runActionButton.createItem();
+        }
+    }
+
     createControl<P extends CtrlDef>(uiDef: P, parent: any): Control<P> {
         if (uiDef.type === undefined) {
             if (uiDef.controls !== undefined)
                 uiDef.type = DefaultControls.LayoutBox;
             else
                 throw "Type has not been defined for control '"+ uiDef.name + "'";
+        }
+
+        if (IsGridRunButtonProperties(uiDef)) {
+            this.addRunAction(uiDef);
+            return null;
         }
 
         let name = uiDef.name === undefined ? null :  uiDef.name;
@@ -399,9 +466,13 @@ export class OptionsView extends EventEmitter implements IControlProvider {
             throw 'This control definition has already been assigned a control id. It has already been used by a control';
 
         uiDef.controlID = this._nextControlID++;
+
         let ctrl: Control<P> = null;
-        if (uiDef.type.create)
+        if (uiDef.type.create) {
             ctrl = uiDef.type.create(uiDef, parent) as Control<P>;
+            if (ctrl === null)
+                return null;
+        }
         else
             ctrl = new uiDef.type(uiDef, parent) as Control<P>;
 

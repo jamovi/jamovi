@@ -131,7 +131,7 @@ export class OptionControlBase<T, V, P extends OptionControlBaseProperties<T>> e
         return !datas.cancel;
     }
 
-    onOptionValueChanged(key, data) {
+    onOptionValueChanged(key: (string | number)[], data) {
         let datas ={ key, data };
         let emitter = this as OptionControlBase<T, V, OptionControlBaseProperties<T>>;
         emitter.emit('optionValueChanged', datas );

@@ -2,6 +2,8 @@
 
 import Jed from 'jed';
 
+export type TranslateFunction = (key: string, formats?: (string | number)[] | { [key: string]: string | number; }, options?: { prefix: string; postfix: string; }) => string;
+
 export function s6e(input: string): string {
 
     // Temporarily protect allowed HTML tags
