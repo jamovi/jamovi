@@ -1,0 +1,14 @@
+.jmv-run-button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-inline-end: 20px;
+}
+
+.jmv-run-button > .button {
+    display: flex;
+    align-items: center;
+    padding: 0 0 0 7px;
+    min-width: 70px;
+    justify-content: center;
+}

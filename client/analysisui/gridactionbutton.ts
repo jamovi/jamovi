@@ -3,13 +3,24 @@
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import { BooleanFormat, FormatDef } from './formatdef';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { Control, CtrlDef } from './optionsview';
 
 
 export type GridActionButtonProperties = GridOptionControlProperties<boolean> & {
     format: BooleanFormat;
+    action: 'open' | 'run';
 }
 
+
 export class GridActionButton extends OptionControl<GridActionButtonProperties> {
+
+    static create(params: GridActionButtonProperties, parent): Control<CtrlDef> {
+        if (params.action === 'run')
+            return null;
+        else 
+            return new GridActionButton(params, parent);
+    }
+
     checkedValue: string;
 
     constructor(params: GridActionButtonProperties, parent) {

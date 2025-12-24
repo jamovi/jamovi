@@ -25,6 +25,7 @@
 @import "multicontainer.css";
 @import "contentselector.css";
 @import "gridactionbutton.css";
+@import "gridrunbutton.css";
 
 * {
     user-select: none ;
@@ -212,7 +213,8 @@ h1 {
     flex-shrink: 0;
     flex-grow: 0;
 
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
     justify-content: space-between;
     align-items:center;
 
