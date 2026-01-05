@@ -125,6 +125,13 @@ Image <- R6::R6Class("Image",
         },
         saveAs=function(path, ...) {
 
+            decSymbol <- self$options$decSymbol
+            currentDecSymbol <- getOption('OutDec', '.')
+            if (decSymbol != '.' && currentDecSymbol != decSymbol) {
+                options(OutDec=decSymbol)
+                on.exit(options(OutDec=currentDecSymbol), add=TRUE)
+            }
+
             size <- self$size
 
             if (endsWith(tolower(path), '.pptx')) {
