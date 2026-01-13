@@ -98,6 +98,9 @@ export class VariableLabel extends OptionControl<VariableLabelProperties> {
             else
                 imageClasses.push('jmv-data-type-none');
 
+            const prefix1 = 'jmv-data-type-';
+            const prefix2 = 'silky-variable-type-';
+            [...this.icon.classList].filter(cls => cls.startsWith(prefix1) || cls.startsWith(prefix2)).forEach(cls => this.icon.classList.remove(cls));
             this.icon.classList.add(...imageClasses);
         });
     };
