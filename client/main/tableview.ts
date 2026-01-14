@@ -548,6 +548,7 @@ class TableView extends HTMLElement implements DataSetView {
                 let column = this.model.getColumnById(columnId);
                 this._resizingColumn = { $resizer: event.target, startPageX: event.pageX, column: column };
                 event.stopPropagation();
+                event.preventDefault();
             }
         });
 
