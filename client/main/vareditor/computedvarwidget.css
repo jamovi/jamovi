@@ -14,6 +14,7 @@
     flex-grow: 1;
     background-color: white;
     border: 1px solid #CCCCCC;
+    max-width: 100px;
 }
 
 .jmv-variable-computed-methods > .top {
@@ -137,7 +138,6 @@
     overflow-y: auto;
     line-height: 1em;
     min-height: 1em;
-    width: 350px;
     box-sizing: border-box;
     white-space: pre-wrap;
 }
