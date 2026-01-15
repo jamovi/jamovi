@@ -1,4 +1,5 @@
 
+from ..i18n import _
 
 def read(dataset):
     n_cols = 3
@@ -11,5 +12,5 @@ def read(dataset):
         column.auto_measure = True
 
     dataset.dataset.set_row_count(n_rows)
-    dataset.title = 'Untitled'
+    dataset.title = _('Untitled')
     dataset.is_blank = True
