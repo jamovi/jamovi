@@ -413,7 +413,6 @@
 
 .jmv-variable-editor-widget-footer .switch::before {
     content: "";
-    z-index: 2;
     position: absolute;
     top: calc(var(--diameter) / 2 + var(--offset) / 2 + 0.5px);
     inset-inline-start: var(--offset);
