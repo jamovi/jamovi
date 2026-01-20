@@ -130,6 +130,7 @@ message AnalysisOption {
         string s = 3;
         Other o = 4;
         AnalysisOptions c = 5;
+        bytes b = 6;
     }
 }
 

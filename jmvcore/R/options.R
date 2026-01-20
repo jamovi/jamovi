@@ -1092,6 +1092,24 @@ OptionArray <- R6::R6Class(
         }
     ))
 
+
+#' @rdname Options
+#' @export
+OptionFile <- R6::R6Class(
+    "OptionFile",
+    inherit=Option,
+    private=list(
+        .multi=FALSE
+    ),
+    public=list(
+        initialize=function(name, value, multi, ...) {
+            private$.multi <- multi
+            super$initialize(name, value, ...)
+        }
+    )
+)
+
+
 #' @rdname Options
 #' @export
 OptionPairs <- R6::R6Class(

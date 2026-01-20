@@ -117,7 +117,7 @@ class Option<T=any> {
 
         if (value !== null)
             this._initialized = true;
-        
+
         return changed;
     }
 
@@ -203,6 +203,17 @@ class Integer extends Option<number> {
 
 class Number extends Option<number> {
     constructor(template, value: number) {
+        super(template, value, true);
+    }
+}
+
+type FileValue = Array<{
+    name: string,
+    content: ArrayBuffer,
+}>
+
+class FileOption extends Option<FileValue> {
+    constructor(template, value: FileValue = []) {
         super(template, value, true);
     }
 }
@@ -441,7 +452,7 @@ class Pairs extends Option<{i1: string, i2: string}[]> {
 }
 
 class Group extends Option<{ [name:string]: any }> {
-    
+
     _indexedChildren: { [key:string]:Option };
 
     constructor(template, value: { [name:string]: any }) {
@@ -585,17 +596,19 @@ const OptionTypes = {
     Group: Group,
     Pair: Pair,
     Array: ArrayOption,
+    File: FileOption,
 
     defaultValues: {
         Integer: 0,
-        number: 0
+        number: 0,
+        File: [],
     }
 };
 
 type ValueChangedHandle = (option: Option, value: any, initializeOnly: boolean) => { value: any, cancel: boolean };
 
 export class Options {
-    
+
     _options: {[key: string]: Option};
     _changingHandles: ValueChangedHandle[];
 

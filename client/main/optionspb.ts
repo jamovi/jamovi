@@ -4,7 +4,7 @@
 
 'use strict';
 
-const optionPB = { 
+const optionPB = {
     toPB: function(options, extra, Messages) {
         let names = [ ];
         let optionsPB = [ ];
@@ -92,6 +92,12 @@ const _toPB = function(value, Messages) {
         option.type = 's';
         return option;
     }
+    else if (value instanceof ArrayBuffer) {
+        let option = new Messages.AnalysisOption();
+        option.setB(value);
+        option.type = 'b';
+        return option;
+    }
     else if (Array.isArray(value)) {
 
         let options = new Array(value.length);
@@ -144,6 +150,7 @@ const _toPB = function(value, Messages) {
         throw "shouldn't get here";
     }
 };
+
 const _fromPB = function(option, Messages) {
 
     let value;

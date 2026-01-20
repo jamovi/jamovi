@@ -291,6 +291,20 @@ NMXList:
                 type: string
         description: *Description
 
+File:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        title:
+            type: string
+        multi:
+            type: boolean
+        description: *Description
+
 Array:
     "$schema": http://json-schema.org/draft-04/schema#
     additionalProperties: false
