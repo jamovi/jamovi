@@ -178,6 +178,10 @@ COPY $JAMOVI_ROOT/plots/ /tmp/source/plots
 WORKDIR /tmp/source/plots
 RUN jmc --install . --to /usr/lib/jamovi/modules --rhome $R_HOME --rlibs /usr/lib/jamovi/modules/base/R --patch-version --skip-deps
 
+COPY $JAMOVI_ROOT/opensesame/ /tmp/source/opensesame
+WORKDIR /tmp/source/opensesame
+RUN jmc --install . --to /usr/lib/jamovi/modules --rhome $R_HOME --rlibs /usr/lib/jamovi/modules/base/R --patch-version --skip-deps
+
 
 ##### I18N #####
 
