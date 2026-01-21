@@ -144,7 +144,7 @@ class Instance:
             temp_path = self.temp_path()
             os.makedirs(temp_path, exist_ok=True)
             nor_path = mktemp(suffix=ext, dir=temp_path)
-        if path.startswith('{{SessionTemp}}'):
+        elif path.startswith('{{SessionTemp}}'):
             nor_path = path.replace('{{SessionTemp}}', self._session.session_temp, 1)
         elif path.startswith('{{Documents}}'):
             nor_path = path.replace('{{Documents}}', Dirs.documents_dir())
