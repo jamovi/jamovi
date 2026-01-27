@@ -781,13 +781,14 @@ class Selection extends EventEmitter implements ISelection {
             let subSel = this.subSelections[i];
             if (subSel.left >= this.left && subSel.right <= this.right &&
                     subSel.top >= this.top && subSel.bottom <= this.bottom) {
-                $subSel[i].remove();
+                if ($subSel.length > i)
+                    $subSel[i].remove();
                 this.subSelections.splice(i, 1);
                 i -= 1;
             }
             else if (this._rangesOverlap(this, subSel)) {
-
-                $subSel[i].remove();
+                if ($subSel.length > i)
+                    $subSel[i].remove();
                 this.subSelections.splice(i, 1);
 
                 let overlapRange = {
@@ -860,7 +861,8 @@ class Selection extends EventEmitter implements ISelection {
 
         if (this.subSelections.length > 0) {
             let $subSel = el.querySelectorAll('.jmv-table-cell-secondary-selected');
-            $subSel[0].remove();
+            if ($subSel.length > 0)
+                $subSel[0].remove();
             let mainSelection = this.subSelections[0];
             this.subSelections.splice(0, 1);
             this.setSelections(mainSelection, this.subSelections);
