@@ -269,7 +269,9 @@ const load = function(defDir, code, create) {
         if (code) {
             if (translationLoaded)
                 break;
-            if (file.startsWith(code.toLowerCase()) === false)
+            if (code.toLowerCase() === 'c' && file !== 'catalog.pot')
+                continue;
+            else if (file.startsWith(code.toLowerCase()) === false)
                 continue;
             else if (create) {
                 throw `Translation for language code ${code} already exists.`;
@@ -476,7 +478,7 @@ const list = function(defDir) {
     }
 
     let transfiles = fs.readdirSync(transDir);
-    if (create === false && transfiles.length === 0) {
+    if (transfiles.length === 0) {
         console.log('No translation files found.');
         return;
     }
