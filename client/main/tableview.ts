@@ -1943,7 +1943,7 @@ class TableView extends HTMLElement implements DataSetView {
         if (event.altKey || event.key === 'Alt')
             return;
 
-        if ((event.metaKey || event.ctrlKey) && ! (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'ArrowUp' || event.key === 'ArrowDown'))
+        if ((event.metaKey || event.ctrlKey) && ! (event.key === 'ArrowLeft' || event.key === 'ArrowRight' || event.key === 'ArrowUp' || event.key === 'ArrowDown' || event.key === 'Home' || event.key === 'End'))
             return;
 
         switch(event.key) {
@@ -2031,6 +2031,68 @@ class TableView extends HTMLElement implements DataSetView {
                 else
                     this.selection.moveCursor('forward', false, true);
                 event.preventDefault();
+                break;
+            case 'Home':
+                if (event.shiftKey) {
+                    let newSelection = this.selection.clone();
+
+                    if (event.metaKey || event.ctrlKey) {
+                        newSelection.top = 0;
+                        if (newSelection.bottom !== this.model.visibleRowCount()-1)
+                            newSelection.rowFocus = 0;
+                    }
+
+                    if (dir === 'rtl') {
+                        newSelection.right = this.model.visibleRealColumnCount() - 1;
+                        if (newSelection.left !== 0)
+                            newSelection.colFocus = this.model.visibleRealColumnCount() - 1;
+                    }
+                    else {
+                        newSelection.left = 0;
+                        if (newSelection.right !== this.model.visibleRealColumnCount() - 1)
+                            newSelection.colFocus = 0;
+                    }
+                    this.selection.setSelections(newSelection);
+                }
+                else {
+                    let rowNo = this.selection.rowNo;
+                    if (event.metaKey || event.ctrlKey)
+                        rowNo = 0;
+
+                    if (dir === 'rtl')
+                        this.selection.setSelection(rowNo, this.model.visibleRealColumnCount() - 1);
+                    else
+                        this.selection.setSelection(rowNo, 0);
+                }
+                break;
+            case 'End':
+                if (event.shiftKey) {
+                    let newSelection = this.selection.clone();
+
+                    if (event.metaKey || event.ctrlKey) {
+                        newSelection.bottom = this.model.visibleRowCount()-1;
+                        if (newSelection.top !== 0)
+                            newSelection.rowFocus = this.model.visibleRowCount()-1;
+                    }
+
+                    if (dir === 'rtl') {
+                        newSelection.left = 0;
+                        if (newSelection.right !== this.model.visibleRealColumnCount() - 1)
+                            newSelection.colFocus = 0;
+                    }
+                    else {
+                        newSelection.right = this.model.visibleRealColumnCount() - 1;
+                        if (newSelection.left !== 0)
+                            newSelection.colFocus = this.model.visibleRealColumnCount() - 1;
+                    }
+                    this.selection.setSelections(newSelection);
+                }
+                else if (event.metaKey || event.ctrlKey) {
+                    if (dir === 'rtl')
+                        this.selection.setSelection(this.model.visibleRowCount()-1, 0);
+                    else
+                        this.selection.setSelection(this.model.visibleRowCount()-1, this.model.visibleRealColumnCount() - 1);
+                }
                 break;
             case 'ArrowRight':
                 if (event.metaKey || event.ctrlKey) {
