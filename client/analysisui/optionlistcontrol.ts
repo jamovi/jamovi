@@ -323,6 +323,7 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
                 let row = 0;
                 if (this.showHeaders) {
                     let hCell = this.el.addCell(i, row,  HTML.parse('<div style="white-space: nowrap;" class="silky-option-list-header" data-index="' + columnInfo.index + '">' + this.translate(columnInfo.label) + '</div>'));
+                    hCell.isSelectable(false);
                     hCell.setStretchFactor(columnInfo.stretchFactor);
                     hCell.makeSticky();
                     hCell.setHorizontalAlign(columnInfo.headerAlign === undefined ? 'left' : columnInfo.headerAlign);
@@ -354,6 +355,7 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
                     }
                 }
                 this.fillerCell = this.el.addCell(i, row, $filler);
+                this.fillerCell.isSelectable(false);
                 this.fillerCell.classList.add('silky-option-list-filler');
                 this.fillerCell.makeSticky({ bottom: '0px', 'zIndex': fillerZindex });
                 if (fillerInUse)
