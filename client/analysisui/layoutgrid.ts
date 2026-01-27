@@ -221,7 +221,7 @@ export class LayoutGrid extends HTMLElement {
                     lastValue = value;
 
                 if (value !== lastValue) {
-                    str += 'repeat(' + repeat + ', ' + (typeof lastValue !== 'string' ? 'minmax(0px, ' + (lastValue * this._factorMultiplier) + 'fr)' : lastValue) + ')';
+                    str += 'repeat(' + repeat + ', ' + (typeof lastValue !== 'string' ? 'minmax(max-content, ' + (lastValue * this._factorMultiplier) + 'fr)' : lastValue) + ')';
                     repeat = 0;
                     lastValue = value;
                 }
@@ -229,7 +229,7 @@ export class LayoutGrid extends HTMLElement {
                 repeat += 1;
             }
 
-            str += 'repeat(' + repeat + ', ' + (typeof lastValue !== 'string' ? 'minmax(0px, ' + (lastValue * this._factorMultiplier) + 'fr)' : lastValue) + ')';
+            str += 'repeat(' + repeat + ', ' + (typeof lastValue !== 'string' ? 'minmax(max-content, ' + (lastValue * this._factorMultiplier) + 'fr)' : lastValue) + ')';
 
             this.style.gridTemplateColumns = str;
         }
