@@ -292,6 +292,7 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
         this.$searchInput = $search.querySelector<HTMLInputElement>('input');
 
         let searchCell = this.supplier.addCell(0, 0, $search, { visible: false });
+        searchCell.isSelectable(false);
         searchCell.setStretchFactor(1);
         searchCell.makeSticky();
 

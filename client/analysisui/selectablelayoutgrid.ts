@@ -42,12 +42,16 @@ export class SelectableLayoutGrid extends BorderLayoutGrid {
             if (navigator.platform == "MacIntel")
                 ctrlKey = event.metaKey;
             
-            if (event.keyCode === 40) { //down key
+            if (event.code === 'ArrowDown') { //down key
                 this.selectCell(this._selectedCells[this._selectedCells.length - 1].bottomCell(true), ctrlKey, event.shiftKey, true);
                 event.preventDefault();
             }
-            else if (event.keyCode === 38) { //up key
+            else if (event.code === 'ArrowUp') { //up key
                 this.selectCell(this._selectedCells[this._selectedCells.length - 1].topCell(true), ctrlKey, event.shiftKey, true);
+                event.preventDefault();
+            }
+            else if (ctrlKey && event.code === 'KeyA') {
+                this.selectAll();
                 event.preventDefault();
             }
         });
@@ -67,6 +71,35 @@ export class SelectableLayoutGrid extends BorderLayoutGrid {
         shiftKey = shiftKey === undefined ? false : shiftKey;
 
         this.onSelectionChanged(cell, ctrlKey, shiftKey);
+    }
+
+    selectAll() {
+
+        this.clearSelection();
+
+        for (var r = 0; r < this._rowCount; r+=1) {
+            for (var c = 0; c < this._columnCount; c+=1) {
+                var tCell = this.getCell(c, r);
+                if (tCell.visible() && tCell._isSelectedable) {
+                    let cells = this.setCellSelection(true, tCell, false, true);
+                    for (var u = 0; u < cells.length; u++)
+                        this._selectedCells.unshift(cells[u]);
+                    if (this.fullRowSelect)
+                        break;
+                }
+            }
+        }
+
+        var gotFocus = this.hasFocus === false;
+        this.hasFocus = true;
+
+        if (gotFocus) {
+            let nextEvent = new CustomEvent('layoutgrid.gotFocus');
+            this.dispatchEvent(nextEvent);
+        }
+
+        let nextEvent = new CustomEvent('layoutgrid.selectionChanged');
+        this.dispatchEvent(nextEvent);
     }
 
     onSelectionChanged(cell: LayoutCell, ctrlKey = false, shiftKey = false) {

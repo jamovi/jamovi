@@ -48,6 +48,7 @@ export class LayoutCell extends HTMLElement {
     _visible: boolean = true;
     _selected = false;
     _initialized = false;
+    _isSelectedable = true;
     private _expandingTimer = null;
     private animationFrame = null;
     private diconnectionId = null;
@@ -136,7 +137,14 @@ export class LayoutCell extends HTMLElement {
         this._clickable = value;
     }
 
+    isSelectable(value: boolean) {
+        this._isSelectedable = value;
+    }
+
     setSelection(value, ctrlKey, shiftKey) {
+        if (this._isSelectedable === false)
+            return;
+        
         if (value && this.visible() === false)
             return;
 
