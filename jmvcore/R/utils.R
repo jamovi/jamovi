@@ -1122,6 +1122,7 @@ select <- function(df, columnNames) {
     }
     data <- data.frame(out)
     colnames(data) <- names(out)
+    row.names(data) <- row.names(df)
 
     # Copy attributes to new data frame
     attributeNamesOld <- names(attributes(df))
