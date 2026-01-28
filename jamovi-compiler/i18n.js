@@ -10,6 +10,14 @@ const { GettextExtractor, JsExtractors } = require('gettext-extractor');
 
 const matchAll = require("match-all"); // str.matchAll() not available pre node 12
 
+let untranslatableSymbols = [];
+
+const loadUntranslatableSymbols = function() {
+    const excludePath = path.join(__dirname, 'untranslatable.txt');
+    const contents = fs.readFileSync(excludePath, 'utf8');
+    untranslatableSymbols = contents.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+}
+
 const translations = { };
 
 const getTranslation = function(msg, context, code, source) {
@@ -92,6 +100,9 @@ const finalise = function(verbose) {
 };
 
 const canBeTranslated = function(value) {
+    if (Number.isFinite(Number(value)))
+        return false;
+
     if (value === '')
         return false;
 
@@ -108,6 +119,9 @@ const canBeTranslated = function(value) {
         return false;
 
     if (/^\$\{[^\}]*\}$/g.test(value))
+        return false;
+
+    if (untranslatableSymbols.includes(value))
         return false;
 
     return true;
@@ -364,6 +378,9 @@ const scanAnalyses = function(defDir, srcDir) {
     }
 
     console.log('Extracting strings from yaml files...');
+
+    loadUntranslatableSymbols();
+
     let files = fs.readdirSync(defDir);
     for (let file of files) {
         if (file === '0000.yaml') {
