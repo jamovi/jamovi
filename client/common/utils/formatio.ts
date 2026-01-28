@@ -71,6 +71,9 @@ export function parseNum(value: string, options: IDisplayOptions): number | stri
         }
     }
 
+    if (s === '') // because Number('') === 0
+        return value;
+
     const number = Number(s);
     return isNaN(number) ? value : number;
 }
