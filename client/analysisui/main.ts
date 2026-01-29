@@ -233,11 +233,11 @@ class Analysis {
 
     getTitle?(): string;
 
-    translate(key: string): string {
+    translate(key: string, formats?: string | (string | number)[] | { [key: string]: string | number }, options?: { prefix: string, postfix: string }): string {
         if (key === null || key === undefined || key.trim() === '')
             return key;
 
-        return this.moduleI18n._(key);
+        return this.moduleI18n._(key, formats, options);
     }
 };
 
