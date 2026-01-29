@@ -203,7 +203,7 @@ export class Options extends EventEmitter {
     _serverQueuedEvents = new keyedQueue();
     _beginEdit = 0;
 
-    constructor(def : OptionDef[], translator: (key: string) => string) {
+    constructor(def : OptionDef[], translator: (key: string, formats?: string | (string | number)[] | { [key: string]: string | number }, options?: { prefix: string, postfix: string }) => string) {
         super();
 
         this._refList = { };
@@ -214,7 +214,7 @@ export class Options extends EventEmitter {
         this.initialize(def, translator);
     }
 
-    initialize(def: OptionDef[], translator: ((key: string) => string)) {
+    initialize(def: OptionDef[], translator: ((key: string, formats?: string | (string | number)[] | { [key: string]: string | number }, options?: { prefix: string, postfix: string }) => string)) {
         for (let i = 0; i < def.length; i++) {
             let item = def[i];
 
@@ -231,7 +231,7 @@ export class Options extends EventEmitter {
         }
     }
 
-    translateDefault(translator: ((key: string) => string), item: any, defaultValue?: any): string | null {
+    translateDefault(translator: ((key: string, formats?: string | (string | number)[] | { [key: string]: string | number }, options?: { prefix: string, postfix: string }) => string), item: any, defaultValue?: any): string | null {
         if (defaultValue === undefined) {
             if (item.default) {
                 let translated = this.translateDefault(translator, item, item.default);

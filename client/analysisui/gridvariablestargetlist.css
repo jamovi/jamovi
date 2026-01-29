@@ -51,6 +51,17 @@
     pointer-events: none;
 }
 
+.silky-variablelist-max-count
+{
+    position: absolute;
+    opacity: 0.5;
+    border-radius: 3px;
+    pointer-events: none;
+    z-index: 100;
+    top: 3px;
+    inset-inline-end: 3px;
+}
+
 .silky-variable-flash {
     -webkit-animation-name: variable-flash-animation;
     -webkit-animation-duration: 0.4s;
