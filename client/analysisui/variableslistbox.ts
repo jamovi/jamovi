@@ -32,6 +32,7 @@ export class VariablesListBox extends SelectableOptionListControl<VariablesListB
     }
 
     $icons: HTMLElement = null;
+    $count: HTMLElement = null;
     $createButton: HTMLElement;
     _suggestedVariableTypes = [];
     _permittedVariableTypes = [];
@@ -57,6 +58,9 @@ export class VariablesListBox extends SelectableOptionListControl<VariablesListB
 
             this.$icons.style.bottom = `${bottomValue}px`;
             this.$icons.style.insetInlineEnd = `${rightValue}px`;
+
+            this.$count.style.top = `${3 + this.el.scrollTop}px`;
+            this.$count.style.insetInlineEnd = `${rightValue}px`;
         }
     }
 
@@ -111,12 +115,17 @@ export class VariablesListBox extends SelectableOptionListControl<VariablesListB
 
     _renderSuggestedIcons() {
         if (this._suggestedVariableTypes.length > 0) {
+            let count = this.getPropertyValue('maxItemCount');
+            this.$count = HTML.parse(`<div class="silky-variablelist-max-count">${_('Max: {count}', { count })}</div>`);
             this.$icons = HTML.parse('<div class="silky-variablelist-icons"></div>');
             for (let i = 0; i < this._suggestedVariableTypes.length; i++) {
                 this.$icons.append(HTML.parse('<div style="display: inline-block; overflow: hidden;" class="silky-variable-type-img silky-variable-type-' + this._suggestedVariableTypes[i] + '"></div>'));
             }
 
             this.checkScrollBars();
+            if (count > 1 && Number.isFinite(count))
+                this.el.append(this.$count);
+
             this.el.append(this.$icons);
         }
 
@@ -233,6 +242,16 @@ export class VariablesListBox extends SelectableOptionListControl<VariablesListB
         this.$icons.classList.add('silky-variable-flash');
         setTimeout(() => {
             this.$icons.classList.remove('silky-variable-flash');
+        }, 500);
+    }
+
+    _flashCount() {
+        if (this.$count === null)
+            return;
+
+        this.$count.classList.add('silky-variable-flash');
+        setTimeout(() => {
+            this.$count.classList.remove('silky-variable-flash');
         }, 500);
     }
 }
