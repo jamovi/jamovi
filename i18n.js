@@ -172,8 +172,11 @@ const extractDefaultValueStrings = function(item, itemAddress, defaultValue, bas
 
     switch (item.type) {
         case 'String':
-                let value = parseContext(defaultValue);
-                updateEntry(value.key, value.context, `${itemAddress}.${basePath}`);
+                let dValue = defaultValue.trim();
+                if (canBeTranslated(dValue)) {
+                    let value = parseContext(dValue);
+                    updateEntry(value.key, value.context, `${itemAddress}.${basePath}`);
+                }
             break;
         case 'Group':
                 for (let element of item.elements)
