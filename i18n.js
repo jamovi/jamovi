@@ -100,8 +100,13 @@ const finalise = function(verbose) {
 };
 
 const canBeTranslated = function(value) {
+
     if (Number.isFinite(Number(value)))
         return false;
+
+    if (value === '%')
+        // in some languages (i.e. french) has a leading space, i.e. 50 %
+        return true;
 
     if (value.length === 1)
         return false;
