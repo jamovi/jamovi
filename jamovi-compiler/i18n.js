@@ -103,13 +103,7 @@ const canBeTranslated = function(value) {
     if (Number.isFinite(Number(value)))
         return false;
 
-    if (value === '')
-        return false;
-
-    if (value === '.')
-        return false;
-
-    if (value === '-')
+    if (value.length === 1)
         return false;
 
     if (value === '$key')
@@ -119,6 +113,10 @@ const canBeTranslated = function(value) {
         return false;
 
     if (/^\$\{[^\}]*\}$/g.test(value))
+        return false;
+
+    if (/^\< 0?.[0-9]+$/.test(value))
+        // < .05, etc.
         return false;
 
     if (untranslatableSymbols.includes(value))
