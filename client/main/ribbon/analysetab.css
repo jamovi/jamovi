@@ -134,6 +134,10 @@
     background-image: url("../../assets/analysis-growth.svg");
 }
 
+.jmv-ribbon-button[data-name="vijPlots"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-vijplots.svg");
+}
+
 .jmv-analyses-button.jmv-modules-menu-item {
     background-color: #dddddd;
 }
