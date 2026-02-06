@@ -27,6 +27,8 @@ cdef extern from "column.h":
         const char *svalue() const;
         const char *label() const;
         bool pinned() const;
+        bool treatAsMissing() const;
+        bool filtered() const;
     ctypedef union Value:
         char *s
         float d
@@ -477,7 +479,9 @@ cdef class Column:
                         count,
                         level.label().decode('utf-8'),
                         level.svalue().decode('utf-8'),
-                        level.pinned()))
+                        level.pinned(),
+                        level.filtered(),
+                        level.treatAsMissing()))
                     count += 1
             else:
                 for level in levels:
@@ -485,7 +489,9 @@ cdef class Column:
                         level.ivalue(),
                         level.label().decode('utf-8'),
                         level.svalue().decode('utf-8'),
-                        level.pinned()))
+                        level.pinned(),
+                        level.filtered(),
+                        level.treatAsMissing()))
         return arr
 
     @property

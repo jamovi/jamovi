@@ -466,6 +466,8 @@ message VariableLevel {
     int32 value = 2;
     string importValue = 3;
     bool pinned = 4;
+    bool filtered = 5;
+    bool treatAsMissing = 6;
 }
 
 message ColumnCellRange {
