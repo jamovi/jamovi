@@ -3009,6 +3009,8 @@ class Instance:
                 level_pb.label = level[1]
                 level_pb.importValue = level[2]
                 level_pb.pinned = level[3]
+                level_pb.filtered = level[4]
+                level_pb.treatAsMissing = level[5]
 
         if column.cell_tracker.is_edited:
             for range in column.cell_tracker.edited_cell_ranges:
