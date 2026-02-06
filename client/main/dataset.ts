@@ -371,7 +371,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
             for (let i = 0; i < schemaPB.columns.length; i++) {
                 let columnPB = schemaPB.columns[i];
                 let column = this._readColumnPB(columnPB);
-                
+
                 if (column.hidden)
                     column.dIndex = -1;
                 else {
@@ -1107,7 +1107,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
             if (nCreated > 0 || nVisible > 0 || nHidden > 0 || nDeleted > 0)
                 this._updateDisplayIndices();
 
-            
+
 
             if (this.onProcessDatasetRR_incSchema)
                 this.onProcessDatasetRR_incSchema(changes);
@@ -1115,7 +1115,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
 
         if (datasetPB.incData) {
             this.set('edited', true);
-        
+
             if (this.onProcessDatasetRR_incData)
                 this.onProcessDatasetRR_incData(outputData, datasetPB);
         }
@@ -1362,7 +1362,9 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
                         label: levelPB.label,
                         value: i,
                         importValue: levelPB.importValue,
-                        pinned: levelPB.pinned
+                        pinned: levelPB.pinned,
+                        filtered: levelPB.filtered,
+                        treatAsMissing: levelPB.treatAsMissing,
                     };
                 }
                 else {
@@ -1370,7 +1372,9 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
                         label: levelPB.label,
                         value: levelPB.value,
                         importValue: levelPB.value.toString(),
-                        pinned: levelPB.pinned
+                        pinned: levelPB.pinned,
+                        filtered: levelPB.filtered,
+                        treatAsMissing: levelPB.treatAsMissing,
                     };
                 }
             }
@@ -1590,7 +1594,7 @@ interface Cell {
     missing: boolean;
 }
 
-class DataSetViewModel extends DataSetModel<DataSetViewModelData & DataSetModelData> { 
+class DataSetViewModel extends DataSetModel<DataSetViewModelData & DataSetModelData> {
 
     constructor(coms: Coms) {
         super(coms, {
