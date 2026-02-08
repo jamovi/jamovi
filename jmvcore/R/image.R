@@ -113,7 +113,7 @@ Image <- R6::R6Class("Image",
             private$.widthM <- widthM
             private$.heightM <- heightM
             private$.widthB <- widthB
-            private$.widthB <- widthB
+            private$.heightB <- heightB
         },
         isFilled=function() {
             if (is.null(private$.filePath))
