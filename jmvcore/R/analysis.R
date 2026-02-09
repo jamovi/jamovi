@@ -451,11 +451,27 @@ Analysis <- R6::R6Class('Analysis',
                 else if (Sys.info()['sysname'] == 'Darwin')
                     grType <- 'quartz'
 
-                size <- image$size
-                image$.__enclos_env__$private$.width <- size$width
-                image$.__enclos_env__$private$.height <- size$height
-                width <- size$width * multip
-                height <- size$height * multip
+                if ( ! is.null(image[['size']])) {
+                    size <- image$size
+                    image$.__enclos_env__$private$.width <- size$width
+                    image$.__enclos_env__$private$.height <- size$height
+                    width <- size$width * multip
+                    height <- size$height * multip
+                } else {
+                    
+                    # image objects loaded from the Rj Editor do not
+                    # have a $size property (because people have an older,
+                    # version of jmvcore installed in R). so this is here
+                    # for compatibility with that.
+
+                    width <- image$width * multip
+                    height <- image$height * multip
+
+                    if (width < 32)
+                        width <- 32
+                    if (height < 32)
+                        height <- 32
+                }
 
                 if (requireNamespace('ragg', quietly=TRUE)) {
                     ragg::agg_png(
