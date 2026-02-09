@@ -118,11 +118,11 @@
     background-image: url("../../assets/analysis-foodiestats.svg");
 }
 
-.jmv-ribbon-button[data-name="FEExtras"] .jmv-ribbon-button-icon {
+.jmv-ribbon-button[data-name="feextras"] .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-feextras.svg");
 }
 
-.jmv-ribbon-button[data-name="JTNA"] .jmv-ribbon-button-icon {
+.jmv-ribbon-button[data-name="jtna"] .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-tna.svg");
 }
 
@@ -134,7 +134,7 @@
     background-image: url("../../assets/analysis-growth.svg");
 }
 
-.jmv-ribbon-button[data-name="vijPlots"] .jmv-ribbon-button-icon {
+.jmv-ribbon-button[data-name="vijplots"] .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-vijplots.svg");
 }
 
