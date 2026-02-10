@@ -7,36 +7,13 @@ services:
     profiles:
       - donotstart
 
-  # vite:
-  #   image: jonathonlove/vite:latest
-  #   container_name: vite
-  #   privileged: true
-  #   command: [ 'mkdir -p /source/merged && unionfs-fuse -o cow /source/server:/source/client=RW /source/merged && cd /source/merged && echo installing npm deps && npm install && echo starting vite server && vite --host' ]
-  #   volumes:
-  #     - './client/main:/source/client/main'
-  #     - './client/resultsview:/source/client/resultsview'
-  #     - './client/analysisui:/source/client/analysisui'
-  #     - './client/lib:/source/client/lib'
-  #     - './client/assets:/source/client/assets'
-  #     - './client/common:/source/client/common'
-  #     - './client/index.html:/source/client/index.html'
-  #     - './client/resultsview.html:/source/client/resultsview.html'
-  #     - './client/analysisui.html:/source/client/analysisui.html'
-  #     - './client/tsconfig.json:/source/client/tsconfig.json'
-  #     - './client/vite.config.mts:/source/client/vite.config.mts'
-  #     - './client/package.json:/source/client/package.json'
-  #     - './server/jamovi/server/jamovi.proto:/source/server/assets/coms.proto'
-  #   ports:
-  #     - '5173:5173'
-  #     - '24678:24678'
-
-  jamovi:
+  jamovi: &base
     image: jamovi/jamovi:2.7.6
     container_name: jamovi
+    profiles: [main]
     build:
       context: .
       dockerfile: docker/jamovi-Dockerfile
-    platform: linux/amd64
     ports:
       - '41337:41337'
       - '41338:41338'
@@ -44,11 +21,7 @@ services:
     command: ["/usr/bin/python3 -u -m jamovi.server 41337 --if=*"]
     stdin_open: true
     stop_grace_period: 0.1s
-    environment:
-
-        # for development, use the vite dev server
-        # (uncomment/enable the vite service above too)
-        # JAMOVI_DEV_SERVER: "http://vite:5173"
+    environment: &base_env
 
         # block Rj - don't enable unless you understand the risks!
         JAMOVI_ALLOW_ARBITRARY_CODE: 'false'
@@ -75,7 +48,45 @@ services:
         # then access jamovi with ?access_key=yourpasswordhere added to the url
         # i.e. 127.0.0.1:41337/?access_key=yourpasswordhere
         # or alternatively, remove the password requirement:
-        # JAMOVI_ACCESS_KEY: ''
+        JAMOVI_ACCESS_KEY: ''
 
     volumes:
       - $HOME/Documents:/root/Documents
+
+  jamovi-dev:
+    <<: *base
+    container_name: jamovi-dev
+    profiles: [dev]
+    environment:
+      <<: *base_env
+      JAMOVI_DEV_SERVER: "http://vite:5173"
+
+  test:
+    <<: *base
+    container_name: jamovi-tests
+    profiles: [test]
+    command: ["/usr/bin/python3 -u -m pytest /usr/lib/jamovi/server"]
+
+  vite:
+      image: jonathonlove/vite:latest
+      container_name: vite
+      profiles: [dev]
+      privileged: true
+      command: [ 'mkdir -p /source/merged && unionfs-fuse -o cow /source/server:/source/client=RW /source/merged && cd /source/merged && echo installing npm deps && npm install && echo starting vite server && vite --host' ]
+      volumes:
+        - './client/main:/source/client/main'
+        - './client/resultsview:/source/client/resultsview'
+        - './client/analysisui:/source/client/analysisui'
+        - './client/lib:/source/client/lib'
+        - './client/assets:/source/client/assets'
+        - './client/common:/source/client/common'
+        - './client/index.html:/source/client/index.html'
+        - './client/resultsview.html:/source/client/resultsview.html'
+        - './client/analysisui.html:/source/client/analysisui.html'
+        - './client/tsconfig.json:/source/client/tsconfig.json'
+        - './client/vite.config.mts:/source/client/vite.config.mts'
+        - './client/package.json:/source/client/package.json'
+        - './server/jamovi/server/jamovi.proto:/source/server/assets/coms.proto'
+      ports:
+        - '5173:5173'
+        - '24678:24678'
