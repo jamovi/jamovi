@@ -420,14 +420,6 @@ try {
                     stream.on('close', resolve);
                 });
 
-                let content = fs.readFileSync(analysisPath);
-                fs.writeFileSync(path.join(yamlOutDir, basename + '.a.yaml'), content);
-
-                if (utils.exists(resultsPath)) {
-                    content = fs.readFileSync(resultsPath);
-                    fs.writeFileSync(path.join(yamlOutDir, basename + '.r.yaml'), content);
-                }
-
                 console.log('wrote: ' + path.basename(uOutPath));
             }
 
