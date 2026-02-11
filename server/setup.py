@@ -99,7 +99,7 @@ if include_server:
         'jamovi.server.dataset',
         'jamovi.tests',
     ]
-    package_data['jamovi.server'] = [ 'jamovi.proto', 'resources/chain.pem' ]
+    package_data['jamovi.tests'] = ['data/*']
 
 if path.exists(path.join(here, 'jamovi/hydra')):
     packages += [ 'jamovi.hydra' ]
