@@ -184,7 +184,7 @@ export class TermFormat extends Format<string[]> {
     }
 
     parse(value: string) : string[] {
-        return "test";
+        return ["test"];
     }
 
     override isValid(raw: any) : boolean {

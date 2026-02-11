@@ -17,6 +17,7 @@ import type { IModulesProvider } from './instance';
 class ModuleError extends Error {}
 class ModuleNotFoundError extends ModuleError {}
 class ModuleCorruptError extends ModuleError {}
+class ModuleIncompatibleError extends ModuleError {}
 class AnalysisNotFoundError extends ModuleError {}
 
 interface IModulesModel {
@@ -60,7 +61,7 @@ type Op =
   | 'hide'
   | 'remove';
 
-interface IModuleMeta {
+export interface IModuleMeta {
     name: string,
     title: string,
     version: number,
@@ -68,6 +69,7 @@ interface IModuleMeta {
     description: string,
     analyses: IAnalysisMeta[],
     path: string,
+    url: string,
     isSystem: boolean,
     new: boolean,
     minAppVersion: number,
@@ -81,6 +83,7 @@ export class ModulesBase extends EventMap<IModulesModel> {
 
     _parent: ModulesBase;
     _instance: IModulesProvider;
+    _initialised = false;
 
     constructor(args: {instance: any, parent?: ModulesBase}) {
         super({
@@ -159,10 +162,21 @@ export class ModulesBase extends EventMap<IModulesModel> {
     }
 
     _setup(message, modulesPB) {
+        let current = this.attributes.modules;
+
+        let installedModules: IModuleMeta[] = [];
+        let updatedModules: IModuleMeta[] = [];
 
         let modules: IModuleMeta[] = [ ];
 
         for (let modulePB of modulesPB) {
+
+            let currentModule = current.find((value, index, obj) => {
+                if (value.name === modulePB.name)
+                    return true;
+
+                return false;
+            });
 
             let module: IModuleMeta = {
                 name:  modulePB.name,
@@ -172,6 +186,7 @@ export class ModulesBase extends EventMap<IModulesModel> {
                 description: modulePB.description,
                 analyses: modulePB.analyses,
                 path: modulePB.path,
+                url: '',
                 isSystem: modulePB.isSystem,
                 new: modulePB.new,
                 minAppVersion: modulePB.minAppVersion,
@@ -183,6 +198,20 @@ export class ModulesBase extends EventMap<IModulesModel> {
 
             module.ops = this._determineOps(module);
 
+            if ( ! currentModule)
+                installedModules.push(module)
+            else {
+                if (currentModule.version !== module.version)
+                    updatedModules.push(module);
+
+                current = current.filter((value) => {
+                    if (value.name === modulePB.name)
+                        return false;
+
+                    return true;
+                });
+            }
+
             if (this.create)
                 this.create(module);
 
@@ -191,6 +220,19 @@ export class ModulesBase extends EventMap<IModulesModel> {
 
         this.set('message', message);
         this.set('modules', modules);
+
+        if (this._initialised) {
+            for (let installed of installedModules) {
+                this.trigger('moduleInstalled', installed);
+            }
+            for (let uninstalled of current) {
+                this.trigger('moduleUninstalled', uninstalled);
+            }
+            for (let updated of updatedModules) {
+                this.trigger('moduleUpdated', updated);
+            }
+        }
+        this._initialised = true;
     }
 
     _determineOps(module: IModuleMeta) : Op[] {
@@ -214,11 +256,14 @@ class Module {
     _ready: Promise<void>;
     currentI18nCode: string;
     currentI18nDef: I18nData;
+    incompatible: boolean;
 
-    constructor(ns, version) {
+    constructor(ns: string, version: string, incompatible: boolean) {
         this._ns = ns;
         this._version = version;
+        this.incompatible = incompatible;
         this._i18nReady = this._loadI18n();
+        
     }
 
     load() {
@@ -230,6 +275,11 @@ class Module {
     }
 
     async _load(refresh) {
+        if (this.incompatible) {
+            this._status = 'incompatible';
+            return;
+        }
+
         this.loaded = true;
         let version = await host.version;
         let url = `../modules/${ this._ns }`;
@@ -288,7 +338,7 @@ class Module {
             }
         }
         else {
-            this._status = 'legacy';
+            this._status = 'missing';
         }
     }
 
@@ -315,7 +365,10 @@ class Module {
         if (this.loaded === false)
             this.load();
         await this._ready;
-        if (this._status == 'corrupt') {
+        if (this._status === 'incompatible') {
+            throw new ModuleIncompatibleError();
+        }
+        else if (this._status == 'corrupt') {
             throw new ModuleCorruptError();
         }
         else if (this._status == 'missing') {
@@ -468,11 +521,35 @@ export class Modules extends ModulesBase {
     _available: Available;
     _moduleDefns: { [name: string]: Module } = { };
     _preloadedJMV = false;
+    _updatingUrl = false;
     
     constructor(args: {instance: any, parent?: any}) {
         super(args);
 
         this._available = new Available({ instance: args.instance, parent: this });
+        this._available.on('change:status', () => 
+        {
+            if (this._available.get('status') === 'done') {
+                if (this._updatingUrl) {
+                    this._updatingUrl = false
+                    return;
+                }
+
+                this._updatingUrl = true;
+
+                let modules = this.attributes.modules;
+                for (let module of modules) {
+                    let avMods = this._available.attributes.modules;
+                    for (let avMod of avMods) {
+                        if (avMod.name === module.name)
+                            module.url = avMod.path;
+                    }
+                    module.ops = this._determineOps(module);
+                }
+                this.attributes.modules = [ ];
+                this.set('modules', modules);
+            }
+        });
 
         this._instance.settings().on('change:modules', async (modules) => {
             this._setup('', modules.changed.modules);
@@ -483,16 +560,11 @@ export class Modules extends ModulesBase {
                 this._preloadedJMV = true;
             }
         });
-
-        this._instance.on('moduleInstalled', (module) => {
-            this.trigger('moduleInstalled', module);
-        });
     }
 
     override create(info: IModuleMeta) {
+        this._moduleDefns[info.name] = new Module(info.name, Version.stringify(info.version), info.incompatible);
         info.getTranslator = this.getTranslator(info.name);
-
-        this._moduleDefns[info.name] = new Module(info.name, Version.stringify(info.version));
     }
 
     available() {
@@ -507,14 +579,16 @@ export class Modules extends ModulesBase {
 
     _createModule(ns) {
         let version = '';
+        let incompatible = false;
         for (let mod of this.attributes.modules) {
             if (mod.name === ns) {
                 version = Version.stringify(mod.version);
+                incompatible = mod.incompatible;
                 break;
             }
         }
 
-        let module = new Module(ns, version);
+        let module = new Module(ns, version, incompatible);
         this._moduleDefns[ns] = module;
 
         return module;
@@ -574,16 +648,12 @@ export class Modules extends ModulesBase {
             remove = [ ];
 
         let incompatible: Op[] = [ ];
-        if (module.incompatible)
-            incompatible = ['incompatible' ];
+        if (module.incompatible) {
+            if (module.url !== '')
+                incompatible.push('update');
+            incompatible.push('incompatible');
+        }
 
         return [].concat(showHide, remove, incompatible);
     }
 }
-
-/*Modules.ModuleError = ModuleError;
-Modules.ModuleNotFoundError = ModuleNotFoundError;
-Modules.ModuleCorruptError = ModuleCorruptError;
-Modules.AnalysisNotFoundError = AnalysisNotFoundError;*/
-
-//export default Modules;

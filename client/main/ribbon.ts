@@ -15,6 +15,7 @@ import focusLoop from '../common/focusloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { Modules } from './modules';
 import Settings from './settings';
+import Store from './store';
  
 
 type AnyTab = DataTab | VariablesTab | AnnotationTab | AnalyseTab | PlotsTab;
@@ -44,7 +45,7 @@ export class RibbonModel extends EventMap<IRibbonModelData>{
     _modules: Modules;
     _settings: Settings;
 
-    constructor(modules: Modules, settings: Settings) {
+    constructor(modules: Modules, settings: Settings, store: Store) {
         super({
             tabs: [],
             selectedTab: 'analyses'
@@ -54,7 +55,7 @@ export class RibbonModel extends EventMap<IRibbonModelData>{
 
         this._variablesTab = new VariablesTab();
         this._dataTab = new DataTab();
-        this._analysesTab = new AnalyseTab(this._modules, this);
+        this._analysesTab = new AnalyseTab(this._modules, settings, store);
         this._plotsTab = new PlotsTab(this._modules, this);
         this._editTab = new AnnotationTab();
         

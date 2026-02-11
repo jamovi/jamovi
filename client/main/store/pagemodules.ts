@@ -172,6 +172,10 @@ class PageModules extends HTMLElement {
         this._triggerRefresh();
     }
 
+    search(term: string) : void {
+        this.$search.value = term;
+    }
+
     _triggerRefresh() {
         this._events.setProgress({ type: 'refresh' });
     }
@@ -201,20 +205,35 @@ class PageModules extends HTMLElement {
     }
 
     markHTML() {
+        let moduleSearch = false;
         let searchValue = this.$search.value.toLowerCase().trim();
+        if (searchValue.startsWith('module::')) {
+            moduleSearch = true;
+            searchValue = searchValue.substring(8).trim();
+        }
+        
         this.marker.unmark({
             done: () => {
                 if (searchValue != '') {
-                    this.querySelectorAll('.jmv-store-module').forEach(el => { el.classList.add('hide-module') });;
-                    let regex = new RegExp(`\\b${searchValue}`, 'gi');
-                    this.marker.markRegExp(regex, {
-                        each: (element) => {
-                            let parent = element.closest('.jmv-store-module');
-                            if (parent)
-                                parent.classList.remove('hide-module');
-                        },
-                        exclude: ['.jmv-store-module-button']
-                    });
+                    if (moduleSearch) {
+                        this.querySelectorAll('.jmv-store-module').forEach(el => {el.classList.remove('hide-module')});
+                        this.querySelectorAll<HTMLElement>('.jmv-store-module').forEach(el => { 
+                            if (el.dataset['name'].toLowerCase().startsWith(searchValue) === false)
+                                el.classList.add('hide-module') 
+                        });
+                    }
+                    else {
+                        this.querySelectorAll('.jmv-store-module').forEach(el => { el.classList.add('hide-module') });
+                        let regex = new RegExp(`\\b${searchValue}`, 'gi');
+                        this.marker.markRegExp(regex, {
+                            each: (element) => {
+                                let parent = element.closest('.jmv-store-module');
+                                if (parent)
+                                    parent.classList.remove('hide-module');
+                            },
+                            exclude: ['.jmv-store-module-button']
+                        });
+                    }
                 }
                 else
                     this.querySelectorAll('.jmv-store-module').forEach(el => {el.classList.remove('hide-module')});
@@ -316,7 +335,7 @@ class PageModules extends HTMLElement {
                 html += `
                     <button
                         ${ disabled ? 'disabled' : '' }
-                        data-path="${ module.path }",
+                        data-path="${ (op === 'update' && module.url) ? module.url : module.path }"
                         data-name="${ module.name }"
                         data-op="${ op }"
                         class="jmv-store-module-button"

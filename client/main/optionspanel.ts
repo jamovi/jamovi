@@ -15,6 +15,7 @@ import DataSetViewModel from './dataset';
 import { Analysis } from './analyses';
 import Settings from './settings';
 import Instance from './instance';
+import Store from './store';
 
 interface IFrameCommsApi {
     frameDocumentReady: (data: any) => void;
@@ -24,6 +25,7 @@ interface IFrameCommsApi {
     requestAction: (data: any) => any;
     optionsViewReady: (ready: boolean) => void;
     requestData: (data: any) => any;
+    action: (data: { type: 'findModule', data: any }) => void;
 }
 
 class AnalysisResources extends EventEmitter {
@@ -34,7 +36,7 @@ class AnalysisResources extends EventEmitter {
     dataSetModel: DataSetViewModel
     analysis: Analysis;
     ready: Promise<any>;
-    def: string | { error: string };
+    def: string | { error: string, data: any };
     i18nDef: I18nData;
     options: { [name: string]: string };
     frameComms: typeof Framesg;
@@ -43,7 +45,7 @@ class AnalysisResources extends EventEmitter {
     notifyAborted: (reason?: any) => void;
     jamoviVersion: string;
 
-    constructor(analysis: Analysis, target: HTMLElement, iframeUrl: string, instanceId: string, public settings: Settings) {
+    constructor(analysis: Analysis, target: HTMLElement, iframeUrl: string, instanceId: string, public settings: Settings, public store: Store) {
         super();
 
         this.analysis = analysis;
@@ -68,6 +70,14 @@ class AnalysisResources extends EventEmitter {
         this.settings.on('change:decSymbol', () => this.updateSettings());
 
         this.frameCommsApi = {
+            action: action => {
+                switch (action.type) {
+                    case 'findModule':
+                        const moduleName = this.analysis.ns;
+                        this.store.show(1, `module::${moduleName}`);
+                }
+            },
+
             frameDocumentReady: data => {
                 this.notifyDocumentReady();
                 this.emit("frameReady");
@@ -160,9 +170,9 @@ class AnalysisResources extends EventEmitter {
 
         this.ready = Promise.all([
             analysis.ready.then(() => {
-                return new Promise<string | { error: string }>((resolve, reject) => {
+                return new Promise<string | { error: string, data: any }>((resolve, reject) => {
                     if (analysis.missingModule) {
-                        this.def = { error: 'Missing module: ' + analysis.ns };
+                        this.def = { error: _('Missing or incompatible module'), data: { moduleName: analysis.ns, analysisName: analysis.name, version: analysis.modules._moduleDefns[analysis.ns]._version } };
                         resolve(this.def);
                     }
                     else if (analysis.uijs) {
@@ -252,29 +262,20 @@ class AnalysisResources extends EventEmitter {
 class OptionsPanel {
     _currentResources: AnalysisResources;
     _analysesResources: { [key: string]: AnalysisResources } ;
-    model: Instance;
-    el: HTMLElement;
-    iframeUrl: string;
     dataSetModel: DataSetViewModel
 
-    constructor(args: { el: HTMLElement, model: Instance, iframeUrl: string }) {
-        this.el = args.el;
-
-        if ('iframeUrl' in args)
-            this.iframeUrl = args.iframeUrl;
+    constructor(public el: HTMLElement, public model: Instance, public iframeUrl: string, public store: Store ) {
 
         this._analysesResources = {};
 
         this._currentResources = null;
 
         window.addEventListener('resize', () => { this.resizeHandler(); });
-        this.el.addEventListener('resized', () => { this.resizeHandler(); });
+        el.addEventListener('resized', () => { this.resizeHandler(); });
 
-        args.model.analyses().on('analysisHeadingChanged', this._analysisNameChanged, this);
+        model.analyses().on('analysisHeadingChanged', this._analysisNameChanged, this);
 
-        args.model.analyses().on('analysisOptionsChanged', this._optionsChanged, this);
-
-        this.model = args.model;
+        model.analyses().on('analysisOptionsChanged', this._optionsChanged, this);
 
         this.render();
     }
@@ -333,7 +334,7 @@ class OptionsPanel {
         let createdNew = false;
 
         if (resources === undefined) {
-            resources = new AnalysisResources(analysis, this.el, this.iframeUrl, this.model.instanceId(), this.model.settings());
+            resources = new AnalysisResources(analysis, this.el, this.iframeUrl, this.model.instanceId(), this.model.settings(), this.store);
             resources.setDataModel(this.dataSetModel);
             this._analysesResources[analysesKey] = resources;
             createdNew = true;

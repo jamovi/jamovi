@@ -12,7 +12,7 @@ import Notify from './notification';
 import Analyses, { Analysis } from './analyses';
 import DataSetViewModel from './dataset';
 import OptionsPB from './optionspb';
-import { Modules } from './modules';
+import { IModuleMeta, Modules } from './modules';
 import I18ns from '../common/i18n';
 
 import Settings, { Theme } from './settings';
@@ -159,6 +159,29 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         this._onBC = (bc => this._onReceive(bc));
         this.attributes.coms.on('broadcast', this._onBC);
 
+        this._modules.on('moduleUninstalled', (meta) => {
+            let moduleName = meta.name;
+            this._modules.purgeCache(moduleName);
+
+            for (let analysis of this._analyses) {
+                if (analysis.ns === moduleName)
+                    analysis.reload();
+            }
+
+            this.trigger('moduleUninstalled', { name: moduleName });
+        });
+
+        this._modules.on('moduleInstalled moduleUpdated', (meta: IModuleMeta) => {
+            let moduleName = meta.name;
+            this._modules.purgeCache(moduleName);
+
+            for (let analysis of this._analyses) {
+                if (analysis.ns === moduleName)
+                    analysis.reload();
+            }
+
+            this.trigger('moduleInstalled', { name: moduleName });
+        });
     }
 
     _onOptionsChanged(analysis, incoming) {
@@ -1061,17 +1084,6 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         }
         else if (payloadType === 'DataSetRR') {
             this._dataSetModel._processDatasetRR(response);
-        }
-        else if (payloadType === 'ModuleRR') {
-            let moduleName = response.name;
-            this._modules.purgeCache(moduleName);
-
-            for (let analysis of this._analyses) {
-                if (analysis.ns === moduleName)
-                    analysis.reload();
-            }
-
-            this.trigger('moduleInstalled', { name: moduleName });
         }
         else if (payloadType === 'Notification') {
 
