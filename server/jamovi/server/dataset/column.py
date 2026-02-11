@@ -7,6 +7,9 @@ from .core import ColumnType
 from .core import MeasureType
 
 
+CellValue = int | str | float
+
+
 class Column(Protocol):
 
     @property

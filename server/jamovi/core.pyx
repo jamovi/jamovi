@@ -109,6 +109,15 @@ cdef class DataSet:
     def detach(self):
         pass
 
+    def set_values(self, columns, row_offset, values):
+        if (isinstance(columns, int) or
+                isinstance(columns, str)):
+            columns = [columns]
+
+        for index, index_or_name in enumerate(columns):
+            column_values = values[index]
+            self[index_or_name].set_values(row_offset, column_values)
+
     def __getitem__(self, index_or_name):
         cdef int index
         cdef string name
@@ -554,6 +563,10 @@ cdef class Column:
                 self._this.setIValue(index, level_i, initing)
         else:
             self._this.setIValue(index, value, initing)
+
+    def set_values(self, index, values, initing=False):
+        for offset, value in enumerate(values):
+            self.set_value(index + offset, value)
 
     def get_value(self, index):
         cdef int raw

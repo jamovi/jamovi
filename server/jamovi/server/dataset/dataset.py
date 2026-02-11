@@ -5,6 +5,11 @@ from typing import Union  # python 3.8 compatibility (for now)
 from abc import abstractmethod
 
 from .column import Column
+from .column import CellValue
+
+
+ColumnRef = int | str | Iterable[int] | Iterable[str]
+CellValueArea = Iterable[Iterable[CellValue]]
 
 
 class DataSet(Protocol):
@@ -14,6 +19,10 @@ class DataSet(Protocol):
 
     @abstractmethod
     def __iter__(self) -> Iterator[Column]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_values(self, columns: ColumnRef, row_offset: int, values: CellValueArea):
         raise NotImplementedError
 
     @abstractmethod

@@ -1,16 +1,27 @@
 """Pytest fixtures to use in the tests."""
 
+import os
 from os import path
 from tempfile import TemporaryDirectory
+from uuid import uuid4
+from dataclasses import dataclass
 
 from typing import Iterator
+from typing import AsyncIterable
 
 import pytest
+import pytest_asyncio
 
 from jamovi.server.dataset import StoreFactory
 from jamovi.server.dataset import Store
 from jamovi.server.dataset import DataSet
 from jamovi.server.dataset import Column
+
+from jamovi.server.instancemodel import InstanceModel
+from jamovi.server.instance import Instance
+from jamovi.server.pool import Pool
+from jamovi.server.enginemanager import EngineManager
+from jamovi.server.session import Session
 
 
 @pytest.fixture
@@ -63,3 +74,21 @@ def simple_dataset(empty_dataset: DataSet) -> DataSet:
     ds.append_column("jim")
     ds.append_column("bob")
     return ds
+
+
+@pytest.fixture
+def session(temp_dir: str) -> Session:
+    return Session(temp_dir, str(uuid4()))
+
+
+@pytest_asyncio.fixture
+async def instance(session: Session) -> Instance:
+    return await session.create()
+
+
+@pytest_asyncio.fixture
+async def instance_model(instance: Instance, empty_dataset) -> InstanceModel:
+    im = InstanceModel(instance)
+    im._dataset = empty_dataset
+    return im
+
