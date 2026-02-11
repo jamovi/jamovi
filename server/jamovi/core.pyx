@@ -103,6 +103,12 @@ cdef class DataSet:
         ds._this = CDataSet.retrieve(memoryMap._this)
         return ds
 
+    def attach(self, read_only=False):
+        pass
+
+    def detach(self):
+        pass
+
     def __getitem__(self, index_or_name):
         cdef int index
         cdef string name
