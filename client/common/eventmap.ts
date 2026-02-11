@@ -121,7 +121,7 @@ export class ContextableEventEmittier extends EventEmitter {
         for (const [eventName, groupInfo] of this._groupListners) {
             if ( ! groupInfo.triggered && groupInfo.eventNames.includes(trigger)) {
                 groupInfo.triggered = true;
-                this._emit(eventName, args);
+                this._emit(eventName, ...args);
             }
         }
     }

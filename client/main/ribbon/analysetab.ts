@@ -14,28 +14,17 @@ import Settings from '../settings';
 
 export class AnalyseTab extends RibbonTab {
     buttons: RibbonItem[] = [ ];
-    settings: Settings;
-    modules: Modules;
-    store: Store;
     _moduleCount = 0;
     _analysesList = { };
 
-    constructor(modules: Modules, model: RibbonModel) {
+    constructor(public modules: Modules, public settings: Settings, public store: Store) {
         super('analyses', 'A', _('Analyses'));
         this.modules = modules;
         this.buttons = [ ];
         this._analysesList = { };
         this._moduleCount = 0;
-        this.settings = model.settings();
 
         this.modules.on('moduleVisibilityChanged', this._onModuleVisibilityChanged, this);
-
-        this.store = new Store(model);
-        this.store.classList.add('jmv-store');
-        document.body.append(this.store);
-        this.store.addEventListener('notification', (event: CustomEvent) => {
-            this.emit('notification', event.detail);
-         });
 
         this.populate();
     }

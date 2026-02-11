@@ -11,19 +11,19 @@ import focusLoop from '../common/focusloop';
 import selectionLoop from '../common/selectionloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { RibbonModel } from './ribbon';
+import Settings from './settings';
+import { Modules } from './modules';
 
 class Store extends HTMLElement {
 
     $highlight: HTMLElement;
-    model: RibbonModel;
     _selectedIndex: number;
     $tabs: NodeListOf<HTMLElement>;
     $pages: NodeListOf<HTMLElement>;
 
-    constructor(model: RibbonModel) {
+    constructor(public settings: Settings, public modules: Modules) {
         super();
 
-        this.model = model;
         this.classList.add('Store');
         this.classList.add('jmv-store');
         this.setAttribute('tabindex', '-1');
@@ -73,9 +73,7 @@ class Store extends HTMLElement {
         const $pageContainer = HTML.parse('<div class="jmv-store-page-container"></div>');
         this.append($pageContainer)
 
-        let settings = this.model.settings();
-
-        const pageInst = new PageModules({ settings: settings, modules: this.model.modules() });
+        const pageInst = new PageModules({ settings, modules });
         pageInst.classList.add('jmv-store-page', 'jmv-store-page-installed', 'right');
         pageInst.setAttribute('aria-hidden', 'true');
         $pageContainer.append(pageInst);
@@ -83,7 +81,7 @@ class Store extends HTMLElement {
         settings.on('change:permissions_library_browseable', () => {
             let browseable = settings.getSetting('permissions_library_browseable', true);
             if (browseable) {
-                const pageStore = new PageModules({ settings: settings, modules: this.model.modules().available() });
+                const pageStore = new PageModules({ settings, modules: modules.available() });
                 pageStore.classList.add('jmv-store-page', 'jmv-store-page-store', 'right');
                 pageStore.setAttribute('aria-hidden', 'true');
                 $pageContainer.append(pageStore);
@@ -99,7 +97,7 @@ class Store extends HTMLElement {
         settings.on('change:permissions_library_side_load', () => {
             let sideLoad = settings.getSetting('permissions_library_side_load', false);
             if (sideLoad) {
-                const pageSideload = new PageSideload( this.model.modules());
+                const pageSideload = new PageSideload( modules);
                 pageSideload.classList.add('jmv-store-page', 'jmv-store-page-sideload', 'right');
                 pageSideload.setAttribute('aria-hidden', 'true');
                 $pageContainer.append(pageSideload);
@@ -116,7 +114,7 @@ class Store extends HTMLElement {
         this._selectedIndex = null;
     }
 
-    _setSelected(index) {
+    _setSelected(index: number, searchTerm: string = '') {
 
         this._selectedIndex = index;
         this.$tabs.forEach(el => el.classList.remove('selected'));
@@ -136,24 +134,30 @@ class Store extends HTMLElement {
         Object.assign(this.$highlight.style, css);
 
         for (let i = 0; i < this.$pages.length; i++) {
-            let $page = this.$pages[i] as HTMLElement;
+            let $page = this.$pages[i] as PageModules;
             if (i < index) {
                 $page.classList.remove('right');
                 $page.classList.add('left');
                 $page.style.visibility = 'hidden';
                 $page.setAttribute('aria-hidden', 'true');
+                if ($page.search)
+                    $page.search('');
             }
             else if (i > index) {
                 $page.classList.remove('left');
                 $page.classList.add('right');
                 $page.style.visibility = 'hidden';
                 $page.setAttribute('aria-hidden', 'true');
+                if ($page.search)
+                    $page.search('');
             }
             else {
                 $page.classList.remove('right');
                 $page.classList.remove('left');
                 $page.style.visibility = 'visible';
                 $page.setAttribute('aria-hidden', 'false');
+                if ($page.$search)
+                    $page.search(searchTerm);
             }
         }
     }
@@ -162,14 +166,14 @@ class Store extends HTMLElement {
         return this.classList.contains('visible');
     }
 
-    show(tab) {
+    show(tab: number, searchTerm: string = '') {
         this.classList.add('visible');
         if (tab !== undefined)
-            setTimeout(() => this._setSelected(tab), 100);
+            setTimeout(() => this._setSelected(tab, searchTerm), 100);
         else if (this._selectedIndex === null)
-            setTimeout(() => this._setSelected(1), 100);
+            setTimeout(() => this._setSelected(1, searchTerm), 100);
         tarp.show('store', false, 0.3);
-        let modules = this.model.modules();
+        let modules = this.modules;
         modules.available().retrieve();
         focusLoop.enterFocusLoop(this);
     }

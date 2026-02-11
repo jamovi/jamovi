@@ -102,6 +102,42 @@ h1 {
     font: 400 2.25rem/1.1 "Segoe UI", "Open Sans", sans-serif, serif;
 }
 
+.module-error-details .top {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.module-error-details .list {
+    padding-top: 30px;
+    align-self: center;
+}
+
+.module-error-details .list button {
+    padding: 10px 20px;
+}
+
+.module-error-details .top .image {
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    width: 50px;
+    height: 50px;
+    background-color: #FFA500;
+    mask-image: url('../assets/action-warning.svg');
+    -webkit-mask-image: url('../assets/action-warning.svg');
+}
+
+.module-error-details {
+    margin: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+}
+
+.module-error-details .msg {
+    font-size: 120%;
+}
+
 .sub-title {
     font-size: 60%;
     color: #9a9a9a;
