@@ -61,7 +61,7 @@ def test_text(empty_dataset):
         (["123.12", "fred"], [123.12, NAN], 2),
         (["123", "456"], [123, 456], 0),
         (["123.2", "456,1"], [123.2, NAN], 1),  # euro float
-        # (["123", "456,1"], [123, 456.1], 1),  # TODO
+        (["123", "456,1"], [123, 456.1], 1),
     ],
 )
 def test_column_text_to_decimal(
@@ -92,7 +92,7 @@ def test_column_text_to_decimal(
             assert math.isnan(v2)
 
     # AND dps is updated accordingly
-    # assert column.dps == dps
+    assert column.dps == dps
 
 
 @pytest.mark.parametrize(

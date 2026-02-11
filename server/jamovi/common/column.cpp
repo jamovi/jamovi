@@ -636,7 +636,11 @@ double Column::dvalue(int index, bool acceptEuroDecimal)
                 std::replace(valueStr.begin(), valueStr.end(), ',', '.');
             }
             try {
-                return std::stod(valueStr);
+                size_t pos = 0;
+                double parsed = std::stod(valueStr, &pos);
+                if (pos != valueStr.size())
+                    return NAN;
+                return parsed;
             } catch (const std::invalid_argument& e) {
                 return NAN;
             } catch (const std::out_of_range& e) {
@@ -648,7 +652,7 @@ double Column::dvalue(int index, bool acceptEuroDecimal)
 
 
 /**
- * Checks if the column's DataType is TEXT and it's values can all be interpretted as 
+ * Checks if the column's DataType is TEXT and it's values can all be interpretted as
  * decimal numbers written in European format.
  *
  * @return true if the column contains european-formatted decimals as text values.
@@ -675,14 +679,14 @@ bool Column::isEuroDecimalTextColumn()
 /**
  * Checks if the given input string matches the Euro decimal pattern.
  *
- * The Euro decimal pattern consists of one or more digits followed by an 
+ * The Euro decimal pattern consists of one or more digits followed by an
  * optional comma and one or more digits. e.g.:
  * - 123
  * - 123,456
  * - 0,456
  *
  * @param input The input string to be checked.
- * @return True if the input string matches the Euro decimal pattern, false 
+ * @return True if the input string matches the Euro decimal pattern, false
  * otherwise.
  */
 bool Column::isEuroDecimalPattern(const std::string &input) const
