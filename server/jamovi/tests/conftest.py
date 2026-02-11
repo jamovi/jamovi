@@ -28,6 +28,14 @@ def shared_memory_store(temp_dir: str) -> Iterator[Store]:
 
 
 @pytest.fixture
+def empty_shmem_dataset(shared_memory_store: Store) -> Iterator[DataSet]:
+    dataset = shared_memory_store.create_dataset()
+    dataset.attach()
+    yield dataset
+    dataset.detach()
+
+
+@pytest.fixture
 def duckdb_store(temp_dir: str) -> Iterator[Store]:
     temp_file = path.join(temp_dir, "fred.duckdb")
     store = StoreFactory.create(temp_file, "duckdb")
@@ -36,8 +44,8 @@ def duckdb_store(temp_dir: str) -> Iterator[Store]:
 
 
 @pytest.fixture
-def empty_dataset(duckdb_store: Store) -> Iterator[DataSet]:
-    dataset = duckdb_store.create_dataset()
+def empty_dataset(shared_memory_store: Store) -> Iterator[DataSet]:
+    dataset = shared_memory_store.create_dataset()
     dataset.attach()
     yield dataset
     dataset.detach()

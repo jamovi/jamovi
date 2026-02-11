@@ -12,3 +12,5 @@ aiohttp
 protobuf
 loguru
 certifi
+pytest
+pytest_asyncio
