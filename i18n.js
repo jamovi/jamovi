@@ -199,7 +199,7 @@ const checkItem = function(item, address, customFilter, exclude=['usage']) {
             let child = item[i];
             let childAddress = '';
             if (child.name)
-                childAddress = `${address}/${child.name}`;
+                childAddress = `${address}/${child.name.replaceAll(' ', '')}`;
             else
                 childAddress = `${address}[${i}]`;
 
