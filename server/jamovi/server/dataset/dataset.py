@@ -26,6 +26,10 @@ class DataSet(Protocol):
         raise NotImplementedError
 
     @abstractmethod
+    def get_values(self, columns: ColumnRef, row_offset: int, n_rows: int) -> CellValueArea:
+        raise NotImplementedError
+
+    @abstractmethod
     def append_column(self, name: str, import_name: str = "") -> Column:
         raise NotImplementedError
 

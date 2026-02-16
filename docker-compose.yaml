@@ -64,7 +64,7 @@ services:
   test:
     <<: *base
     container_name: jamovi-tests
-    profiles: [test]
+    profiles: [tests]
     command: ["/usr/bin/python3 -u -m pytest /usr/lib/jamovi/server/jamovi/tests"]
 
   vite:

@@ -1,13 +1,11 @@
 """Pytest fixtures to use in the tests."""
 
-import os
 from os import path
 from tempfile import TemporaryDirectory
 from uuid import uuid4
-from dataclasses import dataclass
+import math
 
 from typing import Iterator
-from typing import AsyncIterable
 
 import pytest
 import pytest_asyncio
@@ -19,12 +17,24 @@ from jamovi.server.dataset import Column
 
 from jamovi.server.instancemodel import InstanceModel
 from jamovi.server.instance import Instance
-from jamovi.server.pool import Pool
-from jamovi.server.enginemanager import EngineManager
 from jamovi.server.session import Session
 
+from jamovi.server.dataset import CellValue
 
-@pytest.fixture
+
+def equals(x: CellValue, y: CellValue) -> bool:
+    """test if two cell values are equal"""
+    if isinstance(x, float) and isinstance(y, float):
+        if math.isnan(x):
+            return math.isnan(y)
+        if math.isnan(y):
+            return False
+        return pytest.approx(x) == y
+    else:
+        return x == y
+
+
+@pytest.fixture(scope='module')
 def temp_dir() -> Iterator[str]:
     with TemporaryDirectory() as temp:
         yield temp
@@ -76,7 +86,7 @@ def simple_dataset(empty_dataset: DataSet) -> DataSet:
     return ds
 
 
-@pytest.fixture
+@pytest.fixture(scope='module')
 def session(temp_dir: str) -> Session:
     return Session(temp_dir, str(uuid4()))
 
@@ -86,8 +96,8 @@ async def instance(session: Session) -> Instance:
     return await session.create()
 
 
-@pytest_asyncio.fixture
-async def instance_model(instance: Instance, empty_dataset) -> InstanceModel:
+@pytest.fixture
+def instance_model(instance: Instance, empty_dataset) -> InstanceModel:
     im = InstanceModel(instance)
     im._dataset = empty_dataset
     return im

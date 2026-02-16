@@ -1,6 +1,8 @@
 
 import ast
 import re
+from collections import namedtuple
+from typing import Iterable
 
 from jamovi.core import ColumnType
 from jamovi.core import MeasureType
@@ -19,8 +21,6 @@ from .compute import Messages
 from .compute import FValues
 from .compute import convert
 from .compute import is_missing
-
-from collections import namedtuple
 
 from .i18n import _
 
@@ -95,6 +95,14 @@ class Column:
                 return Column.Cell(value, False)
             else:
                 return value
+
+    def get_values(self, index: int, n_rows: int) -> Iterable:
+        assert self._child is not None
+        return self._child.get_values(index, n_rows)
+
+    def set_values(self, index: int, values: Iterable, initing=False):
+        assert self._child is not None
+        return self._child.set_values(index, values, initing)
 
     def is_row_filtered(self, index):
         return self._parent.is_row_filtered(index)

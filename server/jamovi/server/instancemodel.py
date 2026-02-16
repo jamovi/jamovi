@@ -11,6 +11,9 @@ from jamovi.core import ColumnType
 from jamovi.core import DataType
 from jamovi.core import MeasureType
 
+from jamovi.server.dataset import ColumnRef
+from jamovi.server.dataset import CellValueArea
+
 from .transform import Transform
 from .rowtracker import RowTracker
 from .column import Column
@@ -98,7 +101,7 @@ class InstanceModel:
             self._results_language = self._instance.session.get_language()
             if self._results_language == None:
                 self._results_language = ''
-        
+
         return self._results_language
 
     @results_language.setter
@@ -143,13 +146,22 @@ class InstanceModel:
         return self.column_count > 0 and self[0].is_filter
 
     def get_index_ex_filtered(self, index):
+        assert self._dataset is not None
         if index >= self._dataset.row_count_ex_filtered:
             return self._dataset.row_count - self._dataset.row_count_ex_filtered + index
         else:
             return self._dataset.get_index_ex_filtered(index)
 
     def get_indices_ex_filtered(self, row_start, row_count):
+        assert self._dataset is not None
         return self._dataset.get_indices_ex_filtered(row_start, row_count)
+
+    def set_values(self, columns: ColumnRef, row_offset: int, values: CellValueArea):
+        self._dataset.set_values(columns, row_offset, values)
+
+    def get_values(self, columns: ColumnRef, row_offset: int, n_rows: int) -> CellValueArea:
+        assert self._dataset is not None
+        return self._dataset.get_values(columns, row_offset, n_rows)
 
     def __getitem__(self, index_or_name):
         if isinstance(index_or_name, int):
