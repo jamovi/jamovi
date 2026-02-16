@@ -10,7 +10,7 @@ from jamovi.server.dataset import MeasureType
 from jamovi.server.dataset import Column
 from jamovi.server.dataset import CellValue
 from jamovi.server.instancemodel import InstanceModel
-from jamovi.server.formatio.readstat import read
+from jamovi.server.formatio.pyreadstat import read
 
 
 def resolve_path(filename: str) -> str:
@@ -71,6 +71,30 @@ def assert_column_equals(
     ),
     (
         (
+            "dbl_col",
+            DataType.DECIMAL,
+            MeasureType.CONTINUOUS,
+            [],
+            [],
+            lambda i: i / 10.0 + 0.1,
+        ),
+        (
+            "chr_col",
+            DataType.TEXT,
+            MeasureType.ID,
+            [],
+            [],
+            lambda i: f"item_{i+1:04d}",
+        ),
+        (
+            "logical_col",
+            DataType.DECIMAL,
+            MeasureType.CONTINUOUS,
+            [],
+            [],
+            lambda i: i % 2,
+        ),
+        (
             "int_col",
             DataType.DECIMAL,
             MeasureType.CONTINUOUS,
@@ -92,36 +116,12 @@ def assert_column_equals(
             lambda i: i % 4 + 2,
         ),
         (
-            "dbl_col",
-            DataType.DECIMAL,
-            MeasureType.CONTINUOUS,
-            [],
-            [],
-            lambda i: i / 10.0 + 0.1,
-        ),
-        (
-            "chr_col",
-            DataType.TEXT,
-            MeasureType.ID,
-            [],
-            [],
-            lambda i: f"item_{i+1:04d}",
-        ),
-        (
             "date_col",
             DataType.INTEGER,
             MeasureType.ORDINAL,
             None,
             [],
             lambda i: i + 18262,
-        ),
-        (
-            "logical_col",
-            DataType.DECIMAL,
-            MeasureType.CONTINUOUS,
-            [],
-            [],
-            lambda i: i % 2,
         ),
         (
             "factor_col",
