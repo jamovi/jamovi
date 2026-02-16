@@ -34,16 +34,26 @@ multidict==6.6.4
     #   yarl
 nanomsg==1.0
     # via -r requirements.in
+narwhals==2.16.0
+    # via pyreadstat
 numpy==2.1.1
     # via
     #   -r requirements.in
+    #   pandas
+    #   pyreadstat
     #   scipy
 openpyxl==3.1.5
     # via -r requirements.in
 packaging==26.0
     # via pytest
+pandas==3.0.0
+    # via -r requirements.in
 pluggy==1.6.0
     # via pytest
+polars==1.38.1
+    # via -r requirements.in
+polars-runtime-32==1.38.1
+    # via polars
 propcache==0.3.2
     # via
     #   aiohttp
@@ -54,16 +64,22 @@ pyexcel-ezodf==0.3.4
     # via -r requirements.in
 pygments==2.19.2
     # via pytest
+pyreadstat==1.3.3
+    # via -r requirements.in
 pytest==9.0.2
     # via
     #   -r requirements.in
     #   pytest-asyncio
 pytest-asyncio==1.3.0
     # via -r requirements.in
+python-dateutil==2.9.0.post0
+    # via pandas
 pyyaml==6.0.2
     # via -r requirements.in
 scipy==1.14.1
     # via -r requirements.in
+six==1.17.0
+    # via python-dateutil
 tornado==6.5.2
     # via -r requirements.in
 typing-extensions==4.15.0

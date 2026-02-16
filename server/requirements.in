@@ -12,5 +12,8 @@ aiohttp
 protobuf
 loguru
 certifi
+pyreadstat
+polars
+pandas
 pytest
 pytest_asyncio
