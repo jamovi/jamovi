@@ -120,6 +120,17 @@ cdef class DataSet:
             column_values = values[index]
             self[index_or_name].set_values(row_offset, column_values)
 
+    def get_values(self, columns, row_offset, n_rows):
+        if (isinstance(columns, int) or
+                isinstance(columns, str)):
+            columns = [columns]
+
+        values = [None] * len(columns)
+        for index, index_or_name in enumerate(columns):
+            values[index] = self[index_or_name].get_values(row_offset, n_rows)
+
+        return values
+
     def __getitem__(self, index_or_name):
         cdef int index
         cdef string name
@@ -571,8 +582,14 @@ cdef class Column:
             self._this.setIValue(index, value, initing)
 
     def set_values(self, index, values, initing=False):
-        for offset, value in enumerate(values):
-            self.set_value(index + offset, value)
+        for i, value in enumerate(values):
+            self.set_value(index + i, value, initing=initing)
+
+    def get_values(self, index, n):
+        values = [None] * n
+        for i in range(n):
+            values[i] = self.get_value(index + i)
+        return values
 
     def get_value(self, index):
         cdef int raw

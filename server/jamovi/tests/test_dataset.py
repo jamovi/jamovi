@@ -1,6 +1,5 @@
 """Tests for the dataset class."""
 
-from typing import TypeAlias
 import math
 
 import pytest
@@ -8,23 +7,11 @@ import pytest
 from jamovi.server.dataset import DataSet
 from jamovi.server.dataset import DataType
 
+from .conftest import equals
+
 
 NAN = float("nan")
 NAN_INT = -2147483648
-
-CellValue: TypeAlias = str | int | float | None
-
-
-def equals(x: CellValue, y: CellValue) -> bool:
-    """test if two cell values are equal"""
-    if isinstance(x, float) and isinstance(y, float):
-        if math.isnan(x):
-            return math.isnan(y)
-        if math.isnan(y):
-            return False
-        return pytest.approx(x) == y
-    else:
-        return x == y
 
 
 def test_row_modification(simple_dataset: DataSet):
