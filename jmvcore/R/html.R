@@ -49,7 +49,7 @@ Html <- R6::R6Class("Html",
                 clearWith=clearWith,
                 refs=refs)
 
-            private$.content <- content
+            private$.content <- self$options$translate(content)
         },
         setContent=function(content) {
             private$.content <- content
