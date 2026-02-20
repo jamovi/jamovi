@@ -17,12 +17,12 @@ async def latexify(content_refs, out, resolve_image):
 
     with ZipFile(out, 'w') as z:
         # replace image placeholders and write images
-        i_lst = re.findall('\\\\includegraphics\\[.*\\]{\\${.*}}', content)
+        i_lst = re.findall(r'\\includegraphics\[.*\]{\${.*}}', content)
         for i, i_org in enumerate(i_lst):
             try:
-                yield (i / len(i_lst))  # progress
-                i_adr = re.findall('\\\\includegraphics\\[.*\\]{\\${address:(.*)}}', i_org)[0]
-                i_tmp = await resolve_image(unquote(i_adr).replace('\\"', '"'))
+                yield ((i + 1) / (len(i_lst) + 1))  # progress
+                i_adr = re.findall(r'\\includegraphics\[.*\]{\${address:(.*)}}', i_org)[0]
+                i_tmp = await resolve_image(unquote(i_adr).replace(r'\"', '"'))
                 _, ext = os.path.splitext(i_tmp)
                 i_fn = f'figure_{i + 1}{ext}'
                 z.write(i_tmp, i_fn)
@@ -36,7 +36,7 @@ async def latexify(content_refs, out, resolve_image):
         with z.open(ZipInfo('article.tex', now), 'w') as f:
             with TextIOWrapper(f, encoding='utf-8') as ft:
                 ft.write(content)
-        
+
         if len(refs) > 0:
             with z.open(ZipInfo('article.bib', now), 'w') as f:
                 with TextIOWrapper(f, encoding='utf-8') as ft:
