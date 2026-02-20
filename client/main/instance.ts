@@ -494,11 +494,6 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
 
         options = Object.assign({}, options); // clone so we can modify without side-effects
 
-        const progress = new Notify({
-            title: _('Saving'),
-            duration: 0,
-        });
-
         if ( ! options.path) {
             // no path means a 'save' (rather than a 'save as')
             options.path = this.attributes.path;
@@ -512,6 +507,11 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         do {
 
             retrying = false;
+
+            const progress = new Notify({
+                title: _('Saving'),
+                duration: 0,
+            });
 
             try {
                 const stream = this._save(options);
@@ -616,8 +616,10 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             const reader = response.body.getReader();
             const stream = parseJsonLines(reader);
 
-            for await (const message of stream)
-                setProgress(message);
+            for await (const message of stream) {
+                if (message.status === 'in-progress')
+                    setProgress([ message.p, message.n ]);
+            }
 
             const result = await stream;
 
