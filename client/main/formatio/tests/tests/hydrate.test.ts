@@ -26,33 +26,33 @@ function retrieveExpected(name: string): any {
     return require(filePath);
 }
 
-describe('hydration of ANOVA table', function () {
+describe('hydration of ANOVA table', async function () {
 
     const expected = retrieveExpected('anova-table');
     const pb = retrievePB('anova-table');
-    const hydrated = hydrate(pb);
+    const hydrated = await hydrate(pb);
 
     it('should be correct', function () {
         expect(hydrated).to.be.deep.equal(expected)
     });
 });
 
-describe('hydration of Descriptives table', function () {
+describe('hydration of Descriptives table', async function () {
 
     const expected = retrieveExpected('descriptives-table');
     const pb = retrievePB('descriptives-table');
-    const hydrated = hydrate(pb);
+    const hydrated = await hydrate(pb);
 
     it('should be correct', function () {
         expect(hydrated).to.be.deep.equal(expected)
     });
 });
 
-describe('hydration of Correlation Matrix', function () {
+describe('hydration of Correlation Matrix', async function () {
 
     const expected = retrieveExpected('corr-matrix');
     const pb = retrievePB('corr-matrix');
-    const hydrated = hydrate(pb);
+    const hydrated = await hydrate(pb);
 
     it('should be correct', function () {
         expect(hydrated).to.be.deep.equal(expected)

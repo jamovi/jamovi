@@ -62,7 +62,7 @@ export class View extends CollectionView<Model> {
             this.hcTag = `</h${ this.level + 1 }>`;
 
             this.classList.add('jmv-results-group');
-            
+
 
             let labelId = _focusLoop.getNextAriaElementId('label');
 
@@ -189,7 +189,7 @@ export class View extends CollectionView<Model> {
 
             current = this._includeBreak(current, childAddress);
 
-            if ((! child.hasAnnotations || child.hasAnnotations()) && element.name) 
+            if ((! child.hasAnnotations || child.hasAnnotations()) && element.name)
                 current = this._includeAnnotation(current, childAddress, child, false, this.createElementTitle(element));
         }
 
@@ -207,7 +207,7 @@ export class View extends CollectionView<Model> {
             case 'image':
                 return _('Annotation for image {name}', {name: element.title });
             default:
-                return _('Annotation for item {name}', {name: element.title }); 
+                return _('Annotation for item {name}', {name: element.title });
         }
     }
 
@@ -265,7 +265,19 @@ export class View extends CollectionView<Model> {
         if (this.isEmptyAnalysis)
             return [ { name: 'copy', label: _('Copy') } ];
         else if (this.isRoot())
-            return [ { name: 'copy', label: _('Copy'), splitType: 'options', split: [ { name: 'copyLatex', label: _('Copy Latex') }] }, { name: 'duplicate', label: _('Duplicate') }, { name: 'export', label: `${_('Export')}...` } ];
+            return [
+                {
+                    name: 'copy',
+                    label: _('Copy'),
+                    splitType: 'options',
+                    split: [
+                        { name: 'copyLatex', label: _('Copy Latex') },
+                        { name: 'copy2', label: _('Copy Html') },
+                    ]
+                },
+                { name: 'duplicate', label: _('Duplicate') },
+                { name: 'export', label: `${_('Export')}...` },
+            ];
         else
             return super._menuOptions();
     }
