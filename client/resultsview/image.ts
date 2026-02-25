@@ -119,7 +119,7 @@ export class View extends Elem.View<Model> {
             }
         });
 
-        this.$size = HTML.parse('<div class="size-display"></div>');
+        this.$size = HTML.parse('<div class="size-display ignore-html"></div>');
         this.append(this.$size);
 
         window.addEventListener('keydown', e => {
