@@ -205,38 +205,55 @@ class PageModules extends HTMLElement {
     }
 
     markHTML() {
-        let moduleSearch = false;
+        let searchType: 'module' | 'plots' | 'general' = 'general';
         let searchValue = this.$search.value.toLowerCase().trim();
         if (searchValue.startsWith('module::')) {
-            moduleSearch = true;
+            searchType = 'module';
             searchValue = searchValue.substring(8).trim();
+        }
+        else if (searchValue.startsWith('plot::')) {
+            searchType = 'plots';
+            searchValue = searchValue.substring(6).trim();
         }
         
         this.marker.unmark({
             done: () => {
-                if (searchValue != '') {
-                    if (moduleSearch) {
-                        this.querySelectorAll('.jmv-store-module').forEach(el => {el.classList.remove('hide-module')});
-                        this.querySelectorAll<HTMLElement>('.jmv-store-module').forEach(el => { 
-                            if (el.dataset['name'].toLowerCase().startsWith(searchValue) === false)
-                                el.classList.add('hide-module') 
-                        });
+                
+                    switch (searchType) {
+                        case 'module':
+                            if (searchValue != '') {
+                                this.querySelectorAll('.jmv-store-module').forEach(el => {el.classList.remove('hide-module')});
+                                this.querySelectorAll<HTMLElement>('.jmv-store-module').forEach(el => { 
+                                    if (el.dataset['name'].toLowerCase().startsWith(searchValue) === false)
+                                        el.classList.add('hide-module') 
+                                });
+                            }
+                            break;
+                        case 'plots':
+                            this.querySelectorAll('.jmv-store-module').forEach(el => {el.classList.add('hide-module')});
+                            this.querySelectorAll<HTMLElement>('.jmv-store-module[data-has-plots="true"]').forEach(el => { 
+                                if (el.dataset['name'].toLowerCase().startsWith(searchValue))
+                                    el.classList.remove('hide-module') 
+                            });
+                            break;
+                        default:
+                            if (searchValue != '') {
+                                this.querySelectorAll('.jmv-store-module').forEach(el => { el.classList.add('hide-module') });
+                                let regex = new RegExp(`\\b${searchValue}`, 'gi');
+                                this.marker.markRegExp(regex, {
+                                    each: (element) => {
+                                        let parent = element.closest('.jmv-store-module');
+                                        if (parent)
+                                            parent.classList.remove('hide-module');
+                                    },
+                                    exclude: ['.jmv-store-module-button']
+                                });
+                            }
+                            else {
+                                this.querySelectorAll('.jmv-store-module').forEach(el => {el.classList.remove('hide-module')});
+                            }
+                            break;
                     }
-                    else {
-                        this.querySelectorAll('.jmv-store-module').forEach(el => { el.classList.add('hide-module') });
-                        let regex = new RegExp(`\\b${searchValue}`, 'gi');
-                        this.marker.markRegExp(regex, {
-                            each: (element) => {
-                                let parent = element.closest('.jmv-store-module');
-                                if (parent)
-                                    parent.classList.remove('hide-module');
-                            },
-                            exclude: ['.jmv-store-module-button']
-                        });
-                    }
-                }
-                else
-                    this.querySelectorAll('.jmv-store-module').forEach(el => {el.classList.remove('hide-module')});
             }
         });
     }
@@ -272,8 +289,10 @@ class PageModules extends HTMLElement {
 
             let labelId = _focusLoop.getNextAriaElementId('label');
 
+            const hasPlots = module.category === 'plots';
+
             let html = `
-                <div class="jmv-store-module modules-list-item modules-auto-select" data-name="${ module.name }" tabindex="-1" aria-labelledby="${labelId}" role="listitem">
+                <div class="jmv-store-module modules-list-item modules-auto-select" data-has-plots="${hasPlots}" data-name="${ module.name }" tabindex="-1" aria-labelledby="${labelId}" role="listitem">
                     <div class="jmv-store-module-lhs">
                         <div class="jmv-store-module-icon"></div>
                     </div>

@@ -66,6 +66,7 @@ class ModuleMeta:
         self.visible = True
         self.incompatible = False
         self.i18n_msgs = None
+        self.category = None
         self._code = None
         self.index = 1
 
@@ -454,6 +455,11 @@ class Modules:
         version = version[:4]
         version = list(map(int, version))
         module.version = version
+
+        if 'category' in defn:
+            module.category = str(defn['category'])
+        else:
+            module.category = ''
 
         mod_r_v = defn.get('rVersion', None)
         mod_r_v = determine_r_version(mod_r_v)
