@@ -6,11 +6,11 @@ import RibbonTab, { RibbonItem } from './ribbontab';
 import Placeholder from './placeholder';
 import RibbonButton from './ribbonbutton';
 import focusLoop from '../../common/focusloop';
-import RibbonGroup from './ribbongroup';
 import RibbonSeparator from './ribbonseparator';
 import { Modules } from '../modules';
 import Settings from '../settings';
 import { RibbonModel } from '../ribbon';
+import Store from '../store';
 
 //import Store from '../store';
 
@@ -18,25 +18,16 @@ class PlotsTab extends RibbonTab {
     buttons: RibbonItem[] = [ ];
     settings: Settings;
     modules: Modules;
-    //store: Store;
     _moduleCount = 0;
     _analysesList = { };
     _moreIndex: number = -1;
 
-    constructor(modules: Modules, model: RibbonModel) {
+    constructor(modules: Modules, model: RibbonModel, public store: Store) {
         super('plots', 'P', _('Plots'));
         this.modules = modules;
         this.settings = model.settings();
 
         this.modules.on('moduleVisibilityChanged', this._onModuleVisibilityChanged, this);
-
-        /*let storeElement = document.createElement('div');
-        storeElement.classList.add('jmv-store');
-        document.body.append(storeElement);
-        this.store = new Store({ el : storeElement, model : model });
-        this.store.on('notification', note => {
-            this.emit('notification', note);
-         });*/
 
         this.populate();
     }
@@ -133,16 +124,18 @@ class PlotsTab extends RibbonTab {
             }
         }
 
-        /*let buttonId = focusLoop.getNextAriaElementId('button');
-        let buttonElement = document.createElement('button');
-        buttonElement.classList.add('modules-menu-item');
-        buttonElement.setAttribute('id', buttonId);
-        let  button = new RibbonMenu(buttonElement, _('Modules'), 'modules', 'M', [
+        let buttonId = focusLoop.getNextAriaElementId('button');
+        let  button = new RibbonMenu(_('Modules'), 'modules', 'M', [
             { name : 'modules', title : _('jamovi library'), ns : 'app' },
             { name : 'manageMods', title : _('Manage installed'), ns : 'app' },
             { name: 'installedList', title: _('Installed Modules'), type: 'group', items: moduleList }
         ], true, false);
-        this.buttons.push(button);*/
+        button.setAttribute('id', buttonId);
+        button.classList.add('jmv-modules-menu-item');
+        button.style.position = 'sticky';
+        button.style.insetInlineEnd =  '0px';
+        button.style.insetInlineStart =  '0px';
+        this.buttons.push(button);
 
         let menus = { };
         let lastSub = null;
@@ -188,7 +181,6 @@ class PlotsTab extends RibbonTab {
         for (let groupName in menus) {
             let menu = menus[groupName];
             if (groupName === '.') {
-                let subgroups = [];
                 let buttons = [];
                 for (let subgroup in menu) {
                     
@@ -204,10 +196,9 @@ class PlotsTab extends RibbonTab {
                         });
                         buttons.push(analysisButton);
                     }
-                    //subgroups.push(new RibbonGroup({ title: '', margin: 'large', items: buttons }));
                 }
                 buttons.push(new RibbonSeparator());
-                this._moreIndex = buttons.length;
+                this._moreIndex = buttons.length + 1;  // the plus one is because of the library button
                 buttons.push(new RibbonSeparator());
                 this.buttons.push(...buttons);
             }
@@ -254,13 +245,13 @@ class PlotsTab extends RibbonTab {
     }
 
     private _analysisSelected(analysis: { name: string, ns: string, title: string, checked?: boolean }) {
-       /* if (analysis.name === 'modules' && analysis.ns === 'app')
-            this.store.show(1);
+       if (analysis.name === 'modules' && analysis.ns === 'app')
+            this.store.show(1, 'plot::');
         else if (analysis.name === 'manageMods' && analysis.ns === 'app')
-            this.store.show(0);
+            this.store.show(0, 'plot::');
         else if (analysis.ns === 'installed')
             this.modules.setModuleVisibility(analysis.name, analysis.checked);
-        else*/
+        else
             this.emit('analysisSelected', analysis);
     }
 }

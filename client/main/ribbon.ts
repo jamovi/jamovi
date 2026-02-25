@@ -56,7 +56,7 @@ export class RibbonModel extends EventMap<IRibbonModelData>{
         this._variablesTab = new VariablesTab();
         this._dataTab = new DataTab();
         this._analysesTab = new AnalyseTab(this._modules, settings, store);
-        this._plotsTab = new PlotsTab(this._modules, this);
+        this._plotsTab = new PlotsTab(this._modules, this, store);
         this._editTab = new AnnotationTab();
         
 

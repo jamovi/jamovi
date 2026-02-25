@@ -34,12 +34,13 @@ interface IAnalysisPosition {
     menuSubgroup: string,
     menuTitle: string,
     menuSubtitle: string,
-    category: string
+    category: 'plots' | 'analyses'
 }
 
 interface IAnalysisMeta extends IAnalysisPosition {
     name : string,
     ns: string,
+    category: 'plots' | 'analyses'
 }
 
 type AnalysisCategory = 'analyses' | 'plots';
@@ -67,6 +68,7 @@ export interface IModuleMeta {
     version: number,
     authors: string[],
     description: string,
+    category: 'plots' | 'analyses',
     analyses: IAnalysisMeta[],
     path: string,
     url: string,
@@ -184,6 +186,7 @@ export class ModulesBase extends EventMap<IModulesModel> {
                 version: modulePB.version,
                 authors: modulePB.authors,
                 description: modulePB.description,
+                category: modulePB.category ? modulePB.category : 'analysis',
                 analyses: modulePB.analyses,
                 path: modulePB.path,
                 url: '',
@@ -198,11 +201,14 @@ export class ModulesBase extends EventMap<IModulesModel> {
 
             module.ops = this._determineOps(module);
 
+            let alreadyExists = false;
             if ( ! currentModule)
                 installedModules.push(module)
             else {
                 if (currentModule.version !== module.version)
                     updatedModules.push(module);
+                else
+                    alreadyExists = true;
 
                 current = current.filter((value) => {
                     if (value.name === modulePB.name)
@@ -212,7 +218,9 @@ export class ModulesBase extends EventMap<IModulesModel> {
                 });
             }
 
-            if (this.create)
+            if (alreadyExists)
+                module = currentModule;
+            else if (this.create) 
                 this.create(module);
 
             modules.push(module);

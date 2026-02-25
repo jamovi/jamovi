@@ -3169,6 +3169,7 @@ class Instance:
         module_pb.title = module.title
         module_pb.version = version
         module_pb.description = module.description
+        module_pb.category = module.category
         module_pb.authors.extend(module.authors)
         module_pb.path = module.path
         module_pb.isSystem = module.is_sys
