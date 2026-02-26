@@ -138,7 +138,8 @@ jmv-results-table {
 
 .notice-box > .content {
     max-width: 450px;
-    line-height: 18px;
+    line-height: 10px;
+    white-space: pre;
 }
 
 .notice-box {
