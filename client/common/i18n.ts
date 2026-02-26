@@ -93,7 +93,7 @@ export class I18n {
         this.findBestMatchingLanguage = this.findBestMatchingLanguage.bind(this);
 
         this._availableLanguages = ['en'];
-        this.language = this.systemLanguage();
+        this.language = 'en';
     }
 
     initialise(code: string, localeData: I18nData) {

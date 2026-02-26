@@ -84,19 +84,21 @@ try {
 
     //current = 'he';
 
-    response = await fetch(`${ baseUrl }${ current }.json`);
-    if ( ! response.ok)
-        throw new Error(`Unable to fetch json for language '${ current }'`);
+    if (current !== 'en') {
+        response = await fetch(`${ baseUrl }${ current }.json`);
+        if ( ! response.ok)
+            throw new Error(`Unable to fetch json for language '${ current }'`);
 
-    try {
-        let def = await response.json();
-        i18n.initialise(current, def);
-        document.documentElement.setAttribute('lang', current);
-        document.body.dir = i18n.isRTL() ? 'rtl' : 'ltr';
-        host.setLanguage(current);
-    }
-    catch (e) {
-        throw new Error(`Unable to load json for language '${ current }'`);
+        try {
+            let def = await response.json();
+            i18n.initialise(current, def);
+            document.documentElement.setAttribute('lang', current);
+            document.body.dir = i18n.isRTL() ? 'rtl' : 'ltr';
+            host.setLanguage(current);
+        }
+        catch (e) {
+            throw new Error(`Unable to load json for language '${ current }'`);
+        }
     }
 }
 catch (e) {
