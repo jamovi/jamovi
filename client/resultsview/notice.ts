@@ -82,9 +82,20 @@ export class NoticeView extends Elem.View<Model> {
         this.querySelectorAll('a[href]').forEach(el => el.removeEventListener('click', this._handleLinkClick));
 
         const content = I18ns.get('app').__(doc.content, { prefix: '<strong>', postfix: '</strong>' });
-        $content.innerHTML = content;
+
+        $content.innerHTML = this.stringToParagraphs(content);
 
         this.querySelectorAll('a[href]').forEach(el => el.addEventListener('click', this._handleLinkClick));
+    }
+
+    stringToParagraphs(input: string): string {
+        return input
+            .replace(/\r\n/g, "\n")
+            .split(/\n{1,}/)
+            .map(p => p.trim())
+            .filter(p => p.length > 0)
+            .map(p => `<p>${p}</p>`)
+            .join("");
     }
 
     _handleLinkClick(event: Event) {
