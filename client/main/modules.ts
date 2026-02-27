@@ -549,10 +549,13 @@ export class Modules extends ModulesBase {
                 for (let module of modules) {
                     let avMods = this._available.attributes.modules;
                     for (let avMod of avMods) {
-                        if (avMod.name === module.name)
+                        if (avMod.name === module.name) {
                             module.url = avMod.path;
+                            module.ops = this._determineOps(module, avMod);
+                            break;
+                        }
                     }
-                    module.ops = this._determineOps(module);
+                    
                 }
                 this.attributes.modules = [ ];
                 this.set('modules', modules);
@@ -643,7 +646,7 @@ export class Modules extends ModulesBase {
         return await module.getI18nDefn();
     }
 
-    override _determineOps(module: IModuleMeta): Op[] {
+    override _determineOps(module: IModuleMeta, availableMod?: IModuleMeta): Op[] {
 
         let showHide: Op[] = [ 'show' ];
         if (module.incompatible)
@@ -661,6 +664,8 @@ export class Modules extends ModulesBase {
                 incompatible.push('update');
             incompatible.push('incompatible');
         }
+        else if (availableMod && availableMod.version > module.version && module.url !== '')
+            incompatible.push('update');
 
         return [].concat(showHide, remove, incompatible);
     }
