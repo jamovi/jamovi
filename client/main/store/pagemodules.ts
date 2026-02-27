@@ -106,15 +106,10 @@ class PageModules extends HTMLElement {
         this.$install = this.$content.querySelectorAll<HTMLButtonElement>('.jmv-store-module-button[data-op="install"], .jmv-store-module-button[data-op="update"]');
         this.$visibility = this.$content.querySelectorAll<HTMLButtonElement>('.jmv-store-module-button[data-op="show"], .jmv-store-module-button[data-op="hide"]');
 
-        this.$search.addEventListener('input', (event) => {
-            if (this.searchingInProgress)
-                clearTimeout(this.searchingInProgress);
+        this.onSearchValueChanged = this.onSearchValueChanged.bind(this);
 
-            this.searchingInProgress = setTimeout(() => {
-                this.markHTML();
-                this.searchingInProgress = null;
-            }, 600);
-        });
+        this.$search.addEventListener('input', this.onSearchValueChanged);
+        this.$search.addEventListener('change', this.onSearchValueChanged);
 
         this.$search.addEventListener('focus', (event) => {
             this.$search.select();
@@ -170,6 +165,16 @@ class PageModules extends HTMLElement {
         })();
 
         this._triggerRefresh();
+    }
+
+    onSearchValueChanged() {
+        if (this.searchingInProgress)
+            clearTimeout(this.searchingInProgress);
+
+        this.searchingInProgress = setTimeout(() => {
+            this.markHTML();
+            this.searchingInProgress = null;
+        }, 600);
     }
 
     search(term: string) : void {
