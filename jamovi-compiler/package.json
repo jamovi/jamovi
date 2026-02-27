@@ -40,6 +40,6 @@
     "word-wrap": "^1.2.5"
   },
   "devDependencies": {
-    "mocha": "^10.3.0"
+    "mocha": "^10.8.2"
   }
 }
