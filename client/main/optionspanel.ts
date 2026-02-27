@@ -172,7 +172,8 @@ class AnalysisResources extends EventEmitter {
             analysis.ready.then(() => {
                 return new Promise<string | { error: string, data: any }>((resolve, reject) => {
                     if (analysis.missingModule) {
-                        this.def = { error: _('Missing or incompatible module'), data: { moduleName: analysis.ns, analysisName: analysis.name, version: analysis.modules._moduleDefns[analysis.ns]._version } };
+                        let version = analysis.modules._moduleDefns[analysis.ns]._version;
+                        this.def = { error: _('Missing or incompatible module'), data: { moduleName: analysis.ns, analysisName: analysis.name, version: version.substring(0, version.lastIndexOf('.')) } };
                         resolve(this.def);
                     }
                     else if (analysis.uijs) {
