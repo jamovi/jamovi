@@ -183,7 +183,7 @@ const vector<LevelData> Column::levels() const
     for (int i = 0; i < s->levelsUsed; i++)
     {
         Level &l = levels[i];
-        bool filtered = l.countExFiltered == 0;
+        bool filtered = trimLevels() && l.countExFiltered == 0;
         bool treatAsMissing = l.treatAsMissing;
         bool pinned = l.pinned;
 
