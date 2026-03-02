@@ -2,14 +2,14 @@
 'use strict';
 
 import focusLoop  from '../common/focusloop';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'eventemitter3';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 
 export class EditorPanel extends EventEmitter {
-    el: HTMLElement; 
-    title: HTMLElement; 
-    contents: HTMLElement; 
+    el: HTMLElement;
+    title: HTMLElement;
+    contents: HTMLElement;
     titleBox: HTMLElement;
     visible: boolean;
     attachedItem: HTMLElement;
@@ -32,7 +32,7 @@ export class EditorPanel extends EventEmitter {
         let main = HTML.create('div', {class: 'jmv-editor-panel-main'});
         this.el.append(main);
 
-        let ok =   HTML.create('button', { class: 'jmv-editor-panel-ok', 'aria-label': _('Ok'), tabindex: "0" }, 
+        let ok =   HTML.create('button', { class: 'jmv-editor-panel-ok', 'aria-label': _('Ok'), tabindex: "0" },
                         HTML.create('span', { class: 'mif-checkmark' }),
                         HTML.create('span', { class: 'mif-arrow-down' })
                     );
@@ -40,15 +40,15 @@ export class EditorPanel extends EventEmitter {
 
         //this.$ok = $(`<button aria-label="${_('Ok')}" tabindex="0" class="jmv-editor-panel-ok"><span class="mif-checkmark"></span><span class="mif-arrow-down"></span></button>`).appendTo(this.$main);
 
-        let titleBox =   HTML.create('div', { class: 'title-box' }); 
+        let titleBox =   HTML.create('div', { class: 'title-box' });
         main.append(titleBox);
         this.titleBox = titleBox;
 
-        let title =   HTML.create('div', { class: 'title' }); 
+        let title =   HTML.create('div', { class: 'title' });
         titleBox.append(title);
         this.title = title;
 
-        let contents =   HTML.create('div', { class: 'content' }); 
+        let contents =   HTML.create('div', { class: 'content' });
         main.append(contents);
         this.contents = contents;
 

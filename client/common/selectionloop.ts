@@ -1,6 +1,6 @@
 'use strict';
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'eventemitter3';
 
 // the SelectionLoop is a class that manages which child control has selection (not focus)
 // and the movement and behaviour of that selection between and within other child controls

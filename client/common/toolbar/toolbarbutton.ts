@@ -4,11 +4,11 @@
 import RibbonGroup from './toolbargroup';
 import Menu from '../menu';
 import { HTMLElementCreator as HTML }  from '../htmlelementcreator';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'eventemitter3';
 
 export class ToolbarButton extends EventEmitter {
     el: HTMLElement;
-    
+
     constructor(params) {
         super();
 
@@ -25,7 +25,7 @@ export class ToolbarButton extends EventEmitter {
 
         this.el = el;
         this.el.classList.add('jmv-toolbar-button');
-        if (classes.trim() !== '') 
+        if (classes.trim() !== '')
             this.el.classList.add(...classes.split(' '));
         this.el.classList.add('jmv-toolbar-button-size-' + size);
 
@@ -202,10 +202,10 @@ export class ToolbarButton extends EventEmitter {
         const rect = this.el.getBoundingClientRect();
         const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
         const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        
+
         let x = rect.left + scrollLeft + 5;
         let y = rect.top + scrollTop + this.el.offsetHeight;
-        
+
         if (this.inMenu) {
             const style = window.getComputedStyle(this.menu);
             const marginLeft = parseFloat(style.marginLeft) || 0;

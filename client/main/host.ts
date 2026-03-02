@@ -1,12 +1,20 @@
-//
-// Copyright (C) 2016 Jonathon Love
-//
 
 'use strict';
 
+declare global {
+    interface Window {
+        electronAPI?: any;
+        config: {
+            client: {
+                roots: [string, string, string],
+            }
+        }
+    }
+}
+
 import { Future } from './utils/common';
 
-import events from 'events';
+import { EventEmitter } from 'eventemitter3';
 
 const etron = window.electronAPI || {};
 
@@ -48,7 +56,7 @@ export interface IDialogProvider {
 
 let dialogProvider;
 
-const emitter = new events.EventEmitter();
+const emitter = new EventEmitter();
 
 const on = etron.on || ((name, args) => emitter.on(name, args));
 let _notify = (name: string, args: WindowOpenFailEvent) => emitter.emit(name, args);
@@ -100,11 +108,11 @@ export async function open(url, target, windowFeatures) {
 export const closeWindow = etron.closeWindow || function() {
     window.close();
     if ( ! window.closed)
-        window.location = baseUrl;
+        window.location.href = baseUrl;
 };
 
 export const navigate = etron.navigate || function(instanceId) {
-    window.location = `${ window.location.origin }/${ instanceId }/`;
+    window.location.href = `${ window.location.origin }/${ instanceId }/`;
 };
 
 export const version = etron.version || new Promise((resolve, reject) => {
@@ -113,11 +121,6 @@ export const version = etron.version || new Promise((resolve, reject) => {
             throw new Error(`HTTP error! status: ${response.status}`);
         return response.text();
     }).then(data => resolve(data.trim())).catch(reject);
-
-
-    /*$.ajax('/version', { dataType: 'text'})
-        .done(data => resolve(data.trim()))
-        .fail(reject);*/
 });
 
 export const nameAndVersion = etron.nameAndVersion || version.then(version => {

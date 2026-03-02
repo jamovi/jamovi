@@ -1,9 +1,9 @@
 'use strict';
 
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'eventemitter3';
 
 interface IEventGroupInfo {
-    eventNames: string[], 
+    eventNames: string[],
     triggered: boolean
 }
 
@@ -27,7 +27,7 @@ export class ContextableEventEmittier extends EventEmitter {
             throw 'Use trigger(...) instead!';
         };
 
-        this.setMaxListeners(20);
+        // this.setMaxListeners(20);
     }
 
     public override on(eventName: string | symbol, callback: (...args: any[]) => void, context?: any): this {
@@ -41,7 +41,7 @@ export class ContextableEventEmittier extends EventEmitter {
                 this._groupListners.set(eventName, { eventNames, triggered: false });
         }
 
-        if ( ! this._listeners.has(eventName)) 
+        if ( ! this._listeners.has(eventName))
           this._listeners.set(eventName, []);
 
         this._listeners.get(eventName)!.push({ original: callback, bound, context });
@@ -70,7 +70,7 @@ export class ContextableEventEmittier extends EventEmitter {
         }
 
         const records = this._listeners.get(eventName);
-        if ( ! records) 
+        if ( ! records)
             return this;
 
         const index = records.findIndex(
@@ -92,7 +92,7 @@ export class ContextableEventEmittier extends EventEmitter {
             self.off(eventName, callback, context);
         };
 
-        if ( ! this._listeners.has(eventName)) 
+        if ( ! this._listeners.has(eventName))
           this._listeners.set(eventName, []);
 
         this._listeners.get(eventName)!.push({ original: callback, bound, context });
@@ -104,7 +104,7 @@ export class ContextableEventEmittier extends EventEmitter {
         if (this._compiling) {
             if (typeof eventName === 'string')
                 this._compiledList.add(eventName);
-            
+
             this._eventQueue.push({ eventName, args })
         }
         else {
@@ -214,7 +214,7 @@ export abstract class EventDistributor extends HTMLElement {
 
     private closestUntil(el: HTMLElement, selector: string, stopAt: HTMLElement) {
         while (el && el !== stopAt) {
-            if (el.matches(selector)) 
+            if (el.matches(selector))
                 return el;
             el = el.parentElement;
         }
@@ -223,7 +223,7 @@ export abstract class EventDistributor extends HTMLElement {
 }
 
 export class EventMap<T> extends ContextableEventEmittier {
-    
+
     public attributes: Partial<T>;
     public previousAttributes: Partial<T> = { };
 

@@ -2,9 +2,9 @@
 'use strict';
 
 import Opt from './option';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'eventemitter3';
 
-type QueueType = { 
+type QueueType = {
     option: Opt<any>;
     keys: (string|number)[];
     type: 'change' | 'property' | 'insert' | 'remove';
@@ -12,7 +12,7 @@ type QueueType = {
     length: 1;
 }
 
-type QueueStoreType = { 
+type QueueStoreType = {
     option: Opt<any>;
     events: any[];
     properties: QueueType[];
@@ -222,7 +222,7 @@ export class Options extends EventEmitter {
                 item.default = null;
 
             this.translateDefault(translator, item);
-            
+
             //type OutputType = InferType<typeof item>;
             //console.log(item.type)
             let option = new Opt<any>(item.default, item);
@@ -421,7 +421,7 @@ export class Options extends EventEmitter {
         }
     }
 
-    
+
 }
 
 export default Options;
