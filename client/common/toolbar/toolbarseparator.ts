@@ -2,7 +2,7 @@
 'use strict';
 
 import { HTMLElementCreator as HTML }  from '../htmlelementcreator';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'eventemitter3';
 
 export class ToolbarSeparator extends EventEmitter {
     el: HTMLElement;

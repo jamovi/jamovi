@@ -2,7 +2,7 @@
 'use strict';
 
 import { FormattedValue } from './formatdef';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'eventemitter3';
 import { IOptionsEventParams, OptionDef } from './options';
 
 export interface IOptionEventParams extends IOptionsEventParams {
@@ -39,7 +39,7 @@ export class Opt<T> extends EventEmitter {
         this._value = initialValue;
         this._defaultValue = initialValue;
         this._initialized = false;
-        
+
         if (params !== undefined) {
             this.name = params.name;
             this.text = params.text;

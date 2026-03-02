@@ -3,19 +3,11 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 import vuejsPlugin from '@vitejs/plugin-vue';
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
-
 
 export default defineConfig(({ command, mode, ssrBuild }) => {
   let config = {
-    resolve: {
-      alias: {
-        path: 'rollup-plugin-node-polyfills/polyfills/path',
-      }
-    },
     plugins: [
       vuejsPlugin(),
-      nodePolyfills(),
     ],
     define: {
       'process.env': {},

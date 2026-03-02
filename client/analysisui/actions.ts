@@ -7,7 +7,7 @@ import Format from './format';
 import { FormatDef, FormattedValue, VariableFormat } from './formatdef';
 import { Control, CtrlDef } from './optionsview';
 import GetRequestDataSupport from './requestdatasupport';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'eventemitter3';
 
 export const utils = {
     checkPairsValue: (ctrl, variables) => {
@@ -272,7 +272,7 @@ export const utils = {
 
 export type CustomColumn = { name: string, measureType: MeasureType, dataType: DataType, levels: any[] }
 
-export type ViewEvent = { 
+export type ViewEvent = {
     execute: (...args: any[]) => void;
     onChange?: string | string[];
     onEvent?: string | string[];
@@ -287,7 +287,7 @@ class View extends EventEmitter {
         return function(this: View) {
             let errors = [];
             if (this.handlers === undefined) // version 2.0 modules need the utils as part of this object. This is here for backwards compatability
-                Object.assign(this, utils); 
+                Object.assign(this, utils);
 
             // this.handlers is created in the compiler.
             for (let handle in this.handlers) {

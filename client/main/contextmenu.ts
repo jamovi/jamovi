@@ -5,7 +5,7 @@ import ContextMenus from './contextmenu/contextmenus';
 import focusLoop from '../common/focusloop';
 import Menu from '../common/menu';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'eventemitter3';
 import { RibbonItem } from './ribbon/ribbontab';
 import { ResultsContextMenuItem } from '../common/contextmenutypes';
 
@@ -23,17 +23,17 @@ export class ContextMenu extends EventEmitter { // this is constructed at the bo
         this.menu = new Menu(null, 0, { exitKeys: ['InlineArrowLeft'] });
         this.el = this.menu;
         this.el.setAttribute('hloop', 'false');
-    
+
         this.menu.addEventListener('menu-hidden', (event: CustomEvent) => {
             if (! this._showing && event.target === this.menu)
                 this.emit('menu-hidden', event.detail);
         } );
         this.el.addEventListener('menuActioned', () => {
-            this.menu.hide(true); 
+            this.menu.hide(true);
         });
     }
 
- 
+
     show(menuItems:RibbonItem[], x:number, y:number, anchor='left', openPath=[]) {
 
         this.buttons = [ ];

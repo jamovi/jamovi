@@ -2,7 +2,7 @@
 'use strict';
 
 import { HTMLElementCreator as HTML }  from '../htmlelementcreator';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'eventemitter3';
 
 export class ToolbarGroup extends EventEmitter {
     el: HTMLElement;
@@ -26,7 +26,7 @@ export class ToolbarGroup extends EventEmitter {
         items:          //Array of menu items. Not needed, can use 'addItem'.
     }
     */
-    
+
 
     _render(params) {
 
