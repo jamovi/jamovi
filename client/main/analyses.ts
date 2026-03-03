@@ -4,7 +4,7 @@
 import Delta from 'quill-delta';
 
 import Options from './options';
-import { ContextableEventEmittier } from '../common/eventmap';
+import { GroupBatchingEventEmittier } from '../common/eventmap';
 import DataSetViewModel from './dataset';
 import { Modules } from './modules';
 import { IReference } from './references';
@@ -222,7 +222,7 @@ interface CreateOpts {
     readonly arbitraryCode?: boolean;
 }
 
-class Analyses extends ContextableEventEmittier {
+class Analyses extends GroupBatchingEventEmittier {
 
     dataSetModel: DataSetViewModel;
     modules: Modules;

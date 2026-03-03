@@ -7,10 +7,9 @@ interface IEventGroupInfo {
     triggered: boolean
 }
 
-export class ContextableEventEmittier extends EventEmitter {
-    private _listeners: Map<string | symbol, any>;
+export class GroupBatchingEventEmittier extends EventEmitter {
 
-    private _groupListners: Map<string, IEventGroupInfo>;
+    private _groupListeners: Map<string, IEventGroupInfo>;
     private _emit:(eventName: string | symbol, ...args: any[]) => boolean;
     private _compiling = false;
     private _compiledList = new Set<string>();
@@ -19,34 +18,21 @@ export class ContextableEventEmittier extends EventEmitter {
 
     constructor() {
         super();
-        this._listeners = new Map<string | symbol, any>();
-        this._groupListners = new Map<string, IEventGroupInfo>();
 
-        this._emit = this.emit;
-        this.emit = (eventName: string | symbol, ...args: any[]) => {
-            throw 'Use trigger(...) instead!';
-        };
+        this._groupListeners = new Map<string, IEventGroupInfo>();
 
-        // this.setMaxListeners(20);
+        this._emit = super.emit;
     }
 
     public override on(eventName: string | symbol, callback: (...args: any[]) => void, context?: any): this {
-
-        const bound = context ? callback.bind(context) : callback;
-
-        // group listeners
         if (typeof eventName === 'string') {
-            let eventNames = eventName.split(' ');
-            if (eventNames.length > 1 && this._groupListners.has(eventName) === false)
-                this._groupListners.set(eventName, { eventNames, triggered: false });
+            const eventNames = eventName.split(' ');
+            if (eventNames.length > 1 && !this._groupListeners.has(eventName)) {
+                this._groupListeners.set(eventName, { eventNames, triggered: false });
+            }
         }
 
-        if ( ! this._listeners.has(eventName))
-          this._listeners.set(eventName, []);
-
-        this._listeners.get(eventName)!.push({ original: callback, bound, context });
-
-        return super.on(eventName, bound);
+        return super.on(eventName, callback, context);
     }
 
     public override removeAllListeners(eventName? : string | symbol): this {
@@ -54,50 +40,40 @@ export class ContextableEventEmittier extends EventEmitter {
     }
 
     public override off(eventName?: string | symbol, callback?: (...args: any[]) => void, context?: any): this {
+
         if (eventName === undefined && callback === undefined && context === undefined) {
-            this._listeners.clear();
-            this._groupListners.clear();
+            this._groupListeners.clear();
             return super.removeAllListeners();
         }
-        else if (callback === undefined && context === undefined) {
-            this._listeners.delete(eventName);
+
+        if (callback === undefined && context === undefined) {
             if (typeof eventName === 'string') {
-                for (const groupInfo of this._groupListners.values()) {
-                    groupInfo.eventNames = groupInfo.eventNames.filter(item => item !== eventName);
+                for (const groupInfo of this._groupListeners.values()) {
+                    groupInfo.eventNames = groupInfo.eventNames.filter(
+                        item => item !== eventName
+                    );
                 }
             }
             return super.removeAllListeners(eventName);
         }
 
-        const records = this._listeners.get(eventName);
-        if ( ! records)
-            return this;
-
-        const index = records.findIndex(
-            record => record.original === callback && record.context === context
-        );
-
-        if (index !== -1) {
-            const [record] = records.splice(index, 1);
-            return super.off(eventName, record.bound);
-        }
-
-        return this;
+        return super.off(eventName!, callback!, context);
     }
 
-    public override once(eventName: string | symbol, callback: (...args: any[]) => void, context?: any) : this {
-        let self = this;
-        const bound : (...args: any[]) => void = (...args: any[]) => {
-            callback.call(context ? context : this, ...args);
-            self.off(eventName, callback, context);
-        };
+    public override once(eventName: string | symbol, callback: (...args: any[]) => void, context?: any): this {
 
-        if ( ! this._listeners.has(eventName))
-          this._listeners.set(eventName, []);
+        if (typeof eventName === 'string') {
+            const eventNames = eventName.split(' ');
+            if (eventNames.length > 1 && !this._groupListeners.has(eventName)) {
+                this._groupListeners.set(eventName, { eventNames, triggered: false });
+            }
+        }
 
-        this._listeners.get(eventName)!.push({ original: callback, bound, context });
+        return super.once(eventName, callback, context);
+    }
 
-        return super.on(eventName, bound);
+    public override emit(): boolean {
+        throw new Error('Use trigger(...) instead!');
     }
 
     public trigger(eventName: string | symbol, ...args: any[]) {
@@ -118,7 +94,7 @@ export class ContextableEventEmittier extends EventEmitter {
     }
 
     private _triggerAnyGroups(trigger: string, ...args: any[]) {
-        for (const [eventName, groupInfo] of this._groupListners) {
+        for (const [eventName, groupInfo] of this._groupListeners) {
             if ( ! groupInfo.triggered && groupInfo.eventNames.includes(trigger)) {
                 groupInfo.triggered = true;
                 this._emit(eventName, ...args);
@@ -127,13 +103,13 @@ export class ContextableEventEmittier extends EventEmitter {
     }
 
     private _resetTriggeredGroups() {
-        for (const groupInfo of this._groupListners.values())
+        for (const groupInfo of this._groupListeners.values())
             groupInfo.triggered = false;
     }
 
     protected beginEventCompiling() {
         if (this._compiling)
-            throw "Can compile more than one event at a time";
+            throw "Cannot compile more than one event at a time";
         this._compiling = true;
     }
 
@@ -141,7 +117,7 @@ export class ContextableEventEmittier extends EventEmitter {
         if (this._compiling) {
             this._compiling = false;
             if (this._compiledList.size > 0) {
-                if (this._groupListners && this._groupListners.size > 0) {
+                if (this._groupListeners && this._groupListeners.size > 0) {
                     this._resetTriggeredGroups();
                     for (const trigger of this._compiledList)
                         this._triggerAnyGroups(trigger, event);
@@ -222,7 +198,7 @@ export abstract class EventDistributor extends HTMLElement {
     }
 }
 
-export class EventMap<T> extends ContextableEventEmittier {
+export class EventMap<T> extends GroupBatchingEventEmittier {
 
     public attributes: Partial<T>;
     public previousAttributes: Partial<T> = { };
