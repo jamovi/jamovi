@@ -10,7 +10,7 @@ export default defineConfig(({ command, mode, ssrBuild }) => {
       vuejsPlugin(),
     ],
     define: {
-      'process.env': {},
+      'process': { 'env': {} },
       'vite': (command === 'serve'),
     },
     build: {
