@@ -93,6 +93,32 @@
     border-bottom: 1px solid #e4e4e4;
 }
 
+.silky-option-list-filler {
+    grid-column-end: -1 !important;
+    grid-row-end: -1 !important;
+    height: min-content;
+}
+
+.list-info-box {
+    inset-inline-start: 10px;
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    background-color: rgba(181, 202, 239, 0.41);
+    padding: 10px;
+    margin: 10px;
+}
+
+.list-info-box .info-icon {
+    -webkit-mask-image: url('../assets/action-info.svg');
+    background-color: #81B2F5;
+    mask-size: contain;
+    mask-position: center;
+    mask-repeat: no-repeat;
+    height: 17px;
+    width: 17px;
+}
+
 .silky-option-list.multi-item:not(.silky-target-list) > .silky-layout-cell:not(.silky-option-list-filler).selected {
     background-color: transparent;
     border-inline-start: 4px solid rgb(46,138,199);

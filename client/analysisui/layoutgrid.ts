@@ -31,6 +31,7 @@ export class LayoutGrid extends HTMLElement {
         stretchEndCells = true;
         _rowCount: number = -1;
         _columnCount: number = -1;
+        stretchLastRow = false;
 
         private _layoutStretch: boolean = false;
         private _currentId = 0;
@@ -198,7 +199,10 @@ export class LayoutGrid extends HTMLElement {
             if (this.updateCustomGridProperties() === false)
                 return;
 
-            this.style.gridTemplateRows = 'repeat(' + (this._rowCount)  + ', max-content)';
+            if (this.stretchLastRow)
+                this.style.gridTemplateRows = 'repeat(' + (this._rowCount-1)  + ', max-content) 1fr';
+            else
+                this.style.gridTemplateRows = 'repeat(' + (this._rowCount)  + ', max-content)';
 
             let repeat = 0;
             let str = '';

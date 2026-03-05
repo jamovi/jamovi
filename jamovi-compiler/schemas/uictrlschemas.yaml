@@ -189,6 +189,8 @@ OptionListControl:
             type: string
         ghostText:
             type: string
+        infoText:
+            type: string
         removeAction:
             type: string
             enum:
