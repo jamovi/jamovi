@@ -284,7 +284,7 @@ function generatePreformatted(preformatted: IPreformatted, level: number, shwSyn
             output.push('Created using the ' + concatRefs(preformatted.refs));
         }
         output.push('\\begin{verbatim}');
-        output.push(preformatted.content.split('\n'));
+        output.push(replace4LaTeX(preformatted.content).split('\n'));
         output.push('\\end{verbatim}\n');
     }
 
@@ -464,20 +464,19 @@ function cleanTable(table: ITable): ITable {
             if (cell === null) {
                 continue;
             }
-            // handle row spans
+            // handle row spans: [EMPTY] is replaced by replace4LaTeX when processing the next row(s)
             if (cell.rowSpan) {
                 for (let k = 1; k < cell.rowSpan; ++k) {
-                    table.rows[i + k].cells[j].content = '~';
+                    table.rows[i + k].cells[j].content = '[EMPTY]';
                 }
-
-            }
-            // handle superscripts for footnotes (= specific notes)
-            if (row.type != 'footnote' && cell.sups && cell.sups.length > 0) {
-                cell.content = cell.content + '$^{' + replace4LaTeX(cell.sups.join(',')) + '}$';
             }
             // replace non-printable characters
             if (cell.content.length > 0) {
                 cell.content = replace4LaTeX(cell.content);
+            }
+            // handle superscripts for footnotes (= specific notes)
+            if (row.type != 'footnote' && cell.sups && cell.sups.length > 0) {
+                cell.content = rmDblDollar(cell.content + '$^{' + replace4LaTeX(cell.sups.join(',')) + '}$');
             }
         }
     }
@@ -485,27 +484,36 @@ function cleanTable(table: ITable): ITable {
     return table;
 }
 
-// replace non-printable characters and HTML attributes in strings
+// replace LaTeX special characters, non-printable characters, and HTML attributesin strings
 function replace4LaTeX(content: string): string {
-    const stringRepl = {'η²': '$\\eta^{2}$', 'η²p': '$\\eta^{2}_{p}$', 'ω²': '$\\omega^{2}$',
-                        'χ²': '$\\chi^{2}$',
-                        '₁₀': '$_{10}$', '₀₁': '$_{01}$', 'ₐ': '$_{a}$', '≠': '$\\neq$',
-                        '<sup>μ</sup>': '$\\mu$', 'μ': '$\\mu$', '✻': '$\\times$', ' ': '~',
-                        '%': '\\%', '\\\\%': '\\%', '⁻': '-', '⁺': '+',
+    const stringRepl = {
+                        // LaTeX special characters
+                        '$' : '\\$', '%' : '\\%', '&' : '\\&', '#' : '\\#',
+                        '{' : '\\{', '}' : '\\}', '_' : '\\_',
+                        '^' : '\\textasciicircum', '~': '\\textasciitilde',
+                        // jamovi output that with non-printable characters that need conversion
+                        'η²': '$\\eta^{2}$', 'η²p': '$\\eta^{2}_{p}$',    // effect sizes
+                        'ω²': '$\\omega^{2}$', 'χ²': '$\\chi^{2}$',       // effect size and statistic
+                        '₁₀': '$_{10}$', '₀₁': '$_{01}$', 'ₐ': '$_{a}$',  // subscripts (hypotheses, etc.)
+                        '<sup>μ</sup>': '$\\mu$', 'μ': '$\\mu$',          // superscripts (footnotes, etc.)
+                        '⁻': '-', '⁺': '+', '€': '\\texteuro',            // superscripts (cont.), EUR-symbol
+                        '≠': '$\\neq$', '✻': '$\\times$', ' ': '~',       // comparison, times (in effects)
                         // HTML attributes
-                        '<sup>':    '$^{',          '</sup>':    '}$', // superscript
-                        '<sub>':    '$_{',          '</sub>':    '}$', // subscript
-                        '<strong>': '\\textbf{',    '</strong>': '}',  // bold
-                        '<em>':     '\\textit{',    '</em>':     '}',  // italic
-                        '<u>':      '\\underline{', '</u>':      '}',  // underline
-                        '<s>':      '\\st{',        '</s>':      '}',  // strike-through
+                        '<sup>':    '$^{',          '</sup>':    '}$',    // superscript
+                        '<sub>':    '$_{',          '</sub>':    '}$',    // subscript
+                        '<strong>': '\\textbf{',    '</strong>': '}',     // bold
+                        '<em>':     '\\textit{',    '</em>':     '}',     // italic
+                        '<u>':      '\\underline{', '</u>':      '}',     // underline
+                        '<s>':      '\\st{',        '</s>':      '}',     // strike-through
+                        // empty cells ([EMPTY] as placeholder to prevent replacing ~ as special char.)
+                        '[EMPTY]': '~',
                        };
 
     for (const [target, replace] of Object.entries(stringRepl)) {
         content = content.replaceAll(target, replace);
     }
 
-    return content.replace(/(?<=\$)(.*?)\$(?=(.*?)\$)/g, '$1');
+    return rmDblDollar(content);
 }
 
 // format color hex codes to be compatible with LaTeX
@@ -591,7 +599,7 @@ function formatNote(row: IRow): Array<string> {
             }
             else {
                 // Specific notes
-                output.push('$^{' + row.cells[i].sups.join(',') + '}$~' + row.cells[i].content.trim() + ' \\\\'.replace(/(?<=\$)(.*?)\$(?=(.*?)\$)/g, '$1'));
+                output.push(rmDblDollar('$^{' + row.cells[i].sups.join(',') + '}$~' + row.cells[i].content.trim() + ' \\\\'));
             }
         }
     }
@@ -601,6 +609,9 @@ function formatNote(row: IRow): Array<string> {
 
 function formatAttr(chunk: ITextChunk): string {
     let output = chunk.content.substring(0, chunk.content.length - (chunk.content.endsWith('\n') ? 1 : 0));
+    if (!hasAttr(chunk, 'formula')) {
+      output = replace4LaTeX(output);
+    }
 
     if (hasAttr(chunk, 'bold')) {
         output = '\\textbf{' + output + '}';
@@ -636,7 +647,7 @@ function formatAttr(chunk: ITextChunk): string {
         output = '\\colorbox[rgb]{' + formatRGB(chunk.attributes.background) + '}{' + output + '}';
     }
 
-    return output.replace(/(?<=\$)(.*?)\$(?=(.*?)\$)/g, '$1');
+    return rmDblDollar(output);
 }
 
 function formatFrml(katex: string): string {
@@ -672,4 +683,8 @@ function describeRefs(refNames: Array<string>): string {
     }
 
     return refText;
+}
+
+function rmDblDollar(content: string): string {
+    return content.replace(/(?<=\$)(.*?)\$(?=(.*?)\$)/g, '$1');
 }
