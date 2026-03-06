@@ -61,6 +61,9 @@ export interface I18nData {
     locale_data: JedLocaleData;
 }
 
+export type translateFunction = (key: string, formats?: string | (string | number)[] | { [key: string]: string | number }, options?: { prefix: string, postfix: string }) => string;
+export type translateNFunction = (key: string, plural: string, count: number, formats?: { [key: string]: (string|number), n?: (string|number) }) => string;
+
 export const isI18nData = function (obj: unknown): obj is I18nData {
     if (typeof obj !== "object" || obj === null) return false;
 
