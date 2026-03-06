@@ -150,6 +150,7 @@ class Analysis {
 
         this.translate = this.translate.bind(this);
         window._ = this.translate.bind(this);
+        window.n_ = this.translateN.bind(this);
 
         const createOptionsView = new Function('ui', 'DefaultControls', 'FormatDef', 'Format', 'View', 'utils', `
     return (function() {
@@ -238,6 +239,13 @@ class Analysis {
             return key;
 
         return this.moduleI18n._(key, formats, options);
+    }
+
+    translateN(key: string, plural: string, count: number, formats?: { [key: string]: (string|number), n?: (string|number) }): string {
+        if (key === null || key === undefined || key.trim() === '')
+            return key;
+
+        return this.moduleI18n._n(key, plural, count, formats);
     }
 };
 

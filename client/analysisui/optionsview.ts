@@ -10,6 +10,7 @@ import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import Options from './options';
 import PropertySupplier, { EventHandlers } from './propertysupplier';
 import LayoutActionManager from './layoutactionmanager';
+import { translateFunction, translateNFunction } from '../common/i18n';
 
 export class ControlOption<T> {
     options: Options;
@@ -186,7 +187,7 @@ interface IControl {
     setControlManager?: (constext: IControlProvider) => void;
     //hasProperty: (name: string) => boolean;
     setOption?: (option: ControlOption<any>, valueKey?) => void;
-    setI18nSource?: (source: { translate: (key: string) => string }) => void;
+    setI18nSource?: (source: { translate: translateFunction, translateN: translateNFunction }) => void;
     //params: any;
     [key: string]: any;
     //DefaultControls?: {[key: string]: ControlType<CtrlDef>};
@@ -239,7 +240,7 @@ export class OptionsView extends EventEmitter implements IControlProvider {
      * @deprecated Should not be used. Rather use `(property) Control.el: HTMLElement`.
      */
     $el: any
-    _i18nSource: { translate: (key: string) => string } = null;
+    _i18nSource: { translate: translateFunction, translateN: translateNFunction } = null;
     _nextControlID = 0;
     _loaded = false;
     _allCtrls: { ctrl: Control<any>, resourceId: number }[] = [];
@@ -355,7 +356,7 @@ export class OptionsView extends EventEmitter implements IControlProvider {
         this._requestedDataSource = source;
     }
 
-    setI18nSource(source: { translate: (key: string) => string }) {
+    setI18nSource(source: { translate: translateFunction, translateN: translateNFunction }) {
         this._i18nSource = source;
     }
 

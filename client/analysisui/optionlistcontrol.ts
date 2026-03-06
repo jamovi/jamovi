@@ -346,6 +346,7 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
                     hCell.setDimensionMinMax(columnInfo.minWidth, columnInfo.maxWidth, columnInfo.minHeight, columnInfo.maxHeight);
                     row += 1;
                 }
+                
                 let $filler = HTML.parse('<div style="white-space: nowrap;" class="list-item-ctrl"></div>');
                 let fillerInUse = false;
                 let fillerZindex = '111';
@@ -375,7 +376,7 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
                         infoText = '';
                         this.infoTextBox.style.display = 'none';
                     }
-                    this.infoTextLabel = HTML.parse('<div class="list-info-label">' + this.translate(infoText) + '</div>');
+                    this.infoTextLabel = HTML.parse('<div class="list-info-label">' + infoText + '</div>');
                     this.infoTextBox.append(this.infoTextLabel);
                     $filler.append(this.infoTextBox);
                     fillerInUse = true;
