@@ -36,7 +36,7 @@ class Analyses:
         return len(self._analyses)
 
     def _module_event(self, event):
-        if event['type'] == 'moduleInstalled':
+        if event['type'] == 'moduleUpdated':
             module_name = event['data']['name']
             ids = [ ]
             for analysis in self._analyses:
