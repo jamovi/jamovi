@@ -207,7 +207,7 @@ class Modules:
             if module.name == name:
                 return module
         raise KeyError()
-    
+
     def __contains__(self, name):
         for module in self._modules:
             if module.name == name:
@@ -284,9 +284,9 @@ class Modules:
                 continue
             else:
                 break
-        
+
         return self._parse_module_defn(defn, path, is_sys)
-        
+
 
     def _read_modules(self, pth, is_system):
 
@@ -380,7 +380,7 @@ class Modules:
         await self._reread_installed()
         self._notify_listeners({ 'type': 'modulesChanged' })
 
-    async def install_from_file(self, path):
+    async def install_from_file(self, path, update: bool = False):
 
         with ZipFile(path) as zip:
 
@@ -394,7 +394,9 @@ class Modules:
         meta = self._read_module(module_path)
 
         await self._reread_installed()
-        self._notify_listeners({ 'type': 'moduleInstalled', 'data': { 'name': meta.name }})
+
+        if update:
+            self._notify_listeners({ 'type': 'moduleUpdated', 'data': { 'name': meta.name }})
         self._notify_listeners({ 'type': 'modulesChanged' })
 
     def install(self, path):

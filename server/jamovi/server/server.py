@@ -692,7 +692,7 @@ class Server:
 
             try:
                 await self._session.restart_engines()
-                await self._session.modules.install_from_file(path)
+                await self._session.modules.install_from_file(path, update=True)
                 self._session.notify_global_changes()
             except Exception:
                 import traceback
