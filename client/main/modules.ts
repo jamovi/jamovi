@@ -240,6 +240,8 @@ export class ModulesBase extends EventMap<IModulesModel> {
                 this.trigger('moduleUpdated', updated);
             }
         }
+        if (updatedModules.length > 0 || current.length > 0 || installedModules.length > 0)
+            this.trigger('modulesChanged');
         this._initialised = true;
     }
 
