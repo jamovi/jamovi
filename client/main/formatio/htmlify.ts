@@ -71,7 +71,7 @@ function _populate(item: IElement, parent: HTMLElement, level: number,
     }
     else if (item.type === 'preformatted' && (!item.syntax || showSyntax)) {
         const para = document.createElement('p');
-        const code = document.createElement('code');
+        const code = document.createElement('pre');
         code.innerText = item.content;
         para.appendChild(code);
         parent.appendChild(textMargin(para));
@@ -367,7 +367,7 @@ function formatAttr(chunk: ITextChunk): DocumentFragment {
         elements.push(document.createElement('u'));
     }
     if (hasAttr(chunk, 'code-block')) {
-        elements.push(document.createElement('code'));
+        elements.push(document.createElement('pre'));
     }
     if (hasAttr(chunk, 'script') && chunk.attributes && chunk.attributes.script === 'super') {
         elements.push(document.createElement('sup'));
