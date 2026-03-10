@@ -146,7 +146,7 @@ export class RibbonView extends EventDistributor {
             
         });
 
-        this.model.modules().on('change:modules', () => {
+        this.model.modules().on('modulesChanged', () => {
             //let modules = this.model.modules();
             for (let tab of this.model.attributes.tabs) {
                 if (tab.needsRefresh && tab.needsRefresh()) {
