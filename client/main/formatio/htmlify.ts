@@ -4,13 +4,25 @@ import { IElement } from './hydrate';
 import { ITable } from './hydrate';
 import { IText } from './hydrate';
 import { ITextChunk } from './hydrate';
-import { IReference } from '../main/references';
+import { IReference } from '../references';
 
-export function htmlify(item: IElement) {
+export interface IHTMLifyOptions {
+    level?: number;
+    rtlLanguage?: boolean;
+    showSyntax?: boolean;
+}
+
+export function htmlify(item: IElement, options?: IHTMLifyOptions): string {
+    // handle falling back to defaults, if the option parameter is not given
+    options = options || {};
+    options.level = options.level ?? 1;
+    options.rtlLanguage = options.rtlLanguage ?? false;
+    options.showSyntax = options.showSyntax ?? false;
+
     const doc = document.implementation.createHTMLDocument('Results');
     const body = doc.body;
 
-    _populate(item, body, 1);
+    _populate(item, body, options.level, options.rtlLanguage, options.showSyntax);
 
     return '<!doctype html>\n' + doc.documentElement.outerHTML;
 }
@@ -35,20 +47,21 @@ export function assignRefs(): Array<string> {
     return output;
 }
 
-function _populate(item: IElement, parent: HTMLElement, level: number): void {
+function _populate(item: IElement, parent: HTMLElement, level: number,
+                   rtlLanguage: boolean, showSyntax: boolean): void {
     if (item.type === 'group') {
         if (item.title) {
-            parent.appendChild(hdrFragm(level, item.title))
+            parent.appendChild(createHeader(level, item.title))
         }
         for (let child of item.items) {
-            _populate(child, parent, level + 1);
+            _populate(child, parent, level > -1 ? level + 1 : level, rtlLanguage, showSyntax);
         }
     }
     else if (item.type === 'image') {
         const image = document.createElement('img');
         image.width = item.width;
         image.height = item.height;
-        image.src = item.path;
+        image.src = item.path || '';
         image.title = item.title || 'PLACEHOLDER';
         image.alt = item.title || 'PLACEHOLDER';
         parent.appendChild(image);
@@ -56,10 +69,12 @@ function _populate(item: IElement, parent: HTMLElement, level: number): void {
     else if (item.type === 'table') {
         generateTable(item, parent);
     }
-    else if (item.type === 'preformatted') {
+    else if (item.type === 'preformatted' && (!item.syntax || showSyntax)) {
         const para = document.createElement('p');
-        para.appendChild(createFragm('<code>\n' + item.content.replace(/\n/g, '</br>\n') + '\n</code>'));
-        parent.appendChild(padText(para));
+        const code = document.createElement('code');
+        code.innerText = item.content;
+        para.appendChild(code);
+        parent.appendChild(textMargin(para));
     }
     else if (item.type === 'text') {
         generateText(item, parent, level);
@@ -67,42 +82,46 @@ function _populate(item: IElement, parent: HTMLElement, level: number): void {
     parent.appendChild(emptyPara());
 }
 
-function dcdAlign(abbr: string): string {
+function decodeAlign(abbr: string): string {
     return abbr.replace('l', 'left').replace('r', 'right').replace('c', 'center').replace('j', 'justify');
 }
 
-function hdrFragm(level, title): HTMLElement {
-    const hl = 'h' + level.toString();
-    const hdr = document.createElement(hl)
-    hdr.textContent = title;
+function createHeader(level: number, title: string): DocumentFragment {
+    let fragment = document.createDocumentFragment();
 
-    return hdr;
+    if (level >= 0 && title) {
+        const hdr = document.createElement('h' + level.toString())
+        hdr.textContent = title;
+        fragment.appendChild(hdr);
+    }
+
+    return fragment;
 }
 
-function padVals2Str(padVals: Array<number>): string {
-    return padVals.map(v => v.toString() + "px").join(' ')
+function pxVals2Str(pxVals: Array<number>): string {
+    return pxVals.map(v => v.toString() + 'px').join(' ')
 }
 
-function padText(elem: HTMLElement, indent?: number, prevNode?: string): HTMLElement {
+function textMargin(elem: HTMLElement, indent?: number, prevNode?: string): HTMLElement {
     indent = indent || 0;
     prevNode = prevNode || '';
-    const padVals = [0, 0, 0, 0];
+    const marginVals = [0, 0, 0, 0];
 
     if (['OL', 'UL'].includes(elem.nodeName)) {
-        padVals[3] += 18;
+        marginVals[3] += 18;
     }
     else if (['LI'].includes(elem.nodeName)) {
-        padVals[3] += 18;
+        marginVals[3] += 18;
     }
     else if (['P'].includes(elem.nodeName)) {
-        padVals[0] += ['P', 'UL', 'OL'].includes(prevNode) ? 12 : 0;
+        marginVals[0] += ['P', 'UL', 'OL'].includes(prevNode) ? 12 : 0;
     }
 
     if (indent > 0) {
-        padVals[3] += indent * 36;
+        marginVals[3] += indent * 36;
     }
 
-    elem.style.padding = padVals2Str(padVals);
+    elem.style.margin = pxVals2Str(marginVals);
 
     return elem
 }
@@ -130,7 +149,7 @@ function padCell(elem: HTMLElement, cellFmt: number, isFtr?: boolean, isTtl?: bo
         padVals[1] += 12;
     }
 
-    elem.style.padding = padVals2Str(padVals);
+    elem.style.padding = pxVals2Str(padVals);
 
     return elem
 }
@@ -138,7 +157,7 @@ function padCell(elem: HTMLElement, cellFmt: number, isFtr?: boolean, isTtl?: bo
 function emptyPara(): HTMLElement {
     const para = document.createElement('p');
 
-    return padText(para);
+    return textMargin(para);
 }
 
 function generateTable(item: ITable, parent: HTMLElement): void {
@@ -187,9 +206,11 @@ function generateTable(item: ITable, parent: HTMLElement): void {
             if (cell) {
                 let content = cell.content;
                 if (cell.sups && cell.sups.length > 0) {
-                    content = formatSups(content, cell.sups, ['footnote'].includes(row.type))
+                    tc.appendChild(formatSups(content, cell.sups, ['footnote'].includes(row.type)));
                 }
-                tc.appendChild(createFragm(content));
+                else {
+                    tc.textContent = content;
+                }
                 if (cell.colSpan) {
                     tc.colSpan = cell.colSpan;
                     skipCols = cell.colSpan - 1;
@@ -200,7 +221,7 @@ function generateTable(item: ITable, parent: HTMLElement): void {
                     skipRows[j] = cell.rowSpan - 1;
                 }
                 if (cell.align) {
-                    tc.style.textAlign = dcdAlign(cell.align);
+                    tc.style.textAlign = decodeAlign(cell.align);
                 }
                 if (['superTitle'].includes(row.type)) {
                     tc.style.borderBottom = styBorder;
@@ -235,18 +256,16 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
     let para: HTMLElement = document.createElement('p');
 
     for (const chunk of item.chunks) {
-        const prevNode = parent.lastElementChild.nodeName;
+        const prevNode = (parent.lastElementChild) ? parent.lastElementChild.nodeName : '';
 
         // headers
         if (hasAttr(chunk, 'header')) {
-            elem = document.createElement('h' + (chunk.attributes.header + level).toString());
-            elem.textContent = chunk.content;
-            parent.appendChild(elem);
+            parent.appendChild(createHeader((level > -1 ? level + chunk.attributes.header : level), chunk.content));
         }
         // lists: [1] append previous list
         if (clist !== (hasAttr(chunk, 'list') ? chunk.attributes.list : '')) {
             if (clist !== '' && list.children.length + list.childNodes.length > 0) {
-                parent.appendChild(padText(list, cindt, prevNode));
+                parent.appendChild(textMargin(list, cindt, prevNode));
             }
         }
         // paragraphs: [1] append previous paragraph if alignment or indentation changes
@@ -255,7 +274,7 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
         if (calgn !== (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left') ||
             cindt !== (hasAttr(chunk, 'indent') ? parseInt(chunk.attributes.indent) : 0)) {
             if (para.children.length + para.childNodes.length > 0) {
-                parent.appendChild(padText(para, cindt, prevNode));
+                parent.appendChild(textMargin(para, cindt, prevNode));
             }
         }
         // format paragraphs: [2] begin new alignment or indentation
@@ -284,7 +303,7 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
         if (hasAttr(chunk, 'list')) {
             if (chunk.content.endsWith('\n')) {
                 litm.appendChild(formatAttr(chunk));
-                list.appendChild(padText(litm, cindt, prevNode));
+                list.appendChild(textMargin(litm, cindt, prevNode));
                 litm = document.createElement('li');
             }
             else {
@@ -292,13 +311,14 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
                 // then the content remains unchanged)
                 litm.appendChild(formatAttr(chunk));
             }
-        } else {
+        }
+        else {
             if (chunk.content.endsWith('\n')) {
                 // append the current chunk, if it has content ('\n' doesn't)
                 if (chunk.content !== '\n') {
                     para.appendChild(formatAttr(chunk));
                 }
-                parent.appendChild(padText(para, cindt, prevNode));
+                parent.appendChild(textMargin(para, cindt, prevNode));
                 para = document.createElement('p');
             }
             else {
@@ -310,81 +330,122 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
     if (item.refs) {
         para = document.createElement('p');
         para.textContent = item.refs.join(', ');
-        parent.appendChild(padText(para, 0, parent.lastElementChild.nodeName));
+        parent.appendChild(textMargin(para, 0, parent.lastElementChild ? parent.lastElementChild.nodeName : ''));
     }
 }
 
 function formatAttr(chunk: ITextChunk): DocumentFragment {
-    let html = chunk.content.substring(0, chunk.content.length - (chunk.content.endsWith('\n') ? 1 : 0));
-    let style = '';
+    let content = chunk.content.substring(0, chunk.content.length - (chunk.content.endsWith('\n') ? 1 : 0));
+    let elements = [];
+    let fragment = document.createDocumentFragment();
 
+    if (hasAttr(chunk, 'formula')) {
+        content = 'Please copy the formula into a web page that converts LaTeX to images and insert it into your document: ' + content;
+    }
+
+    if (hasAttr(chunk, 'color') || hasAttr(chunk, 'background') || hasAttr(chunk, 'strike')) {
+        const span = document.createElement('span');
+        if (hasAttr(chunk, 'color')) {
+            span.style.color = chunk.attributes ? chunk.attributes.color : '#000000';
+        }
+        if (hasAttr(chunk, 'background')) {
+            span.style.backgroundColor = chunk.attributes ? chunk.attributes.background : '#FFFFFF';
+        }
+        if (hasAttr(chunk, 'strike')) {
+            span.style.textDecoration = "line-through";
+        }
+
+        elements.push(span);
+    }
     if (hasAttr(chunk, 'bold')) {
-        html = '<strong>' + html + '</strong>';
+        elements.push(document.createElement('strong'));
     }
     if (hasAttr(chunk, 'italic')) {
-        html = '<em>' + html + '</em>';
+        elements.push(document.createElement('em'));
     }
     if (hasAttr(chunk, 'underline')) {
-        html = '<u>' + html + '</u>';
-    }
-    if (hasAttr(chunk, 'strike')) {
-        html = '<s>' + html + '</s>'; // perhaps: <del>
+        elements.push(document.createElement('u'));
     }
     if (hasAttr(chunk, 'code-block')) {
-        html = '<code>' + html + '</code>';
+        elements.push(document.createElement('code'));
     }
-    if (hasAttr(chunk, 'script') && chunk.attributes.script === 'super') {
-        html = '<sup>' + + html + '</sup>';
+    if (hasAttr(chunk, 'script') && chunk.attributes && chunk.attributes.script === 'super') {
+        elements.push(document.createElement('sup'));
     }
-    if (hasAttr(chunk, 'script') && chunk.attributes.script === 'sub') {
-        html = '<sub>' + + html + '</sub>';
+    if (hasAttr(chunk, 'script') && chunk.attributes && chunk.attributes.script === 'sub') {
+        elements.push(document.createElement('sub'));
     }
     if (hasAttr(chunk, 'link')) {
-        html = '<a href=\"' + chunk.attributes.link + '\">' + html + '</a>';
-    }
-    if (hasAttr(chunk, 'formula')) {
-        html = 'Please copy the formula into a web page that converts LaTeX to images and insert it into your document: ' +
-               '<code>' + html + '</code>';
+        const a = document.createElement('a');
+        a.href = chunk.attributes ? chunk.attributes.link : '';
+        elements.push(a);
     }
 
-    if (hasAttr(chunk, 'color')) {
-        style += 'color: ' + chunk.attributes.color + '; ';
+    if (elements.length > 0) {
+        elements[elements.length - 1].innerText = content;
+        while (elements.length > 1) {
+            elements[elements.length - 2].appendChild(elements.pop());
+        }
+        fragment.appendChild(elements.pop());
     }
-    if (hasAttr(chunk, 'background')) {
-        style += 'background-color: ' + chunk.attributes.background + '; ';
-    }
-    if (style.length > 0) {
-        html = '<span style=\"' + style.trim() + '\">' + html + '</span>';
+    else {
+        fragment.textContent = content;
     }
 
-    return createFragm(html);
+    return fragment;
 }
 
-function formatSups(content: string, sups: Array<string>, isFN: boolean): string {
+function formatSups(content: string, sups: Array<string>, isFN: boolean): DocumentFragment {
+    let fragment = document.createDocumentFragment();
+
     if (isFN) {
         if (sups[0] === 'note') {
             // general and significance notes
-            return '<em>Note.</em>&nbsp;' + content;
+            const note = document.createElement('em');
+            note.innerText = 'Note.'
+            fragment.appendChild(note);
+            fragment.appendChild(document.createTextNode('\u00A0' + replace4HTML(content)));
         }
         else {
             // specific notes
-            return '<sup>' + sups.join(',') + '</sup>&nbsp' + content;
+            const note = document.createElement('sup');
+            note.innerText = sups.join(',');
+            fragment.appendChild(note);
+            fragment.appendChild(document.createTextNode('\u00A0' + replace4HTML(content)));
         }
     }
     else {
-        return content + ' <sup>' + sups.join(', ') + '</<sup>';
+        const note = document.createElement('sup');
+        note.innerText = replace4HTML(sups.join(','));
+        fragment.appendChild(document.createTextNode(content + ' '));
+        fragment.appendChild(note);
     }
+
+    return fragment;
 }
 
-function createFragm(html: string): DocumentFragment {
-    return document.createRange().createContextualFragment(html);
-}
+function formatRefs(level: number, references?: Array<IReference>): DocumentFragment {
+    let fragment = document.createDocumentFragment()
 
-function formatRefs(refs: IReference, level: number): DocumentFragment {
-    let html = '<h' + level + '>References</h' + level + '>\n';
+    fragment.appendChild(createHeader(level, 'References'));
 
     // walk though the references
+    for (const currRef of references) {
+    }
 
+    return fragment;
+}
 
-    return document.createRange().createContextualFragment(html);
+// replace non-printable characters
+function replace4HTML(content: string): string {
+    const stringRepl = {
+                        // jamovi output that with non-printable characters that need conversion
+                        '<sup>μ</sup>': 'μ', // superscripts (footnotes, etc.)
+                       };
+
+    for (const [target, replace] of Object.entries(stringRepl)) {
+        content = content.replaceAll(target, replace);
+    }
+
+    return content;
 }
