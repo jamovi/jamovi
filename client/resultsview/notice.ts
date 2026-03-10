@@ -2,7 +2,7 @@
 
 import Elem, { ElementData, ElementModel } from './element';
 
-import I18ns from '../common/i18n';
+import I18ns, { stringToParagraphs } from '../common/i18n';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { AnalysisStatus } from './create';
 
@@ -83,20 +83,11 @@ export class NoticeView extends Elem.View<Model> {
 
         const content = I18ns.get('app').__(doc.content, { prefix: '<strong>', postfix: '</strong>' });
 
-        $content.innerHTML = this.stringToParagraphs(content);
+        $content.innerHTML = stringToParagraphs(content);
 
         this.querySelectorAll('a[href]').forEach(el => el.addEventListener('click', this._handleLinkClick));
     }
 
-    stringToParagraphs(input: string): string {
-        return input
-            .replace(/\r\n/g, "\n")
-            .split(/\n{1,}/)
-            .map(p => p.trim())
-            .filter(p => p.length > 0)
-            .map(p => `<p>${p}</p>`)
-            .join("");
-    }
 
     _handleLinkClick(event: Event) {
         if (event.target instanceof HTMLElement) {

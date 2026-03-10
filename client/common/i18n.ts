@@ -31,6 +31,16 @@ export function s6e(input: string): string {
     return input;
 }
 
+export function stringToParagraphs(input: string): string {
+    return input
+        .replace(/\r\n/g, "\n")
+        .split(/\n{2,}/)
+        .map(p => p.trim())
+        .filter(p => p.length > 0)
+        .map(p => `<p>${p}</p>`)
+        .join("");
+}
+
 
 // Represents the header entry ("")
 interface JedLocaleHeaders {

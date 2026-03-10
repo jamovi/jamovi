@@ -6,7 +6,7 @@ import focusLoop from '../common/focusloop';
 import Elem, { ElementModel } from './element';
 import { AnalysisStatus } from './create';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
-import { s6e } from '../common/i18n';
+import { s6e, stringToParagraphs } from '../common/i18n';
 
 const SUPSCRIPTS = ["\u1D43", "\u1D47", "\u1D48", "\u1D49", "\u1DA0", "\u1D4D", "\u02B0", "\u2071",
                 "\u02B2", "\u1D4F", "\u02E1", "\u1D50", "\u207F", "\u1D52", "\u1D56", "\u02B3", "\u02E2",
@@ -778,8 +778,10 @@ export class View extends Elem.View<Model> {
 
         html = '';
 
-        for (let i = 0; i < table.notes.length; i++)
-            html += `<tr><td colspan="${ nPhysCols }"><span style="font-style: italic ;">${ _('Note') }.</span> ${ s6e(table.notes[i].note) }</td></tr>`;
+        for (let i = 0; i < table.notes.length; i++) {
+            const note = stringToParagraphs(`<i>${ _('Note') }.</i> ${ s6e(table.notes[i].note) }`);
+            html += `<tr><td class="table-note" colspan="${ nPhysCols }">${note}</td></tr>`;
+        }
 
         for (let i = 0; i < footnotes.length; i++)
             html += `<tr><td colspan="${ nPhysCols }">${ SUPSCRIPTS[i] } ${ s6e(footnotes[i]) }</td></tr>`;

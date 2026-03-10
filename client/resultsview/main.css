@@ -111,6 +111,10 @@ jmv-results-table {
     border-inline-start: 3px solid #bb5353;
 }
 
+.table-note p {
+    margin: 0;
+}
+
 .notice-box>.icon.warning-1 {
     background-image: url(/resultsview/assets/action-warning.svg);
 }
@@ -138,8 +142,7 @@ jmv-results-table {
 
 .notice-box > .content {
     max-width: 450px;
-    line-height: 10px;
-    white-space: pre;
+    line-height: 15px;
 }
 
 .notice-box {
@@ -153,6 +156,7 @@ jmv-results-table {
     border-radius: 5px;
     padding: 5px 12px;
     border-left-width: 4px;
+    width: max-content;
 }
 
 @media (forced-colors: active) {
@@ -290,6 +294,12 @@ input, [contenteditable], [contenteditable] * {
     vertical-align: top ;
     opacity: 1;
     transition: 0.3s opacity;
+    width: max-content;
+}
+
+.jmv-results-image.selectedable-result-item:focus {
+    outline-style: dashed;
+    outline-width: 2px;
 }
 
 .jmv-results-error {
