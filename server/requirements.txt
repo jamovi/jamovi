@@ -72,3 +72,5 @@ typing-extensions==4.15.0
     #   pytest-asyncio
 yarl==1.23.0
     # via aiohttp
+rich>=13.7.0
+polars == 1.38.1
