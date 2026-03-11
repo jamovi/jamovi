@@ -4,7 +4,8 @@ import math
 from numbers import Number
 import typing
 import polars as pl
-
+import polars.selectors as cs
+import time
 from pyreadstat import pyreadstat
 
 from jamovi.server.instancemodel import InstanceModel
@@ -26,8 +27,7 @@ JAMOVI_MAX_BITS = 32
 
 def read(model: InstanceModel, path: str, prog_cb: typing.Callable[[float], None], *, format: str, **kwargs) -> None:
 
-    chunk_size = 100
-    offset = 0
+    chunk_size = 1000
 
     _, meta = pyreadstat.read_sav(
         path,
@@ -36,44 +36,66 @@ def read(model: InstanceModel, path: str, prog_cb: typing.Callable[[float], None
         output_format="polars",  # crashes for me :/
     )
 
+    start_time = time.perf_counter()
     setup_meta(model, meta)
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
+    print(f"META time: {execution_time:.4f} seconds")
+
     
-    chunks = []
-    while True:
-        df, _ = pyreadstat.read_sav(
-            path,
-            row_offset=offset,
-            row_limit=chunk_size,
-            user_missing=True,
-            output_format="polars",  # crashes for me :/
-        )
-
-        if df.shape[0] == 0:
-            break
-
-        chunks.append(read_chunk(model, df, meta, offset))
-
-        # if df.shape[0] < chunk_size:
-        #     break
-
-        offset += chunk_size
 
     #set values for our instance module
     column_names = [x.name for x in model._columns]
 
-    # vertical_relaxed resolves correct data types
-    # vertical relaxed is slower when there's mixed data types
-    all_data = pl.concat(chunks, how="vertical_relaxed")
+    start_time = time.perf_counter()
+    all_data = None
+    index = 0
+    for df, _ in pyreadstat.read_file_in_chunks(
+        pyreadstat.read_sav,
+        path,
+        output_format="polars",  # crashes for me :/
+        chunksize=chunk_size):
+        df = df.with_columns(
+                cs.temporal().dt.epoch('d')
+            )
+        columns = []
+        if all_data is None:
+            all_data = read_chunk(model, df)
+            columns = []
+            for col in all_data.iter_columns():
+                columns.append(col)
+            
+            model.set_values(column_names, 0, columns)
+        else:
+            index += chunk_size
+            all_data = read_chunk(model, df)
 
-    columns = []
-    for col in all_data.iter_columns():
-        columns.append(col)
+            for col in all_data.iter_columns():
+                columns.append(col)
+            
+            model.set_values(column_names, index, columns)
+   
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
+    print(f"DF time: {execution_time:.4f} seconds")
+
+    # # vertical_relaxed resolves correct data types
+    # # # vertical relaxed is slower when there's mixed data types
+    # #all_data = pl.concat(chunks, how="vertical_relaxed")
     
-    model.set_values(column_names, 0, columns)
+    # # start_time = time.perf_counter()
+    # # columns = []
+    # # for col in all_data.iter_columns():
+    # #     columns.append(col)
+    
+    # end_time = time.perf_counter()
+    # execution_time = end_time - start_time
+    # print(f"SET time: {execution_time:.4f} seconds")
 
-    #inspect(all_data, console=custom_console)
+    # model.set_values(column_names, 0, columns)
 
-    #model.set_values(column_names, 0, all_data)
+    
+
     
 
 
@@ -194,7 +216,7 @@ def get_data_type(meta, column_name: str):
         var_type = meta.readstat_variable_types[column_name]
         data_type = string_to_data_type.get(var_type)
 
-        inspect(data_type)
+        #inspect(data_type)
         return data_type, var_type
 
 def get_column_width(meta, column_name: str):
@@ -216,7 +238,7 @@ def setup_meta(model: InstanceModel, meta) -> None:
     # number_rows can't be relied upon
     # with some files, it comes through as zero
 
-    inspect(meta)
+    #inspect(meta)
 
     # parrallel for each??
     for column_name in meta.column_names:
@@ -254,29 +276,31 @@ def setup_meta(model: InstanceModel, meta) -> None:
         if missings:
             column.set_missing_values(missings)
 
-def read_chunk(model: InstanceModel, df, meta, offset):
+# Function to cast a column only if its dtype is different from the target
+def cast_if_different(col_name, current_dtype, target_dtype):
+    if current_dtype != target_dtype:
+        return pl.col(col_name).cast(target_dtype)
+    else:
+        # Return the column as is if types are the same
+        return pl.col(col_name)
+
+def read_chunk(model: InstanceModel, df):
     column_names = [x.name for x in model._columns]
     data_types  = [x.data_type for x in model._columns]
 
+    # vertical_relaxed resolves correct data types
     #map columns to the correct datatype
     map_to_polars = {
         DataType.TEXT: pl.String,
-        DataType.INTEGER: pl.Int32, # columns not picked up as int, is this a bug in pyreadstat?
-        DataType.DECIMAL: pl.Float32
+        DataType.INTEGER: pl.Int64, # columns not picked up as int, is this a bug in pyreadstat?
+        DataType.DECIMAL: pl.Float64
     }
 
     column_with_polars_data_type = [(col, map_to_polars.get(dt, pl.String)) for col, dt in zip(column_names, data_types)]
 
-    #perform operations on values data frame
-
-    #inspect(column_with_polars_data_type)
-
-    # Use a list comprehension to apply cast to all desired columns
-    df = df.with_columns([
-        pl.col(name).cast(dt) for name, dt in column_with_polars_data_type
-    ])
-
-    #inspect(df)
+    # df = df.with_columns([
+    #     cast_if_different(name, df.schema[name], dt) for name, dt in column_with_polars_data_type
+    # ])
 
     return df
 
