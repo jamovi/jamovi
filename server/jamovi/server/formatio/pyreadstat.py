@@ -13,6 +13,12 @@ from jamovi.server.dataset import DataType
 from jamovi.server.dataset import MeasureType
 
 from rich import inspect
+from rich import inspect
+from rich.console import Console
+
+# Create a console with a fixed width (e.g., 80 characters)
+custom_console = Console(width=500)
+
 
 # jamovi core uses 32 bit integers in the c implementation
 # leaving that as is, could swap to longs in future
@@ -47,17 +53,28 @@ def read(model: InstanceModel, path: str, prog_cb: typing.Callable[[float], None
 
         chunks.append(read_chunk(model, df, meta, offset))
 
-        if df.shape[0] < chunk_size:
-            break
+        # if df.shape[0] < chunk_size:
+        #     break
 
         offset += chunk_size
 
     #set values for our instance module
     column_names = [x.name for x in model._columns]
-    
+
     # vertical_relaxed resolves correct data types
     # vertical relaxed is slower when there's mixed data types
-    model.set_values(column_names, 0, pl.concat(chunks, how="vertical_relaxed"))
+    all_data = pl.concat(chunks, how="vertical_relaxed")
+
+    columns = []
+    for col in all_data.iter_columns():
+        columns.append(col)
+    
+    model.set_values(column_names, 0, columns)
+
+    #inspect(all_data, console=custom_console)
+
+    #model.set_values(column_names, 0, all_data)
+    
 
 
 def get_missing_ranges(meta, column_name, data_type):
@@ -252,14 +269,14 @@ def read_chunk(model: InstanceModel, df, meta, offset):
 
     #perform operations on values data frame
 
-    inspect(column_with_polars_data_type)
+    #inspect(column_with_polars_data_type)
 
     # Use a list comprehension to apply cast to all desired columns
     df = df.with_columns([
         pl.col(name).cast(dt) for name, dt in column_with_polars_data_type
     ])
 
-    inspect(df)
+    #inspect(df)
 
     return df
 
