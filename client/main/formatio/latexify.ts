@@ -484,7 +484,7 @@ function cleanTable(table: ITable): ITable {
     return table;
 }
 
-// replace LaTeX special characters, non-printable characters, and HTML attributesin strings
+// replace LaTeX special characters, non-printable characters, and HTML attributes in strings
 function replace4LaTeX(content: string): string {
     const stringRepl = {
                         // LaTeX special characters
