@@ -32,7 +32,7 @@ def read(model: InstanceModel, path: str, prog_cb: typing.Callable[[float], None
 
     setup_meta(model, meta)
     
-
+    chunks = []
     while True:
         df, _ = pyreadstat.read_sav(
             path,
@@ -45,12 +45,19 @@ def read(model: InstanceModel, path: str, prog_cb: typing.Callable[[float], None
         if df.shape[0] == 0:
             break
 
-        read_chunk(model, df, meta, offset)
+        chunks.append(read_chunk(model, df, meta, offset))
 
         if df.shape[0] < chunk_size:
             break
 
         offset += chunk_size
+
+    #set values for our instance module
+    column_names = [x.name for x in model._columns]
+    
+    # vertical_relaxed resolves correct data types
+    # vertical relaxed is slower when there's mixed data types
+    model.set_values(column_names, 0, pl.concat(chunks, how="vertical_relaxed"))
 
 
 def get_missing_ranges(meta, column_name, data_type):
@@ -252,10 +259,8 @@ def read_chunk(model: InstanceModel, df, meta, offset):
         pl.col(name).cast(dt) for name, dt in column_with_polars_data_type
     ])
 
-    #set values for our instance module
-    model_values = [df[x].to_list() for x in column_names]
+    inspect(df)
 
-    inspect(model_values)
+    return df
 
-    model.set_values(column_names, offset, model_values)
-    pass
+
