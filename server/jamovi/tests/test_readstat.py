@@ -4,6 +4,7 @@ import itertools
 import typing
 
 import pytest
+import time
 
 from rich import inspect
 
@@ -30,7 +31,7 @@ def assert_levels_equal(a, b) -> None:
 
 def assert_cell_equal(a, b):
     if isinstance(b, float):
-        print("test")
+        #print("test")
         assert True
         #assert a == pytest.approx(b)
     else:
@@ -62,7 +63,7 @@ def assert_column_equals(
         assert column.missing_values == missing_values
 
     if expected_values is not None:
-        obs_values = column.get_values(0, 100)
+        obs_values = column.get_values(0, 1000)
         for o, e in zip(obs_values, expected_values):
             print(o, e)
             assert_cell_equal(o, e)
@@ -157,11 +158,13 @@ def test_read_sav(instance_model: InstanceModel,
     """test read_sav()"""
 
     print("COLUMN",  column_name, data_type, measure_type, levels, missing_values)
-
+    
     # GIVEN an empty instance model
     # WHEN reading in a .sav file
     data_path = resolve_path("multi.sav")
+    start_time = time.perf_counter()
     read(instance_model, data_path, lambda x: None, format="sav")
+    end_time = time.perf_counter()
 
     # THEN the columns, etc. come through correctly
     column = instance_model[column_name]
@@ -174,3 +177,8 @@ def test_read_sav(instance_model: InstanceModel,
                          missing_values=missing_values,
                          expected_values=expected_values)
     #inspect(column)
+    # Your code ends here
+
+    end_time = time.perf_counter()
+    execution_time = end_time - start_time
+    print(f"Execution time: {execution_time:.4f} seconds")
