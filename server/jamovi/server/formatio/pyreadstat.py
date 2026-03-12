@@ -36,20 +36,16 @@ def read(model: InstanceModel, path: str, prog_cb: typing.Callable[[float], None
         output_format="polars",  # crashes for me :/
     )
 
-    start_time = time.perf_counter()
     setup_meta(model, meta)
-    end_time = time.perf_counter()
-    execution_time = end_time - start_time
-    print(f"META time: {execution_time:.4f} seconds")
-
     
-
     #set values for our instance module
     column_names = [x.name for x in model._columns]
 
-    start_time = time.perf_counter()
+    
     all_data = None
     index = 0
+    execution_time = 0
+    save = []
     for df, _ in pyreadstat.read_file_in_chunks(
         pyreadstat.read_sav,
         path,
@@ -58,26 +54,26 @@ def read(model: InstanceModel, path: str, prog_cb: typing.Callable[[float], None
         df = df.with_columns(
                 cs.temporal().dt.epoch('d')
             )
-        columns = []
-        if all_data is None:
-            all_data = read_chunk(model, df)
-            columns = []
-            for col in all_data.iter_columns():
-                columns.append(col)
-            
-            model.set_values(column_names, 0, columns)
-        else:
-            index += chunk_size
-            all_data = read_chunk(model, df)
+        
+        #us
+        start_time = time.perf_counter()
 
-            for col in all_data.iter_columns():
-                columns.append(col)
-            
-            model.set_values(column_names, index, columns)
+        all_data = read_chunk(model, df)
+        #all_data = all_data.with_columns([pl.all().cast(pl.String)])
+        columns = []
+        for col in all_data.iter_columns():
+            columns.append(col)
+
+        model.set_values(column_names, index, columns)
+
+        index += chunk_size
+
+        end_time = time.perf_counter()
+        execution_time += end_time - start_time
    
-    end_time = time.perf_counter()
-    execution_time = end_time - start_time
-    print(f"DF time: {execution_time:.4f} seconds")
+    inspect(save)
+        
+    print(f"US time1: {execution_time:.4f} seconds")
 
     # # vertical_relaxed resolves correct data types
     # # # vertical relaxed is slower when there's mixed data types
@@ -292,15 +288,15 @@ def read_chunk(model: InstanceModel, df):
     #map columns to the correct datatype
     map_to_polars = {
         DataType.TEXT: pl.String,
-        DataType.INTEGER: pl.Int64, # columns not picked up as int, is this a bug in pyreadstat?
-        DataType.DECIMAL: pl.Float64
+        DataType.INTEGER: pl.Int32, # columns not picked up as int, is this a bug in pyreadstat?
+        DataType.DECIMAL: pl.Float32
     }
 
     column_with_polars_data_type = [(col, map_to_polars.get(dt, pl.String)) for col, dt in zip(column_names, data_types)]
 
-    # df = df.with_columns([
-    #     cast_if_different(name, df.schema[name], dt) for name, dt in column_with_polars_data_type
-    # ])
+    df = df.with_columns([
+        cast_if_different(name, df.schema[name], dt) for name, dt in column_with_polars_data_type
+    ])
 
     return df
 
