@@ -1092,6 +1092,17 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             let n10n = Notify.createFromPB(response);
             this.trigger('notification', n10n);
         }
+        else if (payloadType === 'ModuleRR') {
+            let moduleName = response.name;
+            this._modules.purgeCache(moduleName);
+
+            for (let analysis of this._analyses) {
+                if (analysis.ns === moduleName)
+                    analysis.reload();
+            }
+
+            this.trigger('moduleUpdated', { name: moduleName });
+        }
         else if (payloadType === 'LogRR') {
             console.log(response.content);
         }
