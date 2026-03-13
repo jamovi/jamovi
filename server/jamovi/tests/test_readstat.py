@@ -35,12 +35,16 @@ def assert_cell_equal(a, b):
 def assert_column_equals(
         column: Column,
         *,
+        description: str | None = None,
         data_type: DataType | None = None,
         measure_type: MeasureType | None = None,
         expected_values: typing.Iterable[CellValue] | None = None,
         levels: typing.Iterable[tuple] | None = None,
         missing_values: typing.Iterable[str] | None = None,
 ):
+
+    if column.description is not None:
+        assert column.description == description
 
     if column.data_type is not None:
         assert column.data_type is data_type
@@ -63,6 +67,7 @@ def assert_column_equals(
 @pytest.mark.parametrize(
     (
         "column_name",
+        "description",
         "data_type",
         "measure_type",
         "levels",
@@ -72,14 +77,16 @@ def assert_column_equals(
     (
         (
             "dbl_col",
+            "",
             DataType.DECIMAL,
             MeasureType.CONTINUOUS,
             [],
-            [],
+            [">= 99", "== 97"],
             lambda i: i / 10.0 + 0.1,
         ),
         (
             "chr_col",
+            "",
             DataType.TEXT,
             MeasureType.ID,
             [],
@@ -87,7 +94,26 @@ def assert_column_equals(
             lambda i: f"item_{i+1:04d}",
         ),
         (
+            "chr50_col",
+            "",
+            DataType.TEXT,
+            MeasureType.NOMINAL,
+            None,
+            [],
+            lambda i: str(i + 1) if i < 50 else '',
+        ),
+        (
+            "chr51_col",
+            "",
+            DataType.TEXT,
+            MeasureType.ID,
+            [],
+            [],
+            lambda i: str(i + 1) if i < 51 else '',
+        ),
+        (
             "logical_col",
+            "",
             DataType.DECIMAL,
             MeasureType.CONTINUOUS,
             [],
@@ -96,14 +122,16 @@ def assert_column_equals(
         ),
         (
             "int_col",
+            "An integer column with NA values",
             DataType.DECIMAL,
             MeasureType.CONTINUOUS,
             [],
-            ["== -99", "== -100", "== -101"],
+            ["== 1", "== -100", "== -101"],
             lambda i: i + 1,
         ),
         (
             "int_col_2",
+            "An integer column with NA <= -99",
             DataType.INTEGER,
             MeasureType.ORDINAL,
             (
@@ -117,6 +145,7 @@ def assert_column_equals(
         ),
         (
             "date_col",
+            "",
             DataType.INTEGER,
             MeasureType.ORDINAL,
             None,
@@ -125,6 +154,7 @@ def assert_column_equals(
         ),
         (
             "factor_col",
+            "",
             DataType.TEXT,
             MeasureType.NOMINAL,
             [
@@ -141,6 +171,7 @@ def assert_column_equals(
 )
 def test_read_sav(instance_model: InstanceModel,
                   column_name: str,
+                  description: str,
                   data_type: DataType,
                   measure_type: MeasureType,
                   levels: typing.Iterable[tuple] | None,
@@ -157,6 +188,7 @@ def test_read_sav(instance_model: InstanceModel,
     column = instance_model[column_name]
     expected_values = map(expected_gen, itertools.count())
     assert_column_equals(column,
+                         description=description,
                          data_type=data_type,
                          measure_type=measure_type,
                          levels=levels,
