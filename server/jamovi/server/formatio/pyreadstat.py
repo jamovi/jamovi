@@ -6,6 +6,7 @@ import typing
 import polars as pl
 import polars.selectors as cs
 import time
+from datetime import date
 from pyreadstat import pyreadstat
 
 from jamovi.server.instancemodel import InstanceModel
@@ -24,10 +25,74 @@ custom_console = Console(width=500)
 # jamovi core uses 32 bit integers in the c implementation
 # leaving that as is, could swap to longs in future
 JAMOVI_MAX_BITS = 32
+TIME_START = date(1970, 1, 1)
+MAX_LEVELS = 50
+CHUNK_SIZE = 10000
+
+
+def set_values(column, values, chunk):
+    row_index = 0
+    for row_index, value in enumerate(values):
+        handle_value(column, value, chunk + row_index)
+        
+def handle_value(column, value, row_index):
+    vt = type(value)
+    if column.data_type is DataType.TEXT:
+        if value is not None:
+            if vt is not str:
+                value = str(value)
+            if column.has_levels:
+                if not column.has_level(value):
+                    column.append_level(
+                        column.level_count,
+                        value,
+                        value,
+                        pinned=False)
+                if column.level_count > MAX_LEVELS:
+                    column.change(measure_type=MeasureType.ID)
+            column.set_value(row_index, value)
+        else:
+            column.set_value(row_index, '')
+    elif (column.measure_type is MeasureType.NOMINAL
+            or column.measure_type is MeasureType.ORDINAL):
+        if isinstance(value, Number):
+            if not math.isclose(float(value) % 1.0, 0.0):
+                column.change(data_type=DataType.DECIMAL)
+                handle_value(column, value, row_index)
+                return
+
+            try:
+                value = int(value)
+                if value.bit_length() > 32:
+                    raise Exception()
+            except Exception:
+                column.change(
+                    data_type=DataType.DECIMAL,
+                    measure_type=MeasureType.CONTINUOUS)
+            column.set_value(row_index, value)
+        elif vt is date:
+            delta = value - TIME_START
+            ul_value = delta.days
+            if not column.has_level(ul_value):
+                column.insert_level(ul_value, value.isoformat(), str(ul_value))
+            column.set_value(row_index, ul_value)
+        else:
+            column.set_value(row_index, -2147483648)
+    elif column.data_type is DataType.DECIMAL:
+        if isinstance(value, Number):
+            column.set_value(row_index, float(value))
+        else:
+            column.set_value(row_index, float('nan'))
+    elif column.data_type is DataType.INTEGER:
+        if isinstance(value, Number):
+            column.set_value(row_index, int(value))
+        else:
+            column.set_value(row_index, -2147483648)
+    row_index += 1
+
+
 
 def read(model: InstanceModel, path: str, prog_cb: typing.Callable[[float], None], *, format: str, **kwargs) -> None:
-
-    chunk_size = 1000
 
     _, meta = pyreadstat.read_sav(
         path,
@@ -42,7 +107,7 @@ def read(model: InstanceModel, path: str, prog_cb: typing.Callable[[float], None
     column_names = [x.name for x in model._columns]
 
     
-    all_data = None
+    all_data =  None
     index = 0
     execution_time = 0
     save = []
@@ -50,30 +115,25 @@ def read(model: InstanceModel, path: str, prog_cb: typing.Callable[[float], None
         pyreadstat.read_sav,
         path,
         output_format="polars",  # crashes for me :/
-        chunksize=chunk_size):
+        chunksize=CHUNK_SIZE):
         df = df.with_columns(
                 cs.temporal().dt.epoch('d')
             )
         
         #us
-        start_time = time.perf_counter()
+        
 
         all_data = read_chunk(model, df)
-        #all_data = all_data.with_columns([pl.all().cast(pl.String)])
         columns = []
-        for col in all_data.iter_columns():
+        ii = 0
+        for name, col in zip(column_names, all_data.iter_columns()):
             columns.append(col)
+            set_values(model.get_column_by_name(name), col, index)
+            
 
-        model.set_values(column_names, index, columns)
-
-        index += chunk_size
-
-        end_time = time.perf_counter()
-        execution_time += end_time - start_time
-   
-    inspect(save)
         
-    print(f"US time1: {execution_time:.4f} seconds")
+        
+        index += CHUNK_SIZE
 
     # # vertical_relaxed resolves correct data types
     # # # vertical relaxed is slower when there's mixed data types
@@ -97,7 +157,7 @@ def read(model: InstanceModel, path: str, prog_cb: typing.Callable[[float], None
 
 def get_missing_ranges(meta, column_name, data_type):
     range_list = meta.missing_ranges.get(column_name, None)
-
+    
     if range_list is None:
         return []
     # missing_ranges = {
@@ -109,7 +169,8 @@ def get_missing_ranges(meta, column_name, data_type):
     #     'int_col_2': [{'lo': -inf, 'hi': -99.0}]
     # }
     missings = []
-    for lo, hi in range_list:
+    for entry in range_list:
+        lo, hi = entry.values()
         if isinstance(lo, str):
             lo = "'{}'".format(lo)
         if isinstance(hi, str):
@@ -196,7 +257,6 @@ def get_measure_type(meta, column_name: str, variable_type: str, has_labels: boo
     column_measure = meta.variable_measure[column_name]
     measure_type = string_to_variable_measures.get(column_measure, MeasureType.NOMINAL)
     
-    
     return measure_type
 
 
@@ -268,8 +328,9 @@ def setup_meta(model: InstanceModel, meta) -> None:
                 # then treat column as text
                 column.set_data_type(DataType.TEXT)
 
-        missings = get_missing_ranges(meta, column, column.data_type)
+        missings = get_missing_ranges(meta, column_name, column.data_type)
         if missings:
+            inspect(missings)
             column.set_missing_values(missings)
 
 # Function to cast a column only if its dtype is different from the target
@@ -289,7 +350,7 @@ def read_chunk(model: InstanceModel, df):
     map_to_polars = {
         DataType.TEXT: pl.String,
         DataType.INTEGER: pl.Int32, # columns not picked up as int, is this a bug in pyreadstat?
-        DataType.DECIMAL: pl.Float32
+        DataType.DECIMAL: pl.Float64
     }
 
     column_with_polars_data_type = [(col, map_to_polars.get(dt, pl.String)) for col, dt in zip(column_names, data_types)]
