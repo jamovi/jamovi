@@ -41,8 +41,6 @@ export abstract class RibbonTab extends EventEmitter {
         //this.populate();
     }
 
-    public needsRefresh?(): void;
-
     public get name() {
         return this._name;
     }

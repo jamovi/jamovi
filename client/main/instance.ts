@@ -171,7 +171,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             this.trigger('moduleUninstalled', { name: moduleName });
         });
 
-        this._modules.on('moduleInstalled moduleUpdated', (meta: IModuleMeta) => {
+        this._modules.on('moduleInstalled moduleUpdated moduleChanged', (meta: IModuleMeta) => {
             let moduleName = meta.name;
             this._modules.purgeCache(moduleName);
 
@@ -1087,6 +1087,17 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         else if (payloadType === 'DataSetRR') {
             this._dataSetModel._processDatasetRR(response);
         }
+        /*else if (payloadType === 'ModuleRR') {
+            let moduleName = response.name;
+            this._modules.purgeCache(moduleName);
+
+            for (let analysis of this._analyses) {
+                if (analysis.ns === moduleName)
+                    analysis.reload();
+            }
+
+            this.trigger('moduleUpdated', { name: moduleName });
+        }*/
         else if (payloadType === 'Notification') {
 
             let n10n = Notify.createFromPB(response);

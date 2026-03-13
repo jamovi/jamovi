@@ -5,11 +5,9 @@ import RibbonMenu from './ribbonmenu';
 import RibbonTab, { RibbonItem } from './ribbontab';
 import Placeholder from './placeholder';
 import focusLoop from '../../common/focusloop';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
 import Store from '../store';
 import { Modules } from '../modules';
-import { RibbonModel } from '../ribbon';
 import Settings from '../settings';
 
 export class AnalyseTab extends RibbonTab {
@@ -25,6 +23,7 @@ export class AnalyseTab extends RibbonTab {
         this._moduleCount = 0;
 
         this.modules.on('moduleVisibilityChanged', this._onModuleVisibilityChanged, this);
+        this.modules.on('modulesChanged', this.update, this);
 
         this.populate();
     }
@@ -50,27 +49,6 @@ export class AnalyseTab extends RibbonTab {
             if (button instanceof RibbonMenu)
                 button.showModule(name);
         }
-    }
-
-    override needsRefresh() {
-        let modules = this.modules.get('modules');
-        let count = 0;
-        for (let module of modules) {
-            let modInfo = this._analysesList[module.name];
-            if (modInfo !== undefined && modInfo.version !== module.version)
-                return true;
-
-            if (modInfo === undefined && module.analyses.length > 0)
-                return true;
-
-            if (module.analyses.length > 0)
-                count += 1;
-        }
-
-        if (count !== this._moduleCount)
-            return true;
-
-        return false;
     }
 
     override async getRibbonItems() {

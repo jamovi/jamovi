@@ -28,6 +28,7 @@ class PlotsTab extends RibbonTab {
         this.settings = model.settings();
 
         this.modules.on('moduleVisibilityChanged', this._onModuleVisibilityChanged, this);
+        this.modules.on('modulesChanged', this.update, this);
 
         this.populate();
     }
@@ -53,27 +54,6 @@ class PlotsTab extends RibbonTab {
             if (button instanceof RibbonMenu)
                 button.showModule(name);
         }
-    }
-
-    public override needsRefresh() {
-        let modules = this.modules.get('modules');
-        let count = 0;
-        for (let module of modules) {
-            let modInfo = this._analysesList[module.name];
-            if (modInfo !== undefined && modInfo.version !== module.version)
-                return true;
-
-            if (modInfo === undefined && module.analyses.length > 0)
-                return true;
-
-            if (module.analyses.length > 0)
-                count += 1;
-        }
-
-        if (count !== this._moduleCount)
-            return true;
-
-        return false;
     }
 
     protected override async getRibbonItems() {

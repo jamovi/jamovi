@@ -52,6 +52,7 @@ class ModuleMeta:
     def __init__(self):
         self.name = None
         self.title = None
+        self.build_time = 0
         self.version = [0, 0, 0]
         self.description = None
         self.authors = [ ]
@@ -435,6 +436,7 @@ class Modules:
         module.is_sys = is_sys
         module.name = str(defn['name'])
         module.title = str(defn['title'])
+        module.build_time = defn.get('build-time', 0)
         if 'description' in defn:
             module.description = str(defn['description'])
         else:
