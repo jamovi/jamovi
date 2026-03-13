@@ -66,6 +66,7 @@ export interface IModuleMeta {
     name: string,
     title: string,
     version: number,
+    buildTime: number,
     authors: string[],
     description: string,
     category: 'plots' | 'analyses',
@@ -163,11 +164,52 @@ export class ModulesBase extends EventMap<IModulesModel> {
         });
     }
 
+    compareModuleMetas(m1: IModuleMeta, m2: IModuleMeta) {
+        let ff =  m1.name === m2.name &&
+                m1.title === m2.title &&
+                m1.version === m2.version &&
+                m1.buildTime === m2.buildTime &&
+                m1.description === m2.description &&
+                m1.category === m2.category &&
+                m1.visible === m2.visible && 
+                m1.minAppVersion === m2.minAppVersion &&
+                m1.path === m2.path &&
+                m1.isSystem === m2.isSystem &&
+                m1.new === m2.new &&
+                m1.incompatible === m2.incompatible &&
+                m1.analyses.length === m2.analyses.length &&
+                m1.authors.length === m2.authors.length;
+
+        if (ff) {
+
+            for (let i = 0; i < m1.analyses.length; i++) {
+                const a1 = m1.analyses[i];
+                const a2 = m2.analyses[i];
+
+                ff =  ff && a1.name === a2.name &&
+                            a1.category === a2.category &&
+                            a1.menuGroup === a2.menuGroup &&
+                            a1.menuSubgroup === a2.menuSubgroup &&
+                            a1.menuSubtitle === a2.menuSubtitle &&
+                            a1.menuTitle === a2.menuTitle &&
+                            a1.title === a2.title;
+            }
+        }
+
+        if (ff) {
+            for (let a1 of m1.authors)
+                ff =  ff && m2.authors.includes(a1);
+        }
+
+        return ff;
+    }
+
     _setup(message, modulesPB) {
         let current = this.attributes.modules;
 
         let installedModules: IModuleMeta[] = [];
         let updatedModules: IModuleMeta[] = [];
+        let changedModules: IModuleMeta[] = [];
 
         let modules: IModuleMeta[] = [ ];
 
@@ -184,6 +226,7 @@ export class ModulesBase extends EventMap<IModulesModel> {
                 name:  modulePB.name,
                 title: modulePB.title,
                 version: modulePB.version,
+                buildTime: modulePB.buildTime,
                 authors: modulePB.authors,
                 description: modulePB.description,
                 category: modulePB.category ? modulePB.category : 'analysis',
@@ -207,6 +250,8 @@ export class ModulesBase extends EventMap<IModulesModel> {
             else {
                 if (currentModule.version !== module.version)
                     updatedModules.push(module);
+                else if (this.compareModuleMetas(currentModule, module) === false)
+                    changedModules.push(module);
                 else
                     alreadyExists = true;
 
@@ -218,9 +263,9 @@ export class ModulesBase extends EventMap<IModulesModel> {
                 });
             }
 
-            if (alreadyExists)
+            /*if (alreadyExists)
                 module = currentModule;
-            else if (this.create) 
+            else */if (alreadyExists === false && this.create) 
                 this.create(module);
 
             modules.push(module);
@@ -239,8 +284,11 @@ export class ModulesBase extends EventMap<IModulesModel> {
             for (let updated of updatedModules) {
                 this.trigger('moduleUpdated', updated);
             }
+            for (let changed of changedModules) {
+                this.trigger('moduleChanged', changed);
+            }
         }
-        if (updatedModules.length > 0 || current.length > 0 || installedModules.length > 0)
+        if (updatedModules.length > 0 || current.length > 0 || installedModules.length > 0 || changedModules.length > 0)
             this.trigger('modulesChanged');
         this._initialised = true;
     }

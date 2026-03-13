@@ -307,6 +307,8 @@ try {
     if (args['build-hash'])
         packageInfo['build-hash'] = args['build-hash'];
 
+    packageInfo['build-time'] = Date.now() / 1000; //secs
+
     if (packageInfo.name === 'jmv')
         packageInfo.index = 0;
     else if (packageInfo.name === 'scatr')

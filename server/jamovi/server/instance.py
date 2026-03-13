@@ -3168,6 +3168,7 @@ class Instance:
         module_pb.name = module.name
         module_pb.title = module.title
         module_pb.version = version
+        module_pb.buildTime = module.build_time
         module_pb.description = module.description
         module_pb.category = module.category
         module_pb.authors.extend(module.authors)
