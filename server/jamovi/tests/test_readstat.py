@@ -62,7 +62,7 @@ def assert_column_equals(
         assert column.missing_values == missing_values
 
     if expected_values is not None:
-        obs_values = column.get_values(0, 1000)
+        obs_values = column.get_values(0, 100000)
         for o, e in zip(obs_values, expected_values):
             print(o, e)
             assert_cell_equal(o, e)
