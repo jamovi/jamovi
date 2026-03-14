@@ -1,5 +1,5 @@
 
-n <- 1000
+n <- 100000
 
 df <- data.frame(
   int_col      = haven::labelled_spss(
