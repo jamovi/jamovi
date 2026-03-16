@@ -307,7 +307,7 @@ try {
     if (args['build-hash'])
         packageInfo['build-hash'] = args['build-hash'];
 
-    packageInfo['build-time'] = Math.floor(Date.now() / 1000); //secs
+    packageInfo['build-time'] = new Date(Date.now()).toISOString();
 
     if (packageInfo.name === 'jmv')
         packageInfo.index = 0;
