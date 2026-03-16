@@ -436,7 +436,7 @@ class Modules:
         module.is_sys = is_sys
         module.name = str(defn['name'])
         module.title = str(defn['title'])
-        module.build_time = defn.get('build-time', 0)
+        module.build_time = defn.get('build-time', '')
         if 'description' in defn:
             module.description = str(defn['description'])
         else:

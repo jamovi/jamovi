@@ -66,7 +66,7 @@ export interface IModuleMeta {
     name: string,
     title: string,
     version: number,
-    buildTime: number,
+    buildTime: string,
     authors: string[],
     description: string,
     category: 'plots' | 'analyses',

@@ -413,7 +413,7 @@ message ModuleMeta {
     bool visible = 14;
     bool incompatible = 15;
     string category = 16;
-    uint32 buildTime = 17;
+    string buildTime = 17;
 }
 
 enum ValueType {
