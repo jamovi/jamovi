@@ -13,7 +13,6 @@ from .exceptions import FileWriteError
 from . import omv
 from . import blank
 
-
 __all__ = ('FileReadError', 'FileWriteError')  # prevent flake whining F401
 
 
