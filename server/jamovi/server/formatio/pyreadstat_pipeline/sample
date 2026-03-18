@@ -1,0 +1,147 @@
+[test] | ╭────────── <class 'pyreadstat._readstat_parser.metadata_container'> ──────────╮
+[test] | │ This class holds metadata we want to give back to python                     │
+[test] | │                                                                              │
+[test] | │ ╭──────────────────────────────────────────────────────────────────────────╮ │
+[test] | │ │ <pyreadstat._readstat_parser.metadata_container object at                │ │
+[test] | │ │ 0x7ff05b6a0ef0>                                                          │ │
+[test] | │ ╰──────────────────────────────────────────────────────────────────────────╯ │
+[test] | │                                                                              │
+[test] | │           column_labels = [                                                  │
+[test] | │                               'An integer column with NA values',            │
+[test] | │                               'An integer column with NA <= -99',            │
+[test] | │                               None,                                          │
+[test] | │                               None,                                          │
+[test] | │                               None,                                          │
+[test] | │                               None,                                          │
+[test] | │                               None,                                          │
+[test] | │                               None                                           │
+[test] | │                           ]                                                  │
+[test] | │            column_names = [                                                  │
+[test] | │                               'int_col',                                     │
+[test] | │                               'int_col_2',                                   │
+[test] | │                               'dbl_col',                                     │
+[test] | │                               'chr_col',                                     │
+[test] | │                               'date_col',                                    │
+[test] | │                               'datetime_col',                                │
+[test] | │                               'logical_col',                                 │
+[test] | │                               'factor_col'                                   │
+[test] | │                           ]                                                  │
+[test] | │  column_names_to_labels = {                                                  │
+[test] | │                               'int_col': 'An integer column with NA values', │
+[test] | │                               'int_col_2': 'An integer column with NA <=     │
+[test] | │                           -99',                                              │
+[test] | │                               'dbl_col': None,                               │
+[test] | │                               'chr_col': None,                               │
+[test] | │                               'date_col': None,                              │
+[test] | │                               'datetime_col': None,                          │
+[test] | │                               'logical_col': None,                           │
+[test] | │                               'factor_col': None                             │
+[test] | │                           }                                                  │
+[test] | │           creation_time = datetime.datetime(2026, 3, 12, 9, 16, 1)           │
+[test] | │           file_encoding = 'UTF-8'                                            │
+[test] | │             file_format = 'sav/zsav'                                         │
+[test] | │              file_label = None                                               │
+[test] | │          missing_ranges = {                                                  │
+[test] | │                               'int_col': [                                   │
+[test] | │                                   {'lo': -99.0, 'hi': -99.0},                │
+[test] | │                                   {'lo': -100.0, 'hi': -100.0},              │
+[test] | │                                   {'lo': -101.0, 'hi': -101.0}               │
+[test] | │                               ],                                             │
+[test] | │                               'int_col_2': [{'lo': -inf, 'hi': -99.0}]       │
+[test] | │                           }                                                  │
+[test] | │     missing_user_values = {}                                                 │
+[test] | │       modification_time = datetime.datetime(2026, 3, 12, 9, 16, 1)           │
+[test] | │                 mr_sets = {}                                                 │
+[test] | │                   notes = []                                                 │
+[test] | │          number_columns = 8                                                  │
+[test] | │             number_rows = 100000                                             │
+[test] | │ original_variable_types = {                                                  │
+[test] | │                               'int_col': 'F8.0',                             │
+[test] | │                               'int_col_2': 'F8.0',                           │
+[test] | │                               'dbl_col': 'F8.2',                             │
+[test] | │                               'chr_col': 'A11',                              │
+[test] | │                               'date_col': 'DATE11',                          │
+[test] | │                               'datetime_col': 'DATETIME20',                  │
+[test] | │                               'logical_col': 'F8.0',                         │
+[test] | │                               'factor_col': 'A1'                             │
+[test] | │                           }                                                  │
+[test] | │ readstat_variable_types = {                                                  │
+[test] | │                               'int_col': 'double',                           │
+[test] | │                               'int_col_2': 'double',                         │
+[test] | │                               'dbl_col': 'double',                           │
+[test] | │                               'chr_col': 'string',                           │
+[test] | │                               'date_col': 'double',                          │
+[test] | │                               'datetime_col': 'double',                      │
+[test] | │                               'logical_col': 'double',                       │
+[test] | │                               'factor_col': 'string'                         │
+[test] | │                           }                                                  │
+[test] | │              table_name = None                                               │
+[test] | │            value_labels = {                                                  │
+[test] | │                               'labels0': {                                   │
+[test] | │                                   2.0: 'small',                              │
+[test] | │                                   3.0: 'medium',                             │
+[test] | │                                   4.0: 'large',                              │
+[test] | │                                   5.0: 'xlarge'                              │
+[test] | │                               },                                             │
+[test] | │                               'labels1': {                                   │
+[test] | │                                   'A': 'Aardvark',                           │
+[test] | │                                   'B': 'Baboon',                             │
+[test] | │                                   'C': 'Cat',                                │
+[test] | │                                   'D': 'Dog'                                 │
+[test] | │                               }                                              │
+[test] | │                           }                                                  │
+[test] | │      variable_alignment = {                                                  │
+[test] | │                               'int_col': 'unknown',                          │
+[test] | │                               'int_col_2': 'unknown',                        │
+[test] | │                               'dbl_col': 'unknown',                          │
+[test] | │                               'chr_col': 'unknown',                          │
+[test] | │                               'date_col': 'unknown',                         │
+[test] | │                               'datetime_col': 'unknown',                     │
+[test] | │                               'logical_col': 'unknown',                      │
+[test] | │                               'factor_col': 'unknown'                        │
+[test] | │                           }                                                  │
+[test] | │  variable_display_width = {                                                  │
+[test] | │                               'int_col': 8,                                  │
+[test] | │                               'int_col_2': 8,                                │
+[test] | │                               'dbl_col': 8,                                  │
+[test] | │                               'chr_col': 8,                                  │
+[test] | │                               'date_col': 8,                                 │
+[test] | │                               'datetime_col': 8,                             │
+[test] | │                               'logical_col': 8,                              │
+[test] | │                               'factor_col': 8                                │
+[test] | │                           }                                                  │
+[test] | │        variable_measure = {                                                  │
+[test] | │                               'int_col': 'scale',                            │
+[test] | │                               'int_col_2': 'scale',                          │
+[test] | │                               'dbl_col': 'scale',                            │
+[test] | │                               'chr_col': 'nominal',                          │
+[test] | │                               'date_col': 'scale',                           │
+[test] | │                               'datetime_col': 'scale',                       │
+[test] | │                               'logical_col': 'scale',                        │
+[test] | │                               'factor_col': 'nominal'                        │
+[test] | │                           }                                                  │
+[test] | │  variable_storage_width = {                                                  │
+[test] | │                               'int_col': 8,                                  │
+[test] | │                               'int_col_2': 8,                                │
+[test] | │                               'dbl_col': 8,                                  │
+[test] | │                               'chr_col': 16,                                 │
+[test] | │                               'date_col': 8,                                 │
+[test] | │                               'datetime_col': 8,                             │
+[test] | │                               'logical_col': 8,                              │
+[test] | │                               'factor_col': 8                                │
+[test] | │                           }                                                  │
+[test] | │       variable_to_label = {'int_col_2': 'labels0', 'factor_col': 'labels1'}  │
+[test] | │   variable_value_labels = {                                                  │
+[test] | │                               'int_col_2': {                                 │
+[test] | │                                   2.0: 'small',                              │
+[test] | │                                   3.0: 'medium',                             │
+[test] | │                                   4.0: 'large',                              │
+[test] | │                                   5.0: 'xlarge'                              │
+[test] | │                               },                                             │
+[test] | │                               'factor_col': {                                │
+[test] | │                                   'A': 'Aardvark',                           │
+[test] | │                                   'B': 'Baboon',                             │
+[test] | │                                   'C': 'Cat',                                │
+[test] | │                                   'D': 'Dog'                                 │
+[test] | │                               }                                              │
+[test] | │                           }       
