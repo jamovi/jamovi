@@ -10,20 +10,20 @@ import { ITextChunk } from './hydrate';
 import { IReference } from '../references';
 
 export interface ILatexifyOptions {
-    showSyntax?: boolean;
     level?: number;
+    showSyntax?: boolean;
 }
 
-export function latexify(hydrated: IElement, options?: ILatexifyOptions): string {
+export function latexify(hydrated: IElement, options?: ILatexifyOptions): string | null {
     // handle falling back to defaults, if the option parameter is not given
     options = options || {};
-    options.showSyntax = options.showSyntax ?? false;
     options.level = options.level ?? -1;
+    options.showSyntax = options.showSyntax ?? false;
 
     if (hydrated === null) {
         return null;
     }
-    return populateElements(hydrated, options.level, options.showSyntax).join('\n');
+    return populateElements(hydrated, options).join('\n');
 }
 
 export function createDoc(contents: Array<string>, refNames?: Array<string>): string {
@@ -104,7 +104,7 @@ export function createBibTex(references?: Array<IReference>): string {
     let ref2Tex = [];
 
     if (!references || references.length === 0) {
-        return null;
+        return '';
     }
 
     for (const currRef of references) {
@@ -143,17 +143,24 @@ export function createBibTex(references?: Array<IReference>): string {
     return bibTex.join('\n\n');
 }
 
+// if not -1 (no headings), otherwise increase level by 1 or
+// set to specified level (if given)
+function incrLevel(level: number, setTo: number): number {
+    return level === -1 ? -1 : (setTo ?? level + 1);
+}
+
 // main loop: iterates through the input elements and calls itself when a group element
 // has children
-function populateElements(item: IElement, level: number, shwSyn: boolean): Array<string> {
+function populateElements(item: IElement, options: ILatexifyOptions): Array<string> {
     let output = [];
 
     if (item.type === 'group') {
         if (item.title) {
-            output.push(...generateHeading(item.title, level));
+            output.push(...generateHeading(replace4LaTeX(item.title), options.level));
         }
         for (let child of item.items) {
-            output.push(...populateElements(child, level > -1 ? level + 1 : level, shwSyn));
+            options.level = incrLevel(options.level);
+            output.push(...populateElements(child, options));
         }
     }
     else if (item.type === 'image') {
@@ -163,10 +170,10 @@ function populateElements(item: IElement, level: number, shwSyn: boolean): Array
         output.push(...generateTable(item));
     }
     else if (item.type === 'preformatted') {
-        output.push(...generatePreformatted(item, level, shwSyn));
+        output.push(...generatePreformatted(item, options));
     }
     else if (item.type === 'text') {
-        output.push(...generateText(item, level));
+        output.push(...generateText(item, options));
     }
 
     return output;
@@ -175,7 +182,7 @@ function populateElements(item: IElement, level: number, shwSyn: boolean): Array
 // generate headings at different levels
 function generateHeading(title: string, level: number): Array<string> {
     let output = [];
-    const ruler = '% ' + '-'.repeat(80);
+    const ruler = '% ' + '-'.repeat(78);
 
     if (level >= 0 && title) {
         output.push(ruler);
@@ -273,13 +280,13 @@ function generateTable(table: ITable): Array<string> {
 }
 
 // generate preformatted text
-function generatePreformatted(preformatted: IPreformatted, level: number, shwSyn: boolean): Array<string> {
+function generatePreformatted(preformatted: IPreformatted, options: ILatexifyOptions): Array<string> {
     let output = [];
 
-    // if preformatted is either not syntax or syntax is to be shown (shwSyn),
+    // if preformatted is either not syntax or syntax is to be shown (showSyntax),
     // add a heading, \begin{verbatim}, the latex array, and \ end{verbatim}
-    if (!preformatted.syntax || shwSyn) {
-        output.push(generateHeading(preformatted.title, level + 1));
+    if (!preformatted.syntax || options.showSyntax) {
+        output.push(generateHeading(preformatted.title, incrLevel(options.level)));
         if (preformatted.refs) {
             output.push('Created using the ' + concatRefs(preformatted.refs));
         }
@@ -292,7 +299,7 @@ function generatePreformatted(preformatted: IPreformatted, level: number, shwSyn
 }
 
 // generate formatted text (annotations)
-function generateText(text: IText, level: number): Array<string> {
+function generateText(text: IText, options: ILatexifyOptions): Array<string> {
     // icons and colours for message boxes for notices
     // cf. https://github.com/jamovi/jamovi/tree/main/client/resultsview/notice.ts#L64-L79
     // msgType - 1: 'warning-1', 2: 'warning-2', 3: 'info', 4: 'error'
@@ -312,9 +319,9 @@ function generateText(text: IText, level: number): Array<string> {
     }
 
     for (let chunk of text.chunks) {
-        // deal with headers
+        // generate headers
         if (hasAttr(chunk, 'header')) {
-            output.push(...generateHeading(chunk.content.trim(), level + 1));
+            output.push(...generateHeading(chunk.content.trim(), incrLevel(options.level, chunk.attributes.header)));
         }
         // format message boxes: [1] end previous box
         if (cmsgb !== (hasAttr(chunk, 'box') ? chunk.attributes.box : 0)) {
