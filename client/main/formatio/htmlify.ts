@@ -10,76 +10,230 @@ export interface IHTMLifyOptions {
     level?: number;
     rtlLanguage?: boolean;
     showSyntax?: boolean;
+    inclRefs?: boolean;
+    images?: string;
+    generator?: string;
+    charset?: string;
+    margin?: number; 
 }
 
-export function htmlify(item: IElement, options?: IHTMLifyOptions): string {
-    // handle falling back to defaults, if the option parameter is not given
+export function htmlify(item: IElement,
+                        options?: IHTMLifyOptions,
+                        refNames?: Array<string>,
+                        doc?: HTMLDocument): HTMLDocument {
+    // for parameter option ensure that for any options not given, there is a fall back to defaults
+    options = checkOptions(options);
+    // create an empty array if refNames is not given of inclRefs is false
+    refNames = refNames || [];
+    refNames = options.inclRefs ? refNames : []
+    // if the parameter doc is not given, create a new HTML document
+    if (! doc) {
+        doc = htmlSetupDoc(options);
+    }
+
+    // append contents to the document body
+    populateElements(item, doc.body, options, refNames);
+
+    return doc;
+}
+
+export function htmlSetupDoc(options: IHTMLifyOptions, doc?: HTMLDocument): HTMLDocument {
+    options = checkOptions(options);
+    let metaExists;
+    let metaCreate;
+
+    if (!doc) {
+        doc = document.implementation.createHTMLDocument('Results');
+    }
+    
+    // set meta-tags: generator, charset, ...
+    const metaNames = ['generator', 'charset'];
+    for (let name of metaNames) {
+        metaExists = doc.querySelector(`meta[name='${name}']`);
+        if (metaExists) {``
+            metaExists.setAttribute('content', options[name]);
+        } else {
+            metaCreate = doc.createElement('meta');
+            metaCreate.name = name;
+            metaCreate.content = options[name];
+            doc.head.appendChild(metaCreate);
+        }
+    }
+
+    // set document style (CSS)
+    const style = document.createElement('style');
+    style.innerHTML = `
+    body {
+        font-family: "Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Segoe UI Emoji","Segoe UI Symbol" ;
+        color: #333333;
+        cursor: default;
+        margin: ${options.margin}px;
+        font-size: 12px;
+    }
+
+    h1 {
+        font-size: 160%;
+        color: #3E6DA9;
+        margin-bottom: 12px;
+        white-space: nowrap;
+    }
+
+    h2 {
+        font-size: 130%;
+        margin-bottom: 12px;
+        color: #3E6DA9;
+    }
+
+    h3, h4, h5 {
+        font-size: 110%;
+        margin-bottom: 12px;
+    }
+
+    table {
+        border-spacing: 0;
+        page-break-inside: avoid;
+    }
+
+    table tr td, table tr th {
+        page-break-inside: avoid;
+        font-size: 12px;
+    }
+
+    .note {
+        color: #3E6DA9;
+        margin: 5px 0px;
+    }`;
+    doc.head.appendChild(style);
+
+    // set text direction: LTR / RTL
+    doc.body.dir = options.rtlLanguage ? "rtl" : "ltr";
+
+    return doc;
+}
+
+export function formatRefs(references: Array<IReference>, doc: HTMLDocument): HTMLDocument {
+    let refPara: HTMLElement;
+    let refIndex: HTMLElement;
+    let refTextN1: Text;
+    let refTextI:  HTMLElement;
+    let refTextN2: Text;    
+    const heading = createHeader(1, 'References');
+    doc.body.appendChild(heading);
+
+    // walk though the references
+    for (let [i, currRef] of references.entries()) {
+        refPara = document.createElement('p');
+        refIndex = document.createElement('strong');
+        refIndex.innerText = `[${i + 1}]`;
+        refPara.appendChild(refIndex);
+        refTextN1 = document.createTextNode('');
+        refTextI = document.createElement('em');
+        refTextN2 = document.createTextNode('');
+        // assign elements accordingly to reference type
+        if (currRef.type === 'software') {
+            refTextN1.textContent = ' ' + currRef.authors.complete + ' (' + currRef.year2 + '). ';
+            refTextI.textContent = currRef.title + '.';
+            refTextN2.textContent = ' ' + currRef.publisher + '.' + (currRef.extra ? (' ' + currRef.extra + '.') : '');
+        }
+        else if (currRef.type === 'article') {
+            refTextN1.textContent = ' ' + currRef.authors.complete + ' (' + currRef.year2 + '). ' + currRef.title + '. ';
+            refTextI.textContent = currRef.publisher + ', ' + currRef.volume + (currRef.issue ? ('(' + currRef.issue + ')') : '');
+            refTextN2.textContent = ', ' +  currRef.pages + '. ' + currRef.url;
+        }
+        refPara.appendChild(refTextN1);
+        refPara.appendChild(refTextI);
+        refPara.appendChild(refTextN2);
+        doc.body.appendChild(refPara)
+    }
+
+    return doc;
+}
+
+function checkOptions(options?: IHTMLifyOptions): IHTMLifyOptions {
     options = options || {};
     options.level = options.level ?? 1;
     options.rtlLanguage = options.rtlLanguage ?? false;
     options.showSyntax = options.showSyntax ?? false;
+    options.inclRefs = options.inclRefs ?? false;
+    options.images = options.images ?? 'inline';
+    options.generator = options.generator ?? 'jamovi';
+    options.charset = options.charset ?? 'utf-8';
+    options.margin = options.margin ?? 24;
 
-    const doc = document.implementation.createHTMLDocument('Results');
-    const body = doc.body;
-
-    _populate(item, body, options.level, options.rtlLanguage, options.showSyntax);
-
-    return '<!doctype html>\n' + doc.documentElement.outerHTML;
+    return options;
 }
 
-// ensures that references (that may overlap for different analyses)
-// appear only once
-export function unfifyRefs(): Array<IReference> {
-    const output = [];
-
-    // TBA
-
-    return output;
+// if not -1 (no headings), otherwise increase level by 1 or
+// set to specified level (if given)
+function incrLevel(level: number, setTo?: number): number {
+    return level === -1 ? -1 : (setTo ?? level + 1);
 }
 
-// assign each reference (originally an array with names) a unique
-// index (pointing to the resepctive reference created by unifyRefs)
-export function assignRefs(): Array<string> {
-    const output = [];
+function populateElements(item: IElement, parent: HTMLElement,
+                          options: IHTMLifyOptions,
+                          refNames: Array<string>): void {
+    let para: HTMLElement;
 
-    // TBA
-
-    return output;
-}
-
-function _populate(item: IElement, parent: HTMLElement, level: number,
-                   rtlLanguage: boolean, showSyntax: boolean): void {
+    // if the item has a reference, replace it with the respective index
+    if (item.refs && options.inclRefs) {
+        item.refs = item.refs.map(r => String(refNames.indexOf(r) + 1));
+    }
+    else if (!options.inclRefs) {
+        delete item.refs;
+    }
+    const div = document.createElement('div');
+    // process the items according to their type
     if (item.type === 'group') {
         if (item.title) {
-            parent.appendChild(createHeader(level, item.title))
+            div.appendChild(createHeader(options.level, item.title))
         }
+        options = Object.assign({}, options); // clone
+        options.level = incrLevel(options.level);
         for (let child of item.items) {
-            _populate(child, parent, level > -1 ? level + 1 : level, rtlLanguage, showSyntax);
+            populateElements(child, div, options, refNames);
         }
+        if (item.refs) {
+            para = addRefsPara(item.refs);
+            div.appendChild(para);
+        }
+        div.appendChild(emptyPara());
     }
     else if (item.type === 'image') {
         const image = document.createElement('img');
         image.width = item.width;
         image.height = item.height;
         image.src = item.path || '';
-        image.title = item.title || 'PLACEHOLDER';
-        image.alt = item.title || 'PLACEHOLDER';
-        parent.appendChild(image);
+        if (item.title) {
+            image.title = item.title;
+            image.alt = item.title;
+        }
+        div.appendChild(image);
+        if (item.refs) {
+            para = addRefsPara(item.refs);
+            div.appendChild(para);
+        }
+        div.appendChild(emptyPara());
     }
     else if (item.type === 'table') {
-        generateTable(item, parent);
+        generateTable(item, div);
     }
-    else if (item.type === 'preformatted' && (!item.syntax || showSyntax)) {
-        const para = document.createElement('p');
+    else if (item.type === 'preformatted' && (!item.syntax || options.showSyntax)) {
+        para = document.createElement('p');
         const code = document.createElement('pre');
         code.innerText = item.content;
         para.appendChild(code);
-        parent.appendChild(textMargin(para));
+        para = textMargin(para);
+        div.appendChild(para);
+        if (item.refs) {
+            para = addRefsPara(item.refs);
+            div.appendChild(para);
+        }
+        div.appendChild(emptyPara());
     }
     else if (item.type === 'text') {
-        generateText(item, parent, level);
+        generateText(item, div, options.level);
     }
-    parent.appendChild(emptyPara());
+    parent.appendChild(div);
 }
 
 function decodeAlign(abbr: string): string {
@@ -89,7 +243,7 @@ function decodeAlign(abbr: string): string {
 function createHeader(level: number, title: string): DocumentFragment {
     let fragment = document.createDocumentFragment();
 
-    if (level >= 0 && title) {
+    if (level > 0 && title) {
         const hdr = document.createElement('h' + level.toString())
         hdr.textContent = title;
         fragment.appendChild(hdr);
@@ -123,7 +277,7 @@ function textMargin(elem: HTMLElement, indent?: number, prevNode?: string): HTML
 
     elem.style.margin = pxVals2Str(marginVals);
 
-    return elem
+    return elem;
 }
 
 function padCell(elem: HTMLElement, cellFmt: number, isFtr?: boolean, isTtl?: boolean): HTMLElement {
@@ -166,17 +320,18 @@ function generateTable(item: ITable, parent: HTMLElement): void {
     let tc: HTMLTableCellElement;
     const table = document.createElement('table');
     const thead = document.createElement('thead');
+    const tfoot = document.createElement('tfoot');
     const tbody = document.createElement('tbody');
     const rowType = item.rows.map(r => r.type);
-    const rowBorder = [rowType.indexOf('body') - 1, rowType.lastIndexOf('body')];
-    const styBorder = '1px solid rgb(51, 51, 51)';
+    const styMidlBorder = '1px solid rgb(51, 51, 51)';
+    const styLastBorder = '2px solid rgb(51, 51, 51)';
 
     // create header with table title
     tr = document.createElement('tr');
     tc = document.createElement('th');
     tc.textContent = item.title;
     tc.style.textAlign = 'left';
-    tc.style.borderBottom = styBorder;
+    tc.style.borderBottom = styMidlBorder;
     tc.colSpan = item.nCols;
     tr.appendChild(padCell(tc, 0, false, true));
     thead.appendChild(tr);
@@ -187,8 +342,8 @@ function generateTable(item: ITable, parent: HTMLElement): void {
         const cellType = ['superTitle', 'title'].includes(row.type) ? 'th' : 'td';
         // bit to set in cellFmt (see below) if the line is either the first (bitBfr) or
         // the last line (bitAft) of the table body
-        const bitBfr = (i === (rowBorder[0] + 1) ? 1 : 0);
-        const bitAft = (i === (rowBorder[1] + 0) ? 2 : 0);
+        const bitBfr = (i === rowType.indexOf('body') ? 1 : 0);
+        const bitAft = (i === rowType.lastIndexOf('body') ? 2 : 0);
 
         tr = document.createElement('tr');
         for (let [j, cell] of row.cells.entries()) {
@@ -224,43 +379,65 @@ function generateTable(item: ITable, parent: HTMLElement): void {
                     tc.style.textAlign = decodeAlign(cell.align);
                 }
                 if (['superTitle'].includes(row.type)) {
-                    tc.style.borderBottom = styBorder;
+                    tc.style.borderBottom = styMidlBorder;
                 }
             }
-            if (rowBorder.includes(i)) {
-                tc.style.borderBottom = styBorder;
+            if (i + skipRows[j] === rowType.indexOf('body') - 1) {
+                tc.style.borderBottom = styMidlBorder;
             }
-
-            tr.appendChild(padCell(tc, cellFmt, row.type === 'footnote'));
+            else if (i + skipRows[j] === rowType.lastIndexOf('body')) {
+                tc.style.borderBottom = styLastBorder;
+            }
+            tr.appendChild(padCell(tc, cellFmt, ['footnote'].includes(row.type)));
         }
         if (cellType === 'th') {
             thead.appendChild(tr);
         }
-        else {
+        else if (cellType === 'td' && ['body'].includes(row.type)) {
             tbody.appendChild(tr);
+        }
+        else if (cellType === 'td' && ['footnote'].includes(row.type)) {
+            tfoot.appendChild(tr);
         }
     }
 
+    // references
+    if (item.refs) {
+        tr = document.createElement('tr');
+        tc = document.createElement('th');
+        tc.textContent = joinRefs(item.refs);
+        tc.style.textAlign = 'right';
+        tc.colSpan = item.nCols;
+        tr.appendChild(padCell(tc, 0, false, true));
+        tfoot.appendChild(tr);
+    }
+
+    // empty line after table
+    const para = document.createElement('p');
+    para.innerHTML = '&nbsp;'
+
     table.appendChild(thead);
     table.appendChild(tbody);
+    table.appendChild(tfoot);
     parent.appendChild(table);
+    parent.appendChild(para);
 }
 
 function generateText(item: IText, parent: HTMLElement, level: number): void {
     let calgn = 'left';
     let clist = '';
     let cindt = 0;
-    let elem: HTMLElement = undefined;
-    let list: HTMLElement = undefined;
-    let litm: HTMLElement = undefined;
+    let list: HTMLElement = document.createElement('ul');
+    let litm: HTMLElement = document.createElement('li');
     let para: HTMLElement = document.createElement('p');
+    para.className = 'note';
 
     for (const chunk of item.chunks) {
-        const prevNode = (parent.lastElementChild) ? parent.lastElementChild.nodeName : '';
+        const prevNode = prevNodeName(parent);
 
         // headers
         if (hasAttr(chunk, 'header')) {
-            parent.appendChild(createHeader((level > -1 ? level + chunk.attributes.header : level), chunk.content));
+            parent.appendChild(createHeader(incrLevel(level, chunk.attributes.header), chunk.content));
         }
         // lists: [1] append previous list
         if (clist !== (hasAttr(chunk, 'list') ? chunk.attributes.list : '')) {
@@ -283,6 +460,7 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
                 calgn = (hasAttr(chunk, 'align') ? chunk.attributes.align : 'left');
                 cindt = (hasAttr(chunk, 'indent') ? parseInt(chunk.attributes.indent) : 0);
                 para = document.createElement('p');
+                para.className = 'note';
                 if (calgn !== 'left') {
                     para.style.textAlign = calgn;
                 }
@@ -292,6 +470,7 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
             clist = (hasAttr(chunk, 'list') ? chunk.attributes.list : '');
             if (clist !== '') {
                 list = document.createElement(clist === 'ordered' ? 'ol' : 'ul');
+                list.className = 'note';
                 litm = document.createElement('li');
             }
         }
@@ -320,6 +499,7 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
                 }
                 parent.appendChild(textMargin(para, cindt, prevNode));
                 para = document.createElement('p');
+                para.className = 'note';
             }
             else {
                 para.appendChild(formatAttr(chunk));
@@ -328,9 +508,8 @@ function generateText(item: IText, parent: HTMLElement, level: number): void {
     }
 
     if (item.refs) {
-        para = document.createElement('p');
-        para.textContent = item.refs.join(', ');
-        parent.appendChild(textMargin(para, 0, parent.lastElementChild ? parent.lastElementChild.nodeName : ''));
+        para = addRefsPara(item.refs);
+        parent.appendChild(para);
     }
 }
 
@@ -401,17 +580,21 @@ function formatSups(content: string, sups: Array<string>, isFN: boolean): Docume
     if (isFN) {
         if (sups[0] === 'note') {
             // general and significance notes
-            const note = document.createElement('em');
-            note.innerText = 'Note.'
-            fragment.appendChild(note);
-            fragment.appendChild(document.createTextNode('\u00A0' + replace4HTML(content)));
+            const name = document.createElement('em');
+            name.innerText = 'Note.'
+            fragment.appendChild(name);
+            const span = document.createElement('span');
+            span.innerHTML = '\u00A0' + content;
+            fragment.appendChild(span);
         }
         else {
             // specific notes
             const note = document.createElement('sup');
             note.innerText = sups.join(',');
             fragment.appendChild(note);
-            fragment.appendChild(document.createTextNode('\u00A0' + replace4HTML(content)));
+            const span = document.createElement('span');
+            span.innerHTML = '\u00A0' + content;
+            fragment.appendChild(span);
         }
     }
     else {
@@ -419,18 +602,6 @@ function formatSups(content: string, sups: Array<string>, isFN: boolean): Docume
         note.innerText = replace4HTML(sups.join(','));
         fragment.appendChild(document.createTextNode(content + ' '));
         fragment.appendChild(note);
-    }
-
-    return fragment;
-}
-
-function formatRefs(level: number, references?: Array<IReference>): DocumentFragment {
-    let fragment = document.createDocumentFragment()
-
-    fragment.appendChild(createHeader(level, 'References'));
-
-    // walk though the references
-    for (const currRef of references) {
     }
 
     return fragment;
@@ -448,4 +619,23 @@ function replace4HTML(content: string): string {
     }
 
     return content;
+}
+
+function prevNodeName(parent: HTMLElement): string {
+    return parent.lastElementChild ? parent.lastElementChild.nodeName : ''    
+}
+
+function addRefsPara(refs: Array<string>): HTMLElement {
+    const para = document.createElement('p');
+    const strong = document.createElement('strong');
+    strong.textContent = joinRefs(refs);
+    para.appendChild(strong);
+    para.style.textAlign = 'right';
+    return para;
+}
+
+function joinRefs(refs: Array<string>) {
+    return `[${refs.join('] [')}]`;  // like today [1] [2]
+//  return `[${refs.join(', ')}]`;   // [1, 2]
+//  return `[${refs.join('], [')}]`; // [1], [2]
 }

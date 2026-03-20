@@ -26,7 +26,11 @@ import { R } from './references';
 import { jmv } from './references';
 
 import { hydrate } from './formatio/hydrate';
+import { IHTMLifyOptions } from './formatio/htmlify';
 import { htmlify } from './formatio/htmlify';
+import { htmlSetupDoc } from './formatio/htmlify';
+import { formatRefs } from './formatio/htmlify';
+import { ILatexifyOptions } from './formatio/latexify';
 import { latexify } from './formatio/latexify';
 import { createDoc } from './formatio/latexify';
 import { createBibTex } from './formatio/latexify';
@@ -797,55 +801,110 @@ class ResultsPanel extends EventDistributor {
         ContextMenu.showResultsMenu(entries, data.pos.left, data.pos.top);
     }
 
-    async getAsLatex() {
+    async hydrateAnalysis(analysis: any) {
+        const results = analysis.results;
+        const analysisId = analysis.id;
+        const values: { [key: string]: any } = analysis.options.getValues();
+        const retrieveImage = this._getContent.bind(this);
+        // hydrateOptions -> IHydrateOptions in hydrate
+        const hydrateOptions = {
+            analysisId,
+            values,
+            retrieveImages: true,
+            retrieveImage,
+        }
+
+        return await hydrate(results, hydrateOptions);
+    }
+
+    deDuplRefs(references: Array<IReference>): Array<IReference> {
+        // remove duplicate references
+        const nameRefPairs = references.map(ref => [ref.name, ref]);
+        const refsByName = Object.fromEntries(nameRefPairs);
+
+        return Object.values(refsByName);
+    }
+
+    htmlOptions(level: number): IHTMLifyOptions {
+        return { level: level,
+                 rtlLanguage: I18ns.get('app').isRTL() ? true : false,
+                 showSyntax: this.model.settings().get('syntaxMode') || false,
+                 inclRefs: this.model.settings().getSetting('refsMode', 'bottom') === 'bottom' };
+    }
+
+    latexOptions(level: number): ILatexifyOptions {
+        return { level: level,
+                 showSyntax: this.model.settings().get('syntaxMode') || false };
+    }
+
+    async getAsLatex(options: Object, part?: string): Promise<string> {
 
         const analyses = [ ...this.model.analyses() ];
         const fragments: Array<string> = [];
         let references: Array<IReference> = [ R, jmv ];
-        let first = true;
+        options = {...options, ...this.latexOptions(1)};
 
         for (let analysis of analyses) {
-            const results = analysis.results;
-            const values: { [key: string]: any } = analysis.options.getValues();
-            const analysisId = analysis.id;
-            const retrieveImage = this._getContent.bind(this);
-            const options = {
-                analysisId,
-                values,
-                retrieveImages: true,
-                retrieveImage,
+            if (!part || analysis.id === parseInt(part)) {
+                const hydrated = await this.hydrateAnalysis(analysis);
+                if (hydrated === null)
+                    continue;
+                const latex = latexify(hydrated, options);
+                if (latex !== null && latex !== '')
+                    fragments.push(latex);
+                // get references from results
+                references.push(...analysis.references);
             }
-            const hydrated = await hydrate(results, options);
-            first = false;
-            if (hydrated === null)
-                continue;
-            const latex = latexify(hydrated);
-            if (latex !== null && latex !== '')
-                fragments.push(latex);
-            // get references from results
-            references.push(...analysis.references);
         }
+        references = this.deDuplRefs(references);
 
-        // remove duplicate references
-        const nameRefPairs = references.map(ref => [ref.name, ref]);
-        const refsByName = Object.fromEntries(nameRefPairs);
-        references = Object.values(refsByName);
-        const refNames = Object.keys(refsByName);
-
-        const doc = createDoc(fragments, refNames);
+        // handle references
+        const doc = createDoc(fragments, references.map(ref => ref.name));
         const bibtex = createBibTex(references);
 
         return `${ doc }[--BIBTEX_FROM_HERE--]\n${ bibtex }`;
+
+// if we at a later point in time decide to switch off the references in LaTex
+// depending on whether the setting is "Visible" or "Hidden"
+//      if (this.model.settings().getSetting('refsMode', 'bottom') === 'bottom') {
+//      }
+//      else if (this.model.settings().getSetting('refsMode', 'bottom') === 'hidden') {
+//          return createDoc(fragments);
+//      }
     }
 
-    getAsHTML(options, part?) {
-        if ( ! part) {
+    async getAsHTML(options: Object, part?: string): Promise<string> {
+
+        options = {...options, ...this.htmlOptions(1)};
+        const analyses = [ ...this.model.analyses() ];
+        let doc = htmlSetupDoc(options);
+        let references: Array<IReference> = [ R, jmv ];
+        references = [...references, ...this.deDuplRefs(analyses.map(a => a.references).flat())];
+
+        for (let analysis of analyses) {
+            if (!part || analysis.id === parseInt(part)) {
+                const hydrated = await this.hydrateAnalysis(analysis);
+                if (hydrated) {
+                    doc = htmlify(hydrated, options, references.map(r => r.name), doc);
+                }
+            }
+        }
+
+        if (options.inclRefs) {
+            formatRefs(references, doc);
+        }
+
+        return '<!doctype html>\n' + doc.documentElement.outerHTML;
+    }
+
+/*  getAsHTML(options, part?) {
+        if (!part) {
 
             options.fragment = true;
 
             let promises = Array.from(this.model.analyses())
                 .map(analysis => analysis.id)
-                .map(id => this._getContent([ id ], options));
+                .map(id => this._getContent([id], options));
 
             let refs = exportElem(this._refsTable, 'text/html', options)
                 .then((html) => { return { html }; });
@@ -859,14 +918,14 @@ class ResultsPanel extends EventDistributor {
             });
         }
 
-        if ( ! options.exclude)
-            options.exclude = [ ];
+        if (!options.exclude)
+            options.exclude = [];
         options.exclude.push('.jmvrefs', 'jmv-reference-numbers');
 
         let address = unflatten(part);
         return this._getContent(address, options)
             .then((content) => content.html);
-    }
+    } */
 
     _getContent(address, options) {
 
@@ -1050,22 +1109,27 @@ class ResultsPanel extends EventDistributor {
             const results = analysis.results;
             const values: { [key: string]: any } = analysis.options.getValues();
             const retrieveImage = this._getContent.bind(this);
-            const options = {
+            const hydrateOptions = {
                 analysisId,
                 values,
                 retrieveImages: true,
                 retrieveImage,
                 target,
             }
-            const hydrated = await hydrate(results, options);
+            const hydrated = await hydrate(results, hydrateOptions);
 
+            // if we hydrate a group, we need headings, otherwise not (-1)
+            // for the future: level may be determined depending on where in
+            // the analysis we are
+            const level = hydrated.type === 'group' ? 1 : -1;
             let content;
             if (event.op === 'copy2') {
-                const html = htmlify(hydrated);
+                const doc = htmlify(hydrated, this.htmlOptions(level));
+                const html = '<!doctype html>\n' + doc.documentElement.outerHTML;
                 content = { html, text: html };
             }
             else {
-                const text = latexify(hydrated);
+                const text = latexify(hydrated, this.latexOptions(level));
                 content = { text };
             }
 

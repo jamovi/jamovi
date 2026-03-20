@@ -35,8 +35,9 @@ export interface IReference {
 export const jmv = {
     name: 'jamovi',
     type: 'software',
-    authors: { complete: 'The jamovi project' },
+    authors: { complete: 'The jamovi project.' },
     year: 2025,
+    year2: '2025',
     title: 'jamovi',
     publisher: '(Version 2.7) [Computer Software]. Retrieved from https://www.jamovi.org',
     url: 'https://www.jamovi.org',
@@ -45,8 +46,9 @@ export const jmv = {
 export const R = {
     name: 'R',
     type: 'software',
-    authors: { complete: 'R Core Team' },
+    authors: { complete: 'R Core Team.' },
     year: 2025,
+    year2: '2025',
     title: 'R: A Language and environment for statistical computing',
     publisher: '(Version 4.5) [Computer software]. Retrieved from https://cran.r-project.org',
     url: 'https://cran.r-project.org',
