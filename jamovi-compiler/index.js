@@ -4,19 +4,20 @@
 
 console.log('\njamovi compiler\n');
 
-require('log-node')();
+import f from 'log-node';
+f();
 
-const path = require('path');
-const fs = require('fs-extra');
-const browserify = require('browserify');
-const yaml = require('js-yaml');
-const JSZip = require('jszip');
-const walkSync = require('walk-sync');
-const CLA = require('command-line-args');
-const needle = require('needle');
-const Log = require('log');
-const _ = require('underscore');
-const child_process = require('child_process');
+import path from 'path';
+import fs from 'fs-extra';
+import browserify from 'browserify';
+import yaml from 'js-yaml';
+import JSZip from 'jszip';
+import walkSync from 'walk-sync';
+import CLA from 'command-line-args';
+import needle from 'needle';
+import Log from 'log';
+import _ from 'underscore';
+import child_process from 'child_process';
 
 const ARGS = [
     { name: 'build',   alias: 'b', type: String },
@@ -43,19 +44,24 @@ const ARGS = [
     { name: 'build-hash', type: String },
 ];
 
-const temp = require('temp');
+import temp from 'temp';
 temp.track();
 
-const compiler = require('./compiler');
-const uicompiler = require('./uicompiler');
-const compileR = require('./compilerr');
-const parseR = require('./parser');
-const utils = require('./utils');
-const installer = require('./installer');
-const sourcify = require('./sourcify');
-const i18n = require('./i18n');
+import compiler from './compiler.js';
+import uicompiler from './uicompiler.js';
+import compileR from './compilerr.js';
+import parseR from './parser.js';
+import utils from './utils.js';
+import installer from './installer.js';
+import sourcify from './sourcify.js';
+import i18n from './i18n.js';
+import log from 'log';
+import { fileURLToPath } from 'url';
 
 (async function() {
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
 
 try {
 
@@ -74,7 +80,7 @@ try {
 
     const args = CLA(ARGS);
 
-    let log = require('log');
+    
 
     let srcDir;
     let installDir;
@@ -372,7 +378,7 @@ try {
                 if (code === 'c') //don't create json file of catalog
                     continue;
 
-                let data = i18n.translations[code];
+                let data = i18n.createTranslationJSON(code);
                 codes.push(code);
                 let i18nFile = code + '.json';
                 fs.writeFileSync(path.join(i18nOutDir, i18nFile), JSON.stringify(data, null, 4));

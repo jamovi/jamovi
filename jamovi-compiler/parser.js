@@ -1,10 +1,10 @@
 
 'use strict';
 
-const path = require('path');
-const fs = require('fs');
+import path from 'path';
+import fs from 'fs';
 
-const utils = require('./utils');
+import utils from './utils.js';
 
 const parse = function(srcDir) {
     let descPath = path.join(srcDir, 'DESCRIPTION');
@@ -53,4 +53,4 @@ const parse = function(srcDir) {
     };
 }
 
-module.exports = parse;
+export default parse;

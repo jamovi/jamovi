@@ -1,17 +1,22 @@
 
 'use strict';
 
-const path = require('path');
-const fs = require('fs');
-const yaml = require('js-yaml');
-const _ = require('underscore');
-const semver = require('semver');
-const jsesc = require('jsesc');
-const wrap = require('word-wrap');
+import path from 'path';
+import fs from 'fs';
+import yaml from 'js-yaml';
+import _ from 'underscore';
+import semver from 'semver';
+import jsesc from 'jsesc';
+import wrap from 'word-wrap';
 
-const validate = require('jsonschema').validate;
+import { fileURLToPath } from 'url';
 
-const sourcify = require('./sourcify');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+import { validate } from 'jsonschema'
+
+import sourcify from './sourcify.js';
 
 let analysisSchemaPath = path.join(__dirname, 'schemas', 'analysisschema.yaml');
 let analysisSchema = yaml.load(fs.readFileSync(analysisSchemaPath));
@@ -416,4 +421,4 @@ const resultsify = function(item, indent, root, analysisName) {
     return str;
 }
 
-module.exports = compile;
+export default compile;

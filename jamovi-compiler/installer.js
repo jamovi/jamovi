@@ -1,10 +1,10 @@
 
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const util = require('util');
-const child_process = require('child_process');
+import fs from 'fs';
+import path from 'path';
+import util from 'util';
+import child_process from 'child_process';
 
 const isJExe = function(exe) {
     return fs.existsSync(exe) && fs.statSync(exe).isFile();
@@ -145,4 +145,4 @@ const install = function(pth, jamovi_home) {
     }
 };
 
-module.exports = { find, check, install };
+export default { find, check, install };

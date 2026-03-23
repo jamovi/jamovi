@@ -1,7 +1,7 @@
 
 'use strict';
 
-const fs = require('fs');
+import fs from 'fs';
 
 const exists = function(path) {
     try {
@@ -13,4 +13,4 @@ const exists = function(path) {
     return true;
 }
 
-module.exports = { exists };
+export default { exists };

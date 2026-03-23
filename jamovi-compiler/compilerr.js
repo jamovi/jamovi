@@ -1,15 +1,15 @@
 
 'use strict';
 
-const path = require('path');
-const fs = require('fs-extra');
-const util = require('util');
-const sh = require('child_process').execSync;
-const process = require('process');
+import path from 'path';
+import fs from 'fs-extra';
+import util from 'util';
+import { execSync as sh } from 'child_process';
+import process from 'process';
 
-const snapshots = require('./snapshots');
+import snapshots from './snapshots.js';
 
-const temp = require('temp');
+import temp from 'temp';
 temp.track();
 
 const compile = function(srcDir, moduleDir, paths, packageInfo, rVersion, rArch, log, options) {
@@ -374,4 +374,4 @@ const compile = function(srcDir, moduleDir, paths, packageInfo, rVersion, rArch,
     log.debug('deleted');
 }
 
-module.exports = compile
+export default compile

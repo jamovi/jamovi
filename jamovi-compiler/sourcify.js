@@ -1,8 +1,8 @@
 
 'use strict';
 
-const _ = require('underscore');
-const jsesc = require('jsesc');
+import _ from 'underscore';
+import jsesc from 'jsesc';
 
 const sourcify = function(object, indent) {
 
@@ -50,4 +50,4 @@ const sourcify = function(object, indent) {
     return str;
 }
 
-module.exports = sourcify;
+export default sourcify;
