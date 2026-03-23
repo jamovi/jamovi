@@ -128,4 +128,4 @@ const layoutUpgrade_2_0 = function(ctrl, parent) {
     return upgradedCtrl;
 };
 
-module.exports = checkForLayoutUpgrade;
+export default checkForLayoutUpgrade;

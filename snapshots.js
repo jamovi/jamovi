@@ -591,7 +591,7 @@ const R450jmv = R450base.concat([
     'sem', 'semPlot'
 ]);
 
-module.exports = {
+export default {
     '4.0.2': {
         mran_url: 'https://packagemanager.posit.co/cran/2020-08-24',
         base_packages: R402base,

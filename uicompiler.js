@@ -1,13 +1,18 @@
 
 'use strict';
 
-const path = require('path');
-const fs = require('fs');
-const yaml = require('js-yaml');
-const _ = require('underscore');
-const validate = require('jsonschema').validate;
-const util = require('util')
-const uiUpdateCheck = require('./layoutupdatecheck');
+import path from 'path';
+import fs from 'fs';
+import yaml from 'js-yaml';
+import _ from 'underscore';
+import { validate } from 'jsonschema';
+import util from 'util'
+import uiUpdateCheck from './layoutupdatecheck.js';
+
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let uiSchemaPath = path.join(__dirname, 'schemas', 'uischema.yaml');
 let uiSchema = yaml.load(fs.readFileSync(uiSchemaPath));
@@ -1677,4 +1682,4 @@ const determineTemplateType = function(template) {
     throw "Unknown control '" + template.type + "'. This compiler does not currently support custom controls."
 };
 
-module.exports = uicompile;
+export default uicompile;
