@@ -23,17 +23,14 @@ def resolve_path(filename: str) -> str:
 
 
 def assert_levels_equal(a, b) -> None:
-    #assert len(a) == len(b), "length mismatch"
-    #for i, (x, y) in enumerate(zip(a, b)):
-    #    assert x[:4] == y[:4], f"index {i}: {x!r} != {y!r}"
-    assert True
+    assert len(a) == len(b), "length mismatch"
+    for i, (x, y) in enumerate(zip(a, b)):
+       assert x[:4] == y[:4], f"index {i}: {x!r} != {y!r}"
 
 
 def assert_cell_equal(a, b):
     if isinstance(b, float):
-        #print("test")
-        assert True
-        #assert a == pytest.approx(b)
+        assert a == pytest.approx(b)
     else:
         assert a == b
 
