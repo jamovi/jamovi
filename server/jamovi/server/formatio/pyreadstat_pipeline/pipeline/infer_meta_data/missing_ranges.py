@@ -3,7 +3,7 @@ from numbers import Number
 from server.formatio.pyreadstat_pipeline.data_types.data_types import *
 
 
-def missing_ranges(meta: PyreadstatMeta, column_name: str, storage_type: SourceStorageType):
+def missing_ranges(meta: PyreadstatMeta, column_name: str, column: Column):
     
     range_list = getattr(meta, "missing_ranges", {}).get(column_name)
     missings = []
@@ -28,7 +28,7 @@ def missing_ranges(meta: PyreadstatMeta, column_name: str, storage_type: SourceS
 
         if lo == hi:
             missings.append(f"== {lo}")
-        elif storage_type == SourceStorageType.NUMERIC and math.isfinite(lo) and math.isfinite(hi) and abs(hi - lo) <= 12:
+        elif column.is_numeric() and math.isfinite(lo) and math.isfinite(hi) and abs(hi - lo) <= 12:
             # Expand small integer ranges into individual equality checks
             for i in range(int(lo), int(hi) + 1):
                 missings.append(f"== {i}")

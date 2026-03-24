@@ -1,12 +1,18 @@
 
 from server.formatio.pyreadstat_pipeline.data_types.data_types import *
 import polars as pl
+from jamovi.core import MeasureType
 
 # ============================================================================
 # Step 5: Infer source meaning
 # ============================================================================
+from jamovi.core import Column
 
-def infer_semantic_column_kind(info: SourceColumnInfo) -> SemanticColumnKind:
+def infer_semantic_column_kind(column: ImportColumn) -> ImportColumn:
+    column.final_kind = set_semantic_kind(column)
+    return column
+
+def set_semantic_kind(column: ImportColumn) -> SemanticColumnKind:
         """
         Collapse source metadata into a smaller semantic category.
 
@@ -21,33 +27,30 @@ def infer_semantic_column_kind(info: SourceColumnInfo) -> SemanticColumnKind:
             NUMERIC + NUMERIC + ORDINAL -> ORDINAL_CODED
             STRING + STRING + UNKNOWN -> TEXT
         """
-        if info.format_type == SourceFormatType.DATETIME:
+        if column.source_format == SourceFormatType.DATETIME:
             return SemanticColumnKind.DATETIME
 
-        if info.format_type == SourceFormatType.DATE:
-            return SemanticColumnKind.DATE
+        if column.source_format == SourceFormatType.DATE:
+            return  SemanticColumnKind.DATE
 
-        if info.format_type == SourceFormatType.TIME:
-            return SemanticColumnKind.TIME
+        if column.source_format == SourceFormatType.TIME:
+            return  SemanticColumnKind.TIME
 
-        if info.measure_type == SourceMeasureType.ORDINAL:
-            return SemanticColumnKind.ORDINAL_CODED
-
-        if info.measure_type == SourceMeasureType.NOMINAL:
-            if info.has_value_labels:
-                    return SemanticColumnKind.NOMINAL_CANDIDATE
-            return (
-                    SemanticColumnKind.TEXT_CANDIDATE
-                    if info.storage_type == SourceStorageType.STRING
-                    else SemanticColumnKind.NOMINAL_CANDIDATE
-            )
         
-        if info.storage_type == SourceStorageType.STRING:
+        if column.measure_type == MeasureType.ORDINAL:
+            return  SemanticColumnKind.ORDINAL_CODED
+
+        if column.measure_type == MeasureType.NOMINAL:
+            if column.value_levels is not None:
+                return SemanticColumnKind.NOMINAL_CANDIDATE
+            else:
+                return SemanticColumnKind.TEXT_CANDIDATE if column.data_type == DataType.STRING else SemanticColumnKind.NOMINAL_CANDIDATE
+        
+        if column.data_type == DataType.STRING:
             return SemanticColumnKind.TEXT
 
-        if info.storage_type == SourceStorageType.NUMERIC:
+        if column.is_numeric():
             return SemanticColumnKind.CONTINUOUS
 
         return SemanticColumnKind.UNKNOWN
-
 

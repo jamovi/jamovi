@@ -2,13 +2,9 @@ import polars as pl
 
 from server.formatio.pyreadstat_pipeline.data_types.data_types import *
 
-# ============================================================================
-# Step 4: Actually normalize the dataframe values
-# ============================================================================
-
 def normalize_source_dataframe(
         df: pl.DataFrame,
-        ingest_plans: dict[str, ColumnIngestPlan],
+        columns: list[ImportColumn],
 ) -> pl.DataFrame:
         """
         Apply ingest plans to the dataframe.
@@ -23,24 +19,20 @@ def normalize_source_dataframe(
         """
         exprs: list[pl.Expr] = []
 
-        for _, plan in ingest_plans.items():
-            print('PLAN', plan)
-            if plan.cast_to is not None:
+        for column in columns:
+            if column.final_polars_dtype() is not None:
                 ex: pl.Expr = None
-                if plan.preserve_temporal_numeric:
-                    ex = pl.col(plan.name).dt.epoch("s").cast(plan.cast_to, strict = False)
-                else: 
-                    print('PLANNN', plan)
-                    ex = pl.col(plan.name).cast(plan.cast_to, strict=False)
+                if column.preserve_temporal_numeric():
+                    ex = pl.col(column.name).dt.epoch("s").cast(column.final_polars_dtype(), strict = False)
+                else:
+                    ex = pl.col(column.name).cast(column.final_polars_dtype(), strict=False)
                     
-                if plan.fill_nulls:
-                    ex = ex.fill_null(plan.fill_nulls)
+                if column.fill_nulls:
+                    ex = ex.fill_null(column.fill_nulls())
 
                 exprs.append(ex)
-
+        
         if exprs:
-            df = df.with_columns(exprs)
-
-        print('NORMALIZED CHUNK')
-        print(df)
+            return df.with_columns(exprs)
+        
         return df

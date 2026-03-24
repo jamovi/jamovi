@@ -583,11 +583,7 @@ cdef class Column:
 
     def set_values(self, index, values, initing=False):
         for i, value in enumerate(values):
-            #print(index + i)
-            #try:
             self.set_value(index + i, value, initing=initing)
-            #except:
-            #    print(index, i, value)
             
     def get_values(self, index, n):
         values = [None] * n

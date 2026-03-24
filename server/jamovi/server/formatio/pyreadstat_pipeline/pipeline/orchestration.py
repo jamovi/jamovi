@@ -1,73 +1,60 @@
-from numbers import Number
-
 from server.formatio.pyreadstat_pipeline.data_types.data_types import *
 from jamovi.server.instancemodel import InstanceModel
 
-from .build_column_ingest_plan import build_column_ingest_plan
-from .build_source_column_info import build_source_column_info
+from .initialize_columns import initialize_columns
 from .normalize_source_dataframe import normalize_source_dataframe
-from .apply_jamovi_column_plan import apply_jamovi_column_plan
-from .infer_source_meaning import infer_semantic_column_kind
 from .update_model_values import write_chunk_values
-from .profiling import profile_sav_columns
-from .build_jamovi_column_plan import build_jamovi_column_plan
+from .update_chunk_levels import update_chunk_levels
+from .profiling import profile_sav_column
 
-from .file_io import get_chunk_generator, read_sav_chunks, read_sav_metadata
+from .finalize_column_plan import finalize_column_plan
+from .infer_source_meaning import infer_semantic_column_kind
+from .file_io import *
 
 import polars as pl
 
-def orchestrate_meta_pipeline(
+
+def first_pass(path: str,
         model: InstanceModel,
-        initial_df: pl.DataFrame,
-        meta: PyreadstatMeta,
-        chunk_size: int):
+        chunk_size: int) -> list[ImportColumn]:
     
-    assert isinstance(model, InstanceModel)
-    assert isinstance(initial_df, pl.DataFrame)
-    #assert isinstance(meta, PyreadstatMeta)
+    gen = get_chunk_generator(path, chunk_size)
 
-    source_info = build_source_column_info(initial_df, meta)
-    #print('one', source_info)
-    ingest_plans:  dict[str, ColumnIngestPlan] = {}
-    for key, val in source_info.items():
-        plan = build_column_ingest_plan(val)
-        ingest_plans[key] = plan
-
-    #df = normalize_source_dataframe(initial_df, ingest_plans)
-    
-    #source_infos, profile_states = profile_sav_columns(source_info, chunk_size)
-    #print('two', source_info)
-    for key, info in source_info.items():
-        #print(key, info)
-        kind = infer_semantic_column_kind(info)
-        jamovi_plan = build_jamovi_column_plan(info, kind)
+    columns = []
+    offset = 0
+    first_chunk = True
+    for chunk_df, meta in gen:
+        if first_chunk:
+            columns = initialize_columns(chunk_df, meta, model)
+            first_chunk = False
         
-        model = apply_jamovi_column_plan(model, key, jamovi_plan)
-    
-    print(ingest_plans)
-    
-    return ingest_plans, model
-    
+        for column in columns:
+            column = infer_semantic_column_kind(column)
+            column = profile_sav_column(column, chunk_df)
+            column = finalize_column_plan(column)
 
-def orchestrate_high_level(path: str,
+        offset += chunk_df.height
+    
+    #finalize row count
+    model.set_row_count(offset)
+
+    return columns
+
+def second_pass(
+        path: str,
         model: InstanceModel,
-        chunk_size: int):
-    initial_df, meta = read_sav_metadata(path, chunk_size)
-
-    model.set_row_count(meta.number_rows)
-
-    ingest_plans, model = orchestrate_meta_pipeline(model, initial_df, meta, chunk_size)
-
+        chunk_size: int,
+        columns: list[ImportColumn]):
+    
     gen = get_chunk_generator(path, chunk_size)
 
     offset = 0
     for chunk_df, _ in gen:
-        normalized_chunk = normalize_source_dataframe(chunk_df, ingest_plans)
-        print(offset)
-        if offset > meta.number_rows:
-            return
+        normalized_chunk = normalize_source_dataframe(chunk_df, columns)
+        update_chunk_levels(model, normalized_chunk)
         write_chunk_values(model, normalized_chunk, offset)
-        offset += chunk_size
+        offset += chunk_df.height
+    
 
 
 def import_sav_to_jamovi_in_chunks(
@@ -75,7 +62,8 @@ def import_sav_to_jamovi_in_chunks(
     model: InstanceModel,
     chunk_size: int
 ) -> None:
-    orchestrate_high_level(path, model, chunk_size)
+    columns = first_pass(path, model, chunk_size)
+    second_pass(path, model, chunk_size, columns)
      
      
     

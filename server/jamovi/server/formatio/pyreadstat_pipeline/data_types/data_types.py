@@ -1,21 +1,21 @@
-from dataclasses import dataclass, field
+from dataclasses import field
 from numbers import Number
 from typing import Any, Protocol, TypedDict, Dict, List, Union
 from enum import Enum, auto
-from jamovi.server.dataset import DataType
-from jamovi.server.dataset import MeasureType
 import polars as pl
+from jamovi.server.dataset import Column
+from jamovi.server.dataset import DataType
+from jamovi.core import MeasureType
 
-class SourceStorageType(Enum):
-    UNKNOWN = auto()
-    NUMERIC = auto()
-    STRING = auto()
 
+JAMOVI_MAX_BITS = 32
 
 class SourceFormatType(Enum):
     UNKNOWN = auto()
 
-    NUMERIC = auto()
+    NUMERIC_INTEGER = auto()
+    NUMERIC_DECIMAL = auto()
+
     STRING = auto()
 
     DATE = auto()
@@ -25,14 +25,6 @@ class SourceFormatType(Enum):
     CURRENCY = auto()
     PERCENT = auto()
     SCIENTIFIC = auto()
-
-
-class SourceMeasureType(Enum):
-    UNKNOWN = auto()
-    NOMINAL = auto()
-    ORDINAL = auto()
-    SCALE = auto()
-
 
 class SemanticColumnKind(Enum):
     UNKNOWN = auto()
@@ -53,66 +45,80 @@ class SemanticColumnKind(Enum):
     TEXT_CANDIDATE = auto()
     NOMINAL_CANDIDATE = auto()
 
-@dataclass
-class ImportColumnMeta:
-    name: str
-    source_label: str | None
-    source_storage_type: str | None
-    source_format_code: str | None
-    source_measure_level: str | None
-    source_value_labels: str | None
 
-    semantic_type: str | None
-    polars_dtype: Any | None
 
-@dataclass
-class SourceColumnInfo:
-    name: str
+class ImportInfo(Protocol):
+    #source data
+    source_format: SourceFormatType = None
+    final_kind: SemanticColumnKind = None
 
-    storage_type: SourceStorageType
-    format_type: SourceFormatType
-    measure_type: SourceMeasureType
-
-    polars_dtype: Any | None = None
-
-    column_width: Number | None = 0
-
-    has_value_labels: bool = False
-    value_labels: dict[Any, str] = field(default_factory=dict)
-
-    variable_label: str | None = None
-    source_format_code: str | None = None
-
-    missing_ranges: list[str] | None = None
-
-@dataclass
-class ColumnIngestPlan: 
-    name: str 
-    cast_to: pl.DataType | None = None
-    fill_nulls: Any| None = None
-    preserve_temporal_numeric: bool = False
-
-@dataclass
-class ColumnProfileState:
-    name: str
-    kind: SemanticColumnKind
-
+    # profile states
     is_frozen: bool = False
-    values_seen: int = 0
-    distinct_values: set[Any] = field(default_factory=set)
-
     exceeded_categorical_threshold: bool = False
     freeze_reason: str | None = None
+    
+    #levels
+    level_chunks: pl.DataFrame = pl.DataFrame()
+    value_levels: list[str] | None = None
 
-@dataclass
-class JamoviColumnPlan: 
-    name: str 
-    data_type: DataType   
-    measure_type: MeasureType
-    column_width: Number | None = 0
-    levels: list[tuple[Any, str]] = field(default_factory=list)   
-    variable_label: str | None = None
-    missing_values: Any = None
+    def is_numeric(self):
+        return self.data_type == DataType.DECIMAL or self.data_type == DataType.INTEGER
+
+    def is_categorical(self):
+        return self.measure_type == MeasureType.NOMINAL or self.measure_type == MeasureType.ORDINAL
+    
+    def is_any_label_bits_too_wide(self):
+        if self.value_labels is not None:
+            for value in self.value_labels:
+                if isinstance(value, Number) and int(value).bit_length() > JAMOVI_MAX_BITS:
+                    return True
+        return False
+    
+    def promote_storage(self, incoming: DataType):
+        order = {
+            DataType.INTEGER: 0,
+            DataType.DECIMAL: 1,
+            DataType.TEXT: 2
+        }
+
+        if self.data_type is None:
+            return incoming
+        
+        if order[self.data_type] < order[incoming]:
+            self.data_type = incoming
+
+    def should_profile_kind(self) -> bool:
+        return self.final_kind in {
+            SemanticColumnKind.TEXT_CANDIDATE,
+            SemanticColumnKind.NOMINAL_CANDIDATE,
+        }
+    
+    def final_polars_dtype(self):
+        match self.data_type:
+            case DataType.INTEGER:
+                return pl.Int32
+            case DataType.DECIMAL:
+                return pl.Float64
+            case _:
+                return pl.Uint8
+            
+    def preserve_temporal_numeric(self):
+        return self.source_format in {
+            SourceFormatType.DATE,
+            SourceFormatType.TIME,
+            SourceFormatType.DATETIME
+            }
+    
+    def fill_nulls(self):
+        if self.preserve_temporal_numeric():
+            return -2147483648
+        else:
+            return False 
+        
+
+
+ImportColumn = ImportInfo | Column
+
 
 # 1. Define the structure of a single range entry
 class MissingRangeEntry(TypedDict):
