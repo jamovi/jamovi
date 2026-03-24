@@ -1,21 +1,12 @@
 import polars as pl
-from server.jamovi.server.formatio.pyreadstat_pipeline.data_types.data_types import ImportColumn
+from server.formatio.pyreadstat_pipeline.data_types.data_types import *
 
 def extract_chunk_levels(name: str, df_chunk: pl.DataFrame):
     return df_chunk.select(
-        pl.col(name)
-            .drop_nulls()
-            .unique()
-            .alias('levels'))
-
-def append_column_levels(column: ImportColumn, df_chunk: pl.DataFrame):
-    chunk_levels = extract_chunk_levels(column.name, df_chunk)
-
-    column.seen_levels = (
-        pl.concat([column.seen_levels, chunk_levels])
-            .unique(subset=[column.name])
-            .sort(column.name)
-    )
+            pl.col(name)
+                .drop_nulls()
+                .unique()
+                .alias('levels'))
 
 # def update_column_levels(column: Column, chunk_df: pl.DataFrame) -> Column: 
 #     col_chunk = chunk_df[column.name]

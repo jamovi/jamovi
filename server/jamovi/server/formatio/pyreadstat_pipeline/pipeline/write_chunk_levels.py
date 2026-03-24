@@ -2,7 +2,7 @@ import polars as pl
 from server.instancemodel import InstanceModel
 from jamovi.server.dataset import DataType
 
-def update_chunk_levels(model: InstanceModel, chunk_df: pl.DataFrame) -> None: 
+def write_chunk_levels(model: InstanceModel, chunk_df: pl.DataFrame) -> None: 
     for column in model._columns:
         col_chunk = chunk_df[column.name]
 

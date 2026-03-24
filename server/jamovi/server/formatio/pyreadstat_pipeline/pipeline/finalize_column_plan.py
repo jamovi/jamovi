@@ -3,7 +3,7 @@ from numbers import Number
 
 import polars as pl
 from jamovi.server.dataset import DataType
-from jamovi.server.dataset import MeasureType
+from jamovi.core import MeasureType
 from server.formatio.pyreadstat_pipeline.data_types.data_types import *
 
 # ============================================================================

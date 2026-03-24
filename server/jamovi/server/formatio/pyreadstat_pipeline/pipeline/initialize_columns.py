@@ -40,12 +40,6 @@ def initialize_columns(df: pl.DataFrame, meta: PyreadstatMeta, model: InstanceMo
             column.final_polars_dtype = col.dtype
             column.value_levels = value_levels(meta, name, df)
             column.set_missing_values(missing_ranges(meta, name, column))
-            
-            column.is_frozen = False
-            column.seen_levels = pl.DataFrame()
-            column.exceeded_categorical_threshold = False
-            column.freeze_reason = None
-
 
             out_cols.append(column)
 
