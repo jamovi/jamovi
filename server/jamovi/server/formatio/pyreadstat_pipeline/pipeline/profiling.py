@@ -3,7 +3,7 @@ from server.formatio.pyreadstat_pipeline.data_types.data_types import *
 
 #from .infer_initial_semantic_kind import infer_initial_semantic_kind
 import polars as pl
-from .build_levels import append_column_levels
+from .build_levels import append_column_levels, extract_chunk_levels
 
 MAX_CATEGORICAL_LEVELS = 50
 
@@ -51,8 +51,7 @@ def update_profile_states_from_chunk(
         if column.name not in chunk_df.columns:
                 return column
 
-        append_column_levels(column, chunk_df)
-        
+        column.level_chunks.append(extract_chunk_levels())
         if column.seen_levels.height > MAX_CATEGORICAL_LEVELS:
                 column.exceeded_categorical_threshold = True
                 freeze_profile_state(column, reason="distinct threshold exceeded")

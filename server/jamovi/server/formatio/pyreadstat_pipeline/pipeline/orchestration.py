@@ -3,13 +3,13 @@ from jamovi.server.instancemodel import InstanceModel
 
 from .initialize_columns import initialize_columns
 from .normalize_source_dataframe import normalize_source_dataframe
-from .update_model_values import write_chunk_values
-from .update_chunk_levels import update_chunk_levels
+from .write_model_values import write_chunk_values
+from .write_chunk_levels import write_chunk_levels
 from .profiling import profile_sav_column
 
 from .finalize_column_plan import finalize_column_plan
 from .infer_source_meaning import infer_semantic_column_kind
-from .file_io import *
+from .read_file import *
 
 import polars as pl
 
@@ -29,12 +29,15 @@ def first_pass(path: str,
             first_chunk = False
         
         for column in columns:
+            column.promote_storage(chunk_df.dtype)
             column = infer_semantic_column_kind(column)
             column = profile_sav_column(column, chunk_df)
+            column.finalize_column_levels()
             column = finalize_column_plan(column)
 
         offset += chunk_df.height
     
+
     #finalize row count
     model.set_row_count(offset)
 
@@ -51,7 +54,7 @@ def second_pass(
     offset = 0
     for chunk_df, _ in gen:
         normalized_chunk = normalize_source_dataframe(chunk_df, columns)
-        update_chunk_levels(model, normalized_chunk)
+        write_chunk_levels(model, normalized_chunk)
         write_chunk_values(model, normalized_chunk, offset)
         offset += chunk_df.height
     

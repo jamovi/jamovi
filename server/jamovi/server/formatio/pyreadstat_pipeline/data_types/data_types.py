@@ -58,7 +58,7 @@ class ImportInfo(Protocol):
     freeze_reason: str | None = None
     
     #levels
-    level_chunks: pl.DataFrame = pl.DataFrame()
+    level_chunks: list[pl.DataFrame] = []
     value_levels: list[str] | None = None
 
     def is_numeric(self):
@@ -114,6 +114,13 @@ class ImportInfo(Protocol):
             return -2147483648
         else:
             return False 
+    
+    def finalize_column_levels(self):
+        return (
+            pl.concat([self.level_chunks])
+                .unique(subset=[self.name])
+                .sort(self.name)
+        )
         
 
 
