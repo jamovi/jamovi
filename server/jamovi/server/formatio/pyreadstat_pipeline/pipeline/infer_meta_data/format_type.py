@@ -2,6 +2,9 @@ from typing import Any
 
 from server.formatio.pyreadstat_pipeline.data_types.data_types import *
 
+#KEEP  
+
+
 def format_type(meta: PyreadstatMeta, column_name: str) -> SourceFormatType:
     """
     Infer a simplified format family from SPSS original format codes.
@@ -14,8 +17,15 @@ def format_type(meta: PyreadstatMeta, column_name: str) -> SourceFormatType:
         DATE11 -> DATE
         A20 -> STRING
         F8.2 -> NUMERIC
+         FORMAT F8.0
+        [test] | FORMAT F8.0
+        [test] | FORMAT F8.2
+
     """
     fmt = getattr(meta, "original_variable_types", {}).get(column_name)
+    
+    #print('FORMAT', fmt)
+    
     if not fmt:
         return SourceFormatType.UNKNOWN
 
@@ -40,6 +50,9 @@ def format_type(meta: PyreadstatMeta, column_name: str) -> SourceFormatType:
         return SourceFormatType.CURRENCY
 
     if f.startswith(("E", "F", "COMMA", "DOT")):
-        return SourceFormatType.NUMERIC
+        if f.endswith('.0'):
+            return SourceFormatType.NUMERIC_INTEGER
+        else:
+            return SourceFormatType.NUMERIC_DECIMAL
 
-    return SourceFormatType.NUMERIC
+    return SourceFormatType.NUMERIC_INTEGER
