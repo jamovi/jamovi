@@ -349,13 +349,9 @@ const load = function(defDir, code, create) {
         const po = gettextParser.po.parse(fs.readFileSync(langPath));
 
         const lang = po.headers.Language || po.headers.language || po.headers.lang;
-        if (lang !== '') {
-            if ( ! code || code === lang) {
-                po.headers.Language = lang.toLowerCase();
-                translations[po.headers.Language] = po;
-                translationLoaded = true;
-            }
-        }
+
+        translations[lang.toLowerCase()] = po;
+        translationLoaded = true;
     }
 
     if (create === false && code && translationLoaded === false)
