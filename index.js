@@ -80,7 +80,7 @@ try {
 
     const args = CLA(ARGS);
 
-    
+
 
     let srcDir;
     let installDir;
@@ -312,8 +312,6 @@ try {
 
     if (args['build-hash'])
         packageInfo['build-hash'] = args['build-hash'];
-
-    packageInfo['build-time'] = new Date(Date.now()).toISOString();
 
     if (packageInfo.name === 'jmv')
         packageInfo.index = 0;
@@ -554,13 +552,17 @@ try {
 
         if (isBuilding || isInstallingTo) {
 
+            const buildTime = new Date(Date.now()).toISOString();
+
             packageInfoLite.rVersion = rVersionAndArch;
+            packageInfoLite['build-time'] = buildTime;
             content = '---\n' + yaml.dump(packageInfoLite) + '\n...\n';
 
             fs.writeFileSync(path.join(modDir, 'jamovi.yaml'), content);
             console.log('wrote: jamovi.yaml');
 
             packageInfo.rVersion = rVersionAndArch;
+            packageInfo['build-time'] = buildTime;
             content = '---\n' + yaml.dump(packageInfo) + '\n...\n';
 
             fs.writeFileSync(path.join(modDir, 'jamovi-full.yaml'), content);
