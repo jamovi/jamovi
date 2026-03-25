@@ -178,14 +178,14 @@ Image <- R6::R6Class("Image",
                         width=width,
                         height=height,
                         units='px',
-                        background='transparent',
+                        background='white',
                         res=144)
                 } else {
                     grDevices::png(type=grType,
                         filename=path,
                         width=width,
                         height=height,
-                        bg='transparent',
+                        bg='white',
                         res=144)
                 }
             } else {
