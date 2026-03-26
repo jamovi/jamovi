@@ -100,6 +100,11 @@ try {
             throw new Error(`Unable to load json for language '${ current }'`);
         }
     }
+    else {
+        document.documentElement.setAttribute('lang', 'en');
+        document.body.dir = 'ltr';
+        host.setLanguage('en');
+    }
 }
 catch (e) {
     console.log(e);
