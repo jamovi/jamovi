@@ -10,9 +10,6 @@ from ..infer_metadata.column_label import column_label
 from ..infer_metadata.variable_width import variable_width
 from ..infer_metadata.value_levels import value_levels
 
-# ============================================================================
-# Step 2: Build normalized source descriptors
-# ============================================================================
 def initialize_columns(df: pl.DataFrame, meta: PyreadstatMeta, model: InstanceModel) -> list[ImportColumn]:
     """
     Build a clean internal descriptor for each source column.

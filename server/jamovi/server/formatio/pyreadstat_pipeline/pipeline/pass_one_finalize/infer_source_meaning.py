@@ -2,9 +2,6 @@
 from server.formatio.pyreadstat_pipeline.data_types.types import DataType, ImportColumn, SemanticColumnKind, SourceFormatType
 from jamovi.core import MeasureType
 
-# ============================================================================
-# Step 5: Infer source meaning
-# ============================================================================
 
 def infer_semantic_column_kind(column: ImportColumn) -> ImportColumn:
     """Set and return the semantic kind inferred from source metadata."""

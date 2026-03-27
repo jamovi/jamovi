@@ -20,10 +20,6 @@ CODED_MEASURE_BY_KIND = {
     SemanticColumnKind.NOMINAL_CODED: MeasureType.NOMINAL,
 }
 
-# ============================================================================
-# Step 7: Build target jamovi plan
-# ============================================================================
-
 def finalize_column_plan(
         column: ImportColumn
 ) -> ImportColumn:
