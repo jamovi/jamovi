@@ -2,7 +2,7 @@
 import polars as pl
 from jamovi.server.dataset import DataType
 from jamovi.core import MeasureType
-from server.formatio.pyreadstat_pipeline.data_types.types import *
+from server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn, SemanticColumnKind
 from .build_levels import build_column_levels
 from .level_labels_strategy import get_level_label_plan, get_level_label_strategy
 from ..infer_metadata.missing_ranges import render_missing_ranges

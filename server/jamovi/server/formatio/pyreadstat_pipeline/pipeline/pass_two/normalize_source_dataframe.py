@@ -2,7 +2,7 @@ from server.formatio.pyreadstat_pipeline import logger as pipeline_logger
 
 import polars as pl
 
-from server.formatio.pyreadstat_pipeline.data_types.types import *
+from server.formatio.pyreadstat_pipeline.data_types.types import DataType, ImportColumn, SourceFormatType
 from jamovi.core import MeasureType
 
 logger = pipeline_logger

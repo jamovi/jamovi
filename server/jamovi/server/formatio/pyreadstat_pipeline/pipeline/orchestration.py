@@ -3,7 +3,7 @@ from typing import Any, Callable, TypeVar
 from dataclasses import dataclass
 from time import perf_counter
 
-from server.formatio.pyreadstat_pipeline.data_types.types import *
+from server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn, PyreadstatMeta
 from jamovi.server.instancemodel import InstanceModel
 
 from .pass_one.initialize_columns import initialize_columns
@@ -11,6 +11,7 @@ from .pass_two.normalize_source_dataframe import normalize_source_dataframe
 from .pass_two.write_model_values import write_chunk_values
 from .pass_two.write_chunk_levels import write_chunk_levels
 from .pass_two.value_writer import InstanceModelValueWriter, ValueWriter
+from .timing_reporter import PipelineTimingStats, format_pipeline_timing_summary
 from .pass_one.profiling import profile_sav_column, initialize_column_profile_states, finalize_unfrozen_profile_states
 from .pass_one_finalize.finalize_column_plan import finalize_column_runtime_state
 from .pass_one_finalize.infer_source_meaning import infer_semantic_column_kind
@@ -24,42 +25,11 @@ T = TypeVar('T')
 
 
 @dataclass
-class InitializedColumns:
-    columns: list[ImportColumn]
-
-
-@dataclass
-class ProfiledColumns:
+class ImportRunState:
+    """Shared state passed between first-pass profiling and second-pass writing."""
     columns: list[ImportColumn]
     row_count: int
     chunk_count: int
-
-
-@dataclass
-class FinalizedColumns:
-    columns: list[ImportColumn]
-    row_count: int
-    chunk_count: int
-
-
-@dataclass
-class PipelineTimingStats:
-    first_pass_profile_chunks_seconds: float = 0.0
-    first_pass_finalize_profiling_seconds: float = 0.0
-    first_pass_finalize_columns_seconds: float = 0.0
-    first_pass_total_seconds: float = 0.0
-    first_pass_rows: int = 0
-    first_pass_chunks: int = 0
-
-    write_levels_seconds: float = 0.0
-    write_normalize_seconds: float = 0.0
-    write_values_seconds: float = 0.0
-    write_pass_total_seconds: float = 0.0
-    write_rows: int = 0
-    write_chunks: int = 0
-
-    pipeline_total_seconds: float = 0.0
-
 
 def _run_with_stage_logging(fn: Callable[[], T], error_message: str, *error_args: Any) -> T:
     """Execute a stage callable and emit structured logging on failure."""
@@ -70,14 +40,14 @@ def _run_with_stage_logging(fn: Callable[[], T], error_message: str, *error_args
         raise
 
 
-def _initialize_first_chunk(chunk_df: pl.DataFrame, meta: PyreadstatMeta, model: InstanceModel) -> InitializedColumns:
+def _initialize_first_chunk(chunk_df: pl.DataFrame, meta: PyreadstatMeta, model: InstanceModel) -> list[ImportColumn]:
     """Initialize import columns and profile state from the first data chunk."""
     columns = initialize_columns(chunk_df, meta, model)
     for column in columns:
         column.promote_storage(chunk_df[column.name].dtype)
         column = infer_semantic_column_kind(column)
         initialize_column_profile_states(column)
-    return InitializedColumns(columns=columns)
+    return columns
 
 
 def _profile_chunk(columns: list[ImportColumn], chunk_df: pl.DataFrame) -> None:
@@ -93,7 +63,7 @@ def _finalize_column(column: ImportColumn) -> ImportColumn:
     return finalize_column_runtime_state(column)
 
 
-def _profile_all_chunks(path: str, model: InstanceModel, chunk_size: int) -> ProfiledColumns:
+def _profile_all_chunks(path: str, model: InstanceModel, chunk_size: int) -> ImportRunState:
     """Iterate source chunks and produce profiled columns with row/chunk counts."""
     gen = get_chunk_generator(path, chunk_size)
 
@@ -110,7 +80,7 @@ def _profile_all_chunks(path: str, model: InstanceModel, chunk_size: int) -> Pro
                 "stage=first_pass.initialize_columns status=failed chunk=%s",
                 chunk_count,
             )
-            columns = initialized.columns
+            columns = initialized
             logger.info("stage=first_pass.initialize_columns status=complete columns=%s", len(columns))
             first_chunk = False
 
@@ -122,13 +92,13 @@ def _profile_all_chunks(path: str, model: InstanceModel, chunk_size: int) -> Pro
 
         row_count += chunk_df.height
 
-    return ProfiledColumns(columns=columns, row_count=row_count, chunk_count=chunk_count)
+    return ImportRunState(columns=columns, row_count=row_count, chunk_count=chunk_count)
 
 
 def first_pass(path: str,
     model: InstanceModel,
     chunk_size: int,
-    timing: PipelineTimingStats | None = None) -> FinalizedColumns:
+    timing: PipelineTimingStats | None = None) -> ImportRunState:
     """Profile all chunks and finalize column-level metadata for writing."""
     stage_start = perf_counter()
     logger.info("stage=first_pass status=start path=%s chunk_size=%s", path, chunk_size)
@@ -181,7 +151,7 @@ def first_pass(path: str,
         timing.first_pass_rows = profiled.row_count
         timing.first_pass_chunks = profiled.chunk_count
 
-    return FinalizedColumns(
+    return ImportRunState(
         columns=profiled.columns,
         row_count=profiled.row_count,
         chunk_count=profiled.chunk_count,
@@ -191,7 +161,7 @@ def write_normalized_values_pass(
         path: str,
         model: InstanceModel,
         chunk_size: int,
-    finalized: FinalizedColumns,
+    finalized: ImportRunState,
     timing: PipelineTimingStats | None = None) -> None:
     """Normalize and write chunk values after first-pass metadata finalization."""
     stage_start = perf_counter()
@@ -256,34 +226,7 @@ def import_sav_to_jamovi_in_chunks(
 
     timing.pipeline_total_seconds = perf_counter() - pipeline_start
 
-    timing_parts = {
-        "first_pass.profile_chunks": timing.first_pass_profile_chunks_seconds,
-        "first_pass.finalize_profiling": timing.first_pass_finalize_profiling_seconds,
-        "first_pass.finalize_columns": timing.first_pass_finalize_columns_seconds,
-        "write_pass.write_levels": timing.write_levels_seconds,
-        "write_pass.normalize": timing.write_normalize_seconds,
-        "write_pass.write_values": timing.write_values_seconds,
-    }
-    bottleneck_stage, bottleneck_seconds = max(timing_parts.items(), key=lambda item: item[1])
-
-    print(
-        "pipeline_timing_summary "
-        f"total_seconds={timing.pipeline_total_seconds:.6f} "
-        f"first_pass_seconds={timing.first_pass_total_seconds:.6f} "
-        f"write_pass_seconds={timing.write_pass_total_seconds:.6f} "
-        f"profile_chunks_seconds={timing.first_pass_profile_chunks_seconds:.6f} "
-        f"finalize_profiling_seconds={timing.first_pass_finalize_profiling_seconds:.6f} "
-        f"finalize_columns_seconds={timing.first_pass_finalize_columns_seconds:.6f} "
-        f"write_levels_seconds={timing.write_levels_seconds:.6f} "
-        f"normalize_seconds={timing.write_normalize_seconds:.6f} "
-        f"write_values_seconds={timing.write_values_seconds:.6f} "
-        f"first_pass_rows={timing.first_pass_rows} "
-        f"write_rows={timing.write_rows} "
-        f"first_pass_chunks={timing.first_pass_chunks} "
-        f"write_chunks={timing.write_chunks} "
-        f"bottleneck_stage={bottleneck_stage} "
-        f"bottleneck_seconds={bottleneck_seconds:.6f}"
-    )
+    print(format_pipeline_timing_summary(timing))
 
     logger.info("stage=pipeline status=complete path=%s", path)
 

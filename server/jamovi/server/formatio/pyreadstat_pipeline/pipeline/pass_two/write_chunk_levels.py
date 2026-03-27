@@ -2,7 +2,7 @@ from jamovi.server.dataset import DataType
 from collections.abc import Iterator
 from typing import Any
 from server.formatio.pyreadstat_pipeline import logger as pipeline_logger
-from server.formatio.pyreadstat_pipeline.data_types.types import *
+from server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn
 
 
 logger = pipeline_logger

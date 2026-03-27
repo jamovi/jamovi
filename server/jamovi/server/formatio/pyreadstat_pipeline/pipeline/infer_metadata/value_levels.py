@@ -1,4 +1,4 @@
-from server.formatio.pyreadstat_pipeline.data_types.types import *
+from server.formatio.pyreadstat_pipeline.data_types.types import PyreadstatMeta
 
 def value_levels(meta: PyreadstatMeta, column_name: str) -> str | None:
     """

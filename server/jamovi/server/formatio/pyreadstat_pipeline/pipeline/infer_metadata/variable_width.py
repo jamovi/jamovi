@@ -1,4 +1,4 @@
-from server.formatio.pyreadstat_pipeline.data_types.types import *
+from server.formatio.pyreadstat_pipeline.data_types.types import PyreadstatMeta
 
 def variable_width(meta: PyreadstatMeta, column_name: str) -> int:
     """Calculate a display width from metadata and enforce minimum defaults."""

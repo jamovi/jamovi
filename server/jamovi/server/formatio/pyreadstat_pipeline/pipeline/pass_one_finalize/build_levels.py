@@ -1,7 +1,7 @@
 import polars as pl
 from typing import Any
 from server.formatio.pyreadstat_pipeline import logger as pipeline_logger
-from server.formatio.pyreadstat_pipeline.data_types.types import *
+from server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn
 from server.formatio.pyreadstat_pipeline.pipeline.pass_one_finalize.level_labels_strategy import LevelLabelPlan
 from jamovi.server.dataset import DataType
 
@@ -73,7 +73,7 @@ def _resolve_final_level_values(
     seen_values = set()
 
     for value in declared_levels:
-        if _should_include_level_value(column, value) or value in seen_values:
+        if _should_exclude_level_value(column, value) or value in seen_values:
             continue
         seen_values.add(value)
         final_levels.append(value)
@@ -81,7 +81,7 @@ def _resolve_final_level_values(
     include_observed = not declared_levels or column.data_type == DataType.TEXT
     if include_observed:
         for value in observed_levels:
-            if _should_include_level_value(column, value) or value in seen_values:
+            if _should_exclude_level_value(column, value) or value in seen_values:
                 continue
             seen_values.add(value)
             final_levels.append(value)
@@ -89,7 +89,7 @@ def _resolve_final_level_values(
     return final_levels
 
 
-def _should_include_level_value(column: ImportColumn, value: Any) -> bool:
+def _should_exclude_level_value(column: ImportColumn, value: Any) -> bool:
     """Return whether a candidate level value should be excluded from levels."""
     if value is None:
         return True
