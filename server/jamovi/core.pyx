@@ -120,6 +120,16 @@ cdef class DataSet:
             column_values = values[index]
             self[index_or_name].set_values(row_offset, column_values)
 
+    def set_values_initing(self, columns, row_offset, values):
+        """set_values with initing=True — skips change-tracking for initial data load."""
+        if (isinstance(columns, int) or
+                isinstance(columns, str)):
+            columns = [columns]
+
+        for index, index_or_name in enumerate(columns):
+            column_values = values[index]
+            self[index_or_name].set_values(row_offset, column_values, initing=True)
+
     def get_values(self, columns, row_offset, n_rows):
         if (isinstance(columns, int) or
                 isinstance(columns, str)):
@@ -564,7 +574,7 @@ cdef class Column:
             raise IndexError()
 
         if self.data_type is DataType.DECIMAL:
-            self._this.setDValue(index, value, False)
+              self._this.setDValue(index, value, initing)
         elif self.data_type is DataType.TEXT and isinstance(value, str):
             if self.measure_type is MeasureType.ID:
                 self._this.setSValue(index, value.encode(), initing)
