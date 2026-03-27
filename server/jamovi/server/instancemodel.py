@@ -159,6 +159,10 @@ class InstanceModel:
     def set_values(self, columns: ColumnRef, row_offset: int, values: CellValueArea):
         self._dataset.set_values(columns, row_offset, values)
 
+    def set_values_initing(self, columns: ColumnRef, row_offset: int, values: CellValueArea):
+        """Write values with initing=True, skipping change-tracking for initial data loads."""
+        self._dataset.set_values_initing(columns, row_offset, values)
+
     def get_values(self, columns: ColumnRef, row_offset: int, n_rows: int) -> CellValueArea:
         assert self._dataset is not None
         return self._dataset.get_values(columns, row_offset, n_rows)

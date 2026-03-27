@@ -1,15 +1,14 @@
 
-from server.formatio.pyreadstat_pipeline.data_types.data_types import *
-import polars as pl
+from server.formatio.pyreadstat_pipeline.data_types.types import *
 from jamovi.core import MeasureType
 
 # ============================================================================
 # Step 5: Infer source meaning
 # ============================================================================
-from jamovi.core import Column
 
 def infer_semantic_column_kind(column: ImportColumn) -> ImportColumn:
-    column.final_kind = set_semantic_kind(column)
+    """Set and return the semantic kind inferred from source metadata."""
+    column.state.final_kind = set_semantic_kind(column)
     return column
 
 def set_semantic_kind(column: ImportColumn) -> SemanticColumnKind:
@@ -41,12 +40,13 @@ def set_semantic_kind(column: ImportColumn) -> SemanticColumnKind:
             return  SemanticColumnKind.ORDINAL_CODED
 
         if column.measure_type == MeasureType.NOMINAL:
-            if column.value_levels is not None:
-                return SemanticColumnKind.NOMINAL_CANDIDATE
-            else:
-                return SemanticColumnKind.TEXT_CANDIDATE if column.data_type == DataType.STRING else SemanticColumnKind.NOMINAL_CANDIDATE
+            return (
+                SemanticColumnKind.TEXT_CANDIDATE
+                if column.data_type == DataType.TEXT
+                else SemanticColumnKind.NOMINAL_CANDIDATE
+            )
         
-        if column.data_type == DataType.STRING:
+        if column.data_type == DataType.TEXT:
             return SemanticColumnKind.TEXT
 
         if column.is_numeric():
