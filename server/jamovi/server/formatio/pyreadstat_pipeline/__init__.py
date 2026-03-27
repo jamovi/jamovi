@@ -8,4 +8,6 @@ logger = logging.getLogger("pyreadstat_pipeline")
 logger.setLevel(logging.DEBUG)
 logger.propagate = True
 
-from .read import *
+from .read import read
+
+__all__ = ["read", "logger"]

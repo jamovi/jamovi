@@ -1,5 +1,5 @@
 from typing import Any
-from server.formatio.pyreadstat_pipeline.data_types.types import *
+from server.formatio.pyreadstat_pipeline.data_types.types import PyreadstatMeta
 from jamovi.core import MeasureType
 
 
