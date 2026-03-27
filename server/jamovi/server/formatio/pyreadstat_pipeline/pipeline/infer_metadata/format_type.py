@@ -1,6 +1,6 @@
 from typing import Any
 
-from server.formatio.pyreadstat_pipeline.data_types.data_types import *
+from server.formatio.pyreadstat_pipeline.data_types.types import *
 
 #KEEP  
 
