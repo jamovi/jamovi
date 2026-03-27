@@ -143,6 +143,14 @@ def assert_column_equals(
             [],
             lambda i: ("Aardvark", "Baboon", "E", "")[i % 4],
         ),
+        (
+            "dec_lbl_col",
+            DataType.DECIMAL,
+            MeasureType.CONTINUOUS,
+            [],
+            [],
+            lambda i: (1.5, 2.5, 3.0)[i % 3],
+        ),
     ),
 )
 def test_read_sav(instance_model: InstanceModel,

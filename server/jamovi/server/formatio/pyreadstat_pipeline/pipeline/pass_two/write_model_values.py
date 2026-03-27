@@ -1,6 +1,6 @@
 import polars as pl
 from server.formatio.pyreadstat_pipeline import logger as pipeline_logger
-from server.formatio.pyreadstat_pipeline.data_types.types import *
+from server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn
 from .value_writer import ValueWriter
 
 
@@ -9,8 +9,7 @@ logger = pipeline_logger
 def write_chunk_values(writer: ValueWriter, columns: list[ImportColumn], chunk_df: pl.DataFrame, row_offset: int) -> None:
     """Write one normalized chunk into the configured storage writer."""
     assert isinstance(chunk_df, pl.DataFrame)
-    column_refs = _get_column_refs(columns)
-    column_names = [c.name for c in columns]
+    column_refs, column_values = _build_chunk_payload(columns, chunk_df)
 
     logger.debug(
         "write_chunk_values row_offset=%s rows=%s columns=%s",
@@ -19,8 +18,15 @@ def write_chunk_values(writer: ValueWriter, columns: list[ImportColumn], chunk_d
         len(columns),
     )
 
-    column_values = [chunk_df.get_column(name) for name in column_names]
     writer.write_values(column_refs, row_offset, column_values)
+
+
+def _build_chunk_payload(columns: list[ImportColumn], chunk_df: pl.DataFrame) -> tuple[list[int] | list[str], list[pl.Series]]:
+    """Build column refs and aligned Series payload for a chunk write."""
+    column_names = [c.name for c in columns]
+    column_refs = _get_column_refs(columns)
+    column_values = [chunk_df.get_column(name) for name in column_names]
+    return column_refs, column_values
 
 
 def _get_column_refs(columns: list[ImportColumn]) -> list[int] | list[str]:
