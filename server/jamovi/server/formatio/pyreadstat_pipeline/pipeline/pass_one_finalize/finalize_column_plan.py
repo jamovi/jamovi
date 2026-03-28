@@ -12,7 +12,7 @@ DIRECT_PLAN_BY_KIND = {
     SemanticColumnKind.TEXT: (DataType.TEXT, MeasureType.NOMINAL),
     SemanticColumnKind.DATE: (DataType.INTEGER, MeasureType.ORDINAL),
     SemanticColumnKind.TIME: (DataType.INTEGER, MeasureType.ORDINAL),
-    SemanticColumnKind.DATETIME: (DataType.INTEGER, MeasureType.ORDINAL),
+    SemanticColumnKind.DATETIME: (DataType.INTEGER, MeasureType.CONTINUOUS),
 }
 
 CODED_MEASURE_BY_KIND = {
