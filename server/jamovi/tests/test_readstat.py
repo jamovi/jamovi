@@ -62,7 +62,6 @@ def assert_column_equals(
     if expected_values is not None:
         obs_values = column.get_values(0, 100000)
         for o, e in zip(obs_values, expected_values):
-            print(o, e)
             assert_cell_equal(o, e)
 
 
@@ -187,3 +186,14 @@ def test_read_sav(instance_model: InstanceModel,
     end_time = time.perf_counter()
     execution_time = end_time - start_time
     print(f"Execution time: {execution_time:.4f} seconds")
+
+
+def test_datetime_col_has_no_generated_levels(instance_model: InstanceModel):
+    """DATETIME columns should preserve numeric values without generated level maps."""
+    data_path = resolve_path("multi.sav")
+    read(instance_model, data_path, lambda x: None, format="sav")
+
+    datetime_column = instance_model.get_column_by_name("datetime_col")
+    assert datetime_column.data_type is DataType.INTEGER
+    assert datetime_column.measure_type is MeasureType.CONTINUOUS
+    assert datetime_column.level_count == 0
