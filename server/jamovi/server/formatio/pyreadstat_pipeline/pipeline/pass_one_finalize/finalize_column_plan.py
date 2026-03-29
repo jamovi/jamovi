@@ -70,14 +70,13 @@ def finalize_column_runtime_state(column: ImportColumn) -> ImportColumn:
         column = finalize_column_plan(column)
         column.set_missing_values(render_missing_ranges(column))
 
+        if (column.data_type == DataType.DECIMAL
+                and column.measure_type in (MeasureType.NOMINAL, MeasureType.ORDINAL)
+                and column.state.are_all_values_integer_like()):
+            column.set_data_type(DataType.INTEGER)
+
         strategy = get_level_label_strategy(column)
         plan = get_level_label_plan(column, strategy)
-
-        if plan.is_integer_like:
-            column.set_data_type(DataType.INTEGER)
-            strategy = get_level_label_strategy(column)
-            plan = get_level_label_plan(column, strategy)
-
         return build_column_levels(column, plan)
 
 

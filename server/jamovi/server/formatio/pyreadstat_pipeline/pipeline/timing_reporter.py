@@ -6,7 +6,6 @@ class PipelineTimingStats:
     """Aggregated timing counters for pipeline stages."""
 
     first_pass_profile_chunks_seconds: float = 0.0
-    first_pass_finalize_profiling_seconds: float = 0.0
     first_pass_finalize_columns_seconds: float = 0.0
     first_pass_total_seconds: float = 0.0
     first_pass_rows: int = 0
@@ -26,7 +25,6 @@ def get_timing_parts(timing: PipelineTimingStats) -> dict[str, float]:
     """Return named timing components used for bottleneck detection."""
     return {
         "first_pass.profile_chunks": timing.first_pass_profile_chunks_seconds,
-        "first_pass.finalize_profiling": timing.first_pass_finalize_profiling_seconds,
         "first_pass.finalize_columns": timing.first_pass_finalize_columns_seconds,
         "write_pass.write_levels": timing.write_levels_seconds,
         "write_pass.normalize": timing.write_normalize_seconds,
@@ -50,7 +48,6 @@ def format_pipeline_timing_summary(timing: PipelineTimingStats) -> str:
         f"first_pass_seconds={timing.first_pass_total_seconds:.6f} "
         f"write_pass_seconds={timing.write_pass_total_seconds:.6f} "
         f"profile_chunks_seconds={timing.first_pass_profile_chunks_seconds:.6f} "
-        f"finalize_profiling_seconds={timing.first_pass_finalize_profiling_seconds:.6f} "
         f"finalize_columns_seconds={timing.first_pass_finalize_columns_seconds:.6f} "
         f"write_levels_seconds={timing.write_levels_seconds:.6f} "
         f"normalize_seconds={timing.write_normalize_seconds:.6f} "
