@@ -50,17 +50,13 @@ def _initialize_first_chunk(chunk_df: pl.DataFrame, meta: PyreadstatMeta, model:
     return columns
 
 
-def _profile_chunk(columns: list[ImportColumn], chunk_df: pl.DataFrame) -> None:
+def _profile_chunk(columns: list[ImportColumn], chunk_df: pl.DataFrame, *, update_storage: bool = True) -> None:
     """Update storage and profiling state for each column from a data chunk."""
     for column in columns:
-        col_dtype = chunk_df[column.name].dtype
-        column.promote_storage(col_dtype)
+        if update_storage:
+            col_dtype = chunk_df[column.name].dtype
+            column.promote_storage(col_dtype)
         profile_sav_column(column, chunk_df)
-
-
-def _finalize_column(column: ImportColumn) -> ImportColumn:
-    """Apply finalize-stage runtime composition for a single column."""
-    return finalize_column_runtime_state(column)
 
 
 def _profile_all_chunks(path: str, model: InstanceModel, chunk_size: int) -> ImportRunState:
@@ -73,6 +69,7 @@ def _profile_all_chunks(path: str, model: InstanceModel, chunk_size: int) -> Imp
     chunk_count = 0
     for chunk_df, meta in gen:
         chunk_count += 1
+        is_first_chunk_iteration = first_chunk
         if first_chunk:
             logger.info("stage=first_pass.initialize_columns status=start chunk=%s", chunk_count)
             initialized = _run_with_stage_logging(
@@ -84,8 +81,9 @@ def _profile_all_chunks(path: str, model: InstanceModel, chunk_size: int) -> Imp
             logger.info("stage=first_pass.initialize_columns status=complete columns=%s", len(columns))
             first_chunk = False
 
+        should_update_storage = not is_first_chunk_iteration
         _run_with_stage_logging(
-            lambda: _profile_chunk(columns, chunk_df),
+            lambda: _profile_chunk(columns, chunk_df, update_storage=should_update_storage),
             "stage=first_pass.profile_chunk status=failed chunk=%s",
             chunk_count,
         )
@@ -110,21 +108,14 @@ def first_pass(path: str,
     profile_chunks_elapsed = perf_counter() - profile_chunks_start
     logger.info("stage=first_pass status=complete rows=%s chunks=%s", profiled.row_count, profiled.chunk_count)
 
-    # Finalize any columns still unfrozen after the last chunk
-    finalize_profiles_start = perf_counter()
-    _run_with_stage_logging(
-        lambda: _finalize_profile_states(profiled.columns),
-        "stage=first_pass.finalize_profiling status=failed",
-    )
-    finalize_profiles_elapsed = perf_counter() - finalize_profiles_start
-
-    # Build final column plans, level strategies, and level sets
+    # Finalize profiling state and build column plans in one pass
     logger.info("stage=first_pass.finalize_columns status=start columns=%s", len(profiled.columns))
     finalize_columns_start = perf_counter()
     finalized_columns = []
     for column in profiled.columns:
+        finalize_unfrozen_profile_states(column)
         finalized_column = _run_with_stage_logging(
-            lambda c=column: _finalize_column(c),
+            lambda c=column: finalize_column_runtime_state(c),
             "stage=first_pass.finalize_column status=failed column=%s",
             column.name,
         )
@@ -134,7 +125,7 @@ def first_pass(path: str,
             finalized_column.name, finalized_column.state.final_kind, finalized_column.data_type, finalized_column.measure_type,
             len(finalized_column.state.final_level_codes) if finalized_column.state.final_level_codes else 0,
         )
-    
+
     profiled.columns = finalized_columns
     finalize_columns_elapsed = perf_counter() - finalize_columns_start
 
@@ -145,7 +136,6 @@ def first_pass(path: str,
 
     if timing is not None:
         timing.first_pass_profile_chunks_seconds = profile_chunks_elapsed
-        timing.first_pass_finalize_profiling_seconds = finalize_profiles_elapsed
         timing.first_pass_finalize_columns_seconds = finalize_columns_elapsed
         timing.first_pass_total_seconds = total_elapsed
         timing.first_pass_rows = profiled.row_count
@@ -246,12 +236,4 @@ def _write_chunk(writer: ValueWriter, columns: list[ImportColumn], chunk_df: pl.
 
 # Alias for convenience - profile_and_build_levels_pass is an alias for the full first pass
 profile_and_build_levels_pass = first_pass
-
-
-def _finalize_profile_states(columns: list[ImportColumn]) -> None:
-    """Force-finalize profiling state for columns that remain unfinished."""
-    for column in columns:
-        finalize_unfrozen_profile_states(column)
-
-
 

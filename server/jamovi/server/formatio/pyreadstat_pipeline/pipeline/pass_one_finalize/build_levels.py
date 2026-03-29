@@ -29,8 +29,8 @@ def build_column_levels(column: ImportColumn, plan: LevelLabelPlan) -> ImportCol
         logger.debug("build_column_levels no levels needed for column=%s", column.name)
         return column
     
-    logger.debug("build_column_levels plan column=%s needs_levels=%s level_encoding=%s is_integer_like=%s",
-        column.name, plan.needs_levels, plan.level_encoding, plan.is_integer_like)
+    logger.debug("build_column_levels plan column=%s needs_levels=%s level_encoding=%s",
+        column.name, plan.needs_levels, plan.level_encoding)
     levels_list = _resolve_final_level_values(column, plan)
     
     # Text categorical columns require integer level codes in jamovi.
@@ -51,6 +51,7 @@ def build_column_levels(column: ImportColumn, plan: LevelLabelPlan) -> ImportCol
     cast_levels = _cast_levels_by_encoding(
         levels_list,
         plan.level_encoding,
+        column.name,
     )
     
     # Set the finalized levels on the column
@@ -119,7 +120,8 @@ def _extract_observed_levels(
 
 def _cast_levels_by_encoding(
     levels: list[Any],
-    level_encoding: str
+    level_encoding: str,
+    column_name: str,
 ) -> list[Any]:
     """
     Cast level values according to the encoding strategy.
@@ -141,5 +143,13 @@ def _cast_levels_by_encoding(
     if caster is None:
         return levels
 
-    return [caster(value) for value in levels]
+    try:
+        return [caster(value) for value in levels]
+    except (TypeError, ValueError) as e:
+        sample_value = next((value for value in levels if value is not None), None)
+        raise ValueError(
+            "Failed to cast level values for column "
+            f"'{column_name}' with encoding '{level_encoding}'. "
+            f"Sample value: {sample_value!r}"
+        ) from e
 

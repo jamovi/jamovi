@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, auto
-from server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn, SourceFormatType
+from server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn
 from jamovi.server.dataset import DataType
 from jamovi.core import MeasureType
 
@@ -42,9 +42,6 @@ class LevelLabelPlan:
     
     # Whether to preserve order
     preserve_order: bool
-    
-    # Whether DECIMAL values are all integer-like (can be converted to INTEGER)
-    is_integer_like: bool = False
     
     # Special handling notes
     notes: str | None = None
@@ -158,7 +155,7 @@ def get_level_label_strategy(column: ImportColumn) -> LevelLabelStrategy:
     )
 
 
-def get_level_label_plan(column: ImportColumn, strategy: LevelLabelStrategy) -> LevelLabelPlan:
+def get_level_label_plan(_column: ImportColumn, strategy: LevelLabelStrategy) -> LevelLabelPlan:
     """
     Get the detailed plan for how to handle levels, values, and encoding.
     
@@ -170,14 +167,9 @@ def get_level_label_plan(column: ImportColumn, strategy: LevelLabelStrategy) -> 
         LevelLabelPlan with detailed handling instructions
     """
     base = BASE_PLAN_BY_STRATEGY.get(strategy, BASE_PLAN_BY_STRATEGY[LevelLabelStrategy.UNKNOWN])
-    plan = LevelLabelPlan(
+    return LevelLabelPlan(
         needs_levels=base.needs_levels,
         level_encoding=base.level_encoding,
         preserve_order=base.preserve_order,
         notes=base.notes,
     )
-
-    if strategy in {LevelLabelStrategy.DECIMAL_NOMINAL, LevelLabelStrategy.DECIMAL_ORDINAL}:
-        plan.is_integer_like = column.state.are_all_values_integer_like()
-
-    return plan

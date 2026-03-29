@@ -65,7 +65,7 @@ services:
     <<: *base
     container_name: jamovi-tests
     profiles: [tests]
-    command: ["/usr/bin/python3 -u -m pytest '/usr/lib/jamovi/server/jamovi/tests/test_readstat.py::test_read_sav' -s"]
+    command: ["/usr/bin/python3 -u -m pytest '/usr/lib/jamovi/server/jamovi/tests' -s"]
 
   vite:
       image: jonathonlove/vite:latest
