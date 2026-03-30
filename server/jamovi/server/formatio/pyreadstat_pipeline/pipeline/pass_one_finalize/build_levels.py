@@ -1,65 +1,36 @@
 import polars as pl
 from typing import Any
-from server.formatio.pyreadstat_pipeline import logger as pipeline_logger
 from server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn
 from server.formatio.pyreadstat_pipeline.pipeline.pass_one_finalize.level_labels_strategy import LevelLabelPlan
 from jamovi.server.dataset import DataType
 
 
-logger = pipeline_logger
-
-def build_column_levels(column: ImportColumn, plan: LevelLabelPlan) -> ImportColumn:
-    """
-    Build and finalize level labels based on LevelLabelPlan strategy.
-    
-    Merges observed_distinct_value_chunks and final_level_codes according to the column's
-    data_type and measure_type.
-    
-    Special handling for DECIMAL nominal/ordinal:
-    - If all values are integer-like (e.g., 1.0, 2.0), convert to INTEGER
-    
-    Args:
-        column: ImportColumn with observed_distinct_value_chunks populated from chunks
-        plan: Precomputed level label plan for this column
-    """
-    logger.debug("build_column_levels entry column=%s", column.name)
-
-    # If no levels needed, return early
+def calculate_column_levels_payload(column: ImportColumn, plan: LevelLabelPlan) -> tuple[list[Any] | None, dict[Any, int] | None]:
+    """Return finalized level codes and optional raw->code map without mutating the column."""
     if not plan.needs_levels:
-        logger.debug("build_column_levels no levels needed for column=%s", column.name)
-        return column
-    
-    logger.debug("build_column_levels plan column=%s needs_levels=%s level_encoding=%s",
-        column.name, plan.needs_levels, plan.level_encoding)
+        return None, None
+
     levels_list = _resolve_final_level_values(column, plan)
-    
+    raw_value_to_code_map: dict[Any, int] | None = None
+
     # Text categorical columns require integer level codes in jamovi.
     # Numeric categorical columns preserve their original coded values.
     if column.data_type == DataType.TEXT:
         raw_value_to_code_map = {}
-        mapped_levels = []
+        mapped_levels: list[int] = []
         for value in levels_list:
             if value not in raw_value_to_code_map:
                 raw_value_to_code_map[value] = len(raw_value_to_code_map)
             mapped_levels.append(raw_value_to_code_map[value])
-        
-        if raw_value_to_code_map:
-            column.state.raw_value_to_code_map = raw_value_to_code_map
-            levels_list = mapped_levels
-    
-    # Cast levels according to plan
+
+        levels_list = mapped_levels
+
     cast_levels = _cast_levels_by_encoding(
         levels_list,
         plan.level_encoding,
         column.name,
     )
-    
-    # Set the finalized levels on the column
-    column.state.final_level_codes = cast_levels
-
-    logger.info("build_column_levels complete column=%s levels=%s map=%s", column.name,
-        len(column.state.final_level_codes) if column.state.final_level_codes else 0, bool(column.state.raw_value_to_code_map))
-    return column
+    return cast_levels, raw_value_to_code_map
 
 
 def _resolve_final_level_values(
@@ -112,7 +83,7 @@ def _extract_observed_levels(
 
         return merged_levels.get_column(column.name).to_list()
 
-    observed_levels = list(column.state.observed_values or [])
+    observed_levels = [value for value in (column.state.observed_values or []) if value is not None]
     if not plan.preserve_order:
         observed_levels.sort()
     return observed_levels

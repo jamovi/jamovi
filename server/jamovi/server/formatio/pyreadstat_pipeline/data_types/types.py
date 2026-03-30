@@ -68,6 +68,29 @@ PROFILE_KINDS = {
 }
 
 
+@dataclass(frozen=True)
+class ColumnFinalPlan:
+    """Immutable finalized write plan produced after pass-one profiling."""
+
+    name: str
+    index: int | None
+
+    source_format: SourceFormatType | None
+    semantic_kind: SemanticColumnKind | None
+
+    data_type: DataType
+    measure_type: MeasureType
+    missing_values: list[str]
+
+    declared_levels: dict[Any, str] | None
+    final_level_codes: list[Any] | None
+    raw_value_to_code_map: dict[Any, int] | None
+
+    final_polars_dtype: pl.DataType
+    preserve_temporal_numeric: bool
+    fill_null_value: Any | None
+
+
 @dataclass
 class ColumnPipelineState:
     source_format: SourceFormatType = None
@@ -139,15 +162,6 @@ class ColumnPipelineState:
         if has_non_integer:
             self.seen_non_integer_float = True
 
-    def finalize_column_levels(self, column_name: str) -> pl.DataFrame:
-        """Merge and sort distinct chunk values for a single column."""
-        return (
-            pl.concat(self.observed_distinct_value_chunks)
-                .unique(subset=[column_name])
-                .sort(column_name)
-        )
-
-
 PIPELINE_STATE_FIELDS = set(ColumnPipelineState.__dataclass_fields__)
 
 
@@ -182,10 +196,6 @@ class ImportColumn:
         """Return whether the wrapped column uses a numeric storage type."""
         return self.data_type in {DataType.DECIMAL, DataType.INTEGER}
 
-    def is_categorical(self):
-        """Return whether the wrapped column uses a categorical measure type."""
-        return self.measure_type in {MeasureType.NOMINAL, MeasureType.ORDINAL}
-    
     def is_any_label_bits_too_wide(self):
         """Check if any finalized level value exceeds jamovi integer bit limits."""
         if self.state.final_level_codes is not None:
@@ -218,22 +228,6 @@ class ImportColumn:
         """Return whether semantic kind profiling should continue for this column."""
         return self.state.final_kind in PROFILE_KINDS
     
-    def final_polars_dtype(self):
-        """Resolve the Polars dtype used when writing normalized values."""
-        return POLARS_DTYPE_BY_DATA_TYPE.get(self.data_type, pl.Utf8)
-            
-    def preserve_temporal_numeric(self):
-        """Return whether temporal source formats should remain numeric encoded."""
-        return self.state.source_format in TEMPORAL_SOURCE_FORMATS
-    
-    def fill_nulls(self):
-        """Return the sentinel value used for null filling when required."""
-        return -2147483648 if self.preserve_temporal_numeric() else False
-    
-    def finalize_column_levels(self):
-        """Finalize observed levels for this column using the state helper."""
-        return self.state.finalize_column_levels(self.name)
-
     def is_missing_level_value(self, value: Any) -> bool:
         """Delegate missing-level checks to the pipeline state object."""
         return self.state.is_missing_level_value(value)

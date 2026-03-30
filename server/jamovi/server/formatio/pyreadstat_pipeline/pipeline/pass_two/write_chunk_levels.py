@@ -1,14 +1,13 @@
-from jamovi.server.dataset import DataType
 from collections.abc import Iterator
 from typing import Any
 from server.formatio.pyreadstat_pipeline import logger as pipeline_logger
-from server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn
+from server.formatio.pyreadstat_pipeline.data_types.types import ColumnFinalPlan, ImportColumn
 
 
 logger = pipeline_logger
 
 
-def write_chunk_levels(columns: list[ImportColumn]) -> None:
+def write_chunk_levels(columns: list[ImportColumn], column_plans: list[ColumnFinalPlan]) -> None:
     """
     Append finalized level labels to columns.
 
@@ -21,21 +20,21 @@ def write_chunk_levels(columns: list[ImportColumn]) -> None:
     logger.debug("write_chunk_levels start")
     columns_with_levels = 0
     appended_levels = 0
-    for column in columns:
-        if not column.state.final_level_codes:
+    for column, plan in zip(columns, column_plans):
+        if not plan.final_level_codes:
             continue
 
         columns_with_levels += 1
 
         written_values = set()
 
-        for raw_value, code in _iter_level_pairs(column):
+        for raw_value, code in _iter_level_pairs(plan):
             if code in written_values:
                 continue
             written_values.add(code)
 
-            label = _get_label_for_value(column, raw_value)
-            pinned = _is_declared_level_value(column, raw_value)
+            label = _get_label_for_value(plan, raw_value)
+            pinned = _is_declared_level_value(plan, raw_value)
             column.append_level(code, label, str(raw_value), pinned=pinned)
             appended_levels += 1
 
@@ -46,9 +45,9 @@ def write_chunk_levels(columns: list[ImportColumn]) -> None:
     )
 
 
-def _get_label_for_value(column: ImportColumn, value: Any) -> str:
+def _get_label_for_value(column_plan: ColumnFinalPlan, value: Any) -> str:
     """Generate a label string from a value."""
-    declared_label = _get_declared_label_for_value(column, value)
+    declared_label = _get_declared_label_for_value(column_plan, value)
     if declared_label is not None:
         return declared_label
 
@@ -69,26 +68,26 @@ def _get_label_for_value(column: ImportColumn, value: Any) -> str:
     return str(value)
 
 
-def _is_declared_level_value(column: ImportColumn, value: Any) -> bool:
+def _is_declared_level_value(column_plan: ColumnFinalPlan, value: Any) -> bool:
     """Return whether a value exists in declared level metadata."""
-    return _get_declared_label_for_value(column, value) is not None
+    return _get_declared_label_for_value(column_plan, value) is not None
 
 
-def _iter_level_pairs(column: ImportColumn) -> Iterator[tuple[Any, Any]]:
+def _iter_level_pairs(column_plan: ColumnFinalPlan) -> Iterator[tuple[Any, Any]]:
     """Yield raw-value/code pairs using either explicit maps or direct values."""
-    if column.state.raw_value_to_code_map:
-        yield from column.state.raw_value_to_code_map.items()
+    if column_plan.raw_value_to_code_map:
+        yield from column_plan.raw_value_to_code_map.items()
         return
 
-    for value in column.state.final_level_codes or []:
+    for value in column_plan.final_level_codes or []:
         if value is None:
             continue
         yield value, value
 
 
-def _get_declared_label_for_value(column: ImportColumn, value: Any) -> str | None:
+def _get_declared_label_for_value(column_plan: ColumnFinalPlan, value: Any) -> str | None:
     """Return a declared label for a value, matching by raw or string form."""
-    declared_levels = column.state.declared_levels or {}
+    declared_levels = column_plan.declared_levels or {}
     if value in declared_levels:
         return declared_levels[value]
 

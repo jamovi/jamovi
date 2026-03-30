@@ -3,7 +3,7 @@ from types import SimpleNamespace
 from jamovi.server.dataset import DataType
 
 from jamovi.server.formatio.pyreadstat_pipeline.pipeline.pass_one_finalize.build_levels import (
-    build_column_levels,
+    calculate_column_levels_payload,
     _cast_levels_by_encoding,
     _extract_observed_levels,
     _resolve_final_level_values,
@@ -82,7 +82,7 @@ def test_resolve_final_levels_text_merges_declared_and_observed():
     assert levels == ["A", "B"]
 
 
-def test_build_column_levels_returns_early_when_levels_not_needed():
+def test_calculate_column_levels_payload_returns_none_when_levels_not_needed():
     state = SimpleNamespace(
         declared_levels={"A": "Alpha"},
         observed_distinct_value_chunks=[],
@@ -102,14 +102,13 @@ def test_build_column_levels_returns_early_when_levels_not_needed():
         preserve_order=False,
     )
 
-    result = build_column_levels(column, plan)
+    final_level_codes, raw_value_to_code_map = calculate_column_levels_payload(column, plan)
 
-    assert result is column
-    assert column.state.raw_value_to_code_map is None
-    assert column.state.final_level_codes is None
+    assert raw_value_to_code_map is None
+    assert final_level_codes is None
 
 
-def test_build_column_levels_text_creates_code_map_and_integer_codes():
+def test_calculate_column_levels_payload_text_creates_code_map_and_integer_codes():
     state = SimpleNamespace(
         declared_levels={"B": "Bee"},
         observed_distinct_value_chunks=[],
@@ -129,8 +128,7 @@ def test_build_column_levels_text_creates_code_map_and_integer_codes():
         preserve_order=False,
     )
 
-    result = build_column_levels(column, plan)
+    final_level_codes, raw_value_to_code_map = calculate_column_levels_payload(column, plan)
 
-    assert result is column
-    assert column.state.raw_value_to_code_map == {"B": 0, "A": 1}
-    assert column.state.final_level_codes == [0, 1]
+    assert raw_value_to_code_map == {"B": 0, "A": 1}
+    assert final_level_codes == [0, 1]

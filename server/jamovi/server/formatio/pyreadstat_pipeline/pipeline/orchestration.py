@@ -3,7 +3,7 @@ from typing import Any, Callable, TypeVar
 from dataclasses import dataclass
 from time import perf_counter
 
-from server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn, PyreadstatMeta
+from server.formatio.pyreadstat_pipeline.data_types.types import ColumnFinalPlan, ImportColumn, PyreadstatMeta
 from jamovi.server.instancemodel import InstanceModel
 
 from .pass_one.initialize_columns import initialize_columns
@@ -13,7 +13,7 @@ from .pass_two.write_chunk_levels import write_chunk_levels
 from .pass_two.value_writer import InstanceModelValueWriter, ValueWriter
 from .timing_reporter import PipelineTimingStats, format_pipeline_timing_summary
 from .pass_one.profiling import profile_sav_column, initialize_column_profile_states, finalize_unfrozen_profile_states
-from .pass_one_finalize.finalize_column_plan import finalize_column_runtime_state
+from .pass_one_finalize.finalize_column_plan import apply_column_runtime_plan, build_column_runtime_plan
 from .pass_one_finalize.infer_source_meaning import infer_semantic_column_kind
 from .chunk_reader import get_chunk_generator
 
@@ -28,6 +28,7 @@ T = TypeVar('T')
 class ImportRunState:
     """Shared state passed between first-pass profiling and second-pass writing."""
     columns: list[ImportColumn]
+    column_plans: list[ColumnFinalPlan]
     row_count: int
     chunk_count: int
 
@@ -90,7 +91,7 @@ def _profile_all_chunks(path: str, model: InstanceModel, chunk_size: int) -> Imp
 
         row_count += chunk_df.height
 
-    return ImportRunState(columns=columns, row_count=row_count, chunk_count=chunk_count)
+    return ImportRunState(columns=columns, column_plans=[], row_count=row_count, chunk_count=chunk_count)
 
 
 def first_pass(path: str,
@@ -112,13 +113,17 @@ def first_pass(path: str,
     logger.info("stage=first_pass.finalize_columns status=start columns=%s", len(profiled.columns))
     finalize_columns_start = perf_counter()
     finalized_columns = []
+    finalized_column_plans: list[ColumnFinalPlan] = []
     for column in profiled.columns:
         finalize_unfrozen_profile_states(column)
-        finalized_column = _run_with_stage_logging(
-            lambda c=column: finalize_column_runtime_state(c),
+        finalized_plan = _run_with_stage_logging(
+            lambda c=column: build_column_runtime_plan(c),
             "stage=first_pass.finalize_column status=failed column=%s",
             column.name,
         )
+
+        finalized_column = apply_column_runtime_plan(column, finalized_plan)
+        finalized_column_plans.append(finalized_plan)
         finalized_columns.append(finalized_column)
         logger.debug(
             "stage=first_pass.column column=%s final_kind=%s data_type=%s measure_type=%s levels=%s",
@@ -143,6 +148,7 @@ def first_pass(path: str,
 
     return ImportRunState(
         columns=profiled.columns,
+        column_plans=finalized_column_plans,
         row_count=profiled.row_count,
         chunk_count=profiled.chunk_count,
     )
@@ -160,7 +166,7 @@ def write_normalized_values_pass(
 
     # Write levels once before iterating chunks
     write_levels_start = perf_counter()
-    write_chunk_levels(finalized.columns)
+    write_chunk_levels(finalized.columns, finalized.column_plans)
     write_levels_elapsed = perf_counter() - write_levels_start
     writer = InstanceModelValueWriter(model)
 
@@ -171,7 +177,7 @@ def write_normalized_values_pass(
     for chunk_df, _ in gen:
         chunk_index += 1
         chunk_timing = _run_with_stage_logging(
-            lambda: _write_chunk(writer, finalized.columns, chunk_df, offset),
+            lambda: _write_chunk(writer, finalized.column_plans, chunk_df, offset),
             "stage=write_normalized_values.chunk status=failed chunk=%s offset=%s",
             chunk_index,
             offset,
@@ -221,14 +227,14 @@ def import_sav_to_jamovi_in_chunks(
     logger.info("stage=pipeline status=complete path=%s", path)
 
 
-def _write_chunk(writer: ValueWriter, columns: list[ImportColumn], chunk_df: pl.DataFrame, offset: int) -> tuple[float, float]:
+def _write_chunk(writer: ValueWriter, column_plans: list[ColumnFinalPlan], chunk_df: pl.DataFrame, offset: int) -> tuple[float, float]:
     """Normalize and write one chunk, returning normalize and write durations."""
     normalize_start = perf_counter()
-    normalized_chunk = normalize_source_dataframe(chunk_df, columns)
+    normalized_chunk = normalize_source_dataframe(chunk_df, column_plans)
     normalize_elapsed = perf_counter() - normalize_start
 
     write_start = perf_counter()
-    write_chunk_values(writer, columns, normalized_chunk, offset)
+    write_chunk_values(writer, column_plans, normalized_chunk, offset)
     write_elapsed = perf_counter() - write_start
 
     return normalize_elapsed, write_elapsed
