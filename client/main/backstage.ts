@@ -1239,6 +1239,9 @@ export class BackstageView  extends EventDistributor {
 
     _dialogModeChanged() {
         let recents = this.querySelector<HTMLElement>('.silky-bs-op-recents-main');
+        if (recents === null)
+            return;
+
         if (this.model.get('dialogMode'))
             recents.style.display = 'none';
         else
