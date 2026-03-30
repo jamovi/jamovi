@@ -18,6 +18,20 @@ KINDS_SUBJECT_TO_NUMERIC_CONTINUOUS_FALLBACK = {
         SemanticColumnKind.ORDINAL_CODED,
 }
 
+FINALIZED_KIND_NAME_BY_PROVISIONAL_KIND_NAME = {
+    "TEXT_CANDIDATE": "TEXT",
+    "NOMINAL_CANDIDATE": "NOMINAL_CODED",
+}
+KINDS_SUBJECT_TO_ID_DETECTION_NAMES = {
+    "TEXT_CANDIDATE",
+    "NOMINAL_CANDIDATE",
+    "TEXT",
+}
+KINDS_SUBJECT_TO_NUMERIC_CONTINUOUS_FALLBACK_NAMES = {
+    "NOMINAL_CANDIDATE",
+    "ORDINAL_CODED",
+}
+
 logger = pipeline_logger
 
 def initialize_column_profile_states(
@@ -89,14 +103,31 @@ def profile_sav_column(
 def _infer_finalized_kind(column: ImportColumn) -> SemanticColumnKind:
     """Resolve final semantic kind, promoting high-cardinality columns to ID."""
     current_kind = column.state.final_kind
+    current_kind_name = getattr(current_kind, "name", None)
 
-    if column.state.seen_non_integer_float and current_kind in KINDS_SUBJECT_TO_NUMERIC_CONTINUOUS_FALLBACK:
-        return SemanticColumnKind.CONTINUOUS
+    if (
+        column.state.seen_non_integer_float
+        and current_kind_name in KINDS_SUBJECT_TO_NUMERIC_CONTINUOUS_FALLBACK_NAMES
+    ):
+        return _kind_member_like(current_kind, "CONTINUOUS")
 
-    if column.state.exceeded_cardinality_limit and current_kind in KINDS_SUBJECT_TO_ID_DETECTION:
-        return SemanticColumnKind.ID
+    if (
+        column.state.exceeded_cardinality_limit
+        and current_kind_name in KINDS_SUBJECT_TO_ID_DETECTION_NAMES
+    ):
+        return _kind_member_like(current_kind, "ID")
+
+    finalized_kind_name = FINALIZED_KIND_NAME_BY_PROVISIONAL_KIND_NAME.get(current_kind_name)
+    if finalized_kind_name is not None:
+        return _kind_member_like(current_kind, finalized_kind_name)
 
     return FINALIZED_KIND_BY_PROVISIONAL_KIND.get(current_kind, current_kind)
+
+
+def _kind_member_like(current_kind: SemanticColumnKind | object, member_name: str) -> SemanticColumnKind:
+    """Return enum member from current_kind's enum class when available."""
+    enum_cls = type(current_kind) if current_kind is not None else SemanticColumnKind
+    return getattr(enum_cls, member_name, getattr(SemanticColumnKind, member_name))
 
 
 def _should_profile_numeric_categorical(column: ImportColumn) -> bool:

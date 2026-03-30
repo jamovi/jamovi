@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from jamovi.server.dataset import DataType
 from jamovi.server.formatio.pyreadstat_pipeline.pipeline.pass_one_finalize.build_levels import (
     _resolve_final_level_values,
-    build_column_levels,
+    calculate_column_levels_payload,
 )
 from jamovi.server.formatio.pyreadstat_pipeline.pipeline.pass_one_finalize.level_labels_strategy import LevelLabelPlan
 
@@ -82,8 +82,8 @@ def test_resolve_final_levels_sorts_observed_when_order_not_preserved():
     assert levels == [1, 2, 3]
 
 
-def test_build_column_levels_text_creates_code_map_and_integer_codes():
-    """Text levels should build a value->code map and write integer level codes."""
+def test_calculate_column_levels_payload_text_creates_code_map_and_integer_codes():
+    """Text levels should build a value->code map and integer level codes payload."""
     state = SimpleNamespace(
         declared_levels={"B": "Bee"},
         observed_values={"A", "B"},
@@ -103,14 +103,13 @@ def test_build_column_levels_text_creates_code_map_and_integer_codes():
         preserve_order=False,
     )
 
-    result = build_column_levels(column, plan)
+    final_level_codes, raw_value_to_code_map = calculate_column_levels_payload(column, plan)
 
-    assert result is column
-    assert column.state.raw_value_to_code_map == {"B": 0, "A": 1}
-    assert column.state.final_level_codes == [0, 1]
+    assert raw_value_to_code_map == {"B": 0, "A": 1}
+    assert final_level_codes == [0, 1]
 
 
-def test_build_column_levels_text_excludes_missing_values_from_codes():
+def test_calculate_column_levels_payload_text_excludes_missing_values_from_codes():
     """Missing values should be excluded from both raw_value_to_code_map and final_level_codes."""
     state = SimpleNamespace(
         declared_levels=None,
@@ -131,9 +130,8 @@ def test_build_column_levels_text_excludes_missing_values_from_codes():
         preserve_order=False,
     )
 
-    result = build_column_levels(column, plan)
+    final_level_codes, raw_value_to_code_map = calculate_column_levels_payload(column, plan)
 
-    assert result is column
-    assert "M" not in column.state.raw_value_to_code_map
-    assert set(column.state.raw_value_to_code_map.values()) == {0, 1}
-    assert set(column.state.final_level_codes) == {0, 1}
+    assert "M" not in raw_value_to_code_map
+    assert set(raw_value_to_code_map.values()) == {0, 1}
+    assert set(final_level_codes) == {0, 1}
