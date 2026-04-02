@@ -1,6 +1,6 @@
 import polars as pl
 
-from server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn, PyreadstatMeta
+from jamovi.server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn, PyreadstatMeta
 from jamovi.server.instancemodel import InstanceModel
 
 from ..infer_metadata.format_type import format_type

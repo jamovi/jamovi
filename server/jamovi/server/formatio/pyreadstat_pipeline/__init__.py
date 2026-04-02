@@ -1,4 +1,5 @@
 import logging
+from typing import TYPE_CHECKING
 
 LOG_FORMAT = "%(asctime)s %(name)s %(filename)s:%(funcName)s %(levelname)s %(message)s"
 
@@ -8,6 +9,13 @@ logger = logging.getLogger("pyreadstat_pipeline")
 logger.setLevel(logging.DEBUG)
 logger.propagate = True
 
-from .read import read
+if TYPE_CHECKING:
+	from .read import read as read
+
+
+def read(*args, **kwargs):
+	from .read import read as _read
+
+	return _read(*args, **kwargs)
 
 __all__ = ["read", "logger"]

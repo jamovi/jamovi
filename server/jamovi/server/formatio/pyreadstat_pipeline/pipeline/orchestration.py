@@ -1,9 +1,9 @@
-from server.formatio.pyreadstat_pipeline import logger as pipeline_logger
+from jamovi.server.formatio.pyreadstat_pipeline import logger as pipeline_logger
 from typing import Any, Callable, TypeVar
 from dataclasses import dataclass
 from time import perf_counter
 
-from server.formatio.pyreadstat_pipeline.data_types.types import ColumnFinalPlan, ImportColumn, PyreadstatMeta
+from jamovi.server.formatio.pyreadstat_pipeline.data_types.types import ColumnFinalPlan, ImportColumn, PyreadstatMeta
 from jamovi.server.instancemodel import InstanceModel
 
 from .pass_one.initialize_columns import initialize_columns

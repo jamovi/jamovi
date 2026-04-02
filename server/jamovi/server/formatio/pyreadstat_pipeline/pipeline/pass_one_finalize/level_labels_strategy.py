@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, auto
-from server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn
+from jamovi.server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn
 from jamovi.server.dataset import DataType
 from jamovi.core import MeasureType
 

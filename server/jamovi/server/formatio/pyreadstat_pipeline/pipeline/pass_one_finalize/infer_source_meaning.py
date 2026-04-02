@@ -1,5 +1,5 @@
 
-from server.formatio.pyreadstat_pipeline.data_types.types import DataType, ImportColumn, SemanticColumnKind, SourceFormatType
+from jamovi.server.formatio.pyreadstat_pipeline.data_types.types import DataType, ImportColumn, SemanticColumnKind, SourceFormatType
 from jamovi.core import MeasureType
 
 

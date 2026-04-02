@@ -15,3 +15,5 @@ certifi
 pytest
 pytest_asyncio
 rich
+pyreadstat
+pandas

@@ -1,5 +1,5 @@
-from server.formatio.pyreadstat_pipeline import logger as pipeline_logger
-from server.formatio.pyreadstat_pipeline.data_types.types import DataType, ImportColumn, MeasureType, SemanticColumnKind
+from jamovi.server.formatio.pyreadstat_pipeline import logger as pipeline_logger
+from jamovi.server.formatio.pyreadstat_pipeline.data_types.types import DataType, ImportColumn, MeasureType, SemanticColumnKind
 import polars as pl
 from .chunk_levels import get_unique_values_from_chunk
 

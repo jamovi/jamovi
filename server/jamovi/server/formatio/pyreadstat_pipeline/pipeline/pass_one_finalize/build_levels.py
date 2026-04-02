@@ -1,7 +1,7 @@
 import polars as pl
 from typing import Any
-from server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn
-from server.formatio.pyreadstat_pipeline.pipeline.pass_one_finalize.level_labels_strategy import LevelLabelPlan
+from jamovi.server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn
+from jamovi.server.formatio.pyreadstat_pipeline.pipeline.pass_one_finalize.level_labels_strategy import LevelLabelPlan
 from jamovi.server.dataset import DataType
 
 

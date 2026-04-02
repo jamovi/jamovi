@@ -3,7 +3,7 @@ from jamovi.server.dataset import DataType
 from jamovi.core import MeasureType
 from types import SimpleNamespace
 
-from server.formatio.pyreadstat_pipeline.data_types.types import (
+from jamovi.server.formatio.pyreadstat_pipeline.data_types.types import (
     ColumnFinalPlan,
     ImportColumn,
     POLARS_DTYPE_BY_DATA_TYPE,

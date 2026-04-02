@@ -1,8 +1,8 @@
-from server.formatio.pyreadstat_pipeline import logger as pipeline_logger
+from jamovi.server.formatio.pyreadstat_pipeline import logger as pipeline_logger
 
 import polars as pl
 
-from server.formatio.pyreadstat_pipeline.data_types.types import ColumnFinalPlan, DataType, SourceFormatType
+from jamovi.server.formatio.pyreadstat_pipeline.data_types.types import ColumnFinalPlan, DataType, SourceFormatType
 from jamovi.core import MeasureType
 
 logger = pipeline_logger

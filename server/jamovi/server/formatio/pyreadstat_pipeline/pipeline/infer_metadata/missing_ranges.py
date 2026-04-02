@@ -1,7 +1,7 @@
 import math
 from numbers import Number
 from typing import Any
-from server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn, PyreadstatMeta
+from jamovi.server.formatio.pyreadstat_pipeline.data_types.types import ImportColumn, PyreadstatMeta
 from jamovi.server.dataset import DataType
 
 

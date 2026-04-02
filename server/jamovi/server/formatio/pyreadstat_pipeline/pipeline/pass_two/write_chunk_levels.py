@@ -1,7 +1,7 @@
 from collections.abc import Iterator
 from typing import Any
-from server.formatio.pyreadstat_pipeline import logger as pipeline_logger
-from server.formatio.pyreadstat_pipeline.data_types.types import ColumnFinalPlan, ImportColumn
+from jamovi.server.formatio.pyreadstat_pipeline import logger as pipeline_logger
+from jamovi.server.formatio.pyreadstat_pipeline.data_types.types import ColumnFinalPlan, ImportColumn
 
 
 logger = pipeline_logger

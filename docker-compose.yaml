@@ -51,7 +51,7 @@ services:
         JAMOVI_ACCESS_KEY: ''
 
     volumes:
-      - $HOME/Documents:/root/Documents
+      - $HOME/Documents:/root/Documents:z
 
   jamovi-dev:
     <<: *base

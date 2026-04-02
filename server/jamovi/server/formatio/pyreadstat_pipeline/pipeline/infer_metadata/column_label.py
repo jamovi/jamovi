@@ -1,5 +1,5 @@
 import polars as pl
-from server.formatio.pyreadstat_pipeline.data_types.types import PyreadstatMeta
+from jamovi.server.formatio.pyreadstat_pipeline.data_types.types import PyreadstatMeta
 
 def column_label(meta: PyreadstatMeta, column_name: str, df: pl.DataFrame) -> str | None:
     """
