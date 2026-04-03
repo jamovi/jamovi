@@ -35,7 +35,7 @@ def write_chunk_levels(columns: list[ImportColumn], column_plans: list[ColumnFin
 
             label = _get_label_for_value(plan, raw_value)
             pinned = _is_declared_level_value(plan, raw_value)
-            column.append_level(code, label, str(raw_value), pinned=pinned)
+            column.append_level(int(code), label, str(raw_value), pinned=pinned)
             appended_levels += 1
 
     logger.debug(

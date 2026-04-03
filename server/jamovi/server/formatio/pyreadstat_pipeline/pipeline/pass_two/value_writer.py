@@ -2,7 +2,7 @@ from typing import Protocol
 
 import polars as pl
 
-from server.instancemodel import InstanceModel
+from jamovi.server.instancemodel import InstanceModel
 
 
 class ValueWriter(Protocol):

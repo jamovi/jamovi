@@ -111,15 +111,15 @@ BASE_PLAN_BY_STRATEGY: dict[LevelLabelStrategy, LevelLabelPlan] = {
     ),
     LevelLabelStrategy.DECIMAL_NOMINAL: LevelLabelPlan(
         needs_levels=True,
-        level_encoding='decimal',
+        level_encoding='integer',
         preserve_order=False,
-        notes="Decimal values become level indices. Check DPS for integer conversion.",
+        notes="Decimal values cast to integer level codes (jamovi only supports integer codes).",
     ),
     LevelLabelStrategy.DECIMAL_ORDINAL: LevelLabelPlan(
         needs_levels=True,
-        level_encoding='decimal',
+        level_encoding='integer',
         preserve_order=True,
-        notes="Decimal values become ordered level indices.",
+        notes="Decimal values cast to ordered integer level codes.",
     ),
     LevelLabelStrategy.DECIMAL_CONTINUOUS: LevelLabelPlan(
         needs_levels=False,

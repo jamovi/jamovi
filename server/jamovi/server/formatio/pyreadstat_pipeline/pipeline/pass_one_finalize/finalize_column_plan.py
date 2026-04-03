@@ -78,7 +78,7 @@ def build_column_runtime_plan(column: ImportColumn) -> ColumnFinalPlan:
     preserve_temporal_numeric = column.source_format in TEMPORAL_SOURCE_FORMATS
     fill_null_value = -2147483648 if preserve_temporal_numeric else None
 
-    return ColumnFinalPlan(
+    plan = ColumnFinalPlan(
         name=column.name,
         index=getattr(column, "index", None),
         source_format=column.source_format,
@@ -93,6 +93,18 @@ def build_column_runtime_plan(column: ImportColumn) -> ColumnFinalPlan:
         preserve_temporal_numeric=preserve_temporal_numeric,
         fill_null_value=fill_null_value,
     )
+    
+    # Debug logging
+    from jamovi.server.formatio.pyreadstat_pipeline import logger as pipeline_logger
+    if measure_type in (MeasureType.NOMINAL, MeasureType.ORDINAL):
+        pipeline_logger.info(
+            "build_column_runtime_plan: %s data_type=%s measure_type=%s dtype=%s levels=%s raw_codes=%s",
+            column.name, data_type, measure_type, plan.final_polars_dtype, 
+            len(final_level_codes) if final_level_codes else 0,
+            len(raw_value_to_code_map) if raw_value_to_code_map else 0
+        )
+    
+    return plan
 
 
 def apply_column_runtime_plan(column: ImportColumn, plan: ColumnFinalPlan) -> ImportColumn:
