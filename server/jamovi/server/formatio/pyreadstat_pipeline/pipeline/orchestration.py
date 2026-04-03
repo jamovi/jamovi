@@ -158,6 +158,7 @@ def write_normalized_values_pass(
         model: InstanceModel,
         chunk_size: int,
     finalized: ImportRunState,
+    progress_callback: Callable[[float], None] | None = None,
     timing: PipelineTimingStats | None = None) -> None:
     """Normalize and write chunk values after first-pass metadata finalization."""
     stage_start = perf_counter()
@@ -187,6 +188,9 @@ def write_normalized_values_pass(
         write_total += write_seconds
         offset += chunk_df.height
 
+        if progress_callback is not None and finalized.row_count > 0:
+            _emit_progress(progress_callback, offset / finalized.row_count)
+
     total_elapsed = perf_counter() - stage_start
     logger.info("stage=write_normalized_values status=complete rows=%s chunks=%s", offset, chunk_index)
 
@@ -203,7 +207,8 @@ def write_normalized_values_pass(
 def import_sav_to_jamovi_in_chunks(
     path: str,
     model: InstanceModel,
-    chunk_size: int
+    chunk_size: int,
+    progress_callback: Callable[[float], None] | None = None,
 ) -> None:
     """Run the full two-pass import pipeline for a SAV file."""
     pipeline_start = perf_counter()
@@ -216,7 +221,14 @@ def import_sav_to_jamovi_in_chunks(
     )
 
     _run_with_stage_logging(
-        lambda: write_normalized_values_pass(path, model, chunk_size, finalized, timing=timing),
+        lambda: write_normalized_values_pass(
+            path,
+            model,
+            chunk_size,
+            finalized,
+            progress_callback=progress_callback,
+            timing=timing,
+        ),
         "stage=pipeline.write_normalized_values status=failed",
     )
 
@@ -238,6 +250,15 @@ def _write_chunk(writer: ValueWriter, column_plans: list[ColumnFinalPlan], chunk
     write_elapsed = perf_counter() - write_start
 
     return normalize_elapsed, write_elapsed
+
+
+def _emit_progress(progress_callback: Callable[[float], None], value: float) -> None:
+    """Emit clamped progress updates without breaking import on callback errors."""
+    clamped = max(0.0, min(1.0, value))
+    try:
+        progress_callback(clamped)
+    except Exception:
+        logger.warning("stage=progress status=failed value=%s", clamped, exc_info=True)
 
 
 # Alias for convenience - profile_and_build_levels_pass is an alias for the full first pass

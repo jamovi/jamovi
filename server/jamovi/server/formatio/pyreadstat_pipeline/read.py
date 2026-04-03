@@ -12,5 +12,5 @@ def read(model: InstanceModel, path: str, prog_cb: typing.Callable[[float], None
         raise ValueError(f"Unsupported format for pyreadstat pipeline: {format}")
 
     prog_cb(0.0)
-    import_sav_to_jamovi_in_chunks(path, model, CHUNK_SIZE)
+    import_sav_to_jamovi_in_chunks(path, model, CHUNK_SIZE, progress_callback=prog_cb)
     prog_cb(1.0)
