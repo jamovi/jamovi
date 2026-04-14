@@ -13,7 +13,6 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import matchAll from "match-all"; // str.matchAll() not available pre node 12
 
 let untranslatableSymbols = [];
 
@@ -466,9 +465,10 @@ const scanAnalyses = function(defDir, srcDir) {
     extractor.printStats();
 
     console.log('Extracting strings from R files...');
-    let rDir = path.join(srcDir, 'R')
-    let rFiles = fs.readdirSync(rDir);
-    let re = /[^a-zA-Z._]\.\('([^'\\]*(\\.[^'\\]*)*)'|[^a-zA-Z._]\.\("([^"\\]*(\\.[^"\\]*)*)"/g;
+    const rDir = path.join(srcDir, 'R')
+    const rFiles = fs.readdirSync(rDir);
+    const reDQ = /[^a-zA-Z._]\.\("([^"\\]*(\\.[^"\\]*)*)"/g;
+    const reSQ = /[^a-zA-Z._]\.\('([^'\\]*(\\.[^'\\]*)*)'/g;
 
     for (let fileName of rFiles) {
         if ( ! fileName.endsWith('.R') || fileName.endsWith('.h.R'))
@@ -476,16 +476,11 @@ const scanAnalyses = function(defDir, srcDir) {
         let filePath = path.join(rDir, fileName);
         let content = fs.readFileSync(filePath, 'UTF-8').replace(/\\u[0-9A-Fa-f]{4}/g, (x) => JSON.parse(`"${x}"`));
 
-        // to support node < 12, we're using matchAll() rather than
-        // str.matchAll()
-        //
-        // for (let match of content.matchAll(re)) {
-        //     let value = parseContext(match.slice(1).join(''));
-        //     let rel = path.relative(srcDir, filePath);
-        //     updateEntry(value.key, value.context, rel);
-        // }
+        // extract strings from .("...") and .('...') calls, unescaping inner quotes
+        const dQuoted = [...content.matchAll(reDQ)].map(m => m[1].replaceAll('\\"', '"'));
+        const sQuoted = [...content.matchAll(reSQ)].map(m => m[1].replaceAll("\\'", "'"));
 
-        for (let match of matchAll(content, re).toArray()) {
+        for (let match of [...dQuoted, ...sQuoted]) {
             let value = parseContext(match);
             let rel = path.relative(srcDir, filePath);
             updateEntry(value.key, null, value.context, rel);
