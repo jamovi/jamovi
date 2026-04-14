@@ -345,7 +345,9 @@ const load = function(defDir, code, create) {
 
         let langPath = path.join(transDir, file);
 
-        const po = gettextParser.po.parse(fs.readFileSync(langPath));
+        // strip obsolete previous-msgid lines (#~|) which gettext-parser cannot handle
+        const poContent = fs.readFileSync(langPath, 'utf-8').replace(/^#~\|.*$/gm, '');
+        const po = gettextParser.po.parse(poContent);
 
         const lang = po.headers.Language || po.headers.language || po.headers.lang;
 
