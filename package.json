@@ -21,26 +21,22 @@
   },
   "homepage": "https://github.com/jamovi/jamovi-compiler#readme",
   "dependencies": {
-    "browserify": "^17.0.0",
-    "command-line-args": "^5.2.1",
-    "fs-extra": "^11.2.0",
-    "gettext-extractor": "^3.8.0",
-    "js-yaml": "^4.1.0",
-    "jsesc": "^3.0.2",
-    "jsonschema": "^1.4.1",
+    "browserify": "^17.0.1",
+    "command-line-args": "^6.0.2",
+    "fs-extra": "^11.3.4",
+    "gettext-extractor": "^4.0.6",
+    "js-yaml": "^4.1.1",
+    "jsesc": "^3.1.0",
+    "jsonschema": "^1.5.0",
     "jszip": "^3.10.1",
-    "log": "^6.3.1",
+    "log": "^6.3.2",
     "log-node": "^8.0.3",
-    "match-all": "^1.2.6",
-    "needle": "^3.3.1",
+    "needle": "^3.5.0",
     "gettext-parser": "^9.0.2",
-    "semver": "^7.6.0",
+    "semver": "^7.7.4",
     "temp": "^0.9.4",
-    "underscore": "^1.13.6",
-    "walk-sync": "^3.0.0",
+    "underscore": "^1.13.8",
+    "walk-sync": "^4.0.1",
     "word-wrap": "^1.2.5"
-  },
-  "devDependencies": {
-    "mocha": "^10.3.0"
   }
 }
