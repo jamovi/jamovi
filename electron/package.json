@@ -6,6 +6,6 @@
     "deploy": "asar pack app ../../../bin/resources/default_app.asar"
   },
   "devDependencies": {
-    "asar": "^0.14.2"
+    "@electron/asar": "^4.2.0"
   }
 }
