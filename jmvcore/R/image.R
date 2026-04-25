@@ -99,7 +99,7 @@ Image <- R6::R6Class("Image",
             private$.widthM <- width
             private$.widthB <- 0
             private$.heightM <- height
-            private$.widthB <- 0
+            private$.heightB <- 0
         },
         setSize=function(width, height) {
             private$.width <- width
@@ -254,20 +254,20 @@ Image <- R6::R6Class("Image",
                     return()
             }
 
+            widthScaleOptionName <- paste('results', self$path, 'widthScale', sep='/')
+            heightScaleOptionName <- paste('results', self$path, 'heightScale', sep='/')
+            resized <- (widthScaleOptionName %in% oChanges || heightScaleOptionName %in% oChanges)
+
             super$fromProtoBuf(element, oChanges, vChanges)
 
-            image <- element$image
-
             size <- self$size
-            sizeChanged <- (size$width != image$width || size$height != image$height)
-
             private$.width <- size$width
             private$.height <- size$height
 
-            if (sizeChanged || image$path == '' || 'theme' %in% oChanges || 'palette' %in% oChanges) {
+            if (element$image$path == '' || resized || 'theme' %in% oChanges || 'palette' %in% oChanges) {
                 private$.filePath <- NULL
             } else {
-                private$.filePath <- image$path
+                private$.filePath <- element$image$path
             }
         },
         .setPlot=function(plot) {
