@@ -461,6 +461,7 @@ void EngineR::initR()
         "base::unlockBinding('update.packages', utils)\n"
         "base::unlockBinding('download.packages', utils)\n"
         "base::unlockBinding('remove.packages', utils)\n"
+        "base::unlockBinding('download.file', utils)\n"
 
         "utils$install.packages <- function(...)"
         "{\n"
@@ -482,10 +483,16 @@ void EngineR::initR()
         "    stop('You cannot remove packages in the jamovi R', call.=FALSE)\n"
         "}\n"
 
+        "utils$download.file <- function(...)"
+        "{\n"
+        "    stop('File downloads are not permitted in jamovi R', call.=FALSE)\n"
+        "}\n"
+
         "base::lockBinding('install.packages', utils)\n"
         "base::lockBinding('update.packages', utils)\n"
         "base::lockBinding('download.packages', utils)\n"
         "base::lockBinding('remove.packages', utils)\n"
+        "base::lockBinding('download.file', utils)\n"
     );
 
     setLibPaths("jmv");
@@ -506,6 +513,26 @@ void EngineR::initR()
 
     // preload jmv
     _rInside->parseEvalQNT("suppressPackageStartupMessages(requireNamespace('jmv'))");
+
+    // preload jmvcore for formula validation
+    _rInside->parseEvalQNT("suppressPackageStartupMessages(requireNamespace('jmvcore'))");
+
+    // override as.formula to automatically validate formulas for security
+    _rInside->parseEvalQNT(""
+        "stats <- base::.getNamespace('stats')\n"
+        "original_as.formula <- stats::as.formula\n"
+        "base::unlockBinding('as.formula', stats)\n"
+        "stats$as.formula <- function(object, env = parent.frame())"
+        "{\n"
+        "    if (is.character(object)) {\n"
+        "        if (exists('validate_safe_formula', envir = asNamespace('jmvcore'))) {\n"
+        "            jmvcore::validate_safe_formula(object)\n"
+        "        }\n"
+        "    }\n"
+        "    original_as.formula(object, env)\n"
+        "}\n"
+        "base::lockBinding('as.formula', stats)\n"
+    );
 }
 
 string EngineR::makeAbsolute(const string &paths)
