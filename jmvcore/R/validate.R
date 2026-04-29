@@ -2,26 +2,22 @@
 #' Secure formula validation using allowlist approach
 #' Prevents code injection while allowing legitimate statistical formulas
 #'
-#' @param formula_str Character string containing the R formula
-#' @return Validated formula object safe for statistical functions
+#' @param fmla A formula object to validate.
+#' @param additional_allowed_functions Optional character vector of extra
+#'   function names to permit for this validation call.
 #' @throws Error if formula contains security violations
 #' @export
 #'
 #' @examples
 #' # Safe usage:
-#' validate_safe_formula("y ~ x + z")
-#' validate_safe_formula("y ~ I(x^2) + log(z)")
+#' validateSafeFormula(y ~ x + z)
+#' validateSafeFormula(y ~ I(x^2) + log(z))
 #'
 #' # Blocks dangerous code:
-#' validate_safe_formula("y ~ I(system('whoami'))")  # Throws error
-validate_safe_formula <- function(formula_str) {
+#' validateSafeFormula(y ~ I(system('whoami')))  # Throws error
+validateSafeFormula <- function(fmla, additional_allowed_functions = NULL) {
 
-  # Parse formula and check basic syntax
-  formula_obj <- tryCatch(as.formula(formula_str), error = function(e) {
-    stop("Invalid formula syntax: ", e$message, call. = FALSE)
-  })
-
-  formula_text <- deparse(formula_obj, width.cutoff = 500)
+  formula_text <- deparse(fmla, width.cutoff = 500)
 
   # Allowlist of safe functions
   allowed_functions <- c(
@@ -31,12 +27,30 @@ validate_safe_formula <- function(formula_str) {
     # Statistical functions
     "mean", "sd", "var", "median", "min", "max", "sum", "length",
     # Transformation functions
-    "scale", "poly", "ns", "bs", "I"
+    "scale", "poly", "ns", "bs", "I", "cbind",
+    # Common formula helpers
+    "offset", "factor", "relevel", "interaction", "pmin", "pmax"
   )
+
+  if (!is.null(additional_allowed_functions)) {
+    if (!is.character(additional_allowed_functions)) {
+      stop("`additional_allowed_functions` must be a character vector.",
+           call. = FALSE)
+    }
+
+    valid_names <- grepl("\\.?[a-zA-Z_][a-zA-Z0-9_.]*$",
+                         additional_allowed_functions)
+    if (any(!valid_names)) {
+      stop("`additional_allowed_functions` contains invalid function names.",
+           call. = FALSE)
+    }
+
+    allowed_functions <- unique(c(allowed_functions, additional_allowed_functions))
+  }
 
   # Extract function calls
   function_calls <- regmatches(formula_text,
-                               gregexpr("[a-zA-Z_][a-zA-Z0-9_.]*(?=\\s*\\()",
+                               gregexpr("\\.?[a-zA-Z_][a-zA-Z0-9_.]*(?=\\s*\\()",
                                        formula_text, perl = TRUE))[[1]]
 
   # Validate each function call
@@ -57,24 +71,7 @@ validate_safe_formula <- function(formula_str) {
     .validate_i_expression(i_content)
   }
 
-  # Final security scan for dangerous patterns
-  dangerous_patterns <- c(
-    "system", "eval", "parse", "source", "load", "save",
-    "file\\.", "write", "read", "get\\s*\\(", "assign",
-    "library", "require", "do\\.call", "url", "download",
-    "cat", "print", "sink", ":::"
-  )
-
-  # Fix vector length bug by checking each pattern individually
-  for (pattern in dangerous_patterns) {
-    matches <- grepl(pattern, formula_text, ignore.case = TRUE)
-    if (any(matches)) {
-      stop("Security violation: Detected unsafe pattern in formula",
-           call. = FALSE)
-    }
-  }
-
-  return(formula_obj)
+  invisible(NULL)
 }
 
 #' Internal function to validate I() expression content
@@ -84,7 +81,7 @@ validate_safe_formula <- function(formula_str) {
   # Check for function calls - only allow basic math
   if (grepl("[a-zA-Z_][a-zA-Z0-9_]*\\s*\\(", i_content)) {
     func_names <- regmatches(i_content,
-                            gregexpr("[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\()",
+                            gregexpr("\\.?[a-zA-Z_][a-zA-Z0-9_]*(?=\\s*\\()",
                                     i_content, perl = TRUE))[[1]]
 
     allowed_math_funcs <- c("log", "exp", "sqrt", "abs", "sin", "cos", "tan",
@@ -103,4 +100,35 @@ validate_safe_formula <- function(formula_str) {
     stop("Security violation: Unsafe characters in I() expression",
          call. = FALSE)
   }
+}
+
+#' Convert and validate an object as a formula
+#'
+#' Accepts formula-like input, converts it with [stats::as.formula()],
+#' validates it using [validateSafeFormula()], and returns the formula.
+#'
+#' @param object A formula-like object (typically a character string or formula).
+#' @param env The environment to use when parsing character formulas.
+#' @param additional_allowed_functions Optional character vector of extra
+#'   function names to permit for this conversion and validation call.
+#'
+#' @note Available from jamovi 2.7.27.
+#'
+#' @return A validated formula object.
+#' @export
+asFormula <- function(object,
+                      env = parent.frame(),
+                      additional_allowed_functions = NULL) {
+
+  # The engine in jamovi overrides stats::as.formula().
+  # Retrieve the original (pre-override) function stored in options during
+  # engine initialisation, falling back to stats::as.formula outside jamovi.
+  stats_as_formula <- getOption(".__jmv.original_as.formula",
+                                default = stats::as.formula)
+
+  fmla <- stats_as_formula(object, env)
+  validateSafeFormula(
+    fmla,
+    additional_allowed_functions = additional_allowed_functions)
+  fmla
 }
