@@ -263,12 +263,23 @@ export class ModulesBase extends EventMap<IModulesModel> {
                 });
             }
 
-            /*if (alreadyExists)
-                module = currentModule;
-            else */if (alreadyExists === false && this.create) 
+            if (alreadyExists === false && this.create) 
                 this.create(module);
 
             modules.push(module);
+        }
+
+        if (this instanceof Modules) {
+            for (let module of modules) {
+                let avMods = this._available.attributes.modules;
+                for (let avMod of avMods) {
+                    if (avMod.name === module.name) {
+                        module.url = avMod.path;
+                        module.ops = this._determineOps(module, avMod);
+                        break;
+                    }
+                }
+            }
         }
 
         this.set('message', message);
