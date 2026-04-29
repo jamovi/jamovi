@@ -176,10 +176,13 @@ protected:
     {
         ColumnStruct *cs = _mm->resolve<ColumnStruct>(_rel);
 
-        if (rowIndex >= cs->rowCount)
+        if (rowIndex < 0 || rowIndex >= cs->rowCount)
             throw std::runtime_error("index out of bounds");
 
-        int blockIndex = rowIndex * sizeof(T) / VALUES_SPACE;
+        size_t blockIndex = (size_t)rowIndex * sizeof(T) / VALUES_SPACE;
+        if (blockIndex >= (size_t)cs->blockCapacity)
+            throw std::runtime_error("block index out of bounds");
+
         Block **blocks = _mm->resolve<Block*>(cs->blocks);
         Block *currentBlock = _mm->resolve<Block>(blocks[blockIndex]);
 

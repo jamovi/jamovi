@@ -44,6 +44,8 @@ MemoryMap::~MemoryMap()
 
 void MemoryMap::check() const
 {
+    if (_size < MM_START_OFFSET)
+        throw runtime_error("Corrupt memory segment: too small");
     char match[] = "jamovi";
     if (memcmp(_start, match, 6) != 0)
         throw runtime_error("Corrupt memory segment");

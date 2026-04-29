@@ -34,6 +34,17 @@ using namespace jamovi::coms;
 
 RInside *EngineR::_rInside = NULL;
 
+static bool isSafeIdentifier(const std::string &s)
+{
+    if (s.empty())
+        return false;
+    for (unsigned char c : s) {
+        if ( ! isalnum(c) && c != '_')
+            return false;
+    }
+    return true;
+}
+
 EngineR::EngineR()
 {
     this->initR();
@@ -93,6 +104,9 @@ void EngineR::run(AnalysisRequest &analysis)
         sendResults(ana, COMPLETE);
         return;
     }
+
+    if ( ! isSafeIdentifier(analysis.name()))
+        throw std::invalid_argument("Invalid analysis name: '" + analysis.name() + "'");
 
     stringstream ss;
     ss.str("");
@@ -261,6 +275,9 @@ void EngineR::sendResults(Rcpp::Environment &ana, bool complete)
 
 void EngineR::setLibPaths(const std::string &moduleName)
 {
+    if ( ! isSafeIdentifier(moduleName))
+        throw std::invalid_argument("Invalid module name: '" + moduleName + "'");
+
     stringstream ss;
 
     char *cPath;
@@ -435,9 +452,8 @@ void EngineR::initR()
 
     if (pandoc != NULL)
     {
-        stringstream ss;
-        ss << "Sys.setenv(RSTUDIO_PANDOC='" << pandoc << "')\n";
-        _rInside->parseEvalQNT(ss.str());
+        Rcpp::Function sysSetenv = _rInside->parseEvalNT("Sys.setenv");
+        sysSetenv(Rcpp::Named("RSTUDIO_PANDOC", std::string(pandoc)));
     }
 
     // override .libPaths(), the R version munges international characters

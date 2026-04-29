@@ -272,9 +272,11 @@ string Dirs::exeDir()
 #else
 
         char buf[1024];
-        pid_t pid = getpid();
 
-        int n = readlink("/proc/self/exe", buf, sizeof(buf));
+        int n = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+        if (n < 0)
+            throw runtime_error("Could not read /proc/self/exe");
+        buf[n] = '\0';
 
         for (int i = n - 1; i > 0; i--)
         {
