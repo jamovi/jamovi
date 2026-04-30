@@ -93,6 +93,10 @@ AnalysisRequest ComsNN::read()
             nn_freemsg(buf);
             break;
         }
+
+        int err = nn_errno();
+        if (err != ETIMEDOUT && err != EAGAIN && err != EINTR)
+            throw ConnectionLostException();
     }
 
     return request;
