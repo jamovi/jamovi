@@ -504,11 +504,10 @@ Analysis <- R6::R6Class('Analysis',
 
             t <- getGlobalTheme(self$options$theme, self$options$palette)
 
-            ev <- parse(text=paste0('private$', funName, '(image, theme = t$theme, ggtheme = t$ggtheme, ...)'))
             if (noThrow) {
-                result <- try(eval(ev), silent=FALSE)
+                result <- try(render(image, theme = t$theme, ggtheme = t$ggtheme, ...), silent=FALSE)
             } else {
-                result <- eval(ev)
+                result <- render(image, theme = t$theme, ggtheme = t$ggtheme, ...)
             }
 
             if (dataRequired)

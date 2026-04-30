@@ -234,7 +234,7 @@ Options <- R6::R6Class(
             private$.options[[name]] <- NULL
             private$.env[[name]] <- NULL
 
-            jamovi.coms.AnalysisOption.Other <- eval(parse(text='jamovi.coms.AnalysisOption.Other'))
+            jamovi.coms.AnalysisOption.Other <- get('jamovi.coms.AnalysisOption.Other')
 
             # we signal that a results option has been cleared by sending it as NONE
             for (i in seq_along(private$.pb$names)) {
@@ -245,10 +245,10 @@ Options <- R6::R6Class(
             }
         },
         levels=function(x) {
-            str <- substitute(x)
-            expr <- parse(text=paste0("if (is.null(", str, ")) NULL else base::levels(data[[", str, "]])"))
-            v <- eval.parent(expr)
-            v
+            if (is.null(x))
+                return(NULL)
+            data <- self[['.getData']]()
+            base::levels(data[[x]])
         },
         read=function(raw) {
             initProtoBuf()
@@ -480,7 +480,7 @@ OptionAction <- R6::R6Class(
 
             action$.setParams(params)
 
-            res <- try(eval(fun(action), envir=parent.frame()))
+            res <- try(fun(action))
             if (inherits(res, 'try-error')) {
                 err <- as.character(attr(res, 'condition'))
                 action$.setResult(list(
@@ -491,13 +491,13 @@ OptionAction <- R6::R6Class(
 
                 data <- res$data
                 if ( ! is.null(data)) {
-                    res2 <- try(eval(
+                    res2 <- try(
                         jmvReadWrite::write_omv(
                             dtaFrm=data,
                             fleOut=params$fullPath,
                             frcWrt=TRUE,
                             vldExt=FALSE)
-                    ))
+                    )
                     if (inherits(res2, 'try-error')) {
                         err <- as.character(attr(res, 'condition'))
                         action$.setResult(list(
@@ -1127,7 +1127,7 @@ parseOptionPB <- function(pb) {
     else if (pb$has('o')) {
 
         # this isn't necessary, but without it the R linter complains :/
-        jamovi.coms.AnalysisOption.Other <- eval(parse(text='jamovi.coms.AnalysisOption.Other'))
+        jamovi.coms.AnalysisOption.Other <- get('jamovi.coms.AnalysisOption.Other')
 
         if (pb$o == jamovi.coms.AnalysisOption.Other$`TRUE`)
             value <- TRUE
