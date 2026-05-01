@@ -492,45 +492,47 @@ void EngineR::initR()
         "    } else .lib.loc\n"
         "}\n"
         "base::lockBinding('.libPaths', base)\n"
-
-        "utils <- base::.getNamespace('utils')\n"
-        "base::unlockBinding('install.packages', utils)\n"
-        "base::unlockBinding('update.packages', utils)\n"
-        "base::unlockBinding('download.packages', utils)\n"
-        "base::unlockBinding('remove.packages', utils)\n"
-        "base::unlockBinding('download.file', utils)\n"
-
-        "utils$install.packages <- function(...)"
-        "{\n"
-        "    stop('You cannot install packages into the jamovi R', call.=FALSE)\n"
-        "}\n"
-
-        "utils$update.packages <- function(...)"
-        "{\n"
-        "    stop('You cannot update packages in the jamovi R', call.=FALSE)\n"
-        "}\n"
-
-        "utils$download.packages <- function(...)"
-        "{\n"
-        "    stop('You cannot download packages with the jamovi R', call.=FALSE)\n"
-        "}\n"
-
-        "utils$remove.packages <- function(...)"
-        "{\n"
-        "    stop('You cannot remove packages in the jamovi R', call.=FALSE)\n"
-        "}\n"
-
-        "utils$download.file <- function(...)"
-        "{\n"
-        "    stop('File downloads are not permitted in jamovi R', call.=FALSE)\n"
-        "}\n"
-
-        "base::lockBinding('install.packages', utils)\n"
-        "base::lockBinding('update.packages', utils)\n"
-        "base::lockBinding('download.packages', utils)\n"
-        "base::lockBinding('remove.packages', utils)\n"
-        "base::lockBinding('download.file', utils)\n"
     );
+
+    // define lockFunctions helper for locking down R functions
+    _rInside->parseEvalQNT(""
+        "lockFunctions <- function(package, names) {\n"
+        "    ns <- base::.getNamespace(package)\n"
+        "    for (name in names) {\n"
+        "        if (base::exists(name, envir = ns, inherits = FALSE)) {\n"
+        "            base::unlockBinding(name, ns)\n"
+        "            local({\n"
+        "                n <- name\n"
+        "                ns[[n]] <- function(...)\n"
+        "                    stop(paste0(n, '() is not permitted in jamovi R'), call. = FALSE)\n"
+        "            })\n"
+        "            base::lockBinding(name, ns)\n"
+        "        }\n"
+        "    }\n"
+        "}\n"
+    );
+
+    // lock down package management functions
+    _rInside->parseEvalQNT(""
+        "lockFunctions('utils', c(\n"
+        "    'install.packages',\n"
+        "    'update.packages',\n"
+        "    'download.packages',\n"
+        "    'remove.packages'))\n");
+
+    if (isTruthy(boost::nowide::getenv("JAMOVI_EXTRA_LOCKDOWN")))
+    {
+        _rInside->parseEvalQNT(""
+            "lockFunctions('base', c(\n"
+            "    'source',\n"
+            "    'library',\n"
+            "    'system',\n"
+            "    'system2',\n"
+            "    'shell',\n"
+            "    'shell.exec',\n"
+            "    'download.file',\n"
+            "    'url'))\n");
+    }
 
     setLibPaths("jmv");
 
