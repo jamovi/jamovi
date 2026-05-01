@@ -1,5 +1,5 @@
 
-n <- 1000
+n <- 100000
 
 df <- data.frame(
   int_col      = haven::labelled_spss(
@@ -22,7 +22,12 @@ df <- data.frame(
   factor_col   = haven::labelled_spss(
                     rep(c("A", "B", "E", NA), length.out = n),
                     labels=c(Aardvark="A", Baboon="B", Cat="C", Dog="D")
-                 )
+              ),
+
+    dec_lbl_col  = haven::labelled_spss(
+                rep(c(1.5, 2.5, 3.0), length.out = n),
+                labels = c(low = 1.5, medium = 2.5, high = 3.0)
+              )
 )
 
 df

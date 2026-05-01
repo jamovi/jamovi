@@ -12,12 +12,13 @@ from jamovi.readstat import Parser as ReadStatParser
 from jamovi.readstat import Error as ReadStatError
 from jamovi.readstat import Writer
 from jamovi.readstat import Measure
+from .pyreadstat_pipeline import read as pyreadstat_read
 
 
 def get_readers():
     return [
-        ( 'sav', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='sav', **kwargs) ),
-        ( 'zsav', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='sav', **kwargs) ),
+        ( 'sav', lambda data, path, prog_cb, **kwargs: pyreadstat_read(data, path, prog_cb, format='sav', **kwargs) ),
+        ( 'zsav', lambda data, path, prog_cb, **kwargs: pyreadstat_read(data, path, prog_cb, format='sav', **kwargs) ),
         ( 'dta', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='dta', **kwargs) ),
         ( 'por', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='por', **kwargs) ),
         ( 'xpt', lambda data, path, prog_cb, **kwargs: read(data, path, prog_cb, format='xpt', **kwargs) ),

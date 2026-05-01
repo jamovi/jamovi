@@ -51,7 +51,7 @@ services:
         JAMOVI_ACCESS_KEY: ''
 
     volumes:
-      - $HOME/Documents:/root/Documents
+      - $HOME/Documents:/root/Documents:z
 
   jamovi-dev:
     <<: *base
@@ -65,7 +65,7 @@ services:
     <<: *base
     container_name: jamovi-tests
     profiles: [tests]
-    command: ["/usr/bin/python3 -u -m pytest /usr/lib/jamovi/server/jamovi/tests"]
+    command: ["/usr/bin/python3 -u -m pytest /usr/lib/jamovi/server/jamovi/tests -v -s"]
 
   vite:
       image: jonathonlove/vite:latest
