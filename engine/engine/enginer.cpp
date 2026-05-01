@@ -45,6 +45,11 @@ static bool isSafeIdentifier(const std::string &s)
     return true;
 }
 
+static bool isTruthy(const char *value)
+{
+    return value != NULL && std::string(value) == "1";
+}
+
 EngineR::EngineR()
 {
     this->initR();
@@ -297,19 +302,35 @@ void EngineR::setLibPaths(const std::string &moduleName)
 
     boost::algorithm::split(moduleR, path, boost::algorithm::is_any_of(PATH_DELIM), boost::algorithm::token_compress_on);
 
+    bool suppressUserModules = isTruthy(boost::nowide::getenv("JAMOVI_SUPPRESS_USER_MODULES"));
+    bool hasPath = false;
+
     ss << "base::.libPaths(c(";
 
-    ss << "'" << Dirs::appDataDir(true) << "/modules/" << moduleName << "/R'";
+    if ( ! suppressUserModules)
+    {
+        ss << "'" << Dirs::appDataDir(true) << "/modules/" << moduleName << "/R'";
+        hasPath = true;
+    }
 
     for (auto path : moduleR)
     {
-        ss << ",'" << makeAbsolute(path) << "/" << moduleName << "/R'";
+        if (hasPath)
+            ss << ",";
+
+        ss << "'" << makeAbsolute(path) << "/" << moduleName << "/R'";
         ss << ",'" << makeAbsolute(path) << "/jmv/R'";
         ss << ",'" << makeAbsolute(path) << "/base/R'";
+        hasPath = true;
     }
 
     for (auto path : sysR)
-        ss << ",'" << makeAbsolute(path) << "'";
+    {
+        if (hasPath)
+            ss << ",";
+        ss << "'" << makeAbsolute(path) << "'";
+        hasPath = true;
+    }
 
     ss << "))\n";
 
