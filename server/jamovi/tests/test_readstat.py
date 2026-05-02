@@ -16,7 +16,7 @@ from jamovi.server.dataset import Column
 from jamovi.server.dataset import CellValue
 from jamovi.server.dataset import StoreFactory
 from jamovi.server.instancemodel import InstanceModel
-from jamovi.server.formatio.pyreadstat_pipeline import read
+from jamovi.server.formatio.pyreadstat import read
 
 
 def resolve_path(filename: str) -> str:
