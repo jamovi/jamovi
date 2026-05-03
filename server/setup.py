@@ -17,7 +17,7 @@ tld = path.realpath(path.join(path.dirname(__file__), '../..'))
 import glob
 import subprocess
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 from distutils.extension import Extension
 from Cython.Build import cythonize
 
@@ -88,17 +88,7 @@ if include_server:
     if rc != 0:
         raise(RuntimeError('protoc failed!'))
 
-    packages += [
-        'jamovi.server',
-        'jamovi.server.analyses',
-        'jamovi.server.formatio',
-        'jamovi.server.utils',
-        'jamovi.server.compute',
-        'jamovi.server.syncs',
-        'jamovi.server.modules',
-        'jamovi.server.dataset',
-        'jamovi.tests',
-    ]
+    packages += find_packages(include=['jamovi.server*', 'jamovi.tests*'])
     package_data['jamovi.tests'] = ['data/*']
 
 if path.exists(path.join(here, 'jamovi/hydra')):
