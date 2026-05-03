@@ -21,28 +21,64 @@ testthat::test_that('validateSafeFormula accepts safe formulas', {
     testthat::expect_silent(validateSafeFormula("y ~ x:z"))
     testthat::expect_silent(validateSafeFormula("y ~ x + I(z^2)"))
     testthat::expect_silent(validateSafeFormula("cbind(y1, y2) ~ x + z"))
+    testthat::expect_silent(validateSafeFormula("rbind(y1, y2) ~ x"))
+    testthat::expect_silent(validateSafeFormula("c(y1, y2) ~ x"))
     testthat::expect_silent(validateSafeFormula("~ x"))
 
-    # Allowed mathematical functions
-    testthat::expect_silent(validateSafeFormula("y ~ log(x) + sqrt(z)"))
-    testthat::expect_silent(validateSafeFormula("y ~ exp(x) + abs(z)"))
-    testthat::expect_silent(validateSafeFormula("y ~ sin(x) + cos(z)"))
-    testthat::expect_silent(validateSafeFormula("y ~ floor(x) + ceiling(z)"))
-    testthat::expect_silent(validateSafeFormula("y ~ round(x) + trunc(z)"))
+    # Mathematical functions
+    testthat::expect_silent(validateSafeFormula("y ~ log(x) + log2(z) + log10(w)"))
+    testthat::expect_silent(validateSafeFormula("y ~ log1p(x) + expm1(z)"))
+    testthat::expect_silent(validateSafeFormula("y ~ exp(x) + sqrt(abs(z))"))
+    testthat::expect_silent(validateSafeFormula("y ~ sign(x) + rank(z)"))
+    testthat::expect_silent(validateSafeFormula("y ~ sin(x) + cos(z) + tan(w)"))
+    testthat::expect_silent(validateSafeFormula("y ~ asin(x) + acos(z) + atan(w) + atan2(y, x)"))
+    testthat::expect_silent(validateSafeFormula("y ~ floor(x) + ceiling(z) + round(w) + trunc(v)"))
 
-    # Allowed statistical functions
+    # Statistical / transformation functions
     testthat::expect_silent(validateSafeFormula("y ~ scale(x) + poly(z, 2)"))
-    testthat::expect_silent(validateSafeFormula("y ~ ns(x, df=3)"))
-    testthat::expect_silent(validateSafeFormula("y ~ bs(x, df=3)"))
+    testthat::expect_silent(validateSafeFormula("y ~ ns(x, df=3) + bs(x, df=3)"))
+    testthat::expect_silent(validateSafeFormula("y ~ mean(x) + sd(z) + var(w) + median(v)"))
+    testthat::expect_silent(validateSafeFormula("y ~ min(x) + max(z) + sum(w) + length(v)"))
 
-    # Common formula helper functions
-    testthat::expect_silent(validateSafeFormula("y ~ offset(log(exposure)) + x"))
-    testthat::expect_silent(validateSafeFormula("y ~ factor(group) + x"))
+    # Type coercions
+    testthat::expect_silent(validateSafeFormula("y ~ as.numeric(x) + as.integer(z)"))
+    testthat::expect_silent(validateSafeFormula("y ~ as.factor(x) + as.character(z)"))
+
+    # Categorical helpers
+    testthat::expect_silent(validateSafeFormula("y ~ factor(group) + ordered(score)"))
+    testthat::expect_silent(validateSafeFormula("y ~ cut(x, breaks = 5)"))
     testthat::expect_silent(validateSafeFormula("y ~ relevel(factor(group), ref='control') + x"))
     testthat::expect_silent(validateSafeFormula("y ~ interaction(a, b) + x"))
+    testthat::expect_silent(validateSafeFormula("y ~ ifelse(x > 0, 1, 0)"))
+
+    # Common formula helpers
+    testthat::expect_silent(validateSafeFormula("y ~ offset(log(exposure)) + x"))
     testthat::expect_silent(validateSafeFormula("y ~ pmax(x, 0) + pmin(z, 100)"))
 
-    # Complex but safe expressions
+    # aov() error strata
+    testthat::expect_silent(validateSafeFormula("y ~ x + Error(subject/condition)"))
+
+    # Survival analysis terms (survival, prodlim)
+    testthat::expect_silent(validateSafeFormula("Surv(time, status) ~ x + strata(group)"))
+    testthat::expect_silent(validateSafeFormula("Surv(time, status) ~ cluster(id) + frailty(site)"))
+    testthat::expect_silent(validateSafeFormula("Surv(time, status) ~ tt(x) + pspline(age)"))
+    testthat::expect_silent(validateSafeFormula("Hist(time, event) ~ x"))
+    testthat::expect_silent(validateSafeFormula("Event(time, cause) ~ x"))
+
+    # GAM smooth terms (mgcv)
+    testthat::expect_silent(validateSafeFormula("y ~ s(x) + te(x, z)"))
+    testthat::expect_silent(validateSafeFormula("y ~ ti(x, z) + t2(x, z)"))
+
+    # Splines (rms / Hmisc)
+    testthat::expect_silent(validateSafeFormula("y ~ rcs(x, 4) + lsp(z, 2)"))
+
+    # Mixed-effects structures (nlme)
+    testthat::expect_silent(validateSafeFormula("y ~ pdSymm(x) + pdDiag(z)"))
+
+    # IRT / LCA
+    testthat::expect_silent(validateSafeFormula("y ~ item(x)"))
+
+    # Complex safe expressions
     testthat::expect_silent(validateSafeFormula("y ~ I(log(x + 1)) + I(z^2 + 3*w)"))
     testthat::expect_silent(validateSafeFormula("response ~ poly(x, 3) + sin(2*pi*z/12)"))
 })
@@ -118,17 +154,33 @@ testthat::test_that('RED TEAM: Case and spacing bypass attempts', {
     # Parse-only invalid syntax cases are intentionally covered by as.formula().
 })
 
-testthat::test_that('RED TEAM: Alternative function call syntax', {
+testthat::test_that('RED TEAM: Backtick syntax', {
 
-    # Bracket notation
-    tryCatch({
-        testthat::expect_error(validateSafeFormula("y ~ `system`('whoami')"), "Security violation")
-    }, error = function(e) {
-        # May fail at parsing stage which is also acceptable
-        testthat::expect_true(TRUE)
-    })
+    # Backtick-quoted function calls must be blocked — they bypass the
+    # identifier regex used for allowlist checking.
+    testthat::expect_error(validateSafeFormula("y ~ `system`('whoami')"),
+                           "Security violation")
+    testthat::expect_error(validateSafeFormula("y ~ `eval`(parse(text = 'system(\"ls\")'))"),
+                           "Security violation")
+    testthat::expect_error(validateSafeFormula("y ~ `source`('malicious.R')"),
+                           "Security violation")
+    testthat::expect_error(validateSafeFormula("y ~ `base:::system`('ls')"),
+                           "Security violation")
+    testthat::expect_error(validateSafeFormula("y ~ log(`system`('whoami'))"),
+                           "Security violation")
+    testthat::expect_error(validateSafeFormula("y ~ I(`system`('whoami') + 1)"),
+                           "Security violation")
 
-    # Variable assignment within formula (not valid R formula syntax)
+    # Backtick-quoted variable names (not function calls) must be accepted.
+    testthat::expect_silent(validateSafeFormula("y ~ `my var` + x"))
+    testthat::expect_silent(validateSafeFormula("y ~ `var-1` + `var-2`"))
+    testthat::expect_silent(validateSafeFormula("`response var` ~ x + z"))
+    testthat::expect_silent(validateSafeFormula("y ~ log(`x value`)"))
+    testthat::expect_silent(validateSafeFormula("y ~ I(`x value`^2)"))
+    testthat::expect_silent(validateSafeFormula("y ~ `group var` * `covariate var`"))
+
+    # Variable assignment within a formula is not valid R syntax; the parser
+    # rejects it before validateSafeFormula is reached.
     tryCatch({
         testthat::expect_error(validateSafeFormula("y ~ (x <- system('whoami'))"))
     }, error = function(e) {
@@ -170,26 +222,16 @@ testthat::test_that('RED TEAM: Output and side-effect attacks', {
     testthat::expect_error(validateSafeFormula("y ~ sink('output.txt')"), "Security violation.*sink")
 })
 
-testthat::test_that('validateSafeFormula accepts valid formulas without return assertions', {
-
-    # Validation is side-effect free and succeeds for safe formulas.
-    testthat::expect_silent(validateSafeFormula("y ~ x + z"))
-    testthat::expect_silent(validateSafeFormula("response ~ poly(x, 3) + I(log(z + 1))"))
-})
-
 testthat::test_that('validateSafeFormula edge cases', {
 
-    # Very long formulas
+    # Very long formulas (deparse returns a multi-line vector; must collapse cleanly)
     long_formula <- paste0("y ~ ", paste(paste0("x", 1:100), collapse = " + "))
     testthat::expect_silent(validateSafeFormula(long_formula))
 
-    # Formula with many allowed functions
-    complex_formula <- "y ~ log(x1) + exp(x2) + sqrt(abs(x3)) + sin(x4) + cos(x5)"
-    testthat::expect_silent(validateSafeFormula(complex_formula))
-
-    # Simple nested I() expressions (I() function itself should be allowed in validation)
-    nested_formula <- "y ~ I(x^2 + 3*w)"
-    testthat::expect_silent(validateSafeFormula(nested_formula))
+    # Deeply nested allowed functions
+    testthat::expect_silent(validateSafeFormula("y ~ log(x1) + exp(x2) + sqrt(abs(x3)) + sin(x4) + cos(x5)"))
+    testthat::expect_silent(validateSafeFormula("y ~ I(x^2 + 3*w)"))
+    testthat::expect_silent(validateSafeFormula("response ~ poly(x, 3) + I(log(z + 1))"))
 })
 
 testthat::test_that('RED TEAM: Dot-prefix native code execution functions', {

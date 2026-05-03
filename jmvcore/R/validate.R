@@ -17,19 +17,40 @@
 #' validateSafeFormula(y ~ I(system('whoami')))  # Throws error
 validateSafeFormula <- function(fmla, additional_allowed_functions = NULL) {
 
-  formula_text <- deparse(fmla, width.cutoff = 500)
+  formula_text <- paste(deparse(fmla, width.cutoff = 500), collapse = " ")
 
   # Allowlist of safe functions
   allowed_functions <- c(
     # Mathematical functions
-    "log", "exp", "sqrt", "abs", "sin", "cos", "tan",
-    "asin", "acos", "atan", "floor", "ceiling", "round", "trunc",
+    "log", "log2", "log10", "log1p",
+    "exp", "expm1",
+    "sqrt", "abs", "sign",
+    "sin", "cos", "tan", "asin", "acos", "atan", "atan2",
+    "floor", "ceiling", "round", "trunc",
     # Statistical functions
     "mean", "sd", "var", "median", "min", "max", "sum", "length",
+    "rank",
     # Transformation functions
-    "scale", "poly", "ns", "bs", "I", "cbind",
+    "scale", "poly", "ns", "bs", "I", "cbind", "rbind", "c",
+    # Type coercions (common inline in formulas)
+    "as.numeric", "as.integer", "as.factor", "as.character",
+    # Categorical helpers
+    "factor", "ordered", "cut",
     # Common formula helpers
-    "offset", "factor", "relevel", "interaction", "pmin", "pmax"
+    "offset", "relevel", "interaction", "pmin", "pmax",
+    "ifelse",
+    # Base aov() error strata
+    "Error",
+    # Survival analysis terms (survival, prodlim)
+    "Surv", "strata", "cluster", "frailty", "tt", "pspline", "Hist", "Event",
+    # GAM smooth terms (mgcv)
+    "s", "te", "ti", "t2",
+    # Splines (rms / Hmisc)
+    "rcs", "lsp",
+    # Mixed-effects structures (nlme)
+    "pdSymm", "pdDiag",
+    # IRT / LCA item terms
+    "item"
   )
 
   if (!is.null(additional_allowed_functions)) {
@@ -95,8 +116,10 @@ validateSafeFormula <- function(fmla, additional_allowed_functions = NULL) {
     }
   }
 
-  # Block suspicious characters including backticks
-  if (grepl("[\\$@:;\"'{}`]", i_content)) {
+  # Block characters that indicate dangerous constructs in deparsed output:
+  # $ and @ (slot/list access), : (namespace access), ; (statement separator),
+  # quotes (string literals), and {} (code blocks).
+  if (grepl("[\\$@:;\"'{}]", i_content)) {
     stop("Security violation: Unsafe characters in I() expression",
          call. = FALSE)
   }
