@@ -36,6 +36,7 @@ const ARGS = [
     { name: 'skip-remotes', type: Boolean },
     { name: 'skip-deps', type: Boolean },
     { name: 'i18n', type: String },
+    { name: 'i18n-repo', type: String },
     { name: 'create', type: String },
     { name: 'update', type: String },
     { name: 'verbose', type: Boolean },
@@ -366,6 +367,24 @@ try {
         fs.mkdirSync(yamlOutDir);
     i18nOutDir = path.join(srcDir, 'inst/i18n');
     fs.emptyDirSync(i18nOutDir);
+
+    if (args['i18n-repo']) {
+        let i18nRepoDir = path.resolve(args['i18n-repo']);
+        let i18nRepoModDir = path.join(i18nRepoDir, packageInfo.name);
+        let i18nDestDir = path.join(defDir, 'i18n');
+        if (utils.exists(i18nRepoModDir)) {
+            if ( ! utils.exists(i18nDestDir))
+                fs.mkdirSync(i18nDestDir, { recursive: true });
+            let poFiles = fs.readdirSync(i18nRepoModDir).filter(f => f.endsWith('.po'));
+            for (let poFile of poFiles) {
+                let dest = path.join(i18nDestDir, poFile);
+                if ( ! utils.exists(dest)) {
+                    fs.copySync(path.join(i18nRepoModDir, poFile), dest);
+                    console.log(`copied from i18n repo: ${poFile}`);
+                }
+            }
+        }
+    }
 
     if (isBuilding || isInstallingTo) {
         let i18nDir = path.join(defDir, 'i18n');
