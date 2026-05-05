@@ -69,10 +69,28 @@ validateSafeFormula <- function(fmla, additional_allowed_functions = NULL) {
     allowed_functions <- unique(c(allowed_functions, additional_allowed_functions))
   }
 
+  # Block backtick-quoted function calls such as `base:::system`('ls').
+  # deparse() preserves backticks only for names containing characters outside
+  # [a-zA-Z0-9_.] (e.g. colons, hyphens, spaces).  Standard identifiers like
+  # `system` or `eval` are stripped to plain names, so those are caught by the
+  # allowlist check below.  The only realistic attack vector this guards against
+  # is namespace-spliced names like `base:::system` used as a single symbol.
+  if (grepl("`[^`]+`\\s*\\(", formula_text, perl = TRUE)) {
+    stop("Security violation: Backtick-quoted function calls are not permitted in formulas.",
+         call. = FALSE)
+  }
+
+  # Strip backtick-quoted variable names (e.g. `Marker Level (ng/ml)`) before
+  # scanning for function calls.  Their internal content can contain '(' which
+  # would otherwise be mis-identified as a function call by the regex below.
+  # Only variable-use backtick tokens remain at this point (calls were blocked
+  # above).
+  formula_text_stripped <- gsub("`[^`]+`", "", formula_text)
+
   # Extract function calls
-  function_calls <- regmatches(formula_text,
+  function_calls <- regmatches(formula_text_stripped,
                                gregexpr("\\.?[a-zA-Z_][a-zA-Z0-9_.]*(?=\\s*\\()",
-                                       formula_text, perl = TRUE))[[1]]
+                                       formula_text_stripped, perl = TRUE))[[1]]
 
   # Validate each function call
   for (func_call in function_calls) {

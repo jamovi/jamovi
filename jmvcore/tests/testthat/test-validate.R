@@ -81,6 +81,11 @@ testthat::test_that('validateSafeFormula accepts safe formulas', {
     # Complex safe expressions
     testthat::expect_silent(validateSafeFormula("y ~ I(log(x + 1)) + I(z^2 + 3*w)"))
     testthat::expect_silent(validateSafeFormula("response ~ poly(x, 3) + sin(2*pi*z/12)"))
+
+    # Function-like var names
+    testthat::expect_silent(validateSafeFormula("~ `Marker Level (ng/ml)`"))
+    testthat::expect_silent(validateSafeFormula("~ `Marker Level (ng/ml)`:bruce"))
+    testthat::expect_silent(validateSafeFormula("~ `Marker Level (ng/ml)` + bruce"))
 })
 
 testthat::test_that('validateSafeFormula blocks dangerous functions', {
