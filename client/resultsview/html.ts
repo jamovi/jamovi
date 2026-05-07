@@ -47,8 +47,15 @@ export class View extends Elem.View<Model> {
             this.promises.push(promise);
         }
 
-        for (let script of doc.scripts)
-            document.head.appendChild(HTML.create('script', { src: `module/${ script }`, class: 'module-asset' }));
+        for (let script of doc.scripts) {
+            const el = HTML.create('script', { src: `module/${ script }`, class: 'module-asset' }) as HTMLScriptElement;
+            const promise = new Promise<string>((resolve, reject) => {
+                el.addEventListener('load', () => resolve(script));
+                el.addEventListener('error', () => reject(new Error(`Failed to load script: ${ script }`)));
+            });
+            this.promises.push(promise);
+            document.head.appendChild(el);
+        }
 
         this.render();
     }
@@ -69,6 +76,7 @@ export class View extends Elem.View<Model> {
         if (doc.content === '')
             return;
 
+        // wait for js and css to have loaded
         this.ready = Promise.all(this.promises).then(() => {
             let $content = this.querySelector('.content');
             if ($content) {
@@ -80,6 +88,9 @@ export class View extends Elem.View<Model> {
                 $content = this.querySelector('.content');
             }
             $content.querySelectorAll('a[href]').forEach(el => el.addEventListener('click', this._handleLinkClick));
+            // Scripts inside innerHTML are not executed by the browser. To run them,
+            // we clone each script's text into a new element, append it to the head
+            // (which triggers execution), then immediately remove it and the original.
             const scriptElems = $content.querySelectorAll<HTMLScriptElement>('script');
             for (const script of scriptElems) {
                 const nu = document.createElement('script')
@@ -111,11 +122,6 @@ export class View extends Elem.View<Model> {
                 resolve(data);
             })
             .catch(err => reject(err));
-
-            /*$.get(url, (data) => {
-                this.$head.append('<style class="module-asset">' + data + '</style>');
-                resolve(data);
-            }, 'text');*/
         });
     }
 
