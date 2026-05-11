@@ -138,7 +138,7 @@
     background-image: url("../../assets/analysis-vijplots.svg");
 }
 
-.jmv-ribbon-button[data-name="summarytables"] .jmv-ribbon-button-icon {
+.jmv-ribbon-button[data-name="summary tables"] .jmv-ribbon-button-icon {
     background-image: url("../../assets/analysis-summarytables.svg");
 }
 
