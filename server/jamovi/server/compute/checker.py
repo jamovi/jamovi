@@ -14,7 +14,7 @@ from . import functions
 
 class Checker(NodeVisitor):
 
-    LEGAL_NODES = [ ast.Name, ast.Num, ast.Str, ast.Call, ast.Load,
+    LEGAL_NODES = [ ast.Name, ast.Constant, ast.Call, ast.Load,
                     ast.UnaryOp, ast.UAdd, ast.USub, ast.Not, ast.Invert,
                     ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod,
                     ast.Pow, ast.FloorDiv,
