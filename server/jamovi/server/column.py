@@ -674,7 +674,7 @@ class Column:
 
             if self.column_type is ColumnType.FILTER:
                 if node is None:
-                    node = ast.Num(1)  # 1 is true
+                    node = ast.Constant(1)  # 1 is true
                 else:
                     node = ast.Call(
                         # if missing, treat as 0 (false)
@@ -719,11 +719,11 @@ class Column:
                         func=ast.Name(id='IF', ctx=ast.Load()),
                         args=[
                             ast.Compare(
-                                left=ast.Num(1),
+                                left=ast.Constant(1),
                                 ops=ops,
                                 comparators=parents),
                             node,
-                            ast.Num(-2147483648) ],
+                            ast.Constant(-2147483648) ],
                         keywords=[ ] )
 
             if node is None:

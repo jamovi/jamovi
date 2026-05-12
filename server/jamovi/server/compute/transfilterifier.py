@@ -15,11 +15,11 @@ class Transfilterifier(ast.NodeTransformer):
             func=ast.Name(id='IF', ctx=ast.Load()),
             args=[
                 ast.Compare(
-                    left=ast.Num(1),
+                    left=ast.Constant(1),
                     ops=ops,
                     comparators=self._filters),
                 node,
-                ast.Num(-2147483648) ],
+                ast.Constant(-2147483648) ],
             keywords=[ ],
             filterified=True)
         return call
