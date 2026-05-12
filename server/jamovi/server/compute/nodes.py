@@ -144,67 +144,42 @@ class Node:
         pass
 
 
-class Num(ast.Num, Node):
+class Constant(ast.Constant, Node):
 
     def __init__(self, *args, **kwargs):
-        ast.Num.__init__(self, *args, **kwargs)
+        ast.Constant.__init__(self, *args, **kwargs)
         Node.__init__(self)
 
     def fvalue(self, index, row_count, filt):
-        return self.n
+        return self.value
 
     def is_atomic_node(self):
         return True
 
     @property
     def data_type(self):
-        if isinstance(self.n, int):
+        if isinstance(self.value, str):
+            return DataType.TEXT
+        elif isinstance(self.value, int):
             return DataType.INTEGER
         else:
             return DataType.DECIMAL
 
     @property
     def measure_type(self):
-        if isinstance(self.n, int):
+        if isinstance(self.value, str):
+            return MeasureType.NOMINAL
+        elif isinstance(self.value, int):
             return MeasureType.ORDINAL
         else:
             return MeasureType.CONTINUOUS
 
     @property
     def has_levels(self):
-        return False
-
-    @property
-    def uses_column_formula(self):
-        return False
-
-
-class Str(ast.Str, Node):
-
-    def __init__(self, *args, **kwargs):
-        ast.Str.__init__(self, *args, **kwargs)
-        Node.__init__(self)
-
-    def fvalue(self, index, row_count, filt):
-        return self.s
-
-    def is_atomic_node(self):
-        return True
-
-    @property
-    def data_type(self):
-        return DataType.TEXT
-
-    @property
-    def measure_type(self):
-        return MeasureType.NOMINAL
-
-    @property
-    def has_levels(self):
-        return True
+        return isinstance(self.value, str)
 
     def get_levels(self, row_count, filt):
-        return [ (0, self.s) ]
+        return [ (0, self.value) ]
 
     @property
     def uses_column_formula(self):
@@ -639,15 +614,15 @@ class BinOp(ast.BinOp, Node):
         else:
             ul_type = int
 
-        if isinstance(lv, ast.Num):
-            lv = lv.n
+        if isinstance(lv, ast.Constant):
+            lv = lv.value
         elif hasattr(lv, 'fvalue'):
             lv = lv.fvalue(index, row_count, filt)
 
         lv = convert(lv, ul_type)
 
-        if isinstance(rv, ast.Num):
-            rv = rv.n
+        if isinstance(rv, ast.Constant):
+            rv = rv.value
         elif hasattr(rv, 'fvalue'):
             rv = rv.fvalue(index, row_count, filt)
 
@@ -886,7 +861,7 @@ class Tuple(ast.Tuple, Node):
         Node.__init__(self)
 
     def fvalue(self, index, row_count, filt):
-        return (self.elts[0].n, self.elts[1].s)
+        return (self.elts[0].value, self.elts[1].value)
 
     @property
     def data_type(self):
@@ -901,4 +876,4 @@ class Tuple(ast.Tuple, Node):
         return True
 
     def get_levels(self, row_count, filt):
-        return ((self.elts[0].n, self.elts[1].s),)
+        return ((self.elts[0].value, self.elts[1].value),)
