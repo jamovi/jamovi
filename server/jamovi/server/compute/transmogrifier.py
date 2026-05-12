@@ -5,8 +5,7 @@ from ast import Eq
 from ast import NotEq
 
 from .nodes import Call
-from .nodes import Num
-from .nodes import Str
+from .nodes import Constant
 from .nodes import BinOp
 from .nodes import UnaryOp
 from .nodes import BoolOp
@@ -24,7 +23,7 @@ class Transmogrifier(NodeTransformer):
 
     def visit_Name(self, node):
         if node.id == 'NA':
-            return Num(-2147483648)
+            return Constant(-2147483648)
         elif node.id == '$source' and self._parent is not None:
             return self._parent
         try:
@@ -50,11 +49,8 @@ class Transmogrifier(NodeTransformer):
             kw._add_node_parent(nu)
         return nu
 
-    def visit_Num(self, node):
-        return Num(node.n)
-
-    def visit_Str(self, node):
-        return Str(node.s)
+    def visit_Constant(self, node):
+        return Constant(node.value)
 
     def visit_Tuple(self, node):
         return Tuple(node.elts, node.ctx)
