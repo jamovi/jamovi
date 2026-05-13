@@ -591,6 +591,46 @@ const R450jmv = R450base.concat([
     'sem', 'semPlot'
 ]);
 
+const R460base = included.concat([
+    'jmvcore',
+    'R6', 'RColorBrewer', 'backports', 'base64enc', 'brio', 'cpp11', 'curl',
+    'devEMF', 'evaluate', 'farver', 'fastmap', 'fontBitstreamVera',
+    'fontLiberation', 'magrittr', 'praise', 'rappdirs', 'rprojroot', 'sys', 'utf8',
+    'uuid', 'viridisLite', 'yaml', 'zip', 'Rcpp', 'S7', 'askpass', 'cli', 'crayon',
+    'data.table', 'digest', 'fontquiver', 'fs', 'generics', 'glue', 'jsonlite',
+    'labeling', 'mime', 'pkgconfig', 'ps', 'remotes', 'rlang', 'stargazer',
+    'stringi', 'withr', 'xfun', 'xtable', 'RInside', 'RProtoBuf', 'cachem', 'desc',
+    'diffobj', 'highr', 'htmltools', 'isoband', 'lifecycle', 'openssl', 'openxlsx',
+    'processx', 'tinytex', 'xml2', 'callr', 'fontawesome', 'gtable', 'jquerylib',
+    'knitr', 'memoise', 'sass', 'scales', 'systemfonts', 'vctrs', 'waldo', 'bslib',
+    'gdtools', 'ggplot2', 'pillar', 'pkgbuild', 'purrr', 'stringr', 'textshaping',
+    'tidyselect', 'pkgload', 'ragg', 'rmarkdown', 'tibble', 'dplyr', 'testthat',
+    'tidyr', 'broom', 'officer', 'flextable', 'rvg', 'export'
+]);
+
+const R460jmv = R460base.concat([
+    'AsioHeaders', 'BH', 'RcppParallel', 'bigD', 'bitops', 'ca', 'carData',
+    'commonmark', 'contfrac', 'glasso', 'jpeg', 'lisrelToR', 'matrixStats',
+    'mnormt', 'nloptr', 'numDeriv', 'otel', 'pbivnorm', 'png',
+    'prettyunits', 'quadprog', 'qvcalc', 'rstudioapi', 'Deriv', 'Formula',
+    'GPArotation', 'Matrix', 'PMCMR', 'RUnit', 'RcppArmadillo', 'RcppEigen',
+    'SparseM', 'TH.data', 'V8', 'XML', 'abind', 'bibtex', 'caTools',
+    'checkmate', 'coda', 'colorspace', 'corpcor', 'cowplot', 'deSolve',
+    'elliptic', 'estimability', 'fdrtool', 'forcats', 'fracdiff', 'ggrepel',
+    'ggridges', 'gridExtra', 'gtools', 'hms', 'htmlwidgets', 'later',
+    'lavaan', 'litedown', 'microbenchmark', 'minqa', 'modelr', 'mvnormtest',
+    'mvtnorm', 'patchwork', 'pbapply', 'plyr', 'rbibutils', 'reactR',
+    'relimp', 'ssanv', 'timeDate', 'urca', 'zoo', 'MatrixModels', 'Rdpack',
+    'StanHeaders', 'emmeans', 'exactci', 'ggstats', 'gnm', 'gplots',
+    'htmlTable', 'hypergeo', 'igraph', 'juicyjuice', 'kutils', 'lmtest',
+    'markdown', 'progress', 'promises', 'psych', 'reactable', 'reshape2',
+    'rpf', 'sandwich', 'websocket', 'BayesFactor', 'GGally', 'Hmisc',
+    'OpenMx', 'ROCR', 'chromote', 'exact2x2', 'forecast', 'gt', 'multcomp',
+    'quantreg', 'reformulas', 'vcd', 'doBy', 'lme4', 'qgraph', 'webshot2',
+    'arm', 'lmerTest', 'pbkrtest', 'rockchalk', 'vcdExtra', 'car', 'mi',
+    'afex', 'sem', 'semPlot'
+]);
+
 export default {
     '4.0.2': {
         mran_url: 'https://packagemanager.posit.co/cran/2020-08-24',
@@ -643,5 +683,14 @@ export default {
         }),
         base_packages: R450base,
         jmv_packages: R450jmv,
+    },
+    '4.6.0': {
+        mran_url: (process.platform === 'linux' ? undefined : 'https://repo.jamovi.org/cran/2026-05-11,https://packagemanager.posit.co/cran/2026-05-11'),
+        arch_urls : (process.platform !== 'linux' ? undefined : {
+            arm64: 'https://repo.jamovi.org/cran-linux/2026-05-11/arm64,https://packagemanager.posit.co/cran/2026-05-11',
+            x64:   'https://repo.jamovi.org/cran-linux/2026-05-11/x64,https://packagemanager.posit.co/cran/2026-05-11',
+        }),
+        base_packages: R460base,
+        jmv_packages: R460jmv,
     },
 };
