@@ -14,6 +14,7 @@ import selectionLoop from '../../common/selectionloop';
 import { ModulesBase } from '../modules';
 import Settings from '../settings';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import _dialogs from 'dialogs';
 
 type ModulePageOptions = {
     settings: Settings;
@@ -38,9 +39,12 @@ class PageModules extends HTMLElement {
     $modules: NodeListOf<HTMLElement>
 
     searchingInProgress: NodeJS.Timeout;
+    dialogs: any;
 
     constructor(model: ModulePageOptions) {
         super();
+
+        this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('Ok')});
         this.model = model;
 
         this._uninstallClicked = this._uninstallClicked.bind(this);
@@ -480,13 +484,20 @@ class PageModules extends HTMLElement {
             });
     }
 
-    _uninstallClicked(event: MouseEvent) {
+    async _uninstallClicked(event: MouseEvent) {
         if (event.target instanceof HTMLElement) {
             let $target = event.target;
             let moduleName = $target.getAttribute('data-name');
-            let response = window.confirm(_('Really uninstall {m}?', {m:moduleName}));
-            if (response)
+          
+            await new Promise<void>((resolve, reject) => {
+                let msg = _('Really uninstall {m}?', {m:moduleName});
+                this.dialogs.confirm(msg, (result) => { result ? resolve() : reject() });
+            }).then(() => {
                 this._uninstall(moduleName);
+            }).catch(() => {
+                // do nothing
+            });
+
         }
     }
 

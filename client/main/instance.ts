@@ -21,6 +21,7 @@ import ProgressStream from './utils/progressstream';
 import { UserFacingError } from './errors';
 import { CancelledError } from './errors';
 import { EventMap } from '../common/eventmap';
+import _dialogs from 'dialogs';
 
 class FileExistsError extends Error { }
 
@@ -144,6 +145,8 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             resultsLanguage: I18ns.get('app').language
         })
 
+        this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('Ok')});
+        
         this._settings = new Settings({ coms: this.attributes.coms });
         this._modules = new Modules({ instance: this });
 
@@ -543,11 +546,15 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             } catch (e) {
 
                 if (e instanceof FileExistsError && ! options.overwrite) {
-                    const response = window.confirm(_(`The file '{filename}' already exists. Overwrite this file?`, { filename }));
-                    if (response) {
+                    await new Promise<void>((resolve, reject) => {
+                        let msg = _(`The file '{filename}' already exists. Overwrite this file?`, { filename });
+                        this.dialogs.confirm(msg, (result) => { result ? resolve() : reject() });
+                    }).then(() => {
                         options.overwrite = true;
                         retrying = true;
-                    }
+                    }).catch(() => {
+                        // do nothing
+                    });
                 }
                 else if (e instanceof UserFacingError) {
                     this._notify({ message: e.message, cause: e.cause, type: 'error' });
