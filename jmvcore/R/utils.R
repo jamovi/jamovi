@@ -1349,3 +1349,24 @@ toJSON <- function(x) {
 fromJSON <- function(x) {
     jsonlite::fromJSON(x)
 }
+
+#' Escape HTML special characters
+#'
+#' @param text a character vector to escape
+#' @param attribute logical; if TRUE, also escapes quotes and newlines for use
+#'   in HTML attribute values
+#' @return the escaped character vector
+#' @export
+htmlEscape <- function(text, attribute = FALSE) {
+    text <- as.character(text)
+    text <- gsub('&', '&amp;', text, fixed = TRUE)
+    text <- gsub('<', '&lt;',  text, fixed = TRUE)
+    text <- gsub('>', '&gt;',  text, fixed = TRUE)
+    if (attribute) {
+        text <- gsub("'",  '&#39;', text, fixed = TRUE)
+        text <- gsub('"',  '&quot;', text, fixed = TRUE)
+        text <- gsub('\r', '&#13;', text, fixed = TRUE)
+        text <- gsub('\n', '&#10;', text, fixed = TRUE)
+    }
+    text
+}
