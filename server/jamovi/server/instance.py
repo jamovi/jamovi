@@ -579,9 +579,10 @@ class Instance:
                                     entry.isExample = True
                             else:
                                 entry = response.contents.add()
-                                entry.name = module.title
+                                entry.name = module.name
                                 entry.path = posixpath.join('{{Examples}}', module.name)
                                 entry.type = jcoms.FSEntry.Type.Value('FOLDER')
+                                entry.description = module.title
                                 if module.datasets_license:
                                     entry.license = module.datasets_license.name
                                     entry.licenseUrl = module.datasets_license.url
