@@ -61,7 +61,6 @@ ifeq ($(os),Linux)
 	LDFLAGS +=	-L$(R_HOME)/lib \
 				-L$(BASE_MODULE_PATH)/RInside/lib \
 				-lboost_filesystem \
-				-lboost_system \
 				-lpthread \
 				$(foreach rp,$(R_PATH),-Wl,-rpath,'$(rp)')
 else
