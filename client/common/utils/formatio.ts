@@ -623,7 +623,8 @@ function _htmlifyDiv(el, options) {
         xhr.onload = function(e) {
             let mime = this.getResponseHeader('content-type');
             let data = new Uint8Array(this.response);
-            let b64 = btoa(String.fromCharCode.apply(null, data));
+            // .apply(null, data) stack-overflows on large images; Array.from with a map avoids that
+            let b64 = btoa(Array.from(data, c => String.fromCharCode(c)).join(''));
             let dataURI = `data:${ mime };base64,${b64}`;
             resolve(dataURI);
         };
