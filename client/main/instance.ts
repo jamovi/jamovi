@@ -22,6 +22,7 @@ import { UserFacingError } from './errors';
 import { CancelledError } from './errors';
 import { EventMap } from '../common/eventmap';
 import _dialogs from 'dialogs';
+import focusLoop from '../common/focusloop';
 
 class FileExistsError extends Error { }
 
@@ -548,7 +549,17 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                 if (e instanceof FileExistsError && ! options.overwrite) {
                     await new Promise<void>((resolve, reject) => {
                         let msg = _(`The file '{filename}' already exists. Overwrite this file?`, { filename });
-                        this.dialogs.confirm(msg, (result) => { result ? resolve() : reject() });
+                        this.dialogs.confirm(msg, (result) => {
+                            let widget = document.body.querySelector<HTMLElement>('.dialog-widget.confirm');
+                            focusLoop.leaveFocusLoop(widget);
+                            if (result)
+                                resolve();
+                            else
+                                reject();
+                        });
+                        let widget = document.body.querySelector<HTMLElement>('.dialog-widget.confirm');
+                        focusLoop.addFocusLoop(widget, { level: 2, modal: true, closeFocusMode: 'default' });
+                        focusLoop.enterFocusLoop(widget);
                     }).then(() => {
                         options.overwrite = true;
                         retrying = true;
