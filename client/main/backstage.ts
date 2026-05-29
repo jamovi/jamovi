@@ -1083,19 +1083,22 @@ export class BackstageModel extends EventMap<IBackstageModel> {
 
     setSavingState(saving) {
         let $button = document.querySelector<HTMLElement>('.silky-bs-fslist-browser-save-button');
-        if ( ! $button)
-            return;
-
-        let $saveIcon = $button.querySelector<HTMLElement>('.silky-bs-flist-save-icon');
+        let $saveIcon;
+        if ($button)
+            $saveIcon = $button.querySelector<HTMLElement>('.silky-bs-flist-save-icon');
         if (saving) {
             tarp.show('saving', false, 0, 299);
-            $button.classList.add('disabled-div');
-            $saveIcon.classList.add('saving-file');
+            if ($button)
+                $button.classList.add('disabled-div');
+            if ($saveIcon)
+                $saveIcon.classList.add('saving-file');
         }
         else {
             tarp.hide('saving');
-            $button.classList.remove('disabled-div');
-            $saveIcon.classList.remove('saving-file');
+            if ($button)
+                $button.classList.remove('disabled-div');
+            if ($saveIcon)
+                $saveIcon.classList.remove('saving-file');
         }
     }
 
