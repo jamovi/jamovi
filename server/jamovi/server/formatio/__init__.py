@@ -63,7 +63,7 @@ def read(dataset, path, prog_cb, settings, *, is_temp=False, title=None, ext=Non
         if path == '':
             blank.read(dataset)
         elif not os.path.exists(path):
-            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), None if is_temp else path)
         elif ext == 'omv':
             omv.read(dataset, path, prog_cb)
             if not is_temp:
