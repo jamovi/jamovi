@@ -144,9 +144,6 @@ class Session(dict):
     def get_language(self):
         return i18n.get_language()
 
-    def set_auth(self, auth_token):
-        self._backend.set_auth(auth_token)
-
     def apply_settings(self, settings: dict):
         if 'updateStatus' in settings:
             update_status = settings['updateStatus']

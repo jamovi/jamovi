@@ -497,27 +497,11 @@ class DatasetsList(SessHandler):
         self.write(json.dumps(datasets))
 
 
-class AuthTokenHandler(SessHandler):
-
+class SettingsHandler(SessHandler):
     def post(self):
-        authorization = self.request.headers.get('authorization')
-        if authorization is None:
-            pass
-        elif not authorization.strip().startswith('Bearer '):
-            self.set_status(400)
-            self.write('unsupported authorization scheme')
-        else:
-            token = authorization.strip()[7:].strip()
-            self._session.set_auth(token)
-
-
-class SettingsHandler(AuthTokenHandler):
-    def post(self):
-        super().post()
-        if self.get_status() < 400:
-            content = self.request.body.decode('utf-8')
-            settings = json.loads(content)
-            self._session.apply_settings(settings)
+        content = self.request.body.decode('utf-8')
+        settings = json.loads(content)
+        self._session.apply_settings(settings)
 
 
 class VersionHandler(RequestHandler):
@@ -802,7 +786,6 @@ class Server:
             (fr'{ path_a }/', EntryHandler, { 'session': self._session }),
             (fr'{ path_a }/config.js', ConfigJSHandler, { 'roots': roots }),
             (fr'{ path_a }/open', OpenHandler, { 'session': self._session }),
-            (fr'{ path_a }/auth', AuthTokenHandler, { 'session': self._session }),
             (fr'{ path_a }/settings', SettingsHandler, { 'session': self._session }),
             (fr'{ path_a }/end', EndHandler, { 'session': self._session }),
             (fr'{ path_a }/version', VersionHandler),
