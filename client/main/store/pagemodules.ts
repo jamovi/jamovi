@@ -44,7 +44,7 @@ class PageModules extends HTMLElement {
     constructor(model: ModulePageOptions) {
         super();
 
-        this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('Ok')});
+        this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('OK')});
         this.model = model;
 
         this._uninstallClicked = this._uninstallClicked.bind(this);
@@ -224,25 +224,25 @@ class PageModules extends HTMLElement {
             searchType = 'plots';
             searchValue = searchValue.substring(6).trim();
         }
-        
+
         this.marker.unmark({
             done: () => {
-                
+
                     switch (searchType) {
                         case 'module':
                             if (searchValue != '') {
                                 this.querySelectorAll('.jmv-store-module').forEach(el => {el.classList.remove('hide-module')});
-                                this.querySelectorAll<HTMLElement>('.jmv-store-module').forEach(el => { 
+                                this.querySelectorAll<HTMLElement>('.jmv-store-module').forEach(el => {
                                     if (el.dataset['name'].toLowerCase().startsWith(searchValue) === false)
-                                        el.classList.add('hide-module') 
+                                        el.classList.add('hide-module')
                                 });
                             }
                             break;
                         case 'plots':
                             this.querySelectorAll('.jmv-store-module').forEach(el => {el.classList.add('hide-module')});
-                            this.querySelectorAll<HTMLElement>('.jmv-store-module[data-has-plots="true"]').forEach(el => { 
+                            this.querySelectorAll<HTMLElement>('.jmv-store-module[data-has-plots="true"]').forEach(el => {
                                 if (el.dataset['name'].toLowerCase().startsWith(searchValue))
-                                    el.classList.remove('hide-module') 
+                                    el.classList.remove('hide-module')
                             });
                             break;
                         default:
@@ -390,7 +390,7 @@ class PageModules extends HTMLElement {
                 $module.classList.remove('to-be-removed');
                 $module.outerHTML = html;
             }
-            $module = this.$content.querySelector(`.jmv-store-module[data-name="${ module.name }"]`); 
+            $module = this.$content.querySelector(`.jmv-store-module[data-name="${ module.name }"]`);
             $module.addEventListener('keydown', this._moduleKeyDown);
             $module.addEventListener('keyup', this._moduleEnter);  // must be key up otherwise the internal buttons are clicked on key up after focus is moved
 
@@ -436,7 +436,7 @@ class PageModules extends HTMLElement {
                 event.stopPropagation();
             }
         }
-        
+
     }
 
     _moduleKeyDown(event) {
@@ -488,7 +488,7 @@ class PageModules extends HTMLElement {
         if (event.target instanceof HTMLElement) {
             let $target = event.target;
             let moduleName = $target.getAttribute('data-name');
-          
+
             await new Promise<void>((resolve, reject) => {
                 let msg = _('Really uninstall {m}?', {m:moduleName});
                 this.dialogs.confirm(msg, (result) => { result ? resolve() : reject() });

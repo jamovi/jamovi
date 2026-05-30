@@ -32,13 +32,13 @@ export class EditorPanel extends EventEmitter {
         let main = HTML.create('div', {class: 'jmv-editor-panel-main'});
         this.el.append(main);
 
-        let ok =   HTML.create('button', { class: 'jmv-editor-panel-ok', 'aria-label': _('Ok'), tabindex: "0" },
+        let ok =   HTML.create('button', { class: 'jmv-editor-panel-ok', 'aria-label': _('OK'), tabindex: "0" },
                         HTML.create('span', { class: 'mif-checkmark' }),
                         HTML.create('span', { class: 'mif-arrow-down' })
                     );
         main.append(ok);
 
-        //this.$ok = $(`<button aria-label="${_('Ok')}" tabindex="0" class="jmv-editor-panel-ok"><span class="mif-checkmark"></span><span class="mif-arrow-down"></span></button>`).appendTo(this.$main);
+        //this.$ok = $(`<button aria-label="${_('OK')}" tabindex="0" class="jmv-editor-panel-ok"><span class="mif-checkmark"></span><span class="mif-arrow-down"></span></button>`).appendTo(this.$main);
 
         let titleBox =   HTML.create('div', { class: 'title-box' });
         main.append(titleBox);

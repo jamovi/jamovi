@@ -146,8 +146,8 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             resultsLanguage: I18ns.get('app').language
         })
 
-        this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('Ok')});
-        
+        this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('OK')});
+
         this._settings = new Settings({ coms: this.attributes.coms });
         this._modules = new Modules({ instance: this });
 

@@ -45,7 +45,7 @@ class DataVarWidget extends HTMLElement {
 
         this.model = model;
 
-        this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('Ok')});
+        this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('OK')});
 
         this._clickLevel = this._clickLevel.bind(this);
 

@@ -34,7 +34,7 @@ class ViewController extends EventEmitter {
     constructor(model, selection, public settings: Settings) {
         super();
 
-        this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('Ok')});
+        this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('OK')});
 
         this.model = model;
         this.selection = selection;
@@ -515,7 +515,7 @@ class ViewController extends EventEmitter {
                 focusLoop.speakMessage(this._views[name].options.title);
             this.focusedOn.setAttribute('aria-hidden', 'false');
             focusLoop.setDefaultFocusControl(this.focusedOn.getFocusControl());
-            
+
         }
 
     }

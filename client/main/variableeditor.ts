@@ -92,7 +92,7 @@ export class VariableEditor extends HTMLElement {
         this.transformEditor = new TransformEditor(this.model);
 
         this.$ok = HTML.parse(`
-            <button aria-label="${_('Ok')}" tabindex="0" class="jmv-variable-editor-ok jmv-tooltip" title="${_('Hide variable setup')}">
+            <button aria-label="${_('OK')}" tabindex="0" class="jmv-variable-editor-ok jmv-tooltip" title="${_('Hide variable setup')}">
                 <span class="mif-checkmark"></span><span class="mif-arrow-up"></span>
             </button>`) as HTMLButtonElement;
         this.$main.append(this.$ok);
