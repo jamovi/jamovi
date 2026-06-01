@@ -4,7 +4,8 @@
 
 from .session import NoSuchInstanceException
 
-from tornado.websocket import WebSocketHandler
+import aiohttp
+from aiohttp import web
 
 from . import jamovi_pb2 as coms
 from .jamovi_pb2 import ComsMessage
@@ -14,65 +15,38 @@ from .jamovi_pb2 import InstanceResponse
 
 from jamovi.server.utils import conf
 
-import asyncio
+from asyncio import create_task
 import logging
+import socket
 
 log = logging.getLogger(__name__)
 
 
-class ClientConnection(WebSocketHandler):
+class ClientConnection:
 
     number_of_connections = 0
 
-    def initialize(self, session):
-
+    def __init__(self, ws: web.WebSocketResponse, session, instance_id: str | None = None):
+        self._ws = ws
         self._session = session
-        self._transactions = { }
-        self._close_listeners = [ ]
-        self._instance_id = None
-
-    def check_origin(self, origin):
-        return True
-
-    def open(self, instance_id):
-        key_required = conf.get('access_key', '')
-        if key_required != '':
-            if key_required != self.get_cookie('access_key', None):
-                self.close()
-
-        log.debug('%s', 'Websocket opened')
+        self._transactions = {}
+        self._close_listeners = []
         self._instance_id = instance_id
-        ClientConnection.number_of_connections += 1
-        self.set_nodelay(True)
 
-    def on_close(self):
-        log.debug('%s %s %s', 'Websocket closed', self.close_code, self.close_reason)
-        ClientConnection.number_of_connections -= 1
-        for listener in self._close_listeners:
-            # close_code comes through as None when it's not a clean disconnection
-            # we treat it special because electron shuts down the websocket uncleanly
-            # when the computer goes to sleep, and we don't want to garbage collect
-            # the instance in that situation
-            listener(self.close_code is not None)
-
-    def on_message(self, m_bytes):
-        asyncio.ensure_future(self.on_message_async(m_bytes))
-
-    async def on_message_async(self, m_bytes):
+    async def on_message_async(self, m_bytes: bytes):
         try:
             message = ComsMessage()
             message.ParseFromString(m_bytes)
             if not message.payloadType:
-                # should log bad request
                 return
             clas = getattr(coms, message.payloadType)
             request = clas()
             request.ParseFromString(message.payload)
             self._transactions[message.id] = request
 
-            if type(request) == InstanceRequest:
+            if isinstance(request, InstanceRequest):
                 if message.instanceId == '':
-                    instance = self._session.create()  # create new
+                    instance = self._session.create()
                 elif message.instanceId not in self._session:
                     raise NoSuchInstanceException()
                 else:
@@ -91,7 +65,6 @@ class ClientConnection(WebSocketHandler):
                 instance_id=message.instanceId,
                 response_to=request)
         except Exception as e:
-            # would be nice to send_error()
             log.exception(e)
 
     def send(self, message=None, instance_id=None, response_to=None,
@@ -130,7 +103,7 @@ class ClientConnection(WebSocketHandler):
         m.progress = int(progress[0])
         m.progressTotal = int(progress[1])
 
-        return self.write_message(m.SerializeToString(), binary=True)
+        create_task(self._ws.send_bytes(m.SerializeToString()))
 
     def send_error(self, message=None, cause=None, instance_id=None, response_to=None):
 
@@ -156,7 +129,7 @@ class ClientConnection(WebSocketHandler):
 
         m.status = MessageStatus.Value('ERROR')
 
-        self.write_message(m.SerializeToString(), binary=True)
+        create_task(self._ws.send_bytes(m.SerializeToString()))
 
     def add_close_listener(self, listener):
         self._close_listeners.append(listener)
@@ -169,3 +142,47 @@ class ClientConnection(WebSocketHandler):
             if value is message:
                 del self._transactions[key]
                 break
+
+    def on_close(self, clean: bool):
+        log.debug('Websocket closed (clean=%s)', clean)
+        ClientConnection.number_of_connections -= 1
+        for listener in self._close_listeners:
+            # clean=False when the connection drops uncleanly (e.g. computer sleep);
+            # callers use this to decide whether to garbage-collect the instance.
+            listener(clean)
+
+
+async def client_connection_handler(request: web.Request, session) -> web.WebSocketResponse:
+    instance_id = request.match_info['instance_id']
+
+    key_required = conf.get('access_key', '')
+    if key_required:
+        key_provided = request.cookies.get('access_key')
+        if key_provided != key_required:
+            raise web.HTTPUnauthorized()
+
+    ping_interval = conf.get('timeout_no_websocket_ping_interval')
+    heartbeat = float(ping_interval) if ping_interval else None
+    ws = web.WebSocketResponse(heartbeat=heartbeat)
+    await ws.prepare(request)
+
+    sock = request.transport.get_extra_info('socket') if request.transport else None
+    if sock:
+        sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
+    log.debug('Websocket opened')
+    ClientConnection.number_of_connections += 1
+
+    conn = ClientConnection(ws, session, instance_id)
+
+    try:
+        async for msg in ws:
+            if msg.type == aiohttp.WSMsgType.BINARY:
+                await conn.on_message_async(msg.data)
+            elif msg.type in (aiohttp.WSMsgType.ERROR, aiohttp.WSMsgType.CLOSE):
+                break
+    finally:
+        # close_code is None for unclean disconnections (e.g. computer sleep)
+        conn.on_close(ws.close_code is not None)
+
+    return ws
