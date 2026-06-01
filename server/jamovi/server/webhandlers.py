@@ -1,55 +1,49 @@
 
-from tornado.web import RequestHandler
+import aiohttp
+from aiohttp import web
 
-from tornado.httputil import parse_response_start_line
-from tornado.httputil import HTTPHeaders
-from tornado.httpclient import AsyncHTTPClient
-from tornado.httpclient import HTTPRequest
+# Headers not safe to forward between proxy and upstream
+_HOP_BY_HOP = frozenset({
+    'connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization',
+    'te', 'trailers', 'transfer-encoding', 'upgrade',
+})
 
 
-class ForwardHandler(RequestHandler):
+async def forward_handler(
+    request: web.Request,
+    base_url: str,
+    default_filename: str = 'index.html',
+) -> web.StreamResponse:
 
-    _base_url: str
-    _default_filename: str
-    _status_sent: bool
+    path = request.match_info.get('path', '')
 
-    def initialize(self, base_url: str, default_filename: str = 'index.html'):
-        self._base_url = base_url
-        self._default_filename = default_filename
-        self._status_sent = False
+    if not path:
+        path = f'/{default_filename}'
+    elif path.endswith('/'):
+        path = f'{path}{default_filename}'
+    elif not path.startswith('/'):
+        path = f'/{path}'
 
-    async def get(self, path):
+    url = f'{base_url}{path}'
+    if request.query_string:
+        url = f'{url}?{request.query_string}'
 
-        self._status_sent = False
+    forward_headers = {
+        k: v for k, v in request.headers.items()
+        if k.lower() not in _HOP_BY_HOP and k.lower() != 'host'
+    }
 
-        def add_header(line):
-            if not self._status_sent:
-                status = parse_response_start_line(line.rstrip())
-                self.set_status(status.code, status.reason)
-                self._status_sent = True
-            else:
-                try:
-                    headers = HTTPHeaders.parse(line)
-                    for key in headers:
-                        value = headers[key]
-                        self.set_header(key, value)
-                except Exception:
-                    pass
+    resp = web.StreamResponse()
 
-        if not path:
-            path = f'/{ self._default_filename }'
-        elif path.endswith('/'):
-            path = f'{ path }{ self._default_filename }'
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=forward_headers) as upstream:
+            resp.set_status(upstream.status)
+            for key, value in upstream.headers.items():
+                if key.lower() not in _HOP_BY_HOP:
+                    resp.headers[key] = value
+            await resp.prepare(request)
+            async for chunk in upstream.content.iter_chunked(64 * 1024):
+                await resp.write(chunk)
 
-        url = f'{ self._base_url }/{ path }'
-        if self.request.query:
-            url = f'{ url }?{ self.request.query }'
-
-        request = HTTPRequest(
-            url=url,
-            method='GET',
-            headers=self.request.headers,
-            header_callback=add_header,
-            streaming_callback=self.write)
-
-        await AsyncHTTPClient().fetch(request, raise_error=False)
+    await resp.write_eof()
+    return resp

@@ -64,8 +64,6 @@ pyyaml==6.0.3
     # via -r requirements.in
 scipy==1.14.1
     # via -r requirements.in
-tornado==6.5.4
-    # via -r requirements.in
 typing-extensions==4.15.0
     # via
     #   aiosignal
