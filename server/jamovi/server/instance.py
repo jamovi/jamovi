@@ -288,7 +288,7 @@ class Instance:
         self._idle_since = monotonic()
 
         if type(request) == jcoms.DataSetRR:
-            self._on_dataset(request)
+            await self._on_dataset(request)
         elif type(request) == jcoms.OpenRequest:
             await self._on_open(request)
         elif type(request) == jcoms.InfoRequest:
@@ -880,20 +880,21 @@ class Instance:
         def prog_cb(p):
             ioloop.call_soon_threadsafe(add_to_event_queue, p)
 
-        save_task = create_task(ioloop.run_in_executor(None, formatio.write, self._data, path, prog_cb, content))
-        retrieve_event_task = create_task(events.get())
-        pending = (retrieve_event_task, save_task)
-
-        while True:
-            done, pending = await wait(pending, return_when=asyncio.FIRST_COMPLETED)
-            if save_task in done:
-                break
-            yield retrieve_event_task.result()
+        async with self._data.attach(read_only=True):
+            save_task = create_task(ioloop.run_in_executor(None, formatio.write, self._data, path, prog_cb, content))
             retrieve_event_task = create_task(events.get())
             pending = (retrieve_event_task, save_task)
 
-        for task in pending:
-            task.cancel()
+            while True:
+                done, pending = await wait(pending, return_when=asyncio.FIRST_COMPLETED)
+                if save_task in done:
+                    break
+                yield retrieve_event_task.result()
+                retrieve_event_task = create_task(events.get())
+                pending = (retrieve_event_task, save_task)
+
+            for task in pending:
+                task.cancel()
 
         save_task.result()  # throw if necessary
 
@@ -940,12 +941,13 @@ class Instance:
                 if temp_dir is None:
                     raise PermissionError()
                 path = os.path.join(temp_dir, path)
-                if temp_dir and os.path.commonpath([ temp_dir, path ]) == temp_dir:
-                    pass
-                else:
+                if os.path.commonpath([temp_dir, path]) != temp_dir:
                     raise PermissionError()
 
-        log.debug("opening '%s' '%s' %s", path, title, ext)
+        log_title = title or os.path.splitext(os.path.basename(path))[0]
+        if len(log_title) > 16:
+            log_title = log_title[:16] + '...'
+        log.info("opening '%s'", log_title)
 
         stream = ProgressStream()
 
@@ -1000,7 +1002,8 @@ class Instance:
 
                 main_settings = self._settings.group('main')
                 func = functools.partial(formatio.read, self._data, norm_path, prog_cb, main_settings, is_temp=is_temp, title=title, ext=ext)
-                result = await ioloop.run_in_executor(None, func)
+                async with self._data.attach():
+                    result = await ioloop.run_in_executor(None, func)
 
                 if file_sync is not None:
                     self._data.file_sync = file_sync
@@ -1149,7 +1152,8 @@ class Instance:
 
                 main_settings = instance._settings.group('main')
                 func = functools.partial(formatio.read, model, norm_path, prog_cb, main_settings, is_temp=True)
-                await ioloop.run_in_executor(None, func)
+                async with model.attach():
+                    await ioloop.run_in_executor(None, func)
 
                 self._i += 1
                 return (name, model)
@@ -1429,7 +1433,7 @@ class Instance:
                 n_block.rowCount = block.rowCount
                 n_block.columnCount = block.columnCount
 
-    def _on_dataset(self, request):
+    async def _on_dataset(self, request):
 
         if self._data is None:
             return
@@ -1438,7 +1442,7 @@ class Instance:
             response = jcoms.DataSetRR()
 
             if request.op == jcoms.GetSet.Value('SET'):
-                with self._data.attach():
+                async with self._data.attach():
                     response.op = request.op
                     self._clone_cell_selections(request, response)
                     if request.noUndo is False:
@@ -1447,12 +1451,12 @@ class Instance:
                     if request.noUndo is False:
                         self._mod_tracker.end_event()
             elif request.op == jcoms.GetSet.Value('GET'):
-                with self._data.attach(read_only=True):
+                async with self._data.attach(read_only=True):
                     response.op = request.op
                     self._clone_cell_selections(request, response)
                     self._on_dataset_get(request, response)
             elif request.op == jcoms.GetSet.Value('UNDO'):
-                with self._data.attach():
+                async with self._data.attach():
                     log.debug('Undo')
                     undo_request = self._mod_tracker.begin_undo()
                     response.op = undo_request.op
@@ -1461,7 +1465,7 @@ class Instance:
                     self._mod_tracker.end_undo(response)
                     log.debug('Undo complete')
             elif request.op == jcoms.GetSet.Value('REDO'):
-                with self._data.attach():
+                async with self._data.attach():
                     log.debug('Redo')
                     redo_request = self._mod_tracker.get_redo()
                     response.op = redo_request.op

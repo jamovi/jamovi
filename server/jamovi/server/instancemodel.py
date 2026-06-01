@@ -1,10 +1,10 @@
 
 from __future__ import annotations
 
+import asyncio
 from collections import deque
 import typing
-from typing import Callable
-from contextlib import contextmanager
+from contextlib import asynccontextmanager
 
 from jamovi.core import DataSet
 from jamovi.core import ColumnType
@@ -27,6 +27,35 @@ if typing.TYPE_CHECKING:
     from .instance import Instance
     from .syncs import HttpSync
 
+
+class _RWLock:
+
+    def __init__(self):
+        self._readers = 0
+        self._write_locked = False
+        self._condition = asyncio.Condition()
+
+    async def acquire_read(self):
+        async with self._condition:
+            await self._condition.wait_for(lambda: not self._write_locked)
+            self._readers += 1
+
+    async def release_read(self):
+        async with self._condition:
+            self._readers -= 1
+            if self._readers == 0:
+                self._condition.notify_all()
+
+    async def acquire_write(self):
+        async with self._condition:
+            await self._condition.wait_for(
+                lambda: not self._write_locked and self._readers == 0)
+            self._write_locked = True
+
+    async def release_write(self):
+        async with self._condition:
+            self._write_locked = False
+            self._condition.notify_all()
 
 
 class InstanceModel:
@@ -75,25 +104,24 @@ class InstanceModel:
 
         self._log = NullLog()
         self._row_tracker = RowTracker()
+        self._rwlock = _RWLock()
 
         self.file_sync = None
 
-    @contextmanager
-    def attach(self, read_only: bool=False):
-        ''' attach to the dataset for reading/writing'''
-        attach: Callable[[ bool ], None] | None
-        detach: Callable[[ ], None] | None
-
-        attach = getattr(self._dataset, 'attach', lambda _: None)
-        detach = getattr(self._dataset, 'detach', lambda: None)
-        assert attach
-        assert detach
-
-        attach(read_only)
-        try:
-            yield
-        finally:
-            detach()
+    @asynccontextmanager
+    async def attach(self, read_only: bool = False):
+        if read_only:
+            await self._rwlock.acquire_read()
+            try:
+                yield
+            finally:
+                await self._rwlock.release_read()
+        else:
+            await self._rwlock.acquire_write()
+            try:
+                yield
+            finally:
+                await self._rwlock.release_write()
 
     @property
     def results_language(self):

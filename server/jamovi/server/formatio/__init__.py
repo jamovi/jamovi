@@ -47,36 +47,35 @@ for plugin in plugins:
 
 def read(dataset, path, prog_cb, settings, *, is_temp=False, title=None, ext=None):
 
-    with dataset.attach():
-        if title:
-            dataset.title = title
-        else:
-            dataset.title, _ = os.path.splitext(os.path.basename(path))
+    if title:
+        dataset.title = title
+    else:
+        dataset.title, _ = os.path.splitext(os.path.basename(path))
 
-        if ext is None:
-            ext = os.path.splitext(path)[1].lower()
-            if ext != '':
-                ext = ext[1:]
+    if ext is None:
+        ext = os.path.splitext(path)[1].lower()
+        if ext != '':
+            ext = ext[1:]
 
-        prog_cb(0)
+    prog_cb(0)
 
-        if path == '':
-            blank.read(dataset)
-        elif not os.path.exists(path):
-            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), None if is_temp else path)
-        elif ext == 'omv':
-            omv.read(dataset, path, prog_cb)
-            if not is_temp:
-                dataset.path = path
-                dataset.save_format = 'jamovi'
-        elif ext == 'omt':
-            omv.read(dataset, path, prog_cb)
-        else:
-            _import(dataset, path, prog_cb, settings, ext)
+    if path == '':
+        blank.read(dataset)
+    elif not os.path.exists(path):
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), None if is_temp else path)
+    elif ext == 'omv':
+        omv.read(dataset, path, prog_cb)
+        if not is_temp:
+            dataset.path = path
+            dataset.save_format = 'jamovi'
+    elif ext == 'omt':
+        omv.read(dataset, path, prog_cb)
+    else:
+        _import(dataset, path, prog_cb, settings, ext)
 
-        fix_column_names(dataset)
+    fix_column_names(dataset)
 
-        dataset.setup()
+    dataset.setup()
 
 
 def _import(data, path, prog_cb, settings, ext):
@@ -107,15 +106,14 @@ def _import(data, path, prog_cb, settings, ext):
 
 def write(dataset, path, prog_cb, content=None):
     try:
-        with dataset.attach(read_only=True):
-            temp_path = path + '.tmp'
-            ext = os.path.splitext(path)[1].lower()[1:]
-            if ext == 'omv' or ext == 'omt':
-                omv.write(dataset, temp_path, prog_cb, content, is_template=(ext == 'omt'))
-            elif ext in writers:
-                writers[ext][1](dataset, temp_path, prog_cb)
-            else:
-                raise RuntimeError('Unrecognised file format')
+        temp_path = path + '.tmp'
+        ext = os.path.splitext(path)[1].lower()[1:]
+        if ext == 'omv' or ext == 'omt':
+            omv.write(dataset, temp_path, prog_cb, content, is_template=(ext == 'omt'))
+        elif ext in writers:
+            writers[ext][1](dataset, temp_path, prog_cb)
+        else:
+            raise RuntimeError('Unrecognised file format')
         os.replace(temp_path, path)
     except Exception as e:
         try:
