@@ -138,7 +138,6 @@ setup(
     package_data=package_data,
 
     # install_requires=[
-    #     'tornado',
     #     'protobuf',
     #     'nanomsg',
     #     'PyYAML'],
