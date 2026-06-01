@@ -1,49 +1,30 @@
 
-import tornado.ioloop
-import tornado.netutil
-import tornado.httpserver
-
-from tornado.web import RequestHandler
-from tornado.web import StaticFileHandler as TornadosStaticFileHandler
-from tornado.web import stream_request_body
-from tornado.concurrent import Future
-from tornado import gen
-
-from .clientconnection import ClientConnection
-from .session import Session
-from .session import SessionEvent
-from .utils import conf
-from .appinfo import app_info
-from jamovi.core import Dirs
-from .i18n import _
-from .webhandlers import ForwardHandler
-
-from .exceptions import FileExistsException
-from .exceptions import UserException
-
 import sys
 import os
-import os.path
 import uuid
 import mimetypes
 import re
 import json
-
-from urllib.parse import urlparse
-from tempfile import NamedTemporaryFile
-from tempfile import TemporaryDirectory
-from shutil import rmtree
-
 import logging
 import threading
 import asyncio
 from asyncio import create_task
+from urllib.parse import urlparse
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+from shutil import rmtree
+
+from aiohttp import web
+
+from .clientconnection import client_connection_handler
+from .session import Session
+from .utils import conf
+from .appinfo import app_info
+from jamovi.core import Dirs
+from .i18n import _
+from .webhandlers import forward_handler
+from .exceptions import FileExistsException, UserException
 
 log = logging.getLogger(__name__)
-
-tornado_major = int(tornado.version.split('.')[0])
-if tornado_major < 5:
-    raise RuntimeError('tornado 5+ is required')
 
 
 access_key = conf.get('access_key', None)
@@ -55,526 +36,557 @@ if access_key is None:
     conf.set('access_key', access_key)
 
 
-class SingleFileHandler(RequestHandler):
+# Generic static-file helpers (no session dependency)
 
-    _path: str
-    _mime_type: str | None
-    _extra_headers: dict[str, str]
-
-    def initialize(self, path, mime_type=None, extra_headers=None):
-        self._path = path
-        self._mime_type = mime_type
-        self._extra_headers = extra_headers or { }
-
-    def get(self):
-        if self._mime_type is not None:
-            self.set_header('Content-Type', self._mime_type)
-        self.set_extra_headers(self._extra_headers)
-        with open(self._path, 'rb') as file:
-            content = file.read()
-            self.write(content)
-
-    def set_extra_headers(self, path):
-        for key, value in self._extra_headers.items():
-            self.set_header(key, value)
+def _make_single_file_handler(path: str, mime_type: str | None = None,
+                               extra_headers: dict | None = None):
+    async def handler(_: web.Request) -> web.Response:
+        ct = mime_type or mimetypes.guess_type(path)[0] or 'application/octet-stream'
+        with open(path, 'rb') as f:
+            body = f.read()
+        return web.Response(body=body, content_type=ct,
+                            headers=dict(extra_headers) if extra_headers else {})
+    return handler
 
 
-class StaticFileHandler(TornadosStaticFileHandler):
+def _make_static_dir_handler(directory: str, extra_headers: dict | None = None,
+                              default_filename: str | None = None):
+    _real = os.path.realpath(directory)
 
-    def __init__(self, *args, extra_headers={}, **kwargs):
-        self._extra_headers = extra_headers
-        TornadosStaticFileHandler.__init__(self, *args, **kwargs)
+    async def handler(request: web.Request) -> web.Response:
+        rel = request.match_info.get('path', '')
+        if not rel:
+            if default_filename:
+                rel = default_filename
+            else:
+                raise web.HTTPNotFound()
+        filepath = os.path.realpath(os.path.join(_real, rel))
+        if not filepath.startswith(_real):
+            raise web.HTTPForbidden()
+        if not os.path.isfile(filepath):
+            raise web.HTTPNotFound()
+        ct, enc = mimetypes.guess_type(filepath)
+        headers = dict(extra_headers) if extra_headers else {}
+        if enc:
+            headers['Content-Encoding'] = enc
+        with open(filepath, 'rb') as f:
+            body = f.read()
+        return web.Response(body=body, content_type=ct or 'application/octet-stream',
+                            headers=headers)
+    return handler
 
-    def set_extra_headers(self, path):
-        for key, value in self._extra_headers.items():
-            self.set_header(key, value)
+
+def _make_forward(base_url: str, default_filename: str = 'index.html'):
+    async def handler(request: web.Request) -> web.StreamResponse:
+        return await forward_handler(request, base_url=base_url,
+                                     default_filename=default_filename)
+    return handler
 
 
-class SessHandler(RequestHandler):
+def _make_host_dispatch_middleware(apps_by_host: dict):
+    @web.middleware
+    async def dispatch(request: web.Request, handler):
+        host = request.headers.get('Host', '').split(':')[0]
+        target = apps_by_host.get(host)
+        if target is not None:
+            match_info = await target.router.resolve(request)
+            request._match_info = match_info
+            return await match_info.handler(request)
+        return await handler(request)
+    return dispatch
 
-    def initialize(self, session):
+
+# Route handler class
+
+class _Handlers:
+    """All aiohttp route handlers, grouped by the session and config they share."""
+
+    def __init__(self, session, client_path: str, assets_path: str, i18n_path: str,
+                 dev_server: str | None, cache_headers: dict, server):
         self._session = session
+        self._client_path = client_path
+        self._assets_path = assets_path
+        self._i18n_path = i18n_path
+        self._dev_server = dev_server
+        self._cache_headers = cache_headers
+        self._server = server  # for _pdfify and _roots
+        self._i18n_manifest_cache: dict = {}
+        self._download_real_path = os.path.realpath(session.session_path)
 
+    # -- auth -----------------------------------------------------------------
 
-class ResourceHandler(SessHandler):
+    def _auth_error(self, request: web.Request) -> web.Response | None:
+        key_required = conf.get('access_key', '')
+        if not key_required:
+            return None
+        key_provided = request.cookies.get('access_key')
+        if key_provided is None:
+            return web.Response(content_type='text/plain',
+                text=f'{{"status":"error","message":{json.dumps(_("Authentication required"))}}}\n')
+        if key_provided != key_required:
+            return web.Response(content_type='text/plain',
+                text=f'{{"status":"error","message":{json.dumps(_("Authentication failure"))}}}\n')
+        return None
 
-    def get(self, instance_id, resource_id):
+    # -- simple ---------------------------------------------------------------
+
+    async def version(self, _: web.Request) -> web.Response:
+        return web.Response(text=app_info.version)
+
+    async def config_js(self, _: web.Request) -> web.Response:
+        r = self._server._roots
+        js = f'window.config = {{"client":{{"roots":["{r[0]}","{r[1]}","{r[2]}"]}}}}'
+        return web.Response(text=js, content_type='application/javascript')
+
+    async def datasets(self, _: web.Request) -> web.Response:
+        rows = [
+            {
+                'id': id,
+                'title': inst._data.title,
+                'buffer': inst._buffer_path,
+                'rowCount': inst._data.row_count,
+                'columnCount': inst._data.column_count,
+            }
+            for id, inst in self._session.items()
+        ]
+        return web.Response(text=json.dumps(rows), content_type='application/json',
+            headers={'Cache-Control': 'private, no-store, must-revalidate, max-age=0'})
+
+    async def settings(self, request: web.Request) -> web.Response:
+        self._session.apply_settings(json.loads((await request.read()).decode('utf-8')))
+        return web.Response(status=200)
+
+    async def end(self, _: web.Request) -> web.Response:
+        self._session.stop()
+        return web.Response(status=200)
+
+    # -- open / save ----------------------------------------------------------
+
+    async def entry(self, request: web.Request) -> web.Response:
+        required_key = conf.get('access_key', '')
+        if required_key:
+            provided_key = request.rel_url.query.get('access_key')
+            if provided_key is None:
+                return web.Response(status=401, content_type='text/html',
+                    text='<h1>access key required</h1>'
+                         '<p>You must append ?access_key=... onto your URL</p>')
+            if provided_key != required_key:
+                return web.Response(status=401, content_type='text/html',
+                    text='<h1>auth failed</h1><p>provided access key is not correct</p>')
+
+        instance = await self._session.create()
+        query = f'?{request.query_string}' if request.query_string else ''
+        exc = web.HTTPFound(location=f'{instance.id}/{query}')
+        if required_key:
+            exc.set_cookie('access_key', provided_key)
+        raise exc
+
+    async def open_get(self, request: web.Request) -> web.Response:
+        err = self._auth_error(request)
+        if err is not None:
+            return err
+
+        instance_id = request.match_info.get('instance_id')
+        instance = None
+        url = request.rel_url.query.get('url', '')
+        self._session.set_language(request.headers.get('Accept-Language', 'en'))
+
+        if instance_id:
+            instance = self._session.get(instance_id)
+            if instance is None:
+                return web.Response(content_type='text/plain',
+                    text=f'{{"status":"terminated",'
+                         f'"message":{json.dumps(_("This data set is no longer available"))}}}')
+            if url == '' and instance._data.has_dataset:
+                return web.Response(status=204)
+
+        title = request.rel_url.query.get('title')
+        is_temp = 'temp' in request.rel_url.query
+        ext = None
+        filename = request.rel_url.query.get('filename')
+        if filename:
+            name, dot_ext = os.path.splitext(filename)
+            if dot_ext:
+                ext = dot_ext[1:].lower()
+            if title is None:
+                title = name
+
+        parts = []
+        try:
+            if instance is None:
+                instance = await self._session.create()
+            async for progress in instance.open(url, title, is_temp, ext):
+                p, n = progress
+                parts.append(f'{{"status":"in-progress","p":{p},"n":{n}}}\n')
+        except Exception as e:
+            log.exception(e)
+            message = str(e) or type(e).__name__
+            parts.append(f'{{"status":"error","message":{json.dumps(message)}}}\n')
+        else:
+            parts.append(f'{{"status":"OK","url":"{instance.id}/"}}\n')
+
+        return web.Response(content_type='text/plain', text=''.join(parts))
+
+    async def open_post(self, request: web.Request) -> web.StreamResponse:
+        err = self._auth_error(request)
+        if err is not None:
+            return err
+
+        options: dict = {}
+        data = await request.post()
+        options_raw = data.get('options', '{}')
+        if isinstance(options_raw, str):
+            try:
+                options_dict = json.loads(options_raw)
+                if isinstance(options_dict, dict):
+                    options = options_dict
+            except ValueError:
+                pass
+
+        file_path: str
+        file_title = None
+        file_ext = None
+        is_temp = False
+
+        if 'file' in data:
+            ff = data['file']
+            if not isinstance(ff, web.FileField):
+                return web.Response(status=400, text='400: Bad Request')
+            file_title, dot_ext = os.path.splitext(ff.filename)
+            with NamedTemporaryFile(suffix=dot_ext, delete=False) as tmp:
+                tmp.write(ff.file.read())
+            file_path = tmp.name
+            is_temp = True
+        elif 'path' in options:
+            file_path = options['path']
+            is_temp = options.get('temp', False) is not False
+            file_title = options.get('title')
+            file_ext = options.get('ext')
+        elif 'file.path' in data:
+            raw_path = data['file.path']
+            raw_name = data['file.name']
+            if not isinstance(raw_path, str) or not isinstance(raw_name, str):
+                return web.Response(status=400, text='400: Bad Request')
+            file_path = raw_path
+            file_title, dot_ext = os.path.splitext(raw_name)
+            file_ext = dot_ext[1:] if dot_ext else None
+            is_temp = True
+        else:
+            return web.Response(status=400, text='400: Bad Request')
+
+        self._session.set_language(request.headers.get('Accept-Language', 'en'))
+
+        resp = web.StreamResponse(headers={'Content-Type': 'text/plain'})
+        await resp.prepare(request)
+        try:
+            instance = await self._session.create()
+            async for progress in instance.open(
+                file_path, title=file_title, is_temp=is_temp,
+                ext=file_ext, options=options,
+            ):
+                p, n = progress
+                await resp.write(f'{{"status":"in-progress","p":{p},"n":{n}}}\n'.encode())
+        except Exception as e:
+            log.exception(e)
+            message = str(e) or type(e).__name__
+            await resp.write(f'{{"status":"error","message":{json.dumps(message)}}}\n'.encode())
+        else:
+            await resp.write(f'{{"status":"OK","url":"{instance.id}/"}}\n'.encode())
+        await resp.write_eof()
+        return resp
+
+    async def save(self, request: web.Request) -> web.StreamResponse:
+        instance_id = request.match_info['instance_id']
         instance = self._session.get(instance_id)
         if instance is None:
-            self.set_status(404)
-            self.write('<h1>404</h1>')
-            self.write('instance ' + instance_id + ' could not be found')
-            return
+            return web.Response(status=404, text='404: Not Found')
 
-        mt = mimetypes.guess_type(resource_id)
-        if mt[0] is not None:
-            self.set_header('Content-Type', mt[0])
-        if mt[1] is not None:
-            self.set_header('Content-Encoding', mt[1])
+        options: dict = {}
+        data = await request.post()
+        options_raw = data.get('options', '{}')
+        if isinstance(options_raw, str):
+            try:
+                options_dict = json.loads(options_raw)
+                if isinstance(options_dict, dict):
+                    options = options_dict
+            except ValueError:
+                pass
+
+        if 'content' in data:
+            field = data['content']
+            if isinstance(field, web.FileField):
+                options['content'] = field.file.read()
+            elif isinstance(field, str):
+                options['content'] = field
+
+        resp = web.StreamResponse(headers={'Content-Type': 'text/plain'})
+        await resp.prepare(request)
+
+        result: dict
+        try:
+            stream = instance.save(options)
+            async for progress in stream:
+                p, n = progress
+                await resp.write(f'{{"status":"in-progress","p":{p},"n":{n}}}\n'.encode())
+            result = {'status': 'OK'}
+            result.update(await stream)
+        except FileExistsException:
+            result = {'status': 'error', 'code': 'file-exists'}
+        except UserException as e:
+            result = {'status': 'error', 'message': e.cause}
+
+        await resp.write(json.dumps(result).encode())
+        await resp.write_eof()
+        return resp
+
+    # -- resources / modules --------------------------------------------------
+
+    async def resource(self, request: web.Request) -> web.Response:
+        instance_id = request.match_info['instance_id']
+        resource_id = request.match_info['resource_id']
+        instance = self._session.get(instance_id)
+        if instance is None:
+            return web.Response(status=404, content_type='text/html',
+                text=f'<h1>404</h1>instance {instance_id} could not be found')
+
+        ct, enc = mimetypes.guess_type(resource_id)
+        headers = {}
+        if enc:
+            headers['Content-Encoding'] = enc
 
         if conf.get('xaccel_use', '0') != '0':
             xaccel_root = conf.get('xaccel_root')
-            resource_path = f'/{ xaccel_root }/{ instance_id }/{ resource_id }'
-            self.set_header('X-Accel-Redirect', resource_path)
-        else:
-            resource_path = instance.get_path_to_resource(resource_id)
-            with open(resource_path, 'rb') as file:
-                self.set_header('Cache-Control', 'private, no-cache, must-revalidate, max-age=0')
-                content = file.read()
-                self.write(content)
+            headers['X-Accel-Redirect'] = f'/{xaccel_root}/{instance_id}/{resource_id}'
+            return web.Response(content_type=ct or 'application/octet-stream', headers=headers)
 
+        resource_path = instance.get_path_to_resource(resource_id)
+        headers['Cache-Control'] = 'private, no-cache, must-revalidate, max-age=0'
+        with open(resource_path, 'rb') as f:
+            body = f.read()
+        return web.Response(body=body, content_type=ct or 'application/octet-stream',
+                            headers=headers)
 
-class ModuleAssetHandler(SessHandler):
-
-    def get(self, instance_id, analysis_id, path):
+    async def module_asset(self, request: web.Request) -> web.Response:
+        instance_id = request.match_info['instance_id']
+        analysis_id = request.match_info['analysis_id']
+        path = request.match_info['path']
         instance = self._session.get(instance_id)
         if instance is None:
-            self.set_status(404)
-            self.write('<h1>404</h1>')
-            self.write('instance ' + instance_id + ' could not be found')
-            return
+            return web.Response(status=404, content_type='text/html',
+                text=f'<h1>404</h1>instance {instance_id} could not be found')
 
         analysis = instance.analyses.get(int(analysis_id))
         module_name = analysis.ns
         module_path = self._session.modules.get(module_name).path
         asset_path = os.path.join(module_path, 'R', analysis.ns, path)
 
-        if asset_path.startswith(module_path) is False:
-            self.set_status(403)
-            self.write('<h1>403</h1>')
-            self.write('verboten')
-            return
+        if not asset_path.startswith(module_path):
+            return web.Response(status=403, content_type='text/html', text='<h1>403</h1>verboten')
 
-        mt = mimetypes.guess_type(asset_path)
+        ct, enc = mimetypes.guess_type(asset_path)
+        headers = {'Cache-Control': 'private, no-cache, must-revalidate, max-age=0'}
+        if enc:
+            headers['Content-Encoding'] = enc
+        with open(asset_path, 'rb') as f:
+            body = f.read()
+        return web.Response(body=body, content_type=ct or 'application/octet-stream',
+                            headers=headers)
 
-        with open(asset_path, 'rb') as file:
-            content = file.read()
-            if mt[0] is not None:
-                self.set_header('Content-Type', mt[0])
-            if mt[1] is not None:
-                self.set_header('Content-Encoding', mt[1])
-            self.set_header('Cache-Control', 'private, no-cache, must-revalidate, max-age=0')
-            self.write(content)
-
-
-class ModuleI18nDescriptor(SessHandler):
-
-    def get(self, module_name, code):
-        content = None
+    async def module_i18n(self, request: web.Request) -> web.Response:
+        module_name = request.match_info['module_name']
+        code = request.match_info['code']
         try:
-            try:
-                module_path = self._session.modules.get(module_name).path
-                defn_path = os.path.join(module_path, 'R', module_name, 'i18n', f'{ code }.json')
-                with open(defn_path, 'rb') as file:
-                    content = file.read()
-            except (KeyError, FileNotFoundError):
-                raise
-            except Exception as e:
-                log.exception(e)
-        except Exception as e:
-            self.set_status(404)
-            self.write('<h1>404</h1>')
-            self.write(str(e))
-        else:
-            self.set_header('Content-Type', 'application/json')
-            self.set_header('Cache-Control', 'private, no-store, must-revalidate, max-age=0')
-            self.write(content)
+            module_path = self._session.modules.get(module_name).path
+            defn_path = os.path.join(module_path, 'R', module_name, 'i18n', f'{code}.json')
+            with open(defn_path, 'rb') as f:
+                body = f.read()
+        except (KeyError, FileNotFoundError) as e:
+            return web.Response(status=404, content_type='text/html', text=f'<h1>404</h1>{e}')
+        return web.Response(body=body, content_type='application/json',
+            headers={'Cache-Control': 'private, no-store, must-revalidate, max-age=0'})
 
-
-class ModuleDescriptor(SessHandler):
-
-    def get(self, module_name):
-        content = None
+    async def module_descriptor(self, request: web.Request) -> web.Response:
+        module_name = request.match_info['module_name']
         try:
-            try:
-                module_path = self._session.modules.get(module_name).path
-                defn_path = os.path.join(module_path, 'jamovi-full.yaml')
-                with open(defn_path, 'rb') as file:
-                    content = file.read()
-            except (KeyError, FileNotFoundError):
-                raise
-            except Exception as e:
-                log.exception(e)
-        except Exception as e:
-            self.set_status(404)
-            self.write('<h1>404</h1>')
-            self.write(str(e))
-        else:
-            self.set_header('Content-Type', 'text/yaml')
-            self.write(content)
+            module_path = self._session.modules.get(module_name).path
+            defn_path = os.path.join(module_path, 'jamovi-full.yaml')
+            with open(defn_path, 'rb') as f:
+                body = f.read()
+        except (KeyError, FileNotFoundError) as e:
+            return web.Response(status=404, content_type='text/html', text=f'<h1>404</h1>{e}')
+        return web.Response(body=body, content_type='text/yaml')
 
-
-class AnalysisDescriptor(SessHandler):
-
-    def get(self, module_name, analysis_name, part):
-        if part == '':
-            part = 'js'
-
-        content = None
+    async def analysis_descriptor(self, request: web.Request) -> web.Response:
+        module_name = request.match_info['module_name']
+        analysis_name = request.match_info['analysis_name']
+        part = request.match_info.get('part') or 'js'
         try:
-            try:
-                module_path = self._session.modules.get(module_name).path
-
-                if part == 'js':
-                    analysis_path = os.path.join(module_path, 'ui', analysis_name.lower() + '.' + part)
-                else:
-                    analysis_path = os.path.join(module_path, 'analyses', analysis_name.lower() + '.' + part)
-
-                analysis_path = os.path.realpath(analysis_path)
-                with open(analysis_path, 'rb') as file:
-                    content = file.read()
-            except (KeyError, FileNotFoundError):
-                raise
-            except Exception as e:
-                log.exception(e)
-        except Exception as e:
-            self.set_status(404)
-            self.write('<h1>404</h1>')
-            self.write(str(e))
-        else:
-            self.set_header('Content-Type', 'text/plain')
-            self.write(content)
-
-
-class EntryHandler(RequestHandler):
-
-    def initialize(self, session):
-        self._session = session
-
-    async def get(self):
-
-        required_key = conf.get('access_key', '')
-        if required_key != '':
-            provided_key = self.get_argument('access_key', None)
-            if provided_key is None:
-                self.set_status(401)
-                self.write('<h1>access key required</h1>')
-                self.write('<p>You must append ?access_key=... onto your URL</p>')
-                return
-            elif provided_key != required_key:
-                self.set_status(401)
-                self.write('<h1>auth failed</h1>')
-                self.write('<p>provided access key is not correct</p>')
-                return
+            module_path = self._session.modules.get(module_name).path
+            if part == 'js':
+                path = os.path.join(module_path, 'ui', analysis_name.lower() + '.' + part)
             else:
-                self.set_cookie('access_key', provided_key)
+                path = os.path.join(module_path, 'analyses', analysis_name.lower() + '.' + part)
+            path = os.path.realpath(path)
+            with open(path, 'rb') as f:
+                body = f.read()
+        except (KeyError, FileNotFoundError) as e:
+            return web.Response(status=404, content_type='text/html', text=f'<h1>404</h1>{e}')
+        return web.Response(body=body, content_type='text/plain')
 
-        instance = await self._session.create()
-        query = ''
-        if self.request.query:
-            query = f'?{ self.request.query }'
-        self.redirect('%s/%s' % (instance.id, query))
-
-
-class OpenHandler(RequestHandler):
-
-    def initialize(self, session):
-        self._session = session
-        self._access_key = conf.get('access_key', '')
-
-    def prepare(self, instance_id=None):
-        if self._access_key != '':
-            key_provided = self.get_cookie('access_key', None)
-            if key_provided is None:
-                self.write(f'{{"status":"error","message":{ json.dumps(_("Authentication required")) }}}\n')
-                self.finish()
-            elif self._access_key != key_provided:
-                self.write(f'{{"status":"error","message":{ json.dumps(_("Authentication failure")) }}}\n')
-                self.finish()
-
-    async def get(self, instance_id=None):
-
-        instance = None
-        url = self.get_query_argument('url', '')
-
-        lang_code = self.request.headers.get('Accept-Language', 'en')
-
-        self._session.set_language(lang_code)
-
-        if instance_id:
-            instance = self._session.get(instance_id)
-            if instance is None:
-                self.write(f'{{"status":"terminated","message":{ json.dumps(_("This data set is no longer available")) }}}')
-                return
-            elif url == '' and instance._data.has_dataset:
-                self.set_status(204)
-                return
-
-        title = self.get_query_argument('title', None)
-        is_temp = self.get_query_argument('temp', False) is not False
-        ext = None
-
-        filename = self.get_query_argument('filename', None)
-        if filename:
-            name, ext = os.path.splitext(filename)
-            if ext != '':
-                ext = ext[1:].lower()  # trim leading dot
-            if title is None:
-                title = name
-
+    async def pdf(self, request: web.Request) -> web.Response:
+        body = await request.read()
+        with NamedTemporaryFile(suffix='.html', delete=False) as f:
+            f.write(body)
+            html_path = f.name
         try:
-            if instance is None:
-                instance = await self._session.create()
-            async for progress in instance.open(url, title, is_temp, ext):
-                self._write('progress', progress)
+            pdf_path = await self._server._pdfify(html_path)
+            with open(pdf_path, 'rb') as f:
+                content = f.read()
+            return web.Response(body=content, content_type='application/pdf')
         except Exception as e:
-            log.exception(e)
-            self._write(e)
-        else:
-            self._write('OK', redirect=instance.id)
-
-    async def post(self, instance_id=None):
-
-        file_path: str
-        file_title = None
-        file_ext = None
-        options: dict = { }
-
-        try:
-            options_json = self.get_body_argument('options', '{}')
-            options_dict = json.loads(options_json)
-            if isinstance(options_dict, dict):
-                options = options_dict
-        except (KeyError, ValueError):
-            pass
-
-        if 'file' in self.request.files:
-            # jamovi handling uploads directly
-            file = self.request.files['file'][-1]
-            file_title, ext = os.path.splitext(file.filename)
-            temp_file = NamedTemporaryFile(suffix=ext)
-            with open(temp_file.name, 'wb') as writer:
-                writer.write(file.body)
-            file_path = temp_file.name
-            is_temp = True
-        elif 'path' in options:
-            # jamovi desktop open from path
-            file_path = options['path']
-            is_temp = options.get('temp', False) is not False
-            file_title = options.get('title', None)
-            file_ext = options.get('ext', None)
-        elif 'file.path' in self.request.body_arguments:
-            # jamovi sitting behind a reverse proxy that handles the uploads (nginx)
-            file_path = self.get_body_argument('file.path')
-            filename = self.get_body_argument('file.name')
-            file_title, dot_ext = os.path.splitext(filename)
-            file_ext = dot_ext[1:]
-            is_temp = True
-        else:
-            self.set_status(400)
-            self.write('400: Bad Request')
-            return
-
-        lang_code = self.request.headers.get('Accept-Language', 'en')
-        self._session.set_language(lang_code)
-
-        try:
-            instance = await self._session.create()
-            async for progress in instance.open(file_path, title=file_title, is_temp=is_temp, ext=file_ext, options=options):
-                self._write('progress', progress)
-                await self.flush()
-        except Exception as e:
-            log.exception(e)
-            self._write(e)
-        else:
-            self._write('OK', redirect=instance.id)
-
-    def _write(self, status, progress=None, redirect=None):
-        if status == 'OK':
-            if redirect is not None:
-                self.write(f'{{"status":"OK","url":"{ redirect }/"}}\n')
-            else:
-                self.write('{"status":"OK"}\n')
-        elif isinstance(status, BaseException):
-            message = str(status)
-            if not message:
-                message = type(status).__name__
-            self.write(f'{{"status":"error","message":{ json.dumps(message) }}}\n')
-        else:
-            p, n = progress
-            self.write(f'{{"status":"in-progress","p":{ p },"n":{ n }}}\n')
-
-
-class SaveHandler(SessHandler):
-
-    async def post(self, instance_id: str):
-
-        instance = self._session.get(instance_id)
-        if instance is None:
-            self.set_status(404)
-            self.write('404: Not Found')
-            return
-
-        options: dict = { }
-
-        try:
-            options_json = self.get_body_argument('options', '{}')
-            options_dict = json.loads(options_json)
-            if isinstance(options_dict, dict):
-                options = options_dict
-        except (KeyError, ValueError):
-            pass
-
-        content_file = self.request.files.get('content', None)
-        if content_file is not None:
-            options['content'] = content_file[-1].body
-
-        self.set_header('content-type', 'text/plain')  # jsonlines, so text/plain
-
-        data: dict
-
-        try:
-            stream = instance.save(options)
-            async for progress in stream:
-                p, n = progress
-                self.write(f'{{"status":"in-progress","p":{ p },"n":{ n }}}\n')
-                await self.flush()
-            data = { 'status': 'OK' }
-            data.update(await stream)
-        except FileExistsException:
-            data = { 'status': 'error', 'code': 'file-exists'}
-        except UserException as e:
-            data = { 'status': 'error', 'message': e.cause }
-
-        content = json.dumps(data)
-        self.write(content)
-
-
-@stream_request_body
-class PDFConverter(RequestHandler):
-
-    def initialize(self, pdfservice):
-        self._pdfservice = pdfservice
-        self._file = None
-
-    def prepare(self):
-        self._file = NamedTemporaryFile(suffix='.html', delete=False)
-
-    def data_received(self, data):
-        self._file.write(data)
-
-    @gen.coroutine
-    def post(self):
-        self._file.close()
-        try:
-            pdf_path = yield self._pdfify()
-            with open(pdf_path, 'rb') as file:
-                content = file.read()
-                self.set_header('Content-Type', 'application/pdf')
-                self.write(content)
-        except Exception as e:
-            self.set_status(500)
-            self.write(str(e))
+            return web.Response(status=500, text=str(e))
         finally:
             try:
-                os.remove(self._file.name)
-            except Exception:
+                os.remove(html_path)
+            except OSError:
                 pass
 
-    def _pdfify(self):
-        self._future = Future()
-        self._pdfservice._request({
-            'cmd': 'convert-to-pdf',
-            'args': [ self._file.name ],
-            'waiting': self._future })
-        return self._future
-
-
-class DatasetsList(SessHandler):
-
-    def get(self):
-        datasets = [ ]
-        for id, instance in self._session.items():
-            datasets.append({
-                'id': id,
-                'title': instance._data.title,
-                'buffer': instance._buffer_path,
-                'rowCount': instance._data.row_count,
-                'columnCount': instance._data.column_count,
-            })
-        self.set_header('Content-Type', 'application/json')
-        self.set_header('Cache-Control', 'private, no-store, must-revalidate, max-age=0')
-        self.write(json.dumps(datasets))
-
-
-class SettingsHandler(SessHandler):
-    def post(self):
-        content = self.request.body.decode('utf-8')
-        settings = json.loads(content)
-        self._session.apply_settings(settings)
-
-
-class VersionHandler(RequestHandler):
-    def get(self):
-        self.write(app_info.version)
-
-
-class I18nManifestHandler(RequestHandler):
-
-    manifest = None
-
-    def initialize(self, session, path):
-        self._session = session
-        self._path = path
-
-    def get(self):
-        if I18nManifestHandler.manifest is None:
-            with open(self._path) as file:
-                I18nManifestHandler.manifest = json.load(file)
-
-        self.set_header('Content-Type', 'application/json')
-
+    async def i18n_manifest(self, _: web.Request) -> web.Response:
+        if 'data' not in self._i18n_manifest_cache:
+            with open(os.path.join(self._i18n_path, 'manifest.json'), encoding='utf-8') as f:
+                self._i18n_manifest_cache['data'] = json.load(f)
+        manifest = self._i18n_manifest_cache['data']
         current = self._session.get_language()
         if current:
-            manifest = { }
-            manifest.update(I18nManifestHandler.manifest)
+            manifest = dict(manifest)
             manifest['current'] = current
-            self.write(json.dumps(manifest))
+        return web.Response(text=json.dumps(manifest), content_type='application/json')
+
+    async def download(self, request: web.Request) -> web.Response:
+        path = request.match_info['path']
+        filepath = os.path.realpath(os.path.join(self._download_real_path, path))
+        if not filepath.startswith(self._download_real_path):
+            raise web.HTTPForbidden()
+        if not os.path.isfile(filepath):
+            raise web.HTTPNotFound()
+        ct, enc = mimetypes.guess_type(filepath)
+        headers = {}
+        filename_param = request.rel_url.query.get('filename')
+        if filename_param:
+            headers['Content-Disposition'] = f'attachment; filename="{filename_param}"'
+        if enc:
+            headers['Content-Encoding'] = enc
+        with open(filepath, 'rb') as f:
+            body = f.read()
+        return web.Response(body=body, content_type=ct or 'application/octet-stream',
+                            headers=headers)
+
+    async def websocket(self, request: web.Request) -> web.WebSocketResponse:
+        return await client_connection_handler(request, self._session)
+
+    # -- route registration ---------------------------------------------------
+
+    def add_main_routes(self, router: web.UrlDispatcher):
+        ch = self._cache_headers
+        cp = self._client_path
+        ap = self._assets_path
+        ds = self._dev_server
+
+        router.add_get('/', self.entry)
+        router.add_get('/config.js', self.config_js)
+        router.add_get('/open', self.open_get)
+        router.add_post('/open', self.open_post)
+        router.add_post('/settings', self.settings)
+        router.add_post('/end', self.end)
+        router.add_get('/version', self.version)
+        router.add_get(r'/{instance_id:[a-f0-9-]+}/open', self.open_get)
+        router.add_post(r'/{instance_id:[a-f0-9-]+}/open', self.open_post)
+        router.add_post(r'/{instance_id:[a-f0-9-]+}/save', self.save)
+        router.add_get(r'/{instance_id:[a-f0-9-]+}/coms', self.websocket)
+        router.add_get(r'/{path:[a-f0-9-]+/dl/.+}', self.download)
+        router.add_get(r'/modules/{module_name:[0-9a-zA-Z]+}', self.module_descriptor)
+        router.add_get(
+            r'/modules/{module_name:[0-9a-zA-Z]+}/i18n/{code:.+}',
+            self.module_i18n)
+        router.add_get(
+            r'/analyses/{module_name:[0-9a-zA-Z]+}/{analysis_name:[0-9a-zA-Z]+}/{part:[.0-9a-zA-Z]+}',
+            self.analysis_descriptor)
+        router.add_get(
+            r'/analyses/{module_name:[0-9a-zA-Z]+}/{analysis_name:[0-9a-zA-Z]+}',
+            self.analysis_descriptor)
+        router.add_post('/utils/to-pdf', self.pdf)
+        router.add_get('/api/datasets', self.datasets)
+        router.add_get('/i18n/', self.i18n_manifest)
+        router.add_get(r'/i18n/{path:.+}', _make_static_dir_handler(self._i18n_path))
+
+        if ds:
+            router.add_get(r'/{instance_id:[a-f0-9-]+}/{path:.*}', _make_forward(ds))
+            router.add_get(r'/{path:.*}', _make_forward(ds))
         else:
-            self.write(json.dumps(I18nManifestHandler.manifest))
+            router.add_get(r'/assets/{path:.+}', _make_static_dir_handler(ap, ch))
+            router.add_get(r'/{instance_id:[a-f0-9-]+}/',
+                _make_single_file_handler(os.path.join(cp, 'index.html'), 'text/html', ch))
+            router.add_get(r'/{path:[-0-9a-z.]*}', _make_static_dir_handler(cp, ch))
+
+    def add_analysisui_routes(self, router: web.UrlDispatcher):
+        ch = self._cache_headers
+        cp = self._client_path
+        ap = self._assets_path
+        ds = self._dev_server
+
+        if ds:
+            router.add_get('/', self.version)
+            router.add_get(r'/{instance_id:[a-f0-9-]+}/{path:.*}',
+                _make_forward(ds, 'analysisui.html'))
+            router.add_get(r'/{path:.*}', _make_forward(ds))
+        else:
+            analysisui_path = os.path.join(cp, 'analysisui.html')
+            router.add_get(r'/{instance_id:[-0-9a-f]+}/',
+                _make_single_file_handler(analysisui_path, 'text/html', ch))
+            router.add_get(r'/assets/{path:.+}', _make_static_dir_handler(ap, ch))
+            router.add_get(r'/{path:[-.0-9a-zA-Z]+}', _make_static_dir_handler(cp, ch))
+
+    def add_resultsview_routes(self, router: web.UrlDispatcher):
+        ch = self._cache_headers
+        cp = self._client_path
+        ap = self._assets_path
+        ds = self._dev_server
+
+        if ds:
+            router.add_get('/', self.version)
+            router.add_get(
+                r'/{instance_id:[-0-9a-z]+}/{analysis_id:[0-9]+}/res/{resource_id:.+}',
+                self.resource)
+            router.add_get(
+                r'/{instance_id:[-0-9a-z]+}/{analysis_id:[0-9]+}/module/{path:.+}',
+                self.module_asset)
+            router.add_get(r'/{instance_id:[a-f0-9-]+}/{analysis_id:[0-9]+}/{path:.*}',
+                _make_forward(ds, 'resultsview.html'))
+            router.add_get(r'/{path:.*}', _make_forward(ds))
+        else:
+            resultsview_path = os.path.join(cp, 'resultsview.html')
+            router.add_get(r'/{instance_id:[-0-9a-z]+}/{analysis_id:[0-9]+}/',
+                _make_single_file_handler(resultsview_path, 'text/html', ch))
+            router.add_get(r'/assets/{path:.+}', _make_static_dir_handler(ap, ch))
+            router.add_get(r'/{path:[-.0-9a-zA-Z]+}', _make_static_dir_handler(cp, ch))
+            router.add_get(
+                r'/{instance_id:[-0-9a-z]+}/{analysis_id:[0-9]+}/res/{resource_id:.+}',
+                self.resource)
+            router.add_get(
+                r'/{instance_id:[-0-9a-z]+}/{analysis_id:[0-9]+}/module/{path:.+}',
+                self.module_asset)
 
 
-class DownloadFileHandler(TornadosStaticFileHandler):
-    def set_extra_headers(self, path):
-        filename = self.get_argument('filename', None)
-        if filename:
-            self.set_header(
-                'Content-Disposition',
-                f'attachment; filename="{ filename }"')
-
-
-class EndHandler(SessHandler):
-    def post(self):
-        self._session.stop()
-
-
-class ConfigJSHandler(RequestHandler):
-    def initialize(self, roots):
-        self._roots = roots
-
-    def get(self):
-        self.set_header('Content-Type', 'application/javascript')
-        self.write(f'window.config = {{"client":{{"roots":["{ self._roots[0] }","{ self._roots[1] }","{ self._roots[2] }"]}}}}')
-
+# Server
 
 class Server:
 
     ETRON_RESP_REGEX = re.compile(r'^response: ([a-z-]+) \(([0-9]+)\) ([10]) ?"(.*)"\n?$')
     ETRON_NOTF_REGEX = re.compile(r'^notification: ([a-z-]+) ?(.*)\n?$')
 
-    def __init__(self,
-                 port,
-                 host='127.0.0.1',
-                 session_id=None,
-                 stdin_slave=False,
-                 debug=False,
-                 dev_server=None):
+    def __init__(self, bind_host='127.0.0.1', session_id=None,
+                 stdin_slave=False, debug=False, dev_server=None):
 
-        # these are mostly not necessary, however the mimetypes library relies
-        # on OS level config, and this can be bad/wrong. so we override these
-        # here to prevent a badly configured system from serving up bad mime
-        # types. we found some windows machines serving up application/x-css
-        # for .css files ...
         mimetypes.add_type('text/html', '.html')
         mimetypes.add_type('application/javascript', '.js')
         mimetypes.add_type('text/css', '.css')
@@ -584,72 +596,60 @@ class Server:
         mimetypes.add_type('font/woff', '.woff')
 
         self._session = None
-
-        if session_id is not None:
-            self._session_id = session_id
-        else:
-            self._session_id = str(uuid.uuid4())
-
+        self._session_id = session_id if session_id is not None else str(uuid.uuid4())
         self._ioloop = asyncio.get_event_loop()
-
-        self._host = host
+        self._host = bind_host
         self._stdin_slave = stdin_slave
         self._debug = debug
         self._dev_server = dev_server
+        self._roots: list = []
 
         self.ports_opened = self._ioloop.create_future()
 
         self._spool_path = conf.get('spool_path')
         if self._spool_path is None:
             self._spool = TemporaryDirectory()
-            # realpath() is required to expand the windows short path
-            # at time of writing, R (4.3) was barfing on the short path
-            # hence this fix
-            spool_path = os.path.realpath(self._spool.name)
-            self._spool_path = spool_path
+            self._spool_path = os.path.realpath(self._spool.name)
 
         if stdin_slave:
             self._thread = threading.Thread(target=self._read_stdin)
             self._thread.daemon = True
             self._thread.start()
 
-        self._etron_reqs = [ ]
+        self._etron_reqs: list = []
         self._etron_req_id = 0
         self._port_file = None
 
     def _set_update_status(self, status):
-        self._request({
-            'cmd': 'software-update',
-            'args': [ status ] })
+        self._request({'cmd': 'software-update', 'args': [status]})
 
     def _request(self, request):
         request['id'] = str(self._etron_req_id)
         self._etron_req_id += 1
         self._etron_reqs.append(request)
-        cmd = 'request: {} ({}) "{}"\n'.format(
-            request['cmd'],
-            request['id'],
-            request['args'][0])
-        sys.stdout.write(cmd)
+        sys.stdout.write(f'request: {request["cmd"]} ({request["id"]}) "{request["args"][0]}"\n')
         sys.stdout.flush()
+
+    def _pdfify(self, html_path: str) -> asyncio.Future:
+        future = self._ioloop.create_future()
+        self._request({'cmd': 'convert-to-pdf', 'args': [html_path], 'waiting': future})
+        return future
 
     def _read_stdin(self):
         try:
             for line in sys.stdin:
-                line = line.strip()
-                asyncio.run_coroutine_threadsafe(self._process_stdin(line), self._ioloop)
+                asyncio.run_coroutine_threadsafe(
+                    self._process_stdin(line.strip()), self._ioloop)
         except OSError:
             pass
         self._ioloop.call_soon_threadsafe(self.stop)
 
     async def _process_stdin(self, line):
-
         match = Server.ETRON_RESP_REGEX.match(line)
-
         if match:
-            id = match.group(2)
+            req_id = match.group(2)
             for request in self._etron_reqs:
-                if request['id'] == id:
+                if request['id'] == req_id:
                     if match.group(3) == '1':
                         request['waiting'].set_result(match.group(4))
                     else:
@@ -658,22 +658,16 @@ class Server:
                     return
 
         match = Server.ETRON_NOTF_REGEX.match(line)
-
         if match:
-            notification_type = match.group(1)
-            notification_message = match.group(2)
-            if notification_type == 'update':
-                self._session.set_update_status(notification_message)
+            if match.group(1) == 'update':
+                self._session.set_update_status(match.group(2))
             return
 
         if line.startswith('install: ') or line.startswith('install-and-quit: '):
             if line.startswith('install: '):
-                path = line[9:]
-                quit = False
+                path, quit_after = line[9:], False
             else:
-                path = line[18:]
-                quit = True
-
+                path, quit_after = line[18:], True
             try:
                 await self._session.restart_engines()
                 await self._session.modules.install_from_file(path, update=True)
@@ -681,8 +675,7 @@ class Server:
             except Exception:
                 import traceback
                 print(traceback.format_exc())
-
-            if quit:
+            if quit_after:
                 self.stop()
         else:
             sys.stderr.write(line)
@@ -700,275 +693,171 @@ class Server:
             await self._session.wait_ended()
 
     async def _run(self):
-
         client_path = conf.get('client_path')
-
-        i18n_path = conf.get('i18n_path', None)
-        if i18n_path is None:
-            i18n_path = os.path.join(conf.get('home'), 'i18n', 'json')
+        i18n_path = conf.get('i18n_path') or os.path.join(conf.get('home'), 'i18n', 'json')
 
         session_path = os.path.join(self._spool_path, self._session_id)
         os.makedirs(session_path)
 
         self._session = Session(self._spool_path, self._session_id)
         self._session.set_update_request_handler(self._set_update_status)
-        # self._session.add_session_listener(self._session_event)
-
         await self._session.start()
 
         assets_path = os.path.join(client_path, 'assets')
-
-        if conf.get('devel', False):
-            cache_headers = { 'Cache-Control': 'private, no-cache, must-revalidate, max-age=0' }
-        else:
-            cache_headers = { 'Cache-Control': 'private, max-age=60' }
-
-        ping_interval = conf.get('timeout_no_websocket_ping_interval')
-        ping_timeout = conf.get('timeout_no_websocket_ping')
-        if ping_interval:
-            ping_interval = int(ping_interval)
-        if ping_timeout:
-            ping_timeout = int(ping_timeout)
+        cache_headers: dict = (
+            {'Cache-Control': 'private, no-cache, must-revalidate, max-age=0'}
+            if conf.get('devel', False)
+            else {'Cache-Control': 'private, max-age=60'}
+        )
 
         host = conf.get('hostname', '127.0.0.1')
         host_a = conf.get('host_a', host)
-        host_b = conf.get('host_b', host_a if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', host) else f'a.{ host_a }')
-        host_c = conf.get('host_c', host_a if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', host) else f'r.{ host_a }')
+        host_b = conf.get('host_b',
+            host_a if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', host) else f'a.{host_a}')
+        host_c = conf.get('host_c',
+            host_a if re.match(r'[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+', host) else f'r.{host_a}')
 
-        host_a = urlparse(f'//{ host_a }')
-        host_b = urlparse(f'//{ host_b }')
-        host_c = urlparse(f'//{ host_c }')
+        parsed_a = urlparse(f'//{host_a}')
+        parsed_b = urlparse(f'//{host_b}')
+        parsed_c = urlparse(f'//{host_c}')
 
-        path_a = host_a.path.rstrip('/')
-        path_b = host_b.path.rstrip('/')
-        path_c = host_c.path.rstrip('/')
+        path_a = parsed_a.path.rstrip('/')
+        path_b = parsed_b.path.rstrip('/')
+        path_c = parsed_c.path.rstrip('/')
 
-        port_a = host_a.port
-        port_b = host_b.port
-        port_c = host_c.port
+        port_a = parsed_a.port or 0
+        port_b = parsed_b.port or 0
+        port_c = parsed_c.port or 0
 
-        host_a = host_a.hostname
-        host_b = host_b.hostname
-        host_c = host_c.hostname
-
-        roots = [ ]
+        host_a = parsed_a.hostname
+        host_b = parsed_b.hostname
+        host_c = parsed_c.hostname
 
         if host_a != host_b and host_b != host_c:
             separate_by = 'host'
         elif path_a != path_b and path_b != path_c:
             separate_by = 'path'
-            if port_a is None:
+            if port_a == 0:
                 port_a = 80
-        elif port_a is None and port_b is None and port_c is None:
+        elif port_a == 0 and port_b == 0 and port_c == 0:
             separate_by = 'port'
-            port_a = port_b = port_c = 0
         elif port_a != port_b and port_b != port_c:
             separate_by = 'port'
         else:
-            raise ValueError
+            raise ValueError('cannot determine separation mode for hosts/ports')
 
-        self._main_app = tornado.web.Application(
-            websocket_ping_interval=ping_interval,
-            websocket_ping_timeout=ping_timeout)
+        handlers = _Handlers(self._session, client_path, assets_path, i18n_path,
+                             self._dev_server, cache_headers, self)
 
-        if separate_by == 'port':
-            self._analysisui_app = tornado.web.Application()
-            self._resultsview_app = tornado.web.Application()
-        else:
-            self._analysisui_app = self._main_app
-            self._resultsview_app = self._main_app
-
-        match_a = re.escape(host_a) if host_a else '.*'
-        match_b = re.escape(host_b) if host_b else '.*'
-        match_c = re.escape(host_c) if host_c else '.*'
-
-        self._main_app.add_handlers(match_a, [
-            (fr'{ path_a }/', EntryHandler, { 'session': self._session }),
-            (fr'{ path_a }/config.js', ConfigJSHandler, { 'roots': roots }),
-            (fr'{ path_a }/open', OpenHandler, { 'session': self._session }),
-            (fr'{ path_a }/settings', SettingsHandler, { 'session': self._session }),
-            (fr'{ path_a }/end', EndHandler, { 'session': self._session }),
-            (fr'{ path_a }/version', VersionHandler),
-            (fr'{ path_a }/([a-f0-9-]+)/open', OpenHandler, { 'session': self._session }),
-            (fr'{ path_a }/([a-f0-9-]+)/save', SaveHandler, { 'session': self._session }),
-            (fr'{ path_a }/([a-f0-9-]+)/coms', ClientConnection, { 'session': self._session }),
-            (fr'{ path_a }/([a-f0-9-]+/dl/.*)', DownloadFileHandler, { 'path': self._session.session_path }),
-            (fr'{ path_a }/modules/([0-9a-zA-Z]+)', ModuleDescriptor, { 'session': self._session }),
-            (fr'{ path_a }/modules/([0-9a-zA-Z]+)/i18n/([^/.]+)', ModuleI18nDescriptor, { 'session': self._session }),
-            (fr'{ path_a }/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)/([.0-9a-zA-Z]+)', AnalysisDescriptor, { 'session': self._session }),
-            (fr'{ path_a }/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)()', AnalysisDescriptor, { 'session': self._session }),
-            (fr'{ path_a }/utils/to-pdf', PDFConverter, { 'pdfservice': self }),
-            (fr'{ path_a }/api/datasets', DatasetsList, { 'session': self._session }),
-            (fr'{ path_a }/i18n/', I18nManifestHandler, {
-                'session': self._session,
-                'path': f'{ i18n_path }/manifest.json' }),
-            (fr'{ path_a }/i18n/(.+)', StaticFileHandler, { 'path': i18n_path }),
-        ])
+        main_app = web.Application()
+        handlers.add_main_routes(main_app.router)
 
         try:
             from .extras import get_extra_handlers
-            extra_handlers = get_extra_handlers()
-            for h_path, handler in extra_handlers:
-                h_path = f'{ path_a }{ h_path }'
-                self._main_app.add_handlers(match_a, [ (h_path, handler, { 'session': self._session }) ])
+            for h_path, handler in get_extra_handlers(self._session):
+                main_app.router.add_route('*', h_path, handler)
         except ImportError:
             pass
 
-        if self._dev_server:
-            self._main_app.add_handlers(match_a, [
-                (fr'{ path_a }/(@vite/client)', ForwardHandler, {
-                    'base_url': self._dev_server }),
-                (fr'{ path_a }/[a-f0-9-]+/(.*)', ForwardHandler, {
-                    'base_url': self._dev_server }),
-                (fr'{ path_a }/(.*)', ForwardHandler, {
-                    'base_url': self._dev_server }),
-            ])
-        else:
-            self._main_app.add_handlers(match_a, [
-                (fr'{ path_a }/assets/(.*)', StaticFileHandler, {
-                    'path': assets_path }),
-                (fr'{ path_a }/[a-f0-9-]+/()', StaticFileHandler, {
-                    'path': client_path,
-                    'default_filename': 'index.html',
-                    'extra_headers': cache_headers }),
-                (fr'{ path_a }/([-0-9a-z.]*)', StaticFileHandler, {
-                    'path': client_path,
-                    'extra_headers': cache_headers })
-            ])
+        analysisui_app = web.Application()
+        handlers.add_analysisui_routes(analysisui_app.router)
 
-        if self._dev_server:
+        resultsview_app = web.Application()
+        handlers.add_resultsview_routes(resultsview_app.router)
 
-            self._analysisui_app.add_handlers(match_b, [
-                (fr'{ path_b }/', VersionHandler),  # send back garbage to abort the vite web socket
-                (fr'{ path_b }/[a-f0-9-]+/(.*)', ForwardHandler, {
-                    'base_url': self._dev_server, 'default_filename': 'analysisui.html' }),
-                (fr'{ path_b }/(.*)', ForwardHandler, {
-                    'base_url': self._dev_server }),
-            ])
-
-            self._resultsview_app.add_handlers(match_c, [
-                (fr'{ path_c }/', VersionHandler),  # send back garbage to abort the vite web socket
-                (fr'{ path_c }/([-0-9a-z]+)/[0-9]+/res/(.+)', ResourceHandler, {
-                    'session': self._session }),
-                (fr'{ path_c }/([-0-9a-z]+)/([0-9]+)/module/(.+)',
-                    ModuleAssetHandler, { 'session': self._session }),
-                (fr'{ path_c }/[a-f0-9-]+/[0-9]+/(.*)', ForwardHandler, {
-                    'base_url': self._dev_server, 'default_filename': 'resultsview.html' }),
-                (fr'{ path_c }/(.*)', ForwardHandler, {
-                    'base_url': self._dev_server }),
-            ])
-
-        else:
-            analysisui_path = os.path.join(client_path, 'analysisui.html')
-            self._analysisui_app.add_handlers(match_b, [
-                (fr'{ path_b }/[-0-9a-f]+/', SingleFileHandler, {
-                    'path': analysisui_path,
-                    'extra_headers': cache_headers }),
-                (fr'{ path_b }/assets/(.*)', StaticFileHandler, {
-                    'path': assets_path }),
-                (fr'{ path_b }/([-.0-9a-zA-Z]+)', StaticFileHandler, {
-                    'path': client_path,
-                    'extra_headers': cache_headers }),
-            ])
-
-            resultsview_path = os.path.join(client_path, 'resultsview.html')
-            self._resultsview_app.add_handlers(match_c, [
-                (fr'{ path_c }/[-0-9a-z]+/[0-9]+/', SingleFileHandler, {
-                    'path': resultsview_path,
-                    'extra_headers': cache_headers }),
-                (fr'{ path_c }/assets/(.*)', StaticFileHandler, {
-                    'path': assets_path }),
-                (fr'{ path_c }/([-.0-9a-zA-Z]+)', StaticFileHandler, {
-                    'path': client_path,
-                    'extra_headers': cache_headers }),
-                (fr'{ path_c }/([-0-9a-z]+)/[0-9]+/res/(.+)', ResourceHandler, {
-                    'session': self._session }),
-                (fr'{ path_c }/([-0-9a-z]+)/([0-9]+)/module/(.+)',
-                    ModuleAssetHandler, { 'session': self._session }),
-            ])
-
-        sockets = tornado.netutil.bind_sockets(port_a, self._host)
-        server = tornado.httpserver.HTTPServer(self._main_app)
-        server.add_sockets(sockets)
-        port_a = sockets[0].getsockname()[1]
+        runners: list[web.AppRunner] = []
 
         if separate_by == 'port':
-            sockets = tornado.netutil.bind_sockets(port_b, self._host)
-            server = tornado.httpserver.HTTPServer(self._analysisui_app)
-            server.add_sockets(sockets)
-            port_b = sockets[0].getsockname()[1]
+            for app, p in ((main_app, port_a), (analysisui_app, port_b),
+                           (resultsview_app, port_c)):
+                r = web.AppRunner(app)
+                await r.setup()
+                runners.append(r)
+                await web.TCPSite(r, self._host, p).start()
+            port_a = int(runners[0].addresses[0][1])
+            port_b = int(runners[1].addresses[0][1])
+            port_c = int(runners[2].addresses[0][1])
 
-            sockets = tornado.netutil.bind_sockets(port_c, self._host)
-            server = tornado.httpserver.HTTPServer(self._resultsview_app)
-            server.add_sockets(sockets)
-            port_c = sockets[0].getsockname()[1]
-        else:
-            port_c = port_b = port_a
+        elif separate_by == 'path':
+            root_app = web.Application()
+            root_app.add_subapp(path_a + '/', main_app)
+            root_app.add_subapp(path_b + '/', analysisui_app)
+            root_app.add_subapp(path_c + '/', resultsview_app)
+            runner = web.AppRunner(root_app)
+            await runner.setup()
+            runners.append(runner)
+            await web.TCPSite(runner, self._host, port_a).start()
+            port_a = port_b = port_c = int(runner.addresses[0][1])
 
+        else:  # separate_by == 'host'
+            dispatch_app = web.Application(middlewares=[
+                _make_host_dispatch_middleware({
+                    host_a: main_app,
+                    host_b: analysisui_app,
+                    host_c: resultsview_app,
+                })
+            ])
+            runner = web.AppRunner(dispatch_app)
+            await runner.setup()
+            runners.append(runner)
+            await web.TCPSite(runner, self._host, port_a).start()
+            port_a = port_b = port_c = int(runner.addresses[0][1])
+
+        roots = self._roots
         if host_a is not None:
             if separate_by == 'port':
-                hosts = f'{ host_a }:{ port_a } { host_b }:{ port_b } { host_c }:{ port_c }'
-                roots[:] = (f'{ host_a }:{ port_a }', f'{ host_b }:{ port_b }', f'{ host_c }:{ port_c }')
+                hosts = f'{host_a}:{port_a} {host_b}:{port_b} {host_c}:{port_c}'
+                roots[:] = (f'{host_a}:{port_a}', f'{host_b}:{port_b}', f'{host_c}:{port_c}')
             elif separate_by == 'path':
                 if port_a != 80:
-                    hosts = f'{ host_a }:{ port_a }'
-                    roots[:] = (f'{ host_a }:{ port_a }{ path_a }', f'{ host_b }:{ port_b }{ path_b }', f'{ host_c }:{ port_c }{ path_c }')
+                    hosts = f'{host_a}:{port_a}'
+                    roots[:] = (f'{host_a}:{port_a}{path_a}',
+                                f'{host_b}:{port_b}{path_b}',
+                                f'{host_c}:{port_c}{path_c}')
                 else:
-                    hosts = f'{ host_a }'
-                    roots[:] = (f'{ host_a }{ path_a }', f'{ host_b }{ path_b }', f'{ host_c }{ path_c }')
-            else:  # separate_by == 'host':
+                    hosts = host_a
+                    roots[:] = (f'{host_a}{path_a}', f'{host_b}{path_b}', f'{host_c}{path_c}')
+            else:  # host
                 if port_a != 80:
-                    hosts = f'{ host_a }:{ port_a } { host_b }:{ port_b } { host_c }:{ port_c }'
-                    roots[:] = (f'{ host_a }:{ port_a }', f'{ host_b }:{ port_b }', f'{ host_c }:{ port_c }')
+                    hosts = f'{host_a}:{port_a} {host_b}:{port_b} {host_c}:{port_c}'
+                    roots[:] = (f'{host_a}:{port_a}', f'{host_b}:{port_b}', f'{host_c}:{port_c}')
                 else:
-                    hosts = f'{ host_a } { host_b } { host_c }'
+                    hosts = f'{host_a} {host_b} {host_c}'
                     roots[:] = (host_a, host_b, host_c)
 
-            # now we have the port numbers, we can add CSP
-            cache_headers[ 'Content-Security-Policy' ] = f'''
-                default-src 'self';
-                font-src 'self' data:;
-                img-src 'self' data:;
-                script-src  'self' 'unsafe-eval' 'unsafe-inline';
-                style-src 'self' 'unsafe-inline';
-                frame-src 'self' { hosts } https://www.jamovi.org;
-                connect-src 'self' data:;
-            '''.replace('\n', '')
+            cache_headers['Content-Security-Policy'] = (
+                f"default-src 'self';"
+                f" font-src 'self' data:;"
+                f" img-src 'self' data:;"
+                f" script-src 'self' 'unsafe-eval' 'unsafe-inline';"
+                f" style-src 'self' 'unsafe-inline';"
+                f" frame-src 'self' {hosts} https://www.jamovi.org;"
+                f" connect-src 'self' data:;"
+            )
 
-            log.info(f'listening across origin(s): { hosts }')
+            log.info('listening across origin(s): %s', hosts)
             if access_key_generated:
-                log.info(f'jamovi accessible from: { roots[0] }/?access_key={ access_key }')
+                log.info('jamovi accessible from: %s/?access_key=%s', roots[0], access_key)
 
         self.ports_opened.set_result((port_a, port_b, port_c, access_key))
 
-        # write the port no. to a file, so external software can
-        # find out what port jamovi is running on
         app_data = Dirs.app_data_dir()
-        port_name = f'{ port_a }.port'
+        port_name = f'{port_a}.port'
         self._port_file = os.path.join(app_data, port_name)
-        with open(self._port_file, 'w'):
+        with open(self._port_file, 'w', encoding='utf-8'):
             pass
-
         for entry in os.scandir(app_data):
-            if entry.name == port_name:
-                continue
-            if entry.name.endswith('.port') and entry.is_file():
+            if entry.name != port_name and entry.name.endswith('.port') and entry.is_file():
                 os.remove(entry.path)
 
         try:
             await self._session.wait_ended()
         finally:
+            for runner in runners:
+                await runner.cleanup()
             try:
                 os.remove(self._port_file)
-            except Exception:
+            except OSError:
                 pass
-
             rmtree(session_path, ignore_errors=True)
 
-    def _session_event(self, event):
-        if event.type == SessionEvent.Type.INSTANCE_STARTED:
-            sys.stdout.write('%s %s\n' % ('instance_started', event.instance_id))
-            sys.stdout.flush()
-        elif event.type == SessionEvent.Type.INSTANCE_ENDED:
-            sys.stdout.write('%s %s\n' % ('instance_ended', event.instance_id))
-            sys.stdout.flush()
