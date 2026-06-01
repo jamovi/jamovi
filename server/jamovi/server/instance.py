@@ -68,7 +68,6 @@ EURO_REGEX = re.compile(r'^\d+,\d+$')
 
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.INFO)
 
 class ForbiddenOp(PermissionError):
     def __init__(self, operation, message):
@@ -110,6 +109,9 @@ class Instance:
         self._idle_since = now
         self._no_connection_since = now
         self._no_connection_unclean_disconnect = False
+        self._last_autosaved = now
+        self._autosaving = False
+        self._edit_started: float | None = None
 
         self._data.analyses.add_results_changed_listener(self._on_results)
         self._data.analyses.add_output_received_listener(self._on_output_received)
@@ -697,6 +699,23 @@ class Instance:
         stream = ProgressStream()
         create_task(self._save(options, stream))
         return stream
+
+    def needs_autosave(self) -> bool:
+        return (self._data.is_edited
+                and not self._data.is_blank
+                and self._data.path != ''
+                and self._data.save_format == 'jamovi')
+
+    async def autosave(self):
+        if self._autosaving or not self.needs_autosave():
+            return
+        self._autosaving = True
+        try:
+            await self.save({'path': self._data.path, 'overwrite': True})
+            self._last_autosaved = monotonic()
+            log.info('autosaved: %s', self._data.title[:16])
+        finally:
+            self._autosaving = False
 
     async def _save(self, options, return_stream):
 
