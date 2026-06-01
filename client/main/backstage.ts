@@ -23,6 +23,7 @@ import { IOpenOptions, ISaveOptions, IImportOptions, IBrowseOptions } from './ba
 import { FSEntryListModel, FSEntryListView, FSItemType } from './backstage/fsentry';
 
 import type { WDType, BackstagePanelView } from './backstage/fsentry';
+import type { IPlace } from './backstage/types';
 
 import { FSEntryBrowserView } from './backstage/fsentrybrowserview';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
@@ -32,20 +33,11 @@ function isUrl(s) {
     return s.startsWith('https://') || s.startsWith('http://');
 }
 
-import { OneDriveView } from './backstage/onedrive';
+import { extras } from './backstage/extras';
 import { EventMap, EventDistributor } from '../common/eventmap';
 import { IBackstageSupport } from './instance';
 import SelectionLoop from '../common/selectionloop';
 
-interface IPlace {
-    name: string,
-    title: string,
-    shortcutKey: string,
-    model?: FSEntryListModel,
-    view?: BackstagePanelView,
-    action?: () => any;
-    separator?: boolean;
-}
 
 interface IOp {
     name: string,
@@ -91,9 +83,6 @@ export class BackstageModel extends EventMap<IBackstageModel> {
     _pcExportListModel: FSEntryListModel;
     _deviceExportListModel: FSEntryListModel;
     _dialogExportListModel: FSEntryListModel;
-    _oneDriveOpenModel: FSEntryListModel;
-    _oneDriveSaveModel: FSEntryListModel;
-
     _savePromiseResolve: () => void
     _dialogPath: string;
     _opHasChanged: boolean;
@@ -203,8 +192,8 @@ export class BackstageModel extends EventMap<IBackstageModel> {
         this._deviceSaveListModel.fileExtensions = [ { extensions: ['omv'], description: _('jamovi file {ext}', { ext: '(.omv)' }) } ];
         this._deviceSaveListModel.on('dataSetOpenRequested', this.tryOpen, this);
 
-        if (OneDriveView)
-            // for now the defined-ness of OneDriveView indicates the cloud version
+        const mode = this.instance.settings().getSetting('mode', 'normal');
+        if (mode === 'cloud')
             this._deviceSaveListModel.on('dataSetSaveRequested', this.tryExport, this);
         else
             this._deviceSaveListModel.on('dataSetSaveRequested', this.trySave, this);
@@ -270,37 +259,7 @@ export class BackstageModel extends EventMap<IBackstageModel> {
         this._dialogExportListModel.on('browseRequested', this.dialogBrowse, this);
         this.addToWorkingDirData(this._dialogExportListModel);
 
-        if (OneDriveView) {
-            this._oneDriveOpenModel = new FSEntryListModel();
-            this._oneDriveOpenModel.clickProcess = 'open';
-            this._oneDriveOpenModel.attributes.wdType = 'onedrive';
-            this._oneDriveOpenModel.attributes.extensions = false;
-            this._oneDriveOpenModel.on('dataSetOpenRequested', this.tryOpen, this);
-            this._oneDriveOpenModel.on('cancel', () => { this.set('activated', false); });
-            this._oneDriveOpenModel.fileExtensions = [
-                '.omv', '.omt', '.csv', '.tsv', '.txt', '.json', '.ods', '.xlsx', '.sav', '.zsav', '.por',
-                '.rdata', '.rds', '.dta', '.sas7bdat', '.xpt', '.jasp'];
-
-            this._oneDriveSaveModel = new FSEntryListModel();
-            this._oneDriveSaveModel.clickProcess = 'save';
-            this._oneDriveSaveModel.attributes.wdType = 'onedrive';
-            this._oneDriveSaveModel.attributes.extensions = false;
-            this._oneDriveSaveModel.fileExtensions = [ { extensions: ['omv'], description: _('jamovi file {ext}', { ext: '(.omv)' }) } ];
-            this._oneDriveSaveModel.on('dataSetSaveRequested', this.trySave, this);
-            this._oneDriveOpenModel.on('cancel', () => { this.set('activated', false); });
-            this._oneDriveSaveModel.fileExtensions = [];
-
-            this._oneDriveSaveModel.on('change:suggestedPath', event => {
-                let dirPath = this._oneDriveSaveModel.get('suggestedPath');
-                this.instance.settings().setSetting('onedriveWorkingDir', dirPath);
-                this._oneDriveOpenModel.set('suggestedPath', dirPath);
-            });
-            this.instance.settings().on('change:onedriveWorkingDir', (event) => {
-                this._oneDriveSaveModel.set('suggestedPath', this.instance.settings().getSetting('onedriveWorkingDir', ''));
-            });
-
-        }
-
+        extras.init(this);
 
         this._savePromiseResolve = null;
 
@@ -422,7 +381,7 @@ export class BackstageModel extends EventMap<IBackstageModel> {
                     title: _('Open'),
                     shortcutKey: 'o',
                     places: [
-                        ...OneDriveView ? [{ name: 'onedrive', title: _('One Drive'), shortcutKey: 'o', model: this._oneDriveOpenModel, view: new OneDriveView(this._oneDriveOpenModel), }] : [],
+                        ...extras.getOpenPlaces(),
                         { name: 'examples', title: _('Data Library'), shortcutKey: 'l', model: this._examplesListModel, view: new FSEntryBrowserView(this._examplesListModel) },
                         { name: 'thisdevice', title: _('This Device'), shortcutKey: 'd', action: () => { this.tryBrowse({ list: this._pcListModel.fileExtensions, type: 'open' }); } },
                     ]
@@ -456,12 +415,7 @@ export class BackstageModel extends EventMap<IBackstageModel> {
                     title: _('Save As'),
                     shortcutKey: 'a',
                     places: [
-                        ...OneDriveView ? [{
-                            name: 'onedrive', title: _('One Drive'), shortcutKey: 'o', model: this._oneDriveSaveModel, view: new OneDriveView(this._oneDriveSaveModel),
-                            action: () => {
-                                this._oneDriveSaveModel.set('suggestedTitle', this.instance.get('title') + '.omv');
-                            }
-                        }] : [],
+                        ...extras.getSaveAsPlaces(),
                         {
                             name: 'thisdevice', title: _('Download'), shortcutKey: 'd', model: this._deviceSaveListModel, view: new FSEntryBrowserView(this._deviceSaveListModel),
                             action: () => {
@@ -1391,7 +1345,8 @@ export class BackstageView  extends EventDistributor {
         }
         this.opPanel.append(opList);
 
-        if ( ! OneDriveView) {
+        const mode = this.model.instance.settings().getSetting('mode', 'normal');
+        if (mode !== 'cloud') {
             this.opPanel.append(HTML.parse('<div class="silky-bs-op-separator"></div>'));
 
             let recentsLabelId = focusLoop.getNextAriaElementId('label');
