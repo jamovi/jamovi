@@ -258,21 +258,17 @@ class Session(dict):
     async def _run_loop(self):
 
         try:
-            TIME_LIMIT = conf.get('time_limit', '')
-            TIME_LIMIT = int(TIME_LIMIT)
-        except Exception:
+            TIME_LIMIT = int(conf.get('time_limit') or '')
+        except ValueError:
             TIME_LIMIT = None
 
         try:
-            TIMEOUT_NC = conf.get('timeout_no_connection', '')
-            TIMEOUT_NC = int(TIMEOUT_NC)
-        except Exception:
+            TIMEOUT_NC = int(conf.get('timeout_no_connection') or '')
+        except ValueError:
             TIMEOUT_NC = 3
-            # if no timeout, default session expiry to off
-            SESSION_EXPIRES = conf.get('session_expires', '0')
+            SESSION_EXPIRES = conf.get('session_expires', '0')  # default off without timeout
         else:
-            # if timeout, default session expiry to on
-            SESSION_EXPIRES = conf.get('session_expires', '1')
+            SESSION_EXPIRES = conf.get('session_expires', '1')  # default on with timeout
 
         SESSION_EXPIRES = (SESSION_EXPIRES != '0')
 
@@ -288,34 +284,38 @@ class Session(dict):
             return False
 
         try:
-            TIMEOUT_NC_UNCLEAN = conf.get('timeout_no_connection_unclean_disconnect', '')
-            TIMEOUT_NC_UNCLEAN = int(TIMEOUT_NC_UNCLEAN)
-        except Exception:
-            # we use inf with electron, because it disconnects uncleanly
-            # when the computer goes to sleep. this lets it resume the
-            # connection when it awakes without it being gc'ed
+            TIMEOUT_NC_UNCLEAN = int(conf.get('timeout_no_connection_unclean_disconnect') or '')
+        except ValueError:
+            # inf with electron: it disconnects uncleanly on sleep, and resumes on wake
             TIMEOUT_NC_UNCLEAN = float('inf')
 
         try:
-            TIMEOUT_NC_VIRGIN = conf.get('timeout_no_connection_virgin', '')
-            TIMEOUT_NC_VIRGIN = int(TIMEOUT_NC_VIRGIN)
-        except Exception:
+            TIMEOUT_NC_VIRGIN = int(conf.get('timeout_no_connection_virgin') or '')
+        except ValueError:
             TIMEOUT_NC_VIRGIN = TIMEOUT_NC_UNCLEAN
 
         if TIMEOUT_NC_UNCLEAN < TIMEOUT_NC:
             TIMEOUT_NC_UNCLEAN = TIMEOUT_NC
 
         try:
-            TIMEOUT_IDLE = conf.get('timeout_idle', '')
-            TIMEOUT_IDLE = float(TIMEOUT_IDLE)
-        except Exception:
+            TIMEOUT_IDLE = float(conf.get('timeout_idle') or '')
+        except ValueError:
             TIMEOUT_IDLE = 0
 
         try:
-            TIMEOUT_IDLE_NOTICE = conf.get('timeout_idle_notice', '')
-            TIMEOUT_IDLE_NOTICE = float(TIMEOUT_IDLE_NOTICE)
-        except Exception:
+            TIMEOUT_IDLE_NOTICE = float(conf.get('timeout_idle_notice') or '')
+        except ValueError:
             TIMEOUT_IDLE_NOTICE = 300
+
+        try:
+            AUTOSAVE_IDLE = int(conf.get('autosave_idle') or '')
+        except ValueError:
+            AUTOSAVE_IDLE = None
+
+        try:
+            AUTOSAVE_ACTIVE = int(conf.get('autosave_active') or '')
+        except ValueError:
+            AUTOSAVE_ACTIVE = None
 
         now = monotonic()
 
@@ -326,6 +326,7 @@ class Session(dict):
         idle_warning_since = None
         last_idle_warning = None
         last_time_limit_warning = None
+        session_expiry_prevented = False
 
         self._running = True
 
@@ -366,6 +367,10 @@ class Session(dict):
                                 or (status.virgin is True and no_conn_for > TIMEOUT_NC_VIRGIN)
                                 or (status.virgin is False and status.unclean is False and no_conn_for > TIMEOUT_NC)):
 
+                            try:
+                                await instance.autosave()
+                            except Exception as e:
+                                log.exception(e)
                             self._notify_session_event(SessionEvent.Type.INSTANCE_ENDED, id)
                             instance.close()
                             del self[id]
@@ -374,10 +379,29 @@ class Session(dict):
                         session_no_connection_since = now
                         session_no_connection_unclean = False
 
+                    idle_for = now - idle_since
+                    if instance.needs_autosave():
+                        if instance._edit_started is None:
+                            instance._edit_started = now
+                        since_edit = now - instance._edit_started
+                        idle_trigger = AUTOSAVE_IDLE is not None and idle_for > AUTOSAVE_IDLE
+                        active_trigger = AUTOSAVE_ACTIVE is not None and since_edit > AUTOSAVE_ACTIVE
+                        if idle_trigger or active_trigger:
+                            try:
+                                await instance.autosave()
+                            except Exception as e:
+                                log.exception(e)
+                    else:
+                        instance._edit_started = None
+
                 if SESSION_EXPIRES_PREVENT_PATH:
-                    if prevent_session_expiry(SESSION_EXPIRES_PREVENT_PATH):
+                    expiry_prevented = prevent_session_expiry(SESSION_EXPIRES_PREVENT_PATH)
+                    if expiry_prevented:
                         session_no_connection_since = now
                         session_idle_since = now
+                    elif session_expiry_prevented:
+                        log.info('session is active (will expire)')
+                    session_expiry_prevented = expiry_prevented
 
                 if SESSION_EXPIRES and len(self) == 0:
                     # if there are no instances
@@ -405,7 +429,7 @@ class Session(dict):
                         notif = SessionShutdownIdleNotification(shutdown_in=TIMEOUT_IDLE - idle_for)
                         self._notify(notif)
                         last_idle_warning = now
-                    elif now - last_idle_warning > 30:
+                    elif last_idle_warning is not None and now - last_idle_warning > 30:
                         notif = SessionShutdownIdleNotification(shutdown_in=TIMEOUT_IDLE - idle_for)
                         self._notify(notif)
                         last_idle_warning += 30
@@ -426,7 +450,7 @@ class Session(dict):
                         notif = SessionShutdownTimeLimitNotification(shutdown_in=shutdown_in)
                         self._notify(notif)
                         last_time_limit_warning = now
-                    elif now - last_time_limit_warning > 30:
+                    elif last_time_limit_warning is not None and now - last_time_limit_warning > 30:
                         shutdown_in = TIME_LIMIT - (now - session_start_time)
                         notif = SessionShutdownTimeLimitNotification(shutdown_in=shutdown_in)
                         self._notify(notif)
