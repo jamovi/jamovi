@@ -18,7 +18,7 @@ if not sys.executable.endswith('pythonw.exe'):
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(formatter)
     log.addHandler(handler)
-    log.setLevel(logging.INFO)
+    log.setLevel(logging.DEBUG if conf.get('debug') else logging.INFO)
 
 
 mem_limit = conf.get('memory_limit_session', None)
@@ -28,8 +28,8 @@ if mem_limit:
         try:
             limit = int(mem_limit) * 1024 * 1024  # Mb
             resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
-        except ValueError:
-            raise ValueError('memory_limit_session: bad value')
+        except ValueError as e:
+            raise ValueError('memory_limit_session: bad value') from e
         log.info('Applying session memory limit %s Mb', mem_limit)
     else:
         raise ValueError('memory_limit_session is unavailable on systems other than linux')
@@ -43,8 +43,8 @@ async def main():  # run down below()
 
     try:
         port = int(sys.argv[1])
-    except Exception:
-        port = 1337
+    except (IndexError, ValueError):
+        port = 41337
 
     session_id = conf.get('session_id', None)
 
@@ -53,13 +53,16 @@ async def main():  # run down below()
     start_wb = '--start-wb' in sys.argv
 
     conf.set('devel', '--devel' in sys.argv)
-    conf.set('debug', '--debug' in sys.argv)
+    conf.set('debug', debug)
+
+    if debug:
+        log.setLevel(logging.DEBUG)
 
     if '--if=*' in sys.argv:
-        host = ''
+        bind_host = ''
     else:
-        host = '127.0.0.1'
-    
+        bind_host = '127.0.0.1'
+
     dev_server = conf.get('dev_server')
 
     for arg in sys.argv:
@@ -85,14 +88,13 @@ async def main():  # run down below()
             conn = HTTPConnection('127.0.0.1', port, .2)
             conn.request('GET', '/version')
             res = conn.getresponse()
-            already_running = (res.status == 200)
-        except Exception:
+            already_running = res.status == 200
+        except OSError:
             already_running = False
 
     if not already_running:
         server = Server(
-            port,
-            host=host,
+            bind_host=bind_host,
             session_id=session_id,
             stdin_slave=stdin_slave,
             debug=debug,
@@ -101,17 +103,18 @@ async def main():  # run down below()
         server.start()
         signal.signal(signal.SIGTERM, lambda _, __: server.stop())
 
-        ports = await server.ports_opened
+        port_a, port_b, port_c, access_key = await server.ports_opened
+        sys.stdout.write(f'ports: {port_a}, {port_b}, {port_c}, access_key: {access_key}\n')
     else:
         sys.stdout.write('server already running\n')
-        ports = (port, port + 1, port + 2)
+        port_a, port_b, port_c = port, port + 1, port + 2
+        sys.stdout.write(f'ports: {port_a}, {port_b}, {port_c}\n')
 
-    sys.stdout.write(f'ports: { ports[0] }, { ports[1] }, { ports[2] }, access_key: { ports[3] }\n')
     sys.stdout.flush()
 
     if start_wb:
         print('starting web browser')
-        webbrowser.open('http://127.0.0.1:' + str(ports[0]))
+        webbrowser.open('http://127.0.0.1:' + str(port_a))
 
     if not already_running:
         await server.wait_ended()
