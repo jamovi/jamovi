@@ -13,7 +13,7 @@ export enum FSItemType {
     SpecialFolder = 3
 };
 
-export type WDType  = 'main' | 'thispc' | 'examples' | 'temp' | 'onedrive'
+export type WDType = string;
 
 export interface IOpenOptions extends IInstanceOpenOptions {
     type?: FSItemType;
