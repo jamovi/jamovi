@@ -82,7 +82,7 @@ theme_default <- function(base_size = 16, scale = 'none', palette = 'jmv') {
         baseTheme(base_size),
         ggplot2::theme(
             panel.background=ggplot2::element_rect(fill='transparent', color=NA),
-            axis.line = ggplot2::element_line(size = .5, colour = "#333333"),
+            axis.line = ggplot2::element_line(linewidth = .5, colour = "#333333"),
             legend.key = ggplot2::element_blank(),
             panel.grid.major = ggplot2::element_blank(),
             panel.grid.minor = ggplot2::element_blank(),
