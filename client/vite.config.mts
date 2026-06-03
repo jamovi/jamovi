@@ -26,6 +26,7 @@ export default defineConfig(({ command, mode, ssrBuild }) => {
       }
     },
     server: {
+      allowedHosts: ['vite'],
       watch: {
         usePolling: true,
       },
