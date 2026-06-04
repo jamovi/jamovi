@@ -4,7 +4,7 @@
 import RibbonMenu from './ribbonmenu';
 import RibbonTab, { RibbonItem } from './ribbontab';
 import Placeholder from './placeholder';
-import focusLoop from '../../common/focusloop';
+import interactionManager from '../../common/interactionmanager';
 
 import Store from '../store';
 import { Modules } from '../modules';
@@ -99,7 +99,7 @@ export class AnalyseTab extends RibbonTab {
             }
         }
 
-        let buttonId = focusLoop.getNextAriaElementId('button');
+        let buttonId = interactionManager.nextAriaId('button');
         let  button = new RibbonMenu(_('Modules'), 'modules', 'M', [
             { name : 'modules', title : _('jamovi library'), ns : 'app' },
             { name : 'manageMods', title : _('Manage installed'), ns : 'app' },
@@ -169,9 +169,9 @@ export class AnalyseTab extends RibbonTab {
                 flattened = items.concat(flattened);
             }
 
-            let shortcutKey = menu.ns === 'jmv' ?  (shortcutIndex++).toString() : null;
-            let buttonId2 = focusLoop.getNextAriaElementId('button');
-            let button = new RibbonMenu(menu._title, groupName, shortcutKey, flattened, false, containsNew);
+            let keyTipKey = menu.ns === 'jmv' ?  (shortcutIndex++).toString() : null;
+            let buttonId2 = interactionManager.nextAriaId('button');
+            let button = new RibbonMenu(menu._title, groupName, keyTipKey, flattened, false, containsNew);
             button.setAttribute('id', buttonId2);
             this.buttons.push(button);
         }

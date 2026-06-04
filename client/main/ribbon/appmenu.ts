@@ -4,7 +4,7 @@
 import { EventDistributor } from "../../common/eventmap";
 
 import I18ns from '../../common/i18n';
-import focusLoop from '../../common/focusloop';
+import interactionManager, { type FocusLoop } from '../../common/interactionmanager';
 import host from '../host';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 import { RibbonModel } from "../ribbon";
@@ -25,6 +25,7 @@ export class AppMenuButton extends EventDistributor {
     $devModeCheck: HTMLInputElement;
     $languageList: HTMLSelectElement;
     model: RibbonModel;
+    loop: FocusLoop;
 
     constructor(model: RibbonModel) {
         super();
@@ -35,7 +36,7 @@ export class AppMenuButton extends EventDistributor {
         this.setAttribute('tabindex', '0');
 
         this.addEventListener('keydown', (event) => {
-            if (event.code === 'Enter' || event.code === 'Space')
+            if (event.target === this && (event.code === 'Enter' || event.code === 'Space'))
                 this.toggleMenu(false);
         });
 
@@ -49,14 +50,17 @@ export class AppMenuButton extends EventDistributor {
         let $positioner = HTML.parse('<div class="jmv-ribbon-appmenu-positioner"></div>');
         this.append($positioner);
 
-        let menuId = focusLoop.getNextAriaElementId('menu');
+        let menuId = interactionManager.nextAriaId('menu');
         this.$menuPanel = HTML.parse(`<div id="${menuId}" class="jmv-ribbon-appmenu-menu-panel" tabindex="-1" role="grid" aria-label="Application preferences" aria-modal="true"></div>`);
         $positioner.append(this.$menuPanel);
 
         let $menu = HTML.parse(`<div class="jmv-ribbon-appmenu-menu"></div>`)
         this.$menuPanel.append($menu);
 
-        focusLoop.addFocusLoop(this.$menuPanel, { level: 1, closeHandler: this.hide.bind(this), exitSelector: '.jmv-ribbon-appmenu' } );
+        this.loop = interactionManager.registerLoop(this.$menuPanel, { level: 1, exitSelector: '.jmv-ribbon-appmenu' } );
+        this.loop.on('deactivate', () => {
+            this.hide();
+        });
 
         this.addEventListener('click', event => {
             this.toggleMenu(event.detail > 0);
@@ -68,6 +72,9 @@ export class AppMenuButton extends EventDistributor {
         });
 
         this.$menuPanel.addEventListener('focusout', (event: FocusEvent) => {
+            if (this.isNativeSelectFocusTransition(event))
+                return;
+
             if (event.relatedTarget == null || (event.relatedTarget instanceof Node && ! this.$menuPanel.contains(event.relatedTarget)))
                 this.hide(false);
         });
@@ -82,14 +89,14 @@ export class AppMenuButton extends EventDistributor {
         $back.append(HTML.parse('<div></div>'));
 
         $back.addEventListener('click', event => {
-            focusLoop.leaveFocusLoop(this.$menuPanel, event.detail > 0);
+            this.loop.deactivate({ source: event.detail > 0 ? 'mouse' : 'programmatic' });
             event.stopPropagation();
         });
 
         let $content = HTML.parse('<div class="jmv-ribbon-appmenu-content" role="none"></div>');
         $menu.append($content);
 
-        let zoomId = focusLoop.getNextAriaElementId('label');
+        let zoomId = interactionManager.nextAriaId('label');
         let $zoom = HTML.parse('<div class="jmv-ribbon-appmenu-item jmv-zoom"></div>');
         $content.append($zoom);
         $zoom.append(HTML.parse(`<div id="${zoomId}">${_('Zoom')}</div>`));
@@ -104,12 +111,12 @@ export class AppMenuButton extends EventDistributor {
 
         $content.append(HTML.parse('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
-        let resultsId = focusLoop.getNextAriaElementId('label');
+        let resultsId = interactionManager.nextAriaId('label');
         let $results = HTML.parse(`<div class="jmv-results" role="group" aria-labelledby="${resultsId}"></div>`);
         $content.append($results);
         $results.append(HTML.parse(`<div id="${resultsId}" class="jmv-ribbon-appmenu-subheading">${_('Results')}</div>`));
 
-        let nFormatId = focusLoop.getNextAriaElementId('label');
+        let nFormatId = interactionManager.nextAriaId('label');
         let $nFormat = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
         $results.append($nFormat);
         $nFormat.append(HTML.parse(`<div id="${nFormatId}">${_('Number format')}</div>`));
@@ -118,7 +125,7 @@ export class AppMenuButton extends EventDistributor {
         this.$nFormatList.addEventListener('click', event => event.stopPropagation());
         this.$nFormatList.addEventListener('change', event => this._changeResultsFormat());
 
-        let pFormatId = focusLoop.getNextAriaElementId('label');
+        let pFormatId = interactionManager.nextAriaId('label');
         let $pFormat = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
         $results.append($pFormat);
         $pFormat.append(HTML.parse(`<div id="${pFormatId}">${_('p-value format')}</div>`));
@@ -127,7 +134,7 @@ export class AppMenuButton extends EventDistributor {
         this.$pFormatList.addEventListener('click', event => event.stopPropagation())
         this.$pFormatList.addEventListener('change', event => this._changeResultsFormat());
 
-        let decSymbolId = focusLoop.getNextAriaElementId('label');
+        let decSymbolId = interactionManager.nextAriaId('label');
         let $decSymbol = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
         $results.append($decSymbol);
         $decSymbol.append(HTML.parse(`<div id="${decSymbolId}">${_('Decimal symbol')}</div>`));
@@ -136,7 +143,7 @@ export class AppMenuButton extends EventDistributor {
         this.$decSymbolList.addEventListener('click', event => event.stopPropagation())
         this.$decSymbolList.addEventListener('change', event => this._changeDecSymbol(event.target.value));
 
-        let refsModeId = focusLoop.getNextAriaElementId('label');
+        let refsModeId = interactionManager.nextAriaId('label');
         let $refsMode = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
         $results.append($refsMode);
         $refsMode.append(HTML.parse(`<div id="${refsModeId}">${_('References')}</div>`));
@@ -145,7 +152,7 @@ export class AppMenuButton extends EventDistributor {
         this.$refsModeList.addEventListener('click', event => event.stopPropagation())
         this.$refsModeList.addEventListener('change', event => this._changeRefsMode());
 
-        let syntaxId = focusLoop.getNextAriaElementId('label');
+        let syntaxId = interactionManager.nextAriaId('label');
         let $syntax = HTML.parse('<label class="jmv-ribbon-appmenu-item checkbox" for="syntaxMode"></label>');
         $results.append($syntax);
         $syntax.append(HTML.parse(`<div id="${syntaxId}">${_('Syntax mode')}</div>`));
@@ -154,13 +161,13 @@ export class AppMenuButton extends EventDistributor {
 
         $content.append(HTML.parse('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
-        let plotsId = focusLoop.getNextAriaElementId('label');
+        let plotsId = interactionManager.nextAriaId('label');
         let $plots = HTML.parse(`<div class="jmv-results" role="group" aria-labelledby="${plotsId}"></div>`);
         $content.append($plots);
         $plots.append(HTML.parse(`<div id="${plotsId}" class="jmv-ribbon-appmenu-subheading">${_('Plots')}</div>`));
 
 
-        let themeId = focusLoop.getNextAriaElementId('label');
+        let themeId = interactionManager.nextAriaId('label');
         let $theme = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
         $plots.append($theme);
         $theme.append(HTML.parse(`<div id="${themeId}">${_('Plot theme')}</div>`));
@@ -169,7 +176,7 @@ export class AppMenuButton extends EventDistributor {
         this.$themeList.addEventListener('click', event => event.stopPropagation())
         this.$themeList.addEventListener('change', event => this._changeTheme(this.$themeList.value));
 
-        let paletteId = focusLoop.getNextAriaElementId('label');
+        let paletteId = interactionManager.nextAriaId('label');
         let $palette = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
         $plots.append($palette);
         $palette.append(HTML.parse(`<div id="${paletteId}">${_('Color palette')}</div>`));
@@ -180,7 +187,7 @@ export class AppMenuButton extends EventDistributor {
 
         $content.append(HTML.parse('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
-        let importId = focusLoop.getNextAriaElementId('label');
+        let importId = interactionManager.nextAriaId('label');
         let $import = HTML.parse(`<div class="jmv-results" role="group" aria-labelledby="${importId}"></div>`);
         $content.append($import);
         $import.append(HTML.parse(`<div id="${importId}" class="jmv-ribbon-appmenu-subheading">${_('Import')}</div>`));
@@ -201,7 +208,7 @@ export class AppMenuButton extends EventDistributor {
         //     .on('change', (event) => this.model.settings().setSetting('embedCond', event.target.value));
         $content.append(HTML.parse('<div class="jmv-ribbon-appmenu-separator"></div>'));
 
-        let languageId = focusLoop.getNextAriaElementId('label');
+        let languageId = interactionManager.nextAriaId('label');
         let $language = HTML.parse('<div class="jmv-language-selector jmv-ribbon-appmenu-item"></div>');
         $content.append($language);
         $language.append(HTML.parse(`<div id="${languageId}">${_('Language')}</div>`));
@@ -357,6 +364,10 @@ export class AppMenuButton extends EventDistributor {
         this.$languageList.value = language;
     }
 
+    private isNativeSelectFocusTransition(event: FocusEvent): boolean {
+        return event.target instanceof HTMLSelectElement && event.relatedTarget === null;
+    }
+
     toggleMenu(fromMouse=false) {
         if (this.menuVisible)
             this.hide(fromMouse);
@@ -370,7 +381,7 @@ export class AppMenuButton extends EventDistributor {
         this.menuVisible = true;
         this.$menuPanel.classList.add('activated');
         setTimeout(() => {
-            focusLoop.enterFocusLoop(this.$menuPanel, { withMouse: fromMouse });
+            this.loop.activate({ withMouse: fromMouse });
         }, 200);
     }
 

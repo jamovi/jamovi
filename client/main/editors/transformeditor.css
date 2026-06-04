@@ -200,14 +200,15 @@
 }
 
 .jmv-transform-editor-options > .formula-box .remove-cond {
-    grid-column-start: 2;
+    grid-column-start: 3;
     grid-row-start: 1;
     justify-self: end;
     height: 100%;
-    line-height: inherit;
     align-self: center;
     margin-inline-end: 6px;
     color: #bbbbbb;
+    background-color: transparent;
+    border: none;
 }
 
 .jmv-transform-editor-options > .formula-box .remove-cond span {
@@ -369,7 +370,7 @@
     background-color: transparent;
     border-radius: 4px;
     width: 100%;
-    grid-template-columns: 65% 35%;
+    grid-template-columns: 65% 30% 30px;
     line-height: 2;
 }
 
@@ -415,6 +416,10 @@
     box-sizing: border-box;
     transition: .2s text-indent;
     white-space: pre-wrap;
+}
+
+.jmv-transform-editor-options > .formula-box .formula:empty {
+    white-space: nowrap;
 }
 
 .jmv-transform-editor-options > .formula-box .item-0 .formula {

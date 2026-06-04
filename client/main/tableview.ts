@@ -10,7 +10,7 @@ import keyboardJS from 'keyboardjs';
 import Notify, { NotifyData } from './notification';
 import ContextMenu from './contextmenu';
 import Statusbar from './statusbar/statusbar';
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 import { s6e, contextMenuListener } from '../common/utils';
@@ -349,9 +349,9 @@ class TableView extends HTMLElement implements DataSetView {
 
         this.selection.clearSelectionList();
 
-        focusLoop.on('focusModeChanged', () => {
+        interactionManager.on('modeChanged', () => {
             if (this.$selection) {
-                if (focusLoop.focusMode === 'default')
+                if (interactionManager.getMode() === 'default')
                     this.$selection.classList.add('has-edit-focus');
                 else
                     this.$selection.classList.remove('has-edit-focus');
@@ -1459,7 +1459,7 @@ class TableView extends HTMLElement implements DataSetView {
             this._focusCell.setAttribute('aria-activedescentant', 'gridCellReabable1');
 
             this.$body.append(this._focusRow);
-            focusLoop.setDefaultFocusControl(this._focusCell);
+            interactionManager.setDefaultFocusControl(this._focusCell);
         }
 
         let sel = this.selection;
@@ -1508,7 +1508,7 @@ class TableView extends HTMLElement implements DataSetView {
         let currentReadout = this._focusCell.getAttribute('aria-activedescendant');
         this._focusCell.setAttribute('aria-activedescendant', currentReadout === 'gridCellReabable1' ? 'gridCellReabable2' : 'gridCellReabable1');
 
-        if (focusLoop.focusMode === 'default') {
+        if (interactionManager.getMode() === 'default') {
             if (document.activeElement !== this._focusCell)
                 this._focusCell.focus({preventScroll: true});
         }

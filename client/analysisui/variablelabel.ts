@@ -3,7 +3,7 @@
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
 import { FormatDef, VariableFormat } from './formatdef';
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 export type VariableLabelProperties = GridOptionControlProperties<string> & {
@@ -50,7 +50,7 @@ export class VariableLabel extends OptionControl<VariableLabelProperties> {
         if (displayValue === null)
             displayValue = '';
 
-        this.labelId = focusLoop.getNextAriaElementId('label');
+        this.labelId = interactionManager.nextAriaId('label');
 
         this.label = HTML.parse(`<div id="${this.labelId}" aria-label="${ this.getAriaLabel() }" style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">${ displayValue }</div>`);
         this.icon = HTML.parse('<div class="silky-variable-type-img" style="display: inline-block; overflow: hidden;"></div>');

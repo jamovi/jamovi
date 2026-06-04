@@ -10,7 +10,7 @@ import b64 from '../common/utils/b64';
 import Annotations, { AnnotationAction } from './annotations';
 import Tracker from './itemtracker';
 import I18ns, { I18nData } from '../common/i18n';
-import focusLoop from '../common/focusloop';
+import interactionManager, { type FocusLoop } from '../common/interactionmanager';
 import { contextMenuListener } from '../common/utils';
 import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
 import { CollectionView, View } from "./element";
@@ -90,6 +90,7 @@ class Main {  // this is constructed at the bottom
 
     moduleI18nDef: I18nData;
     highContrast: HighContrast;
+    bodyLoop: FocusLoop;
 
     constructor() {
         /*this.translateUsingModule = (key) => {
@@ -164,13 +165,13 @@ class Main {  // this is constructed at the bottom
         // so we don't need document.ready()
         this.$body = document.body;
 
-        focusLoop.addFocusLoop(document.body);
-        focusLoop.on('focus', (event) => {
-            focusLoop.enterFocusLoop(document.body, { withMouse: focusLoop._mouseClicked });
+        this.bodyLoop = interactionManager.registerLoop(document.body);
+        interactionManager.on('focus', (event) => {
+            this.bodyLoop.activate({ withMouse: interactionManager.lastInputWasMouse() });
         });
 
-        focusLoop.on('blur', (event) => {
-            focusLoop.leaveFocusLoop(document.body);
+        interactionManager.on('blur', (event) => {
+            this.bodyLoop.deactivate({ source: 'programmatic' });
         });
 
         document.addEventListener('mousedown', (event) => this._mouseDown(event));
@@ -513,7 +514,7 @@ class Main {  // this is constructed at the bottom
                 }
             }
 
-            focusLoop.addFocusLoop(this.$results);*/
+            interactionManager.registerLoop(this.$results);*/
 
             this.results = createItem(
                 this.resultsDefn.results,
@@ -555,7 +556,7 @@ class Main {  // this is constructed at the bottom
                 }
             }
 
-            focusLoop.addFocusLoop(this.$results);
+            interactionManager.registerLoop(this.$results);
 
             this._updateAnnotationStates();
             this.$body.append(this.$results);

@@ -4,6 +4,7 @@ import tarp from '../utils/tarp';
 import MissingValueList from '../vareditor/missingvaluelist';
 import VariableModel from '../vareditor/variablemodel';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import interactionManager, { type FocusLoop } from '../../common/interactionmanager';
 
 
 class MissingValueEditor extends HTMLElement {
@@ -11,6 +12,7 @@ class MissingValueEditor extends HTMLElement {
     _undoFormula: any;
     _internalChange: boolean;
     missingValueList: MissingValueList;
+    private loop: FocusLoop;
 
     constructor(model: VariableModel) {
         super();
@@ -20,25 +22,12 @@ class MissingValueEditor extends HTMLElement {
         this.title = _('Missing Values');
         this._id = -1;
 
-        window.addEventListener('keydown', event => {
-            if ( ! this.missingValueList.classList.contains('super-focus'))
-                return;
-
-            let undo = event.key === 'Escape';
-            if (event.key === 'Escape' || event.key === 'Enter') {
-                if (undo)
-                    this.model.set('missingValues', this._undoFormula);
-
-                tarp.hide('missings');
-            }
-        });
-
         this._init();
     }
 
     refresh() {
         this.missingValueList.populate(this.model.get('missingValues'));
-        this.missingValueList.querySelector<HTMLElement>('add-missing-value')?.focus();
+        //this.missingValueList.focus();
     }
 
     isAttached() {
@@ -56,12 +45,21 @@ class MissingValueEditor extends HTMLElement {
         this.model.suspendAutoApply();
         $contents.classList.add('super-focus');
         tarp.show('missings', true, 0.1, 299).then(() => {
-            $contents.classList.remove('super-focus');
-            this.model.apply();
+            this._closeFormulaControls();
         }, () => {
-            $contents.classList.remove('super-focus');
-            this.model.apply();
+            this._closeFormulaControls();
         });
+    }
+
+    _closeFormulaControls() {
+        let $contents = this.missingValueList;
+
+        if ( ! $contents.classList.contains('super-focus'))
+            return;
+
+        $contents.classList.remove('super-focus');
+        this.loop.deactivate({ source: 'programmatic' });
+        this.model.apply();
     }
 
     _init() {
@@ -71,11 +69,19 @@ class MissingValueEditor extends HTMLElement {
         this.missingValueList = new MissingValueList();
         $contents.append(this.missingValueList);
 
-        //this.missingValueList.querySelector<HTMLElement>('add-missing-value').focus();
+        this.loop = interactionManager.registerLoop(this.missingValueList, {
+            level: 2,
+            exitSelector: this.missingValueList,
+            keyToEnter: true,
+            modal: true,
+            exitKeys: ['Escape'],
+        });
+        this.loop.on('activate', () => this._focusFormulaControls());
+        this.loop.on('deactivate', () => tarp.hide('missings'));
+
 
         this.missingValueList.addEventListener('missing-value-removed', (event: CustomEvent<number>) => {
             let index = event.detail;
-            this._focusFormulaControls();
             let values = this.model.get('missingValues');
             let newValues = [];
             if (values !== null) {
@@ -89,13 +95,8 @@ class MissingValueEditor extends HTMLElement {
         });
 
         this.missingValueList.addEventListener('missing-values-changed', (event: CustomEvent<number>) => {
-            this._focusFormulaControls();
             this._internalChange = true;
             this.model.set('missingValues', this.missingValueList.getValue());
-        });
-
-        this.missingValueList.addEventListener('click', (event) => {
-            this._focusFormulaControls();
         });
 
         this.missingValueList.populate(this.model.get('missingValues'));

@@ -3,7 +3,7 @@
 
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 import ActionHub from '../actionhub';
-import focusLoop from '../../common/focusloop';
+import interactionManager from '../../common/interactionmanager';
 import RibbonTab, { RibbonItem } from './ribbontab';
 
 export class RibbonGroup extends HTMLElement implements RibbonItem {
@@ -39,7 +39,7 @@ export class RibbonGroup extends HTMLElement implements RibbonItem {
         let align = params.alignContents === undefined ? (orientation === 'horizontal' ? 'center' : 'stretch') : params.alignContents;
         let name = params.name === undefined ? null : params.name;
 
-        let labelId = focusLoop.getNextAriaElementId('label');
+        let labelId = interactionManager.nextAriaId('label');
 
         this.classList.add('jmv-ribbon-group');
         this.classList.add('jmv-ribbon-group-margin-' + margin);

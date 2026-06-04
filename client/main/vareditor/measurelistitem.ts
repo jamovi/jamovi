@@ -1,6 +1,6 @@
 'use strict';
 
-import focusLoop from '../../common/focusloop';
+import interactionManager from '../../common/interactionmanager';
 import { MeasureType } from '../dataset';
 
 class MeasureListItem extends HTMLElement {
@@ -15,8 +15,8 @@ class MeasureListItem extends HTMLElement {
         this.measureType = measureType;
         this.name = text ? text : measureType;
 
-        this.id = focusLoop.getNextAriaElementId('listitem');
-        const labelId = focusLoop.getNextAriaElementId('label');
+        this.id = interactionManager.nextAriaId('listitem');
+        const labelId = interactionManager.nextAriaId('label');
 
         this.id = this.id;
         this.classList.add('jmv-measure-list-item');

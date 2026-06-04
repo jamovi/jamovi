@@ -17,17 +17,17 @@ export interface RibbonItem extends HTMLElement {
 
 export abstract class RibbonTab extends EventEmitter {
     _name: keyof TabTypes;
-    _shortcutPath: string;
+    _keyTipPath: string;
     _title: string;
     _ribbon: HTMLElement;
     _separator: HTMLElement;
     el: HTMLElement;
 
-    constructor(name: keyof TabTypes, shortcutPath: string, title: string) {
+    constructor(name: keyof TabTypes, keyTipPath: string, title: string) {
         super();
 
         this._name = name;
-        this._shortcutPath = shortcutPath;
+        this._keyTipPath = keyTipPath;
         this._title = title;
 
         this._ribbon = document.createElement('div');
@@ -45,8 +45,8 @@ export abstract class RibbonTab extends EventEmitter {
         return this._name;
     }
 
-    public get shortcutPath() {
-        return this._shortcutPath;
+    public get keyTipPath() {
+        return this._keyTipPath;
     }
 
     public get title() {
@@ -90,7 +90,7 @@ export abstract class RibbonTab extends EventEmitter {
         for (let i = 0; i < items.length; i++) {
             let item = items[i];
             if (item.setParent)
-                item.setParent(this, this.shortcutPath.toUpperCase());
+                item.setParent(this, this.keyTipPath.toUpperCase());
             if (item.setTabName)
                 item.setTabName(this.name);
 

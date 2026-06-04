@@ -7,7 +7,7 @@ import createChildLayoutSupport, { ChildSupportProperties, ComplexLayoutStyle } 
 import EnumPropertyFilter from './enumpropertyfilter';
 import { FormatDef, StringFormat } from './formatdef';
 import Icons from './iconsupport';
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { GridControlProperties, VerticalAlignment } from './gridcontrol';
 import { Margin } from './controlbase';
@@ -73,7 +73,7 @@ export class LabelControl extends TitledGridControl<LabelControlProperties> {
         classes += hasChildren === false ? ' no-children' : '';
         classes += isHeading ? ' heading-formating' : '';
 
-        this.labelId = focusLoop.getNextAriaElementId('label');
+        this.labelId = interactionManager.nextAriaId('label');
         this._subel = HTML.parse(`<div id="${ this.labelId }" role="heading" aria-level="3" class="silky-control-label silky-control-margin-${ this.getPropertyValue("margin") } ${ classes }" style="white-space: nowrap;"><span>${ groupText }</span></div>`);
         if (this.el === undefined)
             this.setRootElement(this._subel);
@@ -162,7 +162,7 @@ export class OptionLabelControl extends OptionControl<OptionedLabelControlProper
         classes += hasChildren === false ? ' no-children' : '';
         classes += isHeading ? ' heading-formating' : '';
 
-        this.labelId = focusLoop.getNextAriaElementId('label');
+        this.labelId = interactionManager.nextAriaId('label');
         this._subel = HTML.parse(`<div id="${ this.labelId }" role="heading" aria-level="3" class="silky-control-label silky-control-margin-${ this.getPropertyValue("margin") } ${ classes }" style="white-space: nowrap;"><span></span></div>`);
         if (this.el === undefined)
             this.setRootElement(this._subel);

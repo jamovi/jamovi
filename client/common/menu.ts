@@ -1,6 +1,6 @@
 'use strict';
 
-import focusLoop, { IFocusLoopEnterOptions } from './focusloop';
+import interactionManager, { IFocusLoopActivateOptions, type FocusLoop } from './interactionmanager';
 
 export class Menu extends HTMLElement {
     owner: HTMLElement;
@@ -8,6 +8,7 @@ export class Menu extends HTMLElement {
     level: number;
     _visible: boolean = false;
     connected: boolean;
+    public loop: FocusLoop;
 
     constructor(owner: HTMLElement=null, level: number=null, options: {id?: string | undefined, className?: string | undefined, exitKeys?: string[] | undefined }=null) {
         super();
@@ -18,7 +19,7 @@ export class Menu extends HTMLElement {
         if (options && options.id) 
             menuId = options.id;
         else
-            menuId = focusLoop.getNextAriaElementId('menu');
+            menuId = interactionManager.nextAriaId('menu');
         this.menuId = menuId;
 
         this.owner = owner;
@@ -71,12 +72,12 @@ export class Menu extends HTMLElement {
         if (this.owner)
             opts.exitSelector = new WeakRef(this.owner);
 
-        let focusToken = focusLoop.addFocusLoop(this, opts);
-        focusToken.on('focusleave', (event) => {
-            if (focusLoop.loopEntering === null || focusToken.el.contains(focusLoop.loopEntering.el) === false)
-                this.hide(this);
-            else
+        this.loop = interactionManager.registerLoop(this, opts);
+        this.loop.on('deactivate', (event) => {
+            if (event.canCancel && interactionManager.hasActivatingLoopInside(this.loop.element))
                 event.cancel = true;
+            else
+                this.hide(this);
         });
     }
 
@@ -105,17 +106,11 @@ export class Menu extends HTMLElement {
             if (labelId)
                 this.setAttribute('aria-labelledby', labelId);  
 
-            let token = focusLoop.getFocusToken(this);
-            token.exitSelector = new WeakRef(this.owner);
+            this.loop.exitSelector = new WeakRef(this.owner);
         }
     }
 
-    changeLevel(level:number) {
-        this.level = level;
-        focusLoop.changeLevel(this, level);
-    }
-
-    show(x: number, y: number, options?: IFocusLoopEnterOptions) {
+    show(x: number, y: number, options?: IFocusLoopActivateOptions) {
 
         if (typeof options !== 'object')
             throw 'problem';
@@ -162,7 +157,7 @@ export class Menu extends HTMLElement {
         el.style.top = `${y}px`;
         el.style.left = `${x}px`;
 
-        focusLoop.enterFocusLoop(this, options);
+        this.loop.activate(options);
 
         let event = new CustomEvent('menu-shown');
         this.dispatchEvent(event);
@@ -185,7 +180,7 @@ export class Menu extends HTMLElement {
             this.owner.classList.remove('active');
         }
 
-        focusLoop.leaveFocusLoop(this, true);
+        this.loop.deactivate({ source: 'mouse' });
 
         //this.emit('menu-hidden', event);
         let newEvent = new CustomEvent('menu-hidden', { detail: event, bubbles: true });

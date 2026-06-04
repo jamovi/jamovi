@@ -7,7 +7,7 @@
 import PageModules from './store/pagemodules';
 import PageSideload  from './store/pagesideload';
 import tarp from './utils/tarp';
-import focusLoop from '../common/focusloop';
+import interactionManager, { type FocusLoop } from '../common/interactionmanager';
 import selectionLoop from '../common/selectionloop';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { RibbonModel } from './ribbon';
@@ -20,6 +20,7 @@ class Store extends HTMLElement {
     _selectedIndex: number;
     $tabs: NodeListOf<HTMLElement>;
     $pages: NodeListOf<HTMLElement>;
+    private loop: FocusLoop;
 
     constructor(public settings: Settings, public modules: Modules) {
         super();
@@ -28,7 +29,10 @@ class Store extends HTMLElement {
         this.classList.add('jmv-store');
         this.setAttribute('tabindex', '-1');
 
-        focusLoop.addFocusLoop(this, { level: 2, closeHandler: this.hide.bind(this), modal: true, exitKeys: ['Escape'] });
+        this.loop = interactionManager.registerLoop(this, { level: 2, modal: true, exitKeys: ['Escape'], closeFocusMode: 'default' });
+        this.loop.on('deactivate', () => {
+            this._hide();
+        });
 
         const $header = HTML.parse('<div class="jmv-store-header"></div>');
         this.append($header);
@@ -175,11 +179,15 @@ class Store extends HTMLElement {
         tarp.show('store', false, 0.3);
         let modules = this.modules;
         modules.available().retrieve();
-        focusLoop.enterFocusLoop(this);
+        this.loop.activate();
     }
 
     hide() {
-        focusLoop.leaveFocusLoop(this);
+        this.loop.deactivate({ source: 'programmatic' });
+        this._hide();
+    }
+
+    private _hide() {
         this.classList.remove('visible');
         tarp.hide('store');
     }

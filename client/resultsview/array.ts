@@ -5,7 +5,7 @@ import Annotations, { IAnnotation } from './annotations';
 
 import Elem, { ElementModel, View as Element, ElementData, CollectionView } from './element';
 import b64 from '../common/utils/b64';
-import _focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { AnalysisStatus, IElement } from './create';
 import { Item } from './itemtracker';
@@ -142,7 +142,7 @@ export class View extends CollectionView<Model> {
         if ( ! this.$title) {
             this.$title = HTML.parse(this.hoTag + this.model.attributes.title + this.hcTag);
             this.prepend(this.$title);
-            const labelId = _focusLoop.getNextAriaElementId('label');
+            const labelId = interactionManager.nextAriaId('label');
             this.$title.setAttribute('id', labelId);
             this.setAttribute('aria-labelledby', labelId);
         }

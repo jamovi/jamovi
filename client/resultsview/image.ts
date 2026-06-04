@@ -1,6 +1,6 @@
 'use strict';
 
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 
 import Elem, { ElementData, ElementModel } from './element';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
@@ -64,7 +64,7 @@ export class View extends Elem.View<Model> {
 
         this.classList.add('jmv-results-image');
 
-        let imageId = focusLoop.getNextAriaElementId('image');
+        let imageId = interactionManager.nextAriaId('image');
         this.setAttribute('role', 'img');
         this.setAttribute('aria-labelledby', imageId);
 
@@ -153,7 +153,7 @@ export class View extends Elem.View<Model> {
 
                     this.updateSizeDisplay();
                     if (different && this.manualResize) {
-                        //focusLoop.speakMessage(_('Image size {width} by {height}', { width: this.widthOfImage, height: this.heightOfImage }));
+                        //interactionManager.announce(_('Image size {width} by {height}', { width: this.widthOfImage, height: this.heightOfImage }));
                         this.updating = true;
                     }
                 }
@@ -230,7 +230,7 @@ export class View extends Elem.View<Model> {
 
         window.setParam(this.address(), { widthScale, heightScale });
 
-        focusLoop.speakMessage(_('Image resized to {width} by {height}', { width: widthOfImage, height: heightOfImage }));
+        interactionManager.announce(_('Image resized to {width} by {height}', { width: widthOfImage, height: heightOfImage }));
     }
 
     type() {
