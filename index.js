@@ -279,7 +279,7 @@ try {
     let packageInfo;
 
     if (utils.exists(packageInfoPath)) {
-        let content = fs.readFileSync(packageInfoPath);
+        let content = fs.readFileSync(packageInfoPath, 'utf-8');
         packageInfo = yaml.load(content);
         if ('jms' in packageInfo) {
             if (packageInfo.jms !== '1.0')
@@ -325,7 +325,7 @@ try {
 
     let refs = undefined;
     if (utils.exists(refsPath)) {
-        let content = fs.readFileSync(refsPath);
+        let content = fs.readFileSync(refsPath, 'utf-8');
         refs = yaml.load(content).refs;
     }
 
