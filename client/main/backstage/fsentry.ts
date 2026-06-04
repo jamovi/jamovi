@@ -1,6 +1,6 @@
 import pathtools from '../utils/pathtools';
 import { s6e } from '../../common/utils';
-import focusLoop from '../../common/focusloop';
+import interactionManager, { keyTips } from '../../common/interactionmanager';
 import { EventMap, EventDistributor } from '../../common/eventmap';
 import type { IExtensionGroup } from '../host';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
@@ -78,7 +78,7 @@ export interface IFSEntryModel {
 
 export interface IBackstagePanelView {
     preferredWidth?: () => void,
-    setShortcutPath?: (shortcutPath: string) => void,
+    setKeyTipPath?: (keyTipPath: string) => void,
     refresh?: () => void,
 }
 
@@ -177,7 +177,7 @@ export class FSEntryListView extends EventDistributor {
                 location = item.description;
             }
 
-            let labelId = focusLoop.getNextAriaElementId('label');
+            let labelId = interactionManager.nextAriaId('label');
             let html = `<div role="menuitem" aria-labelledby="${labelId}" class="silky-bs-fslist-entry bs-menu-list-item" data-path="${s6e(filePath)}" tabindex="-1">`;
             if (name.endsWith('.omv'))
                 html += '    <div class="silky-bs-fslist-entry-icon silky-bs-flist-item-omv-icon"></div>';
@@ -192,7 +192,7 @@ export class FSEntryListView extends EventDistributor {
             html += '</div>';
 
             let itemElement = HTML.parse(html);
-            focusLoop.applyShortcutOptions(itemElement, {
+            keyTips.register(itemElement, {
                 key: `${i + 1}`,
                 path: `F`,
                 position: { x: '13%', y: '27%' },

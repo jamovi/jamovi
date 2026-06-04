@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "clipboard-js": "^0.3.6",
-    "dialogs": "https://codeload.github.com/jonathon-love/dialogs/tar.gz/31d2d0bec2120ac40cae4b0c8e7d6e20c745ac7a",
     "element-resize-detector": "^1.2.4",
     "eventemitter3": "^5.0.4",
     "framesg": "^0.1.3",

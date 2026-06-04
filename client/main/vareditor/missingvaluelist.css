@@ -11,6 +11,10 @@
     justify-content: space-between;
 }
 
+.jmv-missing-value-list.menu-level:focus {
+    outline: auto;
+}
+
 .jmv-missing-value-list > .list {
     overflow-y: auto;
     max-height: 250px;

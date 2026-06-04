@@ -11,7 +11,7 @@ const Parchment = Quill.import('parchment');
 const TextBlot = Quill.import('blots/text');
 
 import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
-import _focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { AnnotationAction, IAnnotation } from './annotations';
 
@@ -240,10 +240,10 @@ class Annotation extends HTMLElement implements IAnnotation {
     _blur(event) {
         if (!this.selectionClearTimeOut) {
             this.selectionClearTimeOut = setTimeout(() => {
-                _focusLoop.pauseFocusControl(this._transferElement);
+                interactionManager.pauseFocusRestore(this._transferElement);
                 this.editor.setSelection(null);
                 this.selectionClearTimeOut = null;
-                _focusLoop.resumeFocusControl();
+                interactionManager.resumeFocusRestore();
             }, 10);
         }
     }

@@ -1,13 +1,10 @@
-
-.shortcut-key-tag {
+.keytip-key-tag {
     position: absolute;
-    height: 1em;
     color: white;
     background-color: #404040;
     text-align: center;
     padding: 0px 3px 0px 3px;
     vertical-align: middle;
-    line-height: 1em;
     left: 55%;
     bottom: -0.7em;
     z-index: 500;
@@ -17,8 +14,4 @@
     height: 17px;
     line-height: 17px;
     border-radius: 3px;
-}
-
-.menu-level:focus {
-  outline: none
 }

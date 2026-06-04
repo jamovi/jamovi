@@ -1,6 +1,6 @@
 'use strict';
 
-import focusLoop, { IShortcutTokenOptions } from '../../common/focusloop';
+import interactionManager, { keyTips, type IKeyTipTokenOptions } from '../../common/interactionmanager';
 import Menu from '../../common/menu';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 import { RibbonItem } from './ribbontab';
@@ -12,19 +12,19 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
     name: string;
     containsNew: boolean;
     dock: 'right' | 'left';
-    shortcutKey: string;
+    keyTipKey: string;
     labelId: string;
     items: any;
     menu: Menu;
     parent: AnalyseTab;
     hidden: boolean = false;
 
-    constructor(title:string, name:string, shortcutKey:string, items: any[], right: boolean, containsNew: boolean) {
+    constructor(title:string, name:string, keyTipKey:string, items: any[], right: boolean, containsNew: boolean) {
         super();
         this.classList.add('jmv-ribbon-button');
         this.classList.add('jmv-analyses-button');
         this.setAttribute('tabindex', '0');
-        //this.focusId = focusLoop.getNextFocusId();
+        //this.focusId = interactionManager.getNextFocusId();
         //this.setAttribute('data-focus-id', this.focusId);
         this.setAttribute('role', 'menuitem');
 
@@ -33,15 +33,15 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         this.items = items;
         this.containsNew = containsNew;
         this.dock = right ? 'right' : 'left';
-        this.shortcutKey = shortcutKey;
+        this.keyTipKey = keyTipKey;
 
-        this.labelId = focusLoop.getNextAriaElementId('label');
+        this.labelId = interactionManager.nextAriaId('label');
         this.setAttribute('aria-labelledby', this.labelId);
 
-        if (shortcutKey) {
-            let keySplit = shortcutKey.split('-');
-            let stcOptions: IShortcutTokenOptions = { key: keySplit[0].toUpperCase(), action: event => this._clicked(event, false) };
-            focusLoop.applyShortcutOptions(this, stcOptions);
+        if (keyTipKey) {
+            let keySplit = keyTipKey.split('-');
+            let keyTipOptions: IKeyTipTokenOptions = { key: keySplit[0].toUpperCase(), action: event => this._clicked(event, false) };
+            keyTips.register(this, keyTipOptions);
         }
 
         this.setAttribute('data-name', this.name.toLowerCase());
@@ -66,11 +66,11 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         this._refresh();
     }
 
-    setParent(parent: AnalyseTab, parentShortcutPath) {
+    setParent(parent: AnalyseTab, parentKeyTipPath) {
         this.parent = parent;
 
-        if (this.shortcutKey)
-            focusLoop.applyShortcutOptions(this, { path: parentShortcutPath });
+        if (this.keyTipKey)
+            keyTips.register(this, { path: parentKeyTipPath });
     }
 
     setEnabled(enabled:boolean) {
@@ -245,10 +245,10 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         if (item.hidden)
             classes += ' menu-item-hiding';
 
-        let labelId1 = focusLoop.getNextAriaElementId('label');
+        let labelId1 = interactionManager.nextAriaId('label');
         let labelId2 = '';
         if (item.subtitle && item.subtitle !== item.title)
-            labelId2 = focusLoop.getNextAriaElementId('label');
+            labelId2 = interactionManager.nextAriaId('label');
 
         let html = `<button role="menuitem" aria-labelledby="${labelId1} ${labelId2}" data-name="${ item.name }" data-ns="${ item.ns }" data-title="${ item.title }" data-rtitle="${ item.resultsTitle }" class="${ classes }" tabindex="0">`;
         html += '<div class="description">';
@@ -261,7 +261,7 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
 
         item.el = HTML.parse(html);
 
-        focusLoop.createHoverItem(item.el);
+        interactionManager.createHoverItem(item.el);
 
         return item.el;
     }
@@ -269,10 +269,10 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
     _createModuleItem(item, level:number) {
         let classes = 'jmv-ribbon-menu-item module';
 
-        let titleId = focusLoop.getNextAriaElementId('label');
+        let titleId = interactionManager.nextAriaId('label');
         let subTitleId = '';
         if (item.subtitle && item.subtitle !== item.title)
-            subTitleId = focusLoop.getNextAriaElementId('label');
+            subTitleId = interactionManager.nextAriaId('label');
 
         let html = `<button role="menuitem" aria-labelledby="${titleId}${subTitleId}" data-name="${ item.name }" data-ns="${  item.ns }" data-title="${ item.title }" class="${ classes }" tabindex="0">`;
         html += '<div class="to-analyses-arrow"></div>';
@@ -285,7 +285,7 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         item.el = HTML.parse(html);
         if (item.analyses !== undefined) {
 
-            let labelId = focusLoop.getNextAriaElementId('label');
+            let labelId = interactionManager.nextAriaId('label');
             item.sidePanel = new Menu(item.el, level + 1, { exitKeys:['InlineArrowRight'] });
             item.sidePanel.setAttribute('aria-laeblledby', labelId);
             item.sidePanel.classList.add('side-panel');
@@ -315,7 +315,7 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
                 input.addEventListener('change', event => this._moduleDisplayClicked(event));
             });
         }
-        focusLoop.createHoverItem(item.el, () => {
+        interactionManager.createHoverItem(item.el, () => {
             if (item.analyses) {
                 this.showSidePanel(item, true);
             }
@@ -326,7 +326,7 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
     }
 
     _createMenuGroup(group, level:number) {
-        let labelId = focusLoop.getNextAriaElementId('label');
+        let labelId = interactionManager.nextAriaId('label');
         let groupElement = HTML.create('div', { class: 'jmv-ribbon-menu-group',  role: 'group', 'aria-labelledby': labelId }, 
                                 HTML.create('label', { class: 'jmv-ribbon-menu-heading', id: labelId }, group.title)
                             );

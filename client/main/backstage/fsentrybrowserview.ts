@@ -1,7 +1,7 @@
 
 import pathtools from '../utils/pathtools';
 import { s6e } from '../../common/utils';
-import focusLoop from '../../common/focusloop';
+import interactionManager, { keyTips } from '../../common/interactionmanager';
 import * as path from 'path';
 
 import { FSEntryListModel } from './fsentry';
@@ -44,7 +44,7 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
     footer: HTMLElement;
     header: HTMLElement;
     filterExtensions: string[];
-    shortcutPath: string;
+    keyTipPath: string;
     initialised = false;
 
     constructor(model: FSEntryListModel) {
@@ -247,17 +247,18 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
         }
     }
 
-    public setShortcutPath(path) {
-        if (this.shortcutPath !== path) {
-            this.shortcutPath = path;
-            //let $shortcutKeyElements = this.$el.find('[shortcut-key]');
-            let shortcutKeyElements = this.querySelectorAll<HTMLElement>('[shortcut-key]');
-            for (let i = 0; i < shortcutKeyElements.length; i++) {
-                let element = shortcutKeyElements[i];
-                focusLoop.applyShortcutOptions(element, { path: this.shortcutPath });
-            }
-            focusLoop.updateShortcuts({ silent: true});
+    public setKeyTipPath(path) {
+        const pathChanged = this.keyTipPath !== path;
+        this.keyTipPath = path;
+
+        let keyTipKeyElements = this.querySelectorAll<HTMLElement>('[keytip-key]');
+        for (let i = 0; i < keyTipKeyElements.length; i++) {
+            let element = keyTipKeyElements[i];
+            keyTips.register(element, { path: this.keyTipPath });
         }
+
+        if (pathChanged)
+            keyTips.update({ silent: true});
     }
 
     private _manualBrowse() {
@@ -324,7 +325,7 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
 
         let isSaving = this.model.clickProcess === 'save' || this.model.clickProcess === 'export';
 
-        let itemListId = focusLoop.getNextAriaElementId('list');
+        let itemListId = interactionManager.nextAriaId('list');
 
         if ( ! isSaving) {
             let searchHtml = `<div class="searchbox">
@@ -336,7 +337,7 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
             //let $search = this.$el.find('.searchbox > .search');
             let search = this.querySelector<HTMLElement>('.searchbox > .search');
             if (search)
-                focusLoop.applyShortcutOptions(search, { key: 'S', position: { x: '5%', y: '50%' } });
+                keyTips.register(search, { key: 'S', position: { x: '5%', y: '50%' } });
         }
 
         this.itemsList = HTML.create('div', { id: itemListId, role: 'list', 'aria-multiselectable': false, class:"silky-bs-fslist-items", style:"flex: 1 1 auto; overflow: auto; height:100%", tabindex:"0"});//`<div id="${itemListId}" role="list" aria-multiselectable="false" class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow: auto; height:100%" tabindex="0"></div>`);
@@ -407,21 +408,21 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
 
         let multiMode = this.header.querySelector<HTMLElement>('.silky-bs-fslist-browser-check-button');
         if (multiMode)
-            focusLoop.applyShortcutOptions(multiMode, { key: 'C', action: this._toggleMultiMode.bind(this) });
+            keyTips.register(multiMode, { key: 'C', action: this._toggleMultiMode.bind(this) });
 
         let back = this.header.querySelector<HTMLElement>('.silky-bs-fslist-browser-back-button');
         if (back)
-            focusLoop.applyShortcutOptions(back, { key: 'B', position: { x: '20%', y: '25%' }, action: this._backClicked.bind(this), blocking: true });
+            keyTips.register(back, { key: 'B', position: { x: '20%', y: '25%' }, action: this._backClicked.bind(this), blocking: true });
 
         let browse = this.header.querySelector<HTMLElement>('.silky-bs-fslist-browse-button');
         if (browse)
-            focusLoop.applyShortcutOptions(browse, { key: 'E', action: this._manualBrowse.bind(this) });
+            keyTips.register(browse, { key: 'E', action: this._manualBrowse.bind(this) });
 
         let saveName = this.header.querySelector<HTMLElement>('.silky-bs-fslist-browser-save-name');
         if (saveName)
-            focusLoop.applyShortcutOptions(saveName, { key: 'F' });
+            keyTips.register(saveName, { key: 'F' });
 
-        if (focusLoop.inAccessibilityMode() === false) {
+        if (interactionManager.isAccessibilityActive() === false) {
             const input = this.header.querySelector<HTMLInputElement>('.silky-bs-fslist-browser-save-name');
             if (input) {
                 input.addEventListener('focus', () => {
@@ -434,7 +435,7 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
 
         this._createBody();
 
-        if (focusLoop.inAccessibilityMode() === false && (this.model.clickProcess === 'save' || this.model.clickProcess === 'export')) {
+        if (interactionManager.isAccessibilityActive() === false && (this.model.clickProcess === 'save' || this.model.clickProcess === 'export')) {
             setTimeout(() => {
                 saveName.focus();
             }, 400);
@@ -526,7 +527,7 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
 
             searchValue = search.value.trim();
 
-            if (focusLoop.inAccessibilityMode() === false) {
+            if (interactionManager.isAccessibilityActive() === false) {
                 setTimeout(() => {
                     search.focus();
                 }, 250);
@@ -615,8 +616,8 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
                     continue;
 
 
-                let itemId = focusLoop.getNextAriaElementId('listitem');
-                let labelId = focusLoop.getNextAriaElementId('label');
+                let itemId = interactionManager.nextAriaId('listitem');
+                let labelId = interactionManager.nextAriaId('label');
                 html += `<div id="${itemId}" aria-labelledby="${labelId}" class="silky-bs-fslist-item" role="listitem">`;
                 if (itemType === FSItemType.File)
                     html += '<input class="jmv-bs-fslist-checkbox' + (this.multiMode ? '' : ' hidden') + '" type="checkbox" tabindex="-1">';
@@ -672,10 +673,10 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
 
                 let itemElement = HTML.parse(html);
                 let sct = this.createAlphaNumericTag('Q', ++itemIndex);
-                focusLoop.applyShortcutOptions(itemElement, {
+                keyTips.register(itemElement, {
                     key: sct,
-                    path: this.shortcutPath,
-                    action: this._itemClicked.bind(this),
+                    path: this.keyTipPath,
+                    action: () => this.clickItem(itemElement, false, false, false),
                     blocking: itemType !== FSItemType.File,
                     position: { x: '0%', y: '0%', internal: true }
                 });
@@ -699,7 +700,7 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
                 this._setSelection(this.items[0]);
             }
         }
-        focusLoop.updateShortcuts({ shortcutPath: this.shortcutPath, silent: true});
+        keyTips.update({ keyTipPath: this.keyTipPath, silent: true});
     }
 
     private _getSelectedPaths() {
@@ -783,7 +784,7 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
             this.clearSelection();
             let extension = path.extname(itemTitle);
             this.model.requestOpen({ path: itemPath, title: path.basename(itemTitle, extension), type: itemType });
-            focusLoop.updateShortcuts({ shortcutPath: this.shortcutPath });
+            keyTips.update({ keyTipPath: this.keyTipPath });
         }
         else if (itemType === FSItemType.File && this.model.clickProcess === 'import') {
             let index = target.dataset.index !== undefined ? parseInt(target.dataset.index, 10) : -1;
@@ -1123,7 +1124,7 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
             this._goToFolder(filePath);
             this.clearSelection();
         }
-        focusLoop.updateShortcuts({ shortcutPath: this.shortcutPath });
+        keyTips.update({ keyTipPath: this.keyTipPath });
     }
 
     private _goToFolder(dirPath: string) {

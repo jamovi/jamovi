@@ -1,6 +1,6 @@
 'use strict';
 
-import focusLoop from '../../common/focusloop';
+import interactionManager from '../../common/interactionmanager';
 import { HTMLElementCreator as HTML } from '../../common/htmlelementcreator';
 import { Transform } from '../dataset';
 
@@ -32,7 +32,7 @@ export default class TransformListItem extends HTMLElement {
         this.appendChild(this.colour);
 
         this.labelBtn = HTML.parse<HTMLButtonElement>(`<button role="listitem" id="${this.id}" class="label">${this.name}</button>`);
-        this.labelBtn.id = focusLoop.getNextAriaElementId('listitem');
+        this.labelBtn.id = interactionManager.nextAriaId('listitem');
         this.appendChild(this.labelBtn);
 
         this.editBtn = HTML.parse<HTMLButtonElement>(`<button class="edit hidden" aria-label="${_('Edit transform - {transformName}', { transformName: this.name })}"></button>`);

@@ -5,7 +5,7 @@ import RibbonMenu from './ribbonmenu';
 import RibbonTab, { RibbonItem } from './ribbontab';
 import Placeholder from './placeholder';
 import RibbonButton from './ribbonbutton';
-import focusLoop from '../../common/focusloop';
+import interactionManager from '../../common/interactionmanager';
 import RibbonSeparator from './ribbonseparator';
 import { Modules } from '../modules';
 import Settings from '../settings';
@@ -104,7 +104,7 @@ class PlotsTab extends RibbonTab {
             }
         }
 
-        let buttonId = focusLoop.getNextAriaElementId('button');
+        let buttonId = interactionManager.nextAriaId('button');
         let  button = new RibbonMenu(_('Modules'), 'modules', 'M', [
             { name : 'modules', title : _('jamovi library'), ns : 'app' },
             { name : 'manageMods', title : _('Manage installed'), ns : 'app' },
@@ -169,7 +169,7 @@ class PlotsTab extends RibbonTab {
                     
                     for (let item of menu[subgroup].items) {
                         let name = `${item.ns}-${item.name}`;
-                        let analysisButton = new RibbonButton({ class: 'jmv-analyses-button', title: _(item.title), name: name, size: 'large', /*shortcutKey: 'v', shortcutPosition: { x: '50%', y: '90%' }*/ });
+                        let analysisButton = new RibbonButton({ class: 'jmv-analyses-button', title: _(item.title), name: name, size: 'large', /*keyTipKey: 'v', keyTipPosition: { x: '50%', y: '90%' }*/ });
                         analysisButton.addEventListener('menuActioned', (event) => {
                             let analysis = { name:item.name, ns:item.ns, title:item.title };
                             this._analysisSelected(analysis);
@@ -200,11 +200,11 @@ class PlotsTab extends RibbonTab {
                     flattened = items.concat(flattened);
                 }
 
-                let shortcutKey = menu.ns === 'scatr' ?  'M' : null;
-                let buttonId2 = focusLoop.getNextAriaElementId('button');
+                let keyTipKey = menu.ns === 'scatr' ?  'M' : null;
+                let buttonId2 = interactionManager.nextAriaId('button');
                 let buttonElement = document.createElement('button');
                 buttonElement.setAttribute('id', buttonId2);
-                let button = new RibbonMenu(menu._title, groupName, shortcutKey, flattened, false, containsNew);
+                let button = new RibbonMenu(menu._title, groupName, keyTipKey, flattened, false, containsNew);
                 if (menu.ns === 'scatr')
                     this.buttons.splice(this._moreIndex, 0, button);
                 else

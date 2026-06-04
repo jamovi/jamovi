@@ -9,7 +9,7 @@ import ColourPalette from './editors/colourpalette';
 import ContextMenu from './contextmenu';
 import Statusbar from './statusbar/statusbar';
 import { contextMenuListener } from '../common/utils';
-import _focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import DataSetViewModel, { Column, ColumnActiveChangedEvent } from './dataset';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import ViewController, { DataSetView } from './viewcontroller';
@@ -222,7 +222,7 @@ class VariablesView extends HTMLElement  implements DataSetView {
         row.$select.setAttribute('aria-checked', 'true');
 
         if (this.controller.focusedOn === this)
-            _focusLoop.speakMessage(`${row.column.name} ${row.column.measureType} ${row.column.dataType}`);
+            interactionManager.announce(`${row.column.name} ${row.column.measureType} ${row.column.dataType}`);
 
         if (editable && ! row.editableTimer) {
             row.editableTimer = setTimeout(function () {
@@ -377,7 +377,7 @@ class VariablesView extends HTMLElement  implements DataSetView {
             $measureType.append($dot);
         }
 
-        let labelId = _focusLoop.getNextAriaElementId('label');
+        let labelId = interactionManager.nextAriaId('label');
 
         let $name = HTML.parse<HTMLDivElement>(`<div role="none" id="${ labelId }" class="name text" data-property="name" data-columnindex="${column.index}" tabindex="0">${ column.name }</div>`);
         if (column.columnType === 'filter')

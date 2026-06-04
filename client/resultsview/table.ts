@@ -1,7 +1,7 @@
 'use strict';
 
 import { determFormat, format } from '../common/formatting';
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 
 import Elem, { ElementModel } from './element';
 import { AnalysisStatus } from './create';
@@ -271,7 +271,7 @@ export class View extends Elem.View<Model> {
 
         let rowSelectable = table.rowSelect ? ' row-selectable' : '';
 
-        let titleId = focusLoop.getNextAriaElementId('label');
+        let titleId = interactionManager.nextAriaId('label');
         this.$table = HTML.parse(`<table aria-labelledby="${titleId}" class="jmv-results-table-table${rowSelectable}"></table>`);
 
         this.addContent(this.$table);

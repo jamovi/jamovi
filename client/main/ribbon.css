@@ -97,11 +97,11 @@ body[data-splitpanel-mode='mixed'] .jmv-ribbon-fullscreen[data-tabname='data'] {
     vertical-align: top;
 }
 
-body.windows.electron .jmv-ribbon-fullscreen .shortcut-key-tag {
+body.windows.electron .jmv-ribbon-fullscreen .keytip-key-tag {
     font-size: 70%;
 }
 
-body.windows.electron .jmv-ribbon-appmenu .shortcut-key-tag {
+body.windows.electron .jmv-ribbon-appmenu .keytip-key-tag {
     font-size: 70%;
 }
 

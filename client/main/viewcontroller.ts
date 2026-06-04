@@ -3,17 +3,17 @@
 import keyboardJS from 'keyboardjs';
 import host from './host';
 import Notify from './notification';
-import _dialogs from 'dialogs';
 
 import { csvifyCells, htmlifyCells } from '../common/utils/formatio';
 
 import ActionHub from './actionhub';
 
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { EventEmitter } from 'tsee';
 import DataSetViewModel, { Column, ColumnType, MeasureType } from './dataset';
 import Selection, { ISelection } from './selection';
 import Settings from './settings';
+import MsgDialog from '../common/msgdialog';
 
 export type DataSetView = HTMLElement & {
     selectionIncludesHidden?: boolean;
@@ -24,7 +24,6 @@ export type DataSetView = HTMLElement & {
 }
 
 class ViewController extends EventEmitter {
-    dialogs: any;
     model: DataSetViewModel;
     selection: Selection;
     _editNote: Notify;
@@ -33,8 +32,6 @@ class ViewController extends EventEmitter {
     _views: { [name: string]: { view: DataSetView, options: { title: string } }} = { };
     constructor(model, selection, public settings: Settings) {
         super();
-
-        this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('OK')});
 
         this.model = model;
         this.selection = selection;
@@ -287,31 +284,18 @@ class ViewController extends EventEmitter {
 
         try {
             await this.selection.setSelections(selection, selections);
-            await new Promise<void>((resolve, reject) => {
-
-                    let cb = (result) => {
-                        let widget = document.body.querySelector<HTMLElement>('.dialog-widget.confirm');
-                        focusLoop.leaveFocusLoop(widget);
-                        if (result)
-                            resolve();
-                        else
-                            reject();
-                    };
-
-                    let column = columns[0];
-                    let msg = n_(`Delete column '{columnName}'?`, 'Delete {n} columns?', columns.length, {columnName : column.name, n: columns.length });
-                    focusLoop.speakMessage(msg)
-                    this.dialogs.confirm(msg, cb);
-                    let widget = document.body.querySelector<HTMLElement>('.dialog-widget.confirm');
-                    focusLoop.addFocusLoop(widget, { level: 2, modal: true });
-                    focusLoop.enterFocusLoop(widget);
-                });
-
-            let ids = columns.map(column => column.id);
-            await this.model.deleteColumns(ids);
             let column = columns[0];
-            focusLoop.speakMessage(n_(`Column {columnName} deleted`, '{n} columns deleted', columns.length, {columnName : column.name, n: columns.length }));
-            await this.selection.setSelections(oldSelection, oldSubSelections);
+            let msg = n_(`Delete column '{columnName}'?`, 'Delete {n} columns?', columns.length, {columnName : column.name, n: columns.length });
+            interactionManager.announce(msg)
+            await MsgDialog.show(msg, {cancel: _('Cancel'), ok: _('OK')}).then(async (result) => {
+                if (result.action === 'ok') {
+                    let ids = columns.map(column => column.id);
+                    await this.model.deleteColumns(ids);
+                    let column = columns[0];
+                    interactionManager.announce(n_(`Column {columnName} deleted`, '{n} columns deleted', columns.length, {columnName : column.name, n: columns.length }));
+                }
+                await this.selection.setSelections(oldSelection, oldSubSelections);
+            });
         }
         catch(error) {
             if (error)
@@ -342,27 +326,15 @@ class ViewController extends EventEmitter {
 
         try {
             await this.selection.setSelections(selections[0], selections.slice(1));
-            await new Promise<void>((resolve, reject) => {
-
-                let cb = (result) => {
-                    let widget = document.body.querySelector<HTMLElement>('.dialog-widget.confirm');
-                    focusLoop.leaveFocusLoop(widget);
-                    if (result)
-                        resolve();
-                    else
-                        reject();
-                };
-
-                let msg = n_('Delete row {index}?', 'Delete {n} rows?', rowCount, { index: selections[0].top+1, n: rowCount });
-                focusLoop.speakMessage(msg);
-                this.dialogs.confirm(msg, cb);
-                let widget = document.body.querySelector<HTMLElement>('.dialog-widget.confirm');
-                focusLoop.addFocusLoop(widget, { level: 2, modal: true });
-                focusLoop.enterFocusLoop(widget);
+            let msg = n_('Delete row {index}?', 'Delete {n} rows?', rowCount, { index: selections[0].top+1, n: rowCount });
+            interactionManager.announce(msg);
+            await MsgDialog.show(msg, {cancel: _('Cancel'), ok: _('OK')}).then(async (result) => {
+                if (result.action === 'ok') {
+                    await this.model.deleteRows(rowRanges);
+                    interactionManager.announce(n_('row {index} deleted.', '{n} rows deleted.', rowCount, { index: selections[0].top+1, n: rowCount }));
+                }
+                await this.selection.setSelections(oldSelection, oldSubSelections);
             });
-            await this.model.deleteRows(rowRanges);
-            focusLoop.speakMessage(n_('row {index} deleted.', '{n} rows deleted.', rowCount, { index: selections[0].top+1, n: rowCount }));
-            await this.selection.setSelections(oldSelection, oldSubSelections);
         }
         catch(error) {
             if (error) {
@@ -512,9 +484,9 @@ class ViewController extends EventEmitter {
 
         if (this.focusedOn) {
             if (this._views[name].options.title)
-                focusLoop.speakMessage(this._views[name].options.title);
+                interactionManager.announce(this._views[name].options.title);
             this.focusedOn.setAttribute('aria-hidden', 'false');
-            focusLoop.setDefaultFocusControl(this.focusedOn.getFocusControl());
+            interactionManager.setDefaultFocusControl(this.focusedOn.getFocusControl());
 
         }
 
@@ -622,28 +594,20 @@ class ViewController extends EventEmitter {
             rowCount += range.rowCount;
         }
         try {
-            let n = await new Promise<number>((resolve, reject) => {
-                if (this.selection.subSelections.length > 0)
-                    resolve(-1);
-                else {
-                    let msg = _('Insert how many rows?');
-                    focusLoop.speakMessage(msg);
-                    this.dialogs.prompt(msg, this.selection.bottom - this.selection.top + 1, (result) => {
-                        let widget = document.body.querySelector<HTMLElement>('.dialog-widget.prompt');
-                        focusLoop.leaveFocusLoop(widget);
-                        if (result === undefined)
-                            reject('cancelled by user');
-                        let n = parseInt(result);
-                        if (isNaN(n) || n <= 0)
-                            reject(_('{n} is not a positive integer', {n: result}));
-                        else
-                            resolve(n);
-                    });
-                    let widget = document.body.querySelector<HTMLElement>('.dialog-widget.prompt');
-                    focusLoop.addFocusLoop(widget, { level: 2, modal: true });
-                    focusLoop.enterFocusLoop(widget);
+            let msg = _('Insert how many rows?');
+            interactionManager.announce(msg);
+            let n = await MsgDialog.show(msg, {cancel: _('Cancel'), ok: _('OK')}, (this.selection.bottom - this.selection.top + 1).toString()).then(async (result) => {
+                if (result.action === 'ok') {
+                    let value = result.value!.trim();
+                    let n = parseInt(value);
+                    if (isNaN(n) || n <= 0)
+                        throw _('{n} is not a positive integer', {n: value});
+                    return n;
                 }
             });
+
+            if (n === undefined)
+                return
 
             let ranges = [{ rowStart: this.selection.top, rowCount: n }];
             if (n === -1) {
@@ -654,7 +618,7 @@ class ViewController extends EventEmitter {
             }
 
             await this.model.insertRows(ranges);
-            focusLoop.speakMessage(n_('One row inserted.', '{n} rows inserted.', n, { n }));
+            interactionManager.announce(n_('One row inserted.', '{n} rows inserted.', n, { n }));
         }
         catch(error) {
             if (error) {
@@ -669,29 +633,24 @@ class ViewController extends EventEmitter {
 
     async _appendRows() {
         try {
-            let n = await new Promise<number>((resolve, reject) => {
-                let msg = _('Append how many rows?');
-                focusLoop.speakMessage(msg);
-                this.dialogs.prompt(msg, '1', (result) => {
-                    let widget = document.body.querySelector<HTMLElement>('.dialog-widget.prompt');
-                    focusLoop.leaveFocusLoop(widget);
-                    if (result === undefined)
-                        reject('cancelled by user');
-                    let n = parseInt(result);
+            let msg = _('Append how many rows?');
+            interactionManager.announce(msg);
+            let n = await MsgDialog.show(msg, {cancel: _('Cancel'), ok: _('OK')}, '1').then(async (result) => {
+                if (result.action === 'ok') {
+                    let value = result.value!.trim();
+                    let n = parseInt(value);
                     if (isNaN(n) || n <= 0)
-                        reject(_('{n} is not a positive integer', {n:result}));
-                    else
-                        resolve(n);
-
-                });
-                let widget = document.body.querySelector<HTMLElement>('.dialog-widget.prompt');
-                focusLoop.addFocusLoop(widget, { level: 2, modal: true });
-                focusLoop.enterFocusLoop(widget);
+                        throw _('{n} is not a positive integer', {n: value});
+                    return n;
+                }
             });
+
+            if (n === undefined)
+                return;
 
             let rowStart = this.model.visibleRowCount();
             await this.model.insertRows([{ rowStart: rowStart, rowCount: n }]);
-            focusLoop.speakMessage(n_('One row appended.', '{n} rows appended.', n, { n }));
+            interactionManager.announce(n_('One row appended.', '{n} rows appended.', n, { n }));
         }
         catch(error) {
             if (error) {

@@ -4,7 +4,7 @@ import ActionHub from './actionhub';
 
 import host from './host';
 import ResultsPanel from './resultspanel';
-import focusLoop from '../common/focusloop';
+import { keyTips } from '../common/interactionmanager';
 import jamoviIcon from '../common/icon';
 import Instance from './instance';
 
@@ -34,7 +34,7 @@ export class ResultsView extends HTMLElement {
 
         this.classList.add('jmv-results');
         this.setAttribute('tabindex', '-1');
-        focusLoop.applyShortcutOptions(this, {
+        keyTips.register(this, {
                 key: 'R',
                 maintainAccessibility: true,
                 action: (event) => {

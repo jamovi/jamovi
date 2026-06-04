@@ -34,6 +34,8 @@
     line-height: 21px;
     top: 3px;
     inset-inline-end: 5px;
+    border: none;
+    background-color: transparent;
 }
 
 .jmv-missing-value-list-item .remove-cond:hover {
