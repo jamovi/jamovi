@@ -6,7 +6,7 @@ import VariableModel from './vareditor/variablemodel';
 import EditorWidget from './vareditor/editorwidget';
 import EditorPanel from './editorpanel';
 import TransformEditor from './editors/transformeditor';
-import focusLoop from '../common/focusloop';
+import interactionManager, { type FocusLoop } from '../common/interactionmanager';
 import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
 import DataSetViewModel, { ColumnType } from './dataset';
 import ViewController from './viewcontroller';
@@ -41,6 +41,7 @@ export class VariableEditor extends HTMLElement {
     _showId: number | null;
 
     model: DataSetViewModel;
+    loop: FocusLoop;
 
     constructor() {
         super();
@@ -49,7 +50,7 @@ export class VariableEditor extends HTMLElement {
     setup() {
         this.classList.add('jmv-variable-editor', 'VariableEditor');
 
-        focusLoop.addFocusLoop(this);
+        this.loop = interactionManager.registerLoop(this);
 
         this.currentIds = null;
 
@@ -324,9 +325,9 @@ export class VariableEditor extends HTMLElement {
 
     setFocus() {
         if (this.editorPanel.isVisible())
-            focusLoop.enterFocusLoop(this.editorPanel.el);
+            this.editorPanel.activate();
         else
-            focusLoop.enterFocusLoop(this);
+            this.loop.activate();
     }
 
     private _editingVarChanged(event: any) {
@@ -365,7 +366,7 @@ export class VariableEditor extends HTMLElement {
             if (this.classList.contains('hidden')) {
                 this.classList.remove('hidden');
                 setTimeout(() => {
-                    focusLoop.enterFocusLoop(this);
+                    this.loop.activate();
                 }, 100);
             }
 

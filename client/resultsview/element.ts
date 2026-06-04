@@ -1,7 +1,7 @@
 'use strict';
 
 import Tracker from './itemtracker';
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 
 import b64 from '../common/utils/b64';
 import { contextMenuListener } from '../common/utils';
@@ -68,7 +68,7 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
         this.mode = data.mode;
 
         this.classList.add('jmv-results-item');
-        const errorMsgId = focusLoop.getNextAriaElementId('errormsg');
+        const errorMsgId = interactionManager.nextAriaId('errormsg');
         this.setAttribute('aria-errormessage', errorMsgId);
         this.setAttribute('data-name', b64.enc(this.model.attributes.name));
 

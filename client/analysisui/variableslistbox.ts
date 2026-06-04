@@ -2,7 +2,7 @@
 
 import { FormatDef, VariablesFormat } from './formatdef';
 import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { SelectableOptionListControl, SelectableOptionListControlProperties } from './optionlistcontrol';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { IItem } from './dragndrop';
@@ -203,7 +203,7 @@ export class VariablesListBox extends SelectableOptionListControl<VariablesListB
             allowItem = this._checkIfVariableTypeAllowed(item.properties);
 
         if ( ! allowItem &&  ! silent) {
-            focusLoop.speakMessage(s_('{var} not permitted. Incorrect measure or data type.', {var: itemValue.toAriaLabel()}));
+            interactionManager.announce(s_('{var} not permitted. Incorrect measure or data type.', {var: itemValue.toAriaLabel()}));
             this._flashIcons();
         }
 

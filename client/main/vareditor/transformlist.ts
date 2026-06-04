@@ -2,7 +2,7 @@
 'use strict';
 
 import TransformListItem from './transformlistitem';
-import focusLoop from '../../common/focusloop';
+import interactionManager from '../../common/interactionmanager';
 import { HTMLElementCreator as HTML } from '../../common/htmlelementcreator';
 import { Transform } from '../dataset';
 import { DropdownContent } from './dropdown';
@@ -18,7 +18,7 @@ export default class TransformList extends HTMLElement implements DropdownConten
 
     constructor() {
         super();
-        this.id = focusLoop.getNextAriaElementId('list');
+        this.id = interactionManager.nextAriaId('list');
         this.classList.add("jmv-transform-list");
         this.setAttribute('role', 'list');
 

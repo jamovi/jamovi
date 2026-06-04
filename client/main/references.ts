@@ -1,7 +1,7 @@
 
 'use strict';
 
-import focusLoop from '../common/focusloop';
+import interactionManager, { type FocusLoop } from '../common/interactionmanager';
 import Analyses from './analyses';
 
 interface IReferenceDetails {
@@ -60,6 +60,7 @@ export class References extends HTMLElement {
     _refs: IReferenceDetails[];
     _modules: Set<string>;
     _numbers: { [module: string]: { [name: string]: number } };
+    loop: FocusLoop;
 
     constructor() {
         super();
@@ -71,7 +72,7 @@ export class References extends HTMLElement {
 
         this._root = this.attachShadow({ mode: 'open' });
 
-        let labelId = focusLoop.getNextAriaElementId('label');
+        let labelId = interactionManager.nextAriaId('label');
 
         let style = document.createElement('style');
         style.textContent = this._css();
@@ -79,7 +80,7 @@ export class References extends HTMLElement {
 
         this._root.host.addEventListener('keydown', (event: KeyboardEvent) => {
             if (event.altKey && event.code === 'ArrowDown') {
-                focusLoop.enterFocusLoop(this._body);
+                this.loop.activate();
             }
         });
 
@@ -95,7 +96,7 @@ export class References extends HTMLElement {
         this._root.appendChild(heading);
         this._root.appendChild(this._body);
         
-        focusLoop.addFocusLoop(this._body, { level: 1 });
+        this.loop = interactionManager.registerLoop(this._body, { level: 1 });
     }
 
     setAnalyses(analyses) {

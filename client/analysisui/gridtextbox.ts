@@ -6,7 +6,7 @@ import LayoutGrid from './layoutgrid';
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import { FormatDef, StringFormat } from './formatdef';
 import EnumPropertyFilter from './enumpropertyfilter';
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { VerticalAlignment } from './layoutcell';
 import { HorizontalAlignment } from './gridcontrol';
@@ -127,14 +127,14 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
 
         label = this.translate(label);
 
-        let id = focusLoop.getNextAriaElementId('ctrl');
+        let id = interactionManager.nextAriaId('ctrl');
         this.valueId = id
 
         let cell = null;
         let valueOffset = 0;
         let startClass = label === '' ? '' : 'silky-option-text-start';
         if (label !== '') {
-            this.labelId = focusLoop.getNextAriaElementId('label');
+            this.labelId = interactionManager.nextAriaId('label');
             this.label = HTML.parse(`<label id="${this.labelId}" for="${id}" class="silky-option-text-label silky-control-margin-${this.getPropertyValue('margin')} ${startClass}" style="display: inline; white-space: nowrap;" >${label}</label>`);
             this.$label = $(this.label);
             cell = grid.addCell(column, row, this.label);

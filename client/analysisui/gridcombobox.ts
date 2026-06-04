@@ -4,7 +4,7 @@ import $ from 'jquery';  // for backwards compatibility
 import type LayoutGrid from './layoutgrid';
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import { FormatDef, StringFormat } from './formatdef';
-import _focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { VerticalAlignment } from './layoutcell';
 
@@ -84,7 +84,7 @@ export class GridCombobox extends OptionControl<GridComboboxProperties> {
             label = '';
 
         label = this.translate(label);
-        let id = _focusLoop.getNextAriaElementId('ctrl');
+        let id = interactionManager.nextAriaId('ctrl');
 
         let columnUsed = 0;
         let cell = null;

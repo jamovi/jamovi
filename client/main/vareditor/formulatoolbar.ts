@@ -1,6 +1,6 @@
 'use strict';
 
-import focusLoop from '../../common/focusloop';
+import interactionManager from '../../common/interactionmanager';
 import DataSetViewModel from '../dataset';
 import { DropdownContent } from './dropdown';
 
@@ -65,7 +65,7 @@ function allFunctions(functionsContent) : Descriptions {
     }
 
     function addGroup(titleKey, items) {
-        let labelId = focusLoop.getNextAriaElementId('label');
+        let labelId = interactionManager.nextAriaId('label');
         let group = createElement('div', { role: 'group', 'aria-labelledby': labelId });
         group.appendChild(createElement('div', {
             id: labelId,
@@ -187,7 +187,7 @@ export class Toolbar extends HTMLElement implements DropdownContent {
     this.lastRange = null;
 
     // Main container
-    this.id = focusLoop.getNextAriaElementId('tool');
+    this.id = interactionManager.nextAriaId('tool');
     this.classList.add('jmv-formula-toolbar-options');
 
     // Ops container
@@ -214,7 +214,7 @@ export class Toolbar extends HTMLElement implements DropdownContent {
     $functions.className = 'op';
     $ops.appendChild($functions);
 
-    const functionsLabelId = focusLoop.getNextAriaElementId('label');
+    const functionsLabelId = interactionManager.nextAriaId('label');
     let $functionsTitle = document.createElement('div');
     $functionsTitle.id = functionsLabelId;
     $functionsTitle.className = 'title';
@@ -272,7 +272,7 @@ export class Toolbar extends HTMLElement implements DropdownContent {
     $vars.className = 'op';
     $ops.appendChild($vars);
 
-    const varsLabelId = focusLoop.getNextAriaElementId('label');
+    const varsLabelId = interactionManager.nextAriaId('label');
     let $varsTitle = document.createElement('div');
     $varsTitle.id = varsLabelId;
     $varsTitle.className = 'title';

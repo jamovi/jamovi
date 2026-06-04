@@ -2,7 +2,7 @@
 
 import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
 import { FormatDef, StringFormat } from './formatdef';
-import _focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import type LayoutGrid from './layoutgrid';
 import { VerticalAlignment } from './layoutcell';
@@ -67,7 +67,7 @@ export class LevelSelector extends OptionControl<LevelSelectorProperties> {
 
         let columnUsed = 0;
         let cell = null;
-        let id = _focusLoop.getNextAriaElementId('ctrl');
+        let id = interactionManager.nextAriaId('ctrl');
         if (label !== '') {
             this.label = HTML.parse(`<label for="${id}" class="silky-option-combo-label silky-control-margin-${this.getPropertyValue('margin')}" style="display: inline; white-space: nowrap;" >${label}</label>`);
             cell = grid.addCell(column, row, this.label);

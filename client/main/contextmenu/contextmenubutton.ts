@@ -3,7 +3,7 @@
 
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 import RibbonGroup from '../ribbon/ribbongroup';
-import focusLoop from '../../common/focusloop';
+import interactionManager from '../../common/interactionmanager';
 import Menu from '../../common/menu';
 
 import ActionHub from '../actionhub';
@@ -72,10 +72,10 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
         this.classList.add('jmv-ribbon-button-size-' + size);
         this.setAttribute('tabindex', '0');
         this.setAttribute('role', 'menuitem');
-        this.id = focusLoop.getNextAriaElementId('menu-btn');
+        this.id = interactionManager.nextAriaId('menu-btn');
         this.setAttribute('id', this.id);
 
-        this.labelId = focusLoop.getNextAriaElementId('label');
+        this.labelId = interactionManager.nextAriaId('label');
 
         this.tabName = null;
         this._definedTabName = false;
@@ -101,7 +101,7 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
         if (right)
             this.classList.add('right');
 
-        focusLoop.createHoverItem(this, () => {
+        interactionManager.createHoverItem(this, () => {
             if (this.menu)
                 this.showMenu(true);
             else

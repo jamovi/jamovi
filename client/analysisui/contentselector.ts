@@ -2,7 +2,7 @@
 
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import EnumPropertyFilter from './enumpropertyfilter';
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import type MultiContainer from './multicontainer';
 import LayoutGrid from './layoutgrid';
@@ -70,7 +70,7 @@ export class ContentSelector extends OptionControl<ContentSelectorProperties> {
         let groupText = this.getPropertyValue('label');
         groupText = this.translate(groupText);
 
-        this.labelId = focusLoop.getNextAriaElementId('label');
+        this.labelId = interactionManager.nextAriaId('label');
         this.header = HTML.parse(`<div class="selector-body silky-control-margin-${this.getPropertyValue("margin")}">
                             <label id="${this.labelId}">${groupText}</label>
                           </div>`);
@@ -97,7 +97,7 @@ export class ContentSelector extends OptionControl<ContentSelectorProperties> {
     setBody(body: MultiContainer) {     
         let bodyId = body.el.getAttribute('id');
         if (!bodyId) {
-            bodyId = focusLoop.getNextAriaElementId('body');
+            bodyId = interactionManager.nextAriaId('body');
             body.el.setAttribute('id', bodyId);
         }
         body.el.setAttribute('role', 'region');
@@ -134,7 +134,7 @@ export class ContentSelector extends OptionControl<ContentSelectorProperties> {
                         this.tablist.append(button);
                         break;
                     case 'radio':
-                        let labelId = focusLoop.getNextAriaElementId('label');
+                        let labelId = interactionManager.nextAriaId('label');
                         let label = HTML.parse(`<label id="${labelId}">${optionTitle}</label>`);
                         let radio = HTML.parse(`<input class="clickable" type="radio" name="${name}" value="${options[i].name}"/>`);
                         label.prepend(radio);

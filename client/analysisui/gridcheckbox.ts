@@ -6,7 +6,7 @@ import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import createChildLayoutSupport from './childlayoutsupport';
 import { BooleanFormat, FormatDef } from './formatdef';
 import Icons from './iconsupport';
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 export type GridCheckboxProperties = GridOptionControlProperties<boolean|string[]> & {
@@ -128,7 +128,7 @@ export class GridCheckbox extends OptionControl<GridCheckboxProperties, boolean>
         if (label === null)
             label = this.getTranslatedProperty('name');
 
-        this.labelId = focusLoop.getNextAriaElementId('label');
+        this.labelId = interactionManager.nextAriaId('label');
         let checkbox = HTML.parse(`<label id="${this.labelId}" style="white-space: nowrap;"></label>`);
         this.input = HTML.parse('<input class="silky-option-input" tabindex="0" type="checkbox" value="value" ' +  (value ? 'checked' : '') + ' >');
         this.$input = $(this.input);

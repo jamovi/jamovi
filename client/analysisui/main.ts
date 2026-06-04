@@ -19,7 +19,7 @@ import LayoutUpdateCheck from './layoutupdatecheck';
 import View, { utils } from './actions';
 import LayoutActionManager from './layoutactionmanager';
 import { applyMagicEvents as ApplyMagicEvents } from './applymagicevents';
-import Keyboard from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 import I18ns, { I18n, I18nData } from "../common/i18n";
@@ -308,20 +308,19 @@ function loadAnalysis(def, i18nDef: I18nData, appI18nDef: I18nData, jamoviVersio
     });
 
     let optionsBlock = document.getElementById('options-block');
-    let focusToken = Keyboard.addFocusLoop(optionsBlock);
-    //focusToken.on('focusleave', closeOptions);
-    Keyboard.on('focus', (event) => {
-        Keyboard.enterFocusLoop(optionsBlock);
+    let loop = interactionManager.registerLoop(optionsBlock);
+    interactionManager.on('focus', (event) => {
+        loop.activate();
     });
-    Keyboard.on('blur', (event) => {
-        Keyboard.leaveFocusLoop(optionsBlock);
+    interactionManager.on('blur', (event) => {
+        loop.deactivate({ source: 'programmatic' });
     });
     optionsBlock.addEventListener('focus', (event) => {
-        Keyboard.enterFocusLoop(optionsBlock);
+        loop.activate();
     });
-    Keyboard.setFocusMode(focusMode);
+    interactionManager.setMode(focusMode);
     
-    Keyboard.enterFocusLoop(optionsBlock);
+    loop.activate();
 
     let $optionsBlock = document.querySelector('.jmv-options-block');
     let $title = document.querySelector('.silky-options-title');
@@ -538,6 +537,6 @@ function mouseDown(event) {
 }
 
 function closeOptions() {
-    Keyboard.setFocusMode('default');
+    interactionManager.setMode('default');
     parentFrame.send("hideOptions", null);
 }
