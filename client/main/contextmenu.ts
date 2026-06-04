@@ -2,7 +2,7 @@
 'use strict';
 
 import ContextMenus from './contextmenu/contextmenus';
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import Menu from '../common/menu';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { EventEmitter } from 'eventemitter3';
@@ -86,7 +86,7 @@ export class ContextMenu extends EventEmitter { // this is constructed at the bo
             if (openButton !== null)
                 openButton.getEntryButton(openPath, true, true);
             else
-                focusLoop.enterFocusLoop(this.el, { withMouse: true });
+                this.menu.loop.activate({ withMouse: true });
         }, 0);
     }
 

@@ -1,7 +1,7 @@
 'use strict';
 
 import VariableListItem from './variablelistitem';
-import focusLoop from '../../common/focusloop';
+import interactionManager from '../../common/interactionmanager';
 import { Column } from '../dataset';
 import { DropdownContent } from './dropdown';
 
@@ -13,7 +13,7 @@ class VariableList extends HTMLElement implements DropdownContent {
 
     constructor() {
         super();
-        this.id = focusLoop.getNextAriaElementId('list');
+        this.id = interactionManager.nextAriaId('list');
 
         // Create main container
 

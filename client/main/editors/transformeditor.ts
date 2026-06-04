@@ -8,7 +8,7 @@ import VariableList from '../vareditor/variablelist';
 import MeasureList from '../vareditor/measurelist';
 import ColourPalette from './colourpalette';
 import Notify from '../notification';
-import focusLoop from '../../common/focusloop';
+import interactionManager, { type FocusLoop } from '../../common/interactionmanager';
 import DataSetViewModel, { Column, MeasureType, Transform } from '../dataset';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 
@@ -53,7 +53,6 @@ class TransformEditor extends HTMLElement {
     variableList: VariableList;
     formula: string[];
     _undoFormula: string[];
-    _focusLeaving: boolean;
     _addingLevel: boolean;
     _swappingItems: boolean;
     prevStart: number;
@@ -73,6 +72,7 @@ class TransformEditor extends HTMLElement {
     $measureIcon: HTMLElement;
     $viewConnectionInfo: HTMLElement;
     _$wasEditingOpsFormula: HTMLElement;
+    private loop: FocusLoop;
     
     constructor(model: DataSetViewModel) {
         super();
@@ -125,26 +125,20 @@ class TransformEditor extends HTMLElement {
         this.$contents = HTML.parse('<div class="contents" tabindex="0"></div>');
         this.append(this.$contents);
 
-        let focusToken = focusLoop.addFocusLoop(this.$contents, {level: 2, exitSelector: this.$contents, keyToEnter: true });
-        focusToken.on('focusleave', () => {
-            this._focusLeaving = true;
+        this.loop = interactionManager.registerLoop(this.$contents, {
+            level: 2,
+            exitSelector: this.$contents,
+            keyToEnter: true,
+            modal: true,
+            exitKeys: ['Escape'],
         });
-
-        this.$contents.addEventListener('focusin', (event) => {
-            if (this._focusLeaving) {
-                this._focusLeaving = false;
-                tarp.hide('recode-formula');
-            }
-            else if (event.relatedTarget instanceof Node && this.$contents.contains(event.relatedTarget))
-                this._focusFormulaControls();
-
+        this.loop.on('activate', () => this._focusFormulaControls());
+        this.loop.on('deactivate', (event) => {
+            let ff = dropdown.focusedOn();
+            if (event.reason === 'focus-transfer' && ff !== null && this.$contents.contains(ff))
+                return;
+            tarp.hide('recode-formula');
         });
-
-        this.$contents.addEventListener('focusout', (event) => {
-            let ff= dropdown.focusedOn();
-            if ( !this._addingLevel && event.relatedTarget instanceof Node && ! this.$contents.contains(event.relatedTarget) && (ff !== null && ! this.$contents.contains(ff)))
-                tarp.hide('recode-formula');
-        } );
 
         let $insertBox = HTML.parse('<button class="insert-box"></button>');
         this.$contents.append($insertBox);
@@ -155,11 +149,6 @@ class TransformEditor extends HTMLElement {
         $insertBox.addEventListener('click', (event) => {
             this._createRecodeConditionUI();
         });
-
-        $insertBox.addEventListener('focus', () => {
-            this._focusFormulaControls();
-        } );
-
 
         let $list = HTML.parse('<div class="content-list"></div>');
         this.$contents.append($list);
@@ -191,12 +180,9 @@ class TransformEditor extends HTMLElement {
             if ( ! this.$contents.classList.contains('super-focus'))
                 return;
 
-            let undo = event.key === 'Escape';
-            if (event.key === 'Escape' || event.key === 'Enter') {
-                if (undo) {
-                    this.formula = this._undoFormula;
-                    this._createFormulaUI(false);
-                }
+            if (event.key === 'Escape') {
+                this.formula = this._undoFormula;
+                this._createFormulaUI(false);
                 tarp.hide('recode-formula');
                 dropdown.hide();
             }
@@ -293,7 +279,6 @@ class TransformEditor extends HTMLElement {
     }
 
     _createRecodeConditionUI() {
-        this._focusFormulaControls();
         if (this.formula.length === 1 && this.formula[0] === '$source') {
             this.formula[0] = '';
             this.querySelector('.formula-box.recode-else .formula').textContent = '';
@@ -410,16 +395,21 @@ class TransformEditor extends HTMLElement {
 
         this.$contents.classList.add('super-focus');
         tarp.show('recode-formula', true, 0.1, 299).then(() => {
-            this.$contents.classList.remove('super-focus');
-            this._applyFormula();
-            window.clearTextSelection();
-            dropdown.hide();
+            this._closeFormulaControls();
         }, () => {
-            this.$contents.classList.remove('super-focus');
-            this._applyFormula();
-            window.clearTextSelection();
-            dropdown.hide();
+            this._closeFormulaControls();
         });
+    }
+
+    _closeFormulaControls() {
+        if ( ! this.$contents.classList.contains('super-focus'))
+            return;
+
+        this.$contents.classList.remove('super-focus');
+        this.loop.deactivate({ source: 'programmatic' });
+        this._applyFormula();
+        window.clearTextSelection();
+        dropdown.hide();
     }
 
     _addTransformUIItem(formula1: string, formula2?: string, hasTransition?: boolean) {
@@ -667,7 +657,6 @@ class TransformEditor extends HTMLElement {
     }
 
     _removeCondition($formulaBox: HTMLElement) {
-        this._focusFormulaControls();
         let condIndex = [...$formulaBox.parentNode.children].indexOf($formulaBox);
         let index = condIndex * 2;
         this.formula.splice(index, 2);
@@ -680,7 +669,7 @@ class TransformEditor extends HTMLElement {
     }
 
     _createFormulaButtons(elements: TransformDetails) {
-        let $rm = HTML.parse('<div class="remove-cond" data-index="0"><span class="mif-cross"></span></div>');
+        let $rm = HTML.parse('<button class="remove-cond" data-index="0"><span class="mif-cross"></span></button>');
         elements.$formulaGrid.append($rm);
         $rm.addEventListener('click', (event) => {
             elements.$formulaBox.addEventListener("transitionend", (event) => {
@@ -801,6 +790,9 @@ class TransformEditor extends HTMLElement {
         }
 
         let $fp = HTML.parse('<div class="formula-list-item item-' + index + '" style="grid-column-start: ' + (index + 1) + '; grid-row-start: 1;"></div>');
+        if (!hasOp) {
+            $fp.style.gridColumnEnd = '-2';
+        }
         $formulaGrid.append($fp);
 
         elements.$focusedFormula = null;
@@ -839,7 +831,6 @@ class TransformEditor extends HTMLElement {
         $formula.addEventListener('focus', (event) => {
             elements.$formulaBox.classList.add('selected');
             elements.$focusedFormula = $formula;
-            this._focusFormulaControls();
             if (this.formulasetup.focusedOn() !== $formula)
                 this.formulasetup.show($formula, '', true);
             if (hasOp)

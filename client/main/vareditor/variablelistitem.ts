@@ -1,6 +1,6 @@
 'use strict';
 
-import focusLoop from '../../common/focusloop';
+import interactionManager from '../../common/interactionmanager';
 import { Column } from '../dataset';
 
 class VariableListItem extends HTMLElement {
@@ -16,8 +16,8 @@ class VariableListItem extends HTMLElement {
     this.variable = variable;
     this.name = variable.name;
 
-    const labelId = focusLoop.getNextAriaElementId('label');
-    this.id = focusLoop.getNextAriaElementId('listitem');
+    const labelId = interactionManager.nextAriaId('label');
+    this.id = interactionManager.nextAriaId('listitem');
 
     // Create main container div
     this.classList.add('jmv-variable-list-item');

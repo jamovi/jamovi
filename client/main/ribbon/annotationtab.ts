@@ -102,11 +102,11 @@ export class AnnotationTab extends RibbonTab {
             this.items = [
                 new RibbonGroup({
                     title: _('Clipboard'), margin: 'large', items: [
-                        new RibbonButton({ title: _('Paste'), name: 'textPaste', size: 'large', shortcutKey: 'v', shortcutPosition: { x: '50%', y: '90%' } }),
+                        new RibbonButton({ title: _('Paste'), name: 'textPaste', size: 'large', keyTipKey: 'v', keyTipPosition: { x: '50%', y: '90%' } }),
                         new RibbonGroup({
                             orientation: 'vertical', items: [
-                                new RibbonButton({ title: _('Cut'), name: 'textCut', size: 'small', shortcutKey: 'x', shortcutPosition: { x: '25%', y: '25%' } }),
-                                new RibbonButton({ title: _('Copy'), name: 'textCopy', size: 'small', shortcutKey: 'c1' })
+                                new RibbonButton({ title: _('Cut'), name: 'textCut', size: 'small', keyTipKey: 'x', keyTipPosition: { x: '25%', y: '25%' } }),
+                                new RibbonButton({ title: _('Copy'), name: 'textCopy', size: 'small', keyTipKey: 'c1' })
                             ]
                         })
                     ]
@@ -114,8 +114,8 @@ export class AnnotationTab extends RibbonTab {
                 new RibbonSeparator(),
                 new RibbonGroup({
                     title: _('Edit'), margin: 'large', alignContents: 'center', items: [
-                        new RibbonButton({ title: _('Undo Edit'), name: 'textUndo', size: 'small', shortcutKey: 'az' }),
-                        new RibbonButton({ title: _('Redo Edit'), name: 'textRedo', size: 'small', shortcutKey: 'aq' })
+                        new RibbonButton({ title: _('Undo Edit'), name: 'textUndo', size: 'small', keyTipKey: 'az' }),
+                        new RibbonButton({ title: _('Redo Edit'), name: 'textRedo', size: 'small', keyTipKey: 'aq' })
                     ]
                 }),
                 new RibbonSeparator(),
@@ -123,19 +123,19 @@ export class AnnotationTab extends RibbonTab {
                     title: _('Font'), margin: 'large', orientation: 'vertical', items: [
                         new RibbonGroup({
                             orientation: 'horizontal', items: [
-                                new RibbonButton({ title: _('Bold'), name: 'textBold', size: 'small', icon: Icons.bold, shortcutKey: '1', shortcutPosition: { x: '25%', y: '25%' } }),
-                                new RibbonButton({ title: _('Italic'), name: 'textItalic', size: 'small', icon: Icons.italic, shortcutKey: '2', shortcutPosition: { x: '25%', y: '25%' } }),
-                                new RibbonButton({ title: _('Underline'), name: 'textUnderline', size: 'small', icon: Icons.underline, shortcutKey: '3', shortcutPosition: { x: '25%', y: '25%' } }),
-                                new RibbonButton({ title: _('Strike'), name: 'textStrike', size: 'small', icon: Icons.strike, shortcutKey: '4', shortcutPosition: { x: '25%', y: '25%' } })
+                                new RibbonButton({ title: _('Bold'), name: 'textBold', size: 'small', icon: Icons.bold, keyTipKey: '1', keyTipPosition: { x: '25%', y: '25%' } }),
+                                new RibbonButton({ title: _('Italic'), name: 'textItalic', size: 'small', icon: Icons.italic, keyTipKey: '2', keyTipPosition: { x: '25%', y: '25%' } }),
+                                new RibbonButton({ title: _('Underline'), name: 'textUnderline', size: 'small', icon: Icons.underline, keyTipKey: '3', keyTipPosition: { x: '25%', y: '25%' } }),
+                                new RibbonButton({ title: _('Strike'), name: 'textStrike', size: 'small', icon: Icons.strike, keyTipKey: '4', keyTipPosition: { x: '25%', y: '25%' } })
                             ]
                         }),
                         new RibbonGroup({
                             orientation: 'horizontal', items: [
-                                new RibbonButton({ title: _('Sub Script'), name: 'textSubScript', size: 'small', icon: Icons.script.sub, shortcutKey: '5' }),
-                                new RibbonButton({ title: _('Super Script'), name: 'textSuperScript', size: 'small', icon: Icons.script.super, shortcutKey: '6' }),
+                                new RibbonButton({ title: _('Sub Script'), name: 'textSubScript', size: 'small', icon: Icons.script.sub, keyTipKey: '5' }),
+                                new RibbonButton({ title: _('Super Script'), name: 'textSuperScript', size: 'small', icon: Icons.script.super, keyTipKey: '6' }),
                                 new RibbonSeparator(),
-                                new RibbonButton({ title: _('Highlight Color'), name: 'textBackColor', size: 'small', class: 'color-picker', icon: Icons.background, subItems: this.createColorItems('bc', _('No Color')), shortcutKey: 'h' }),
-                                new RibbonButton({ title: _('Text Color'), name: 'textColor', size: 'small', class: 'color-picker', icon: Icons.color, subItems: this.createColorItems('tc', _('Automatic')), shortcutKey: 'fc' })
+                                new RibbonButton({ title: _('Highlight Color'), name: 'textBackColor', size: 'small', class: 'color-picker', icon: Icons.background, subItems: this.createColorItems('bc', _('No Color')), keyTipKey: 'h' }),
+                                new RibbonButton({ title: _('Text Color'), name: 'textColor', size: 'small', class: 'color-picker', icon: Icons.color, subItems: this.createColorItems('tc', _('Automatic')), keyTipKey: 'fc' })
                             ]
                         })
                     ]
@@ -145,19 +145,19 @@ export class AnnotationTab extends RibbonTab {
                     title: _('Paragraph'), margin: 'large', orientation: 'vertical', items: [
                         new RibbonGroup({
                             orientation: 'horizontal', items: [
-                                new RibbonButton({ title: _('Left Align'), name: 'textAlignLeft', size: 'small', icon: Icons.align[''], shortcutKey: 'al', shortcutPosition: { x: '25%', y: '25%' } }),
-                                new RibbonButton({ title: _('Center Align'), name: 'textAlignCenter', size: 'small', icon: Icons.align.center, shortcutKey: 'ac', shortcutPosition: { x: '25%', y: '25%' } }),
-                                new RibbonButton({ title: _('Right Align'), name: 'textAlignRight', size: 'small', icon: Icons.align.right, shortcutKey: 'ar', shortcutPosition: { x: '25%', y: '25%' } }),
-                                new RibbonButton({ title: _('Justify'), name: 'textAlignJustify', size: 'small', icon: Icons.align.justify, shortcutKey: 'aj', shortcutPosition: { x: '25%', y: '25%' } })
+                                new RibbonButton({ title: _('Left Align'), name: 'textAlignLeft', size: 'small', icon: Icons.align[''], keyTipKey: 'al', keyTipPosition: { x: '25%', y: '25%' } }),
+                                new RibbonButton({ title: _('Center Align'), name: 'textAlignCenter', size: 'small', icon: Icons.align.center, keyTipKey: 'ac', keyTipPosition: { x: '25%', y: '25%' } }),
+                                new RibbonButton({ title: _('Right Align'), name: 'textAlignRight', size: 'small', icon: Icons.align.right, keyTipKey: 'ar', keyTipPosition: { x: '25%', y: '25%' } }),
+                                new RibbonButton({ title: _('Justify'), name: 'textAlignJustify', size: 'small', icon: Icons.align.justify, keyTipKey: 'aj', keyTipPosition: { x: '25%', y: '25%' } })
                             ]
                         }),
                         new RibbonGroup({
                             orientation: 'horizontal', items: [
-                                new RibbonButton({ title: _('Ordered List'), name: 'textListOrdered', size: 'small', icon: Icons.list.ordered, shortcutKey: 'n' }),
-                                new RibbonButton({ title: _('Bullet List'), name: 'textListBullet', size: 'small', icon: Icons.list.bullet, shortcutKey: 'u' }),
+                                new RibbonButton({ title: _('Ordered List'), name: 'textListOrdered', size: 'small', icon: Icons.list.ordered, keyTipKey: 'n' }),
+                                new RibbonButton({ title: _('Bullet List'), name: 'textListBullet', size: 'small', icon: Icons.list.bullet, keyTipKey: 'u' }),
                                 new RibbonSeparator(),
-                                new RibbonButton({ title: _('Indent -1'), name: 'textIndentLeft', size: 'small', icon: Icons.indent['-1'], shortcutKey: 'ao' }),
-                                new RibbonButton({ title: _('Indent +1'), name: 'textIndentRight', size: 'small', icon: Icons.indent['+1'], shortcutKey: 'ai' })
+                                new RibbonButton({ title: _('Indent -1'), name: 'textIndentLeft', size: 'small', icon: Icons.indent['-1'], keyTipKey: 'ao' }),
+                                new RibbonButton({ title: _('Indent +1'), name: 'textIndentRight', size: 'small', icon: Icons.indent['+1'], keyTipKey: 'ai' })
                             ]
                         })
                     ]
@@ -165,16 +165,16 @@ export class AnnotationTab extends RibbonTab {
                 new RibbonSeparator(),
                 new RibbonGroup({
                     title: _('Insert'), margin: 'large', items: [
-                        new RibbonButton({ title: _('Formula'), name: 'textFormula', size: 'medium', icon: Icons.formula, shortcutKey: 'f' }),
+                        new RibbonButton({ title: _('Formula'), name: 'textFormula', size: 'medium', icon: Icons.formula, keyTipKey: 'f' }),
                     ]
                 }),
                 new RibbonSeparator(),
                 new RibbonGroup({
                     title: _('Styles'), margin: 'large', items: [
-                        new RibbonButton({ title: _('Code-Block'), name: 'textCodeBlock', margin: 'large', size: 'large', icon: Icons['code-block'], shortcutKey: 'cb', shortcutPosition: { x: '50%', y: '90%' } }),
-                        new RibbonButton({ title: _('Heading'), name: 'textH2', margin: 'large', size: 'large', icon: Icons.header['2'], shortcutKey: 'h', shortcutPosition: { x: '50%', y: '90%' } }),
+                        new RibbonButton({ title: _('Code-Block'), name: 'textCodeBlock', margin: 'large', size: 'large', icon: Icons['code-block'], keyTipKey: 'cb', keyTipPosition: { x: '50%', y: '90%' } }),
+                        new RibbonButton({ title: _('Heading'), name: 'textH2', margin: 'large', size: 'large', icon: Icons.header['2'], keyTipKey: 'h', keyTipPosition: { x: '50%', y: '90%' } }),
                         //new RibbonButton({ title: _('Clear'), name: 'textClear', margin: 'large', size: 'large', icon: Icons.clean }),
-                        new RibbonButton({ title: _('Link'), name: 'textLink', margin: 'large', size: 'large', icon: Icons.link, shortcutKey: 'l', shortcutPosition: { x: '50%', y: '90%' } })
+                        new RibbonButton({ title: _('Link'), name: 'textLink', margin: 'large', size: 'large', icon: Icons.link, keyTipKey: 'l', keyTipPosition: { x: '50%', y: '90%' } })
                     ]
                 })
             ];

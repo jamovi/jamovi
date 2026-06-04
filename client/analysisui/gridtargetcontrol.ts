@@ -20,7 +20,7 @@ import type LayoutGrid from './layoutgrid';
 import { Margin } from './controlbase';
 import { IControlProvider } from './optionsview';
 
-import A11y from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 
 type OptionListControlType<U> = InstanceType<typeof OptionListControl<TargetListControlProperties<U>>>;
 
@@ -969,9 +969,9 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
                     let selectedCount = selectedItems.length;
                     if (selectedCount > 0) {
                         if (selectedItems.length === 1) 
-                            A11y.speakMessage(s_('{vars} added to {list}.', {vars: selectedItems[0].value.toAriaLabel(), list: label}));
+                            interactionManager.announce(s_('{vars} added to {list}.', {vars: selectedItems[0].value.toAriaLabel(), list: label}));
                         else 
-                            A11y.speakMessage(s_('{vars} items added to {list}.', {vars: selectedCount, list: label}));   
+                            interactionManager.announce(s_('{vars} items added to {list}.', {vars: selectedCount, list: label}));   
 
                         for (let i = 0; i < selectedCount; i++) {
                             let selectedItem = selectedItems[i];
@@ -1015,9 +1015,9 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
 
                     let removedCount = selectionCount - index;
                     if (removedCount === 1)
-                        A11y.speakMessage(s_('{vars} removed from {list}.', {vars: removedVar, list: label}));
+                        interactionManager.announce(s_('{vars} removed from {list}.', {vars: removedVar, list: label}));
                     else
-                        A11y.speakMessage(s_('{vars} items removed from {list}.', {vars: removedCount, list: label})); 
+                        interactionManager.announce(s_('{vars} items removed from {list}.', {vars: removedCount, list: label})); 
                     postProcessList = this.targetGrid;
                 }
             });
@@ -1202,7 +1202,7 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
         let label = this.getPropertyValue('label');
         if (label !== null) {
             label = this.translate(label);
-            this.labelId = A11y.getNextAriaElementId('label');
+            this.labelId = interactionManager.nextAriaId('label');
             this.label = HTML.parse(`<div id="${this.labelId}" style="white-space: nowrap;" class="silky-target-list-header silky-control-margin-${this.getPropertyValue('margin')}">${label}</div>`);
             this.$label = $(this.label);
             grid.addCell(column, row, this.label);
