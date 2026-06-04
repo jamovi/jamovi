@@ -11,7 +11,7 @@ import PlotsTab from './ribbon/plotstab';
 import RibbonTab from './ribbon/ribbontab';
 import SelectionLoop from '../common/selectionloop';
 import Notifs, { NotifData } from './ribbon/notifs';
-import focusLoop from '../common/focusloop';
+import interactionManager, { keyTips } from '../common/interactionmanager';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { Modules } from './modules';
 import Settings from './settings';
@@ -191,7 +191,7 @@ export class RibbonView extends EventDistributor {
         this.notifs = new Notifs();
         this.append(this.notifs);
 
-        focusLoop.addFocusLoop(this);
+        interactionManager.registerLoop(this);
 
         this.$header = this.querySelector<HTMLElement>('.jmv-ribbon-header');
         this.$header.append(this.appMenu);
@@ -221,7 +221,7 @@ export class RibbonView extends EventDistributor {
             }
         });
 
-        focusLoop.applyShortcutOptions(this.$fileButton, {
+        keyTips.register(this.$fileButton, {
                 key: 'F',
                 position: { x: '50%', y: '75%' },
                 action: (event) => {
@@ -248,7 +248,7 @@ export class RibbonView extends EventDistributor {
             this.dispatchEvent(event);
             //this.trigger('toggle-screen-state');
         });
-        focusLoop.applyShortcutOptions(this.$fullScreen, {
+        keyTips.register(this.$fullScreen, {
                 key: 'S',
                 position: { x: '50%', y: '75%' },
                 action: (event) => {
@@ -285,9 +285,9 @@ export class RibbonView extends EventDistributor {
 
             let $tab = HTML.parse(`<div class="${ classes }" data-tabname="${ tab.name.toLowerCase() }" tabindex="${ isSelected ? 0 : -1 }" role="tab" aria-selected="${ isSelected ? true : false }" aria-controls="ribbon-body" id="tab-${tab.name.toLowerCase()}">${ tab.title }</div>`);
 
-            if (tab.shortcutPath) {
-                focusLoop.applyShortcutOptions($tab, {
-                    key: tab.shortcutPath.toUpperCase(),
+            if (tab.keyTipPath) {
+                keyTips.register($tab, {
+                    key: tab.keyTipPath.toUpperCase(),
                     position: { x: '50%', y: '75%' },
                     action: tabShortcutAction,
                     label: tab.title
@@ -301,7 +301,7 @@ export class RibbonView extends EventDistributor {
 
         this.$tabs = this.$header.querySelectorAll<HTMLElement>('.jmv-ribbon-tab:not(.file-tab)');
 
-        focusLoop.applyShortcutOptions(this.appMenu, {
+        keyTips.register(this.appMenu, {
             key: 'M',
             position: { x: '50%', y: '75%' },
             action: (event) => {
@@ -334,7 +334,7 @@ export class RibbonView extends EventDistributor {
 
         if (tab.ribbon) {
             this.$body.append(tab.ribbon);
-            focusLoop.updateShortcuts({ silent: true});
+            keyTips.update({ silent: true});
         }
     }
 

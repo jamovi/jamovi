@@ -3,7 +3,7 @@ import ActionHub from '../actionhub';
 import Menu from "../../common/menu";
 import RibbonGroup from "../ribbon/ribbongroup";
 import ContextMenuButton from "./contextmenubutton";
-import focusLoop from '../../common/focusloop';
+import interactionManager from '../../common/interactionmanager';
 
 export interface SplitButtonOption {
     label: string;
@@ -71,7 +71,7 @@ export class SplitButton extends HTMLElement implements RibbonItem {
             this.addItem( new ContextMenuButton({ title: o.label, name: o.name,  eventData: cloneEventData }));
         }
 
-        focusLoop.createHoverItem(this.arrowButton, () => {
+        interactionManager.createHoverItem(this.arrowButton, () => {
             this.showMenu(true);
         });
 

@@ -4,7 +4,7 @@ import $ from 'jquery';  // for backwards compatibility
 
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import createChildLayoutSupport from './childlayoutsupport';
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { GridComboboxProperties } from './gridcombobox';
 
@@ -86,7 +86,7 @@ export class GridRadioButton extends OptionControl<GridOptionControlProperties<s
 
         label = this.translate(label);
 
-        this.labelId = focusLoop.getNextAriaElementId('label');
+        this.labelId = interactionManager.nextAriaId('label');
         let radioButton = HTML.parse(`<label id="${this.labelId}" style="white-space: nowrap;"></label>`);
         this.input = HTML.parse('<input id="' + name + '" class="silky-option-input" type="radio" name="' + name + '" value="value" ' +  ((this.checkedValue === optionValue) ? 'checked' : '') + ' >');
         this.$input = $(this.input);

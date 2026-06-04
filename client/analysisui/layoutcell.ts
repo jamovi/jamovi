@@ -1,7 +1,7 @@
 
 'use strict';
 
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import LayoutGrid from './layoutgrid';
 
 export interface ICellData { 
@@ -65,7 +65,7 @@ export class LayoutCell extends HTMLElement {
         this.style.boxSizing = 'border-box';
         this.classList.add('layout-cell','not-rendered');
 
-        this.setAttribute('id', focusLoop.getNextAriaElementId('cell'));
+        this.setAttribute('id', interactionManager.nextAriaId('cell'));
         this.setAttribute('role', 'presentation');
 
         //if (parent.editable)

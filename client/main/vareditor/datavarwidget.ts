@@ -6,20 +6,20 @@ import tarp from '../utils/tarp';
 import dropdown from './dropdown';
 import MissingValueEditor from '../editors/missingvalueeditor';
 import MeasureList from './measurelist';
-import _dialogs from 'dialogs';
-import focusLoop from '../../common/focusloop';
+import interactionManager, { type FocusLoop } from '../../common/interactionmanager';
 import { s6e } from '../../common/utils';
 import { DataType, MeasureType } from '../dataset';
 import VariableModel from './variablemodel';
 import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import MsgDialog from '../../common/msgdialog';
 
 class DataVarWidget extends HTMLElement {
 
-    dialogs: any;
     attached: boolean = false;
     model: VariableModel;
     _focusLeaving: boolean;
     _addingLevel: boolean;
+    _restoringLevelFocus: boolean;
 
     $left: HTMLElement;
     $dataTypeList: HTMLSelectElement;
@@ -39,13 +39,12 @@ class DataVarWidget extends HTMLElement {
 
     missingValueEditor: MissingValueEditor;
     measureList: MeasureList;
+    private levelsLoop: FocusLoop;
 
     constructor(model: VariableModel) {
         super();
 
         this.model = model;
-
-        this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('OK')});
 
         this._clickLevel = this._clickLevel.bind(this);
 
@@ -74,9 +73,18 @@ class DataVarWidget extends HTMLElement {
 
         this.$levelsCrtl = HTML.parse('<div class="jmv-variable-editor-levels-control" tabindex="0"></div>');
         $body.append(this.$levelsCrtl);
-        let focusToken = focusLoop.addFocusLoop(this.$levelsCrtl, {level: 1, exitSelector: this.$levelsCrtl, keyToEnter: true });
-        focusToken.on('focusleave', () => {
-            this._focusLeaving = true;
+        this.levelsLoop = interactionManager.registerLoop(this.$levelsCrtl, {
+            level: 1,
+            exitSelector: this.$levelsCrtl,
+            exitKeys: ['Escape'],
+            keyToEnter: true,
+            modal: true,
+        });
+        this.levelsLoop.on('deactivate', () => {
+            if (!this._addingLevel) {
+                this._focusLeaving = true;
+                tarp.hide('levels');
+            }
         });
         this.$addLevelButton = HTML.parse(`<button class="add-level" aria-label="${_('Add new level')}"><span class="mif-plus"></span></button>`);
         this.$levelsCrtl.append(this.$addLevelButton);
@@ -105,7 +113,7 @@ class DataVarWidget extends HTMLElement {
         });
 
         this.$levelsCrtl.addEventListener('focusout', (event) => {
-            if ( !this._addingLevel && event.relatedTarget instanceof Node && ! this.$levelsCrtl.contains(event.relatedTarget))
+            if ( !this._addingLevel && !this._restoringLevelFocus && event.relatedTarget instanceof Node && ! this.$levelsCrtl.contains(event.relatedTarget))
                 tarp.hide('levels');
         } );
 
@@ -123,113 +131,107 @@ class DataVarWidget extends HTMLElement {
 
                 let levels = this.model.get('levels');
                 this._addingLevel = true;
-                let response = await new Promise((resolve, reject) => {
-                    let msg = _('Enter level value');
-                    focusLoop.speakMessage(msg);
-                    this.dialogs.prompt(msg, '', (result) => {
-                        let widget = document.body.querySelector<HTMLElement>('.dialog-widget.prompt');
-                        focusLoop.leaveFocusLoop(widget);
-                        if (result === undefined)
-                            reject('');
+
+                let msg = _('Enter level value');
+                interactionManager.announce(msg);
+
+                let response = await MsgDialog.show(msg, {cancel: _('Cancel'), ok: _('OK')}, '').then(async (result) => {
+                    if (result.action === 'ok') {
+                        let value = result.value!.trim();
+
+                        let max = 0;
+                        for (let column of this.model.columns) {
+                            if (column.levels.length >  max) {
+                                max = column.levels.length;
+                            }
+                        }
+
+                        let n = max;
+                        if (recordValue)
+                            n = parseInt(value);
+
+                        if (isNaN(n))
+                            throw _('{r} is not an integer', { r: value });
                         else {
 
-                            result = result.trim();
-
-                            let max = 0;
-                            for (let column of this.model.columns) {
-                                if (column.levels.length >  max) {
-                                    max = column.levels.length;
-                                }
-                            }
-
-                            let n = max;
-                            if (recordValue)
-                                n = parseInt(result);
-
-                            if (isNaN(n))
-                                reject(_('{r} is not an integer', { r: result }));
-                            else {
-
-                                let existing = new Set();
-                                let getValues = (lvls, type?) => {
-                                    if (lvls) {
-                                        for (let alevel of lvls) {
-                                            existing.add(alevel[type]);
-                                            getValues(alevel.others);
-                                        }
+                            let existing = new Set();
+                            let getValues = (lvls, type?) => {
+                                if (lvls) {
+                                    for (let alevel of lvls) {
+                                        existing.add(alevel[type]);
+                                        getValues(alevel.others);
                                     }
-                                };
-
-                                if (recordValue) {
-                                    getValues(levels, 'value');
-                                    if (existing.has(n))
-                                        reject(_('The level value {r} is already in use.', { r: result }));
                                 }
-                                else {
-                                    getValues(levels, 'importValue');
-                                    let newN = result; // modify label if already in use
-                                    let c = 2;
-                                    while (existing.has(newN))
-                                        newN = result + ' (' + c++ + ')';
-                                    result = newN;
-                                }
+                            };
 
-                                if (result === '')
-                                    reject(_(`The level value cannot be blank.`));
-
-                                resolve({ value: n, label: result });
+                            if (recordValue) {
+                                getValues(levels, 'value');
+                                if (existing.has(n))
+                                    throw _('The level value {r} is already in use.', { r: value });
                             }
+                            else {
+                                getValues(levels, 'importValue');
+                                let newN = value; // modify label if already in use
+                                let c = 2;
+                                while (existing.has(newN))
+                                    newN = value + ' (' + c++ + ')';
+                                value = newN;
+                            }
+
+                            if (value === '')
+                                throw _(`The level value cannot be blank.`);
+
+                            return { value: n, label: value };
                         }
-                    });
-                    let widget = document.body.querySelector<HTMLElement>('.dialog-widget.prompt');
-                    focusLoop.addFocusLoop(widget, { level: 2, modal: true });
-                    focusLoop.enterFocusLoop(widget);
+                    }
                 });
 
-                let level = { label:  response.label, importValue: response.label, value: response.value, pinned: true, others: [] };
+                if (response !== undefined) {
+                    let level = { label:  response.label, importValue: response.label, value: response.value, pinned: true, others: [] };
 
-                let clone  = [];
-                if (levels)
-                    clone = levels.slice(0);
+                    let clone  = [];
+                    if (levels)
+                        clone = levels.slice(0);
 
-                let insertAt = -1;
-                let inOrder = true;
-                let descending = clone.length <= 1 ? false : true;
-                if (this.model._compareWithValue) {
-                    for (let i = 0; i < clone.length; i++) {
-                        if (i < clone.length - 1) {
-                            if (i === 0 && clone[i].value < clone[i+1].value)
-                                descending = false;
+                    let insertAt = -1;
+                    let inOrder = true;
+                    let descending = clone.length <= 1 ? false : true;
+                    if (this.model._compareWithValue) {
+                        for (let i = 0; i < clone.length; i++) {
+                            if (i < clone.length - 1) {
+                                if (i === 0 && clone[i].value < clone[i+1].value)
+                                    descending = false;
 
-                            if ((descending === true && clone[i].value < clone[i+1].value) || (descending === false && clone[i].value > clone[i+1].value)) {
-                                inOrder = false;
-                                break;
+                                if ((descending === true && clone[i].value < clone[i+1].value) || (descending === false && clone[i].value > clone[i+1].value)) {
+                                    inOrder = false;
+                                    break;
+                                }
                             }
+
+                            let lvl = clone[i];
+                            if (insertAt === -1 && ((descending === true && lvl.value < level.value) || (descending === false && lvl.value > level.value)))
+                                insertAt = i;
                         }
-
-                        let lvl = clone[i];
-                        if (insertAt === -1 && ((descending === true && lvl.value < level.value) || (descending === false && lvl.value > level.value)))
-                            insertAt = i;
                     }
+                    if (inOrder === false || insertAt === -1) {
+                        clone.push(level);
+                        this.selectedLevelIndex = clone.length - 1;
+                    }
+                    else {
+                        this.selectedLevelIndex = insertAt;
+                        clone.splice(insertAt, 0, level);
+                    }
+
+                    let levelCtrl = new DataVarLevelWidget(level, this.model, this.levelCtrls.length);
+
+                    this.$levels.append(levelCtrl);
+                    this.levelCtrls.push(levelCtrl);
+
+                    levelCtrl.addEventListener('click', this._clickLevel);
+
+                    this.model.levelsReordered = true;
+                    this.model.set('levels', clone);
                 }
-                if (inOrder === false || insertAt === -1) {
-                    clone.push(level);
-                    this.selectedLevelIndex = clone.length - 1;
-                }
-                else {
-                    this.selectedLevelIndex = insertAt;
-                    clone.splice(insertAt, 0, level);
-                }
-
-                let levelCtrl = new DataVarLevelWidget(level, this.model, this.levelCtrls.length);
-
-                this.$levels.append(levelCtrl);
-                this.levelCtrls.push(levelCtrl);
-
-                levelCtrl.addEventListener('click', this._clickLevel);
-
-                this.model.levelsReordered = true;
-                this.model.set('levels', clone);
             }
             catch(msg) {
                 if (msg) {
@@ -240,10 +242,14 @@ class DataVarWidget extends HTMLElement {
                     });
                 }
             }
+            this._restoringLevelFocus = true;
             this._addingLevel = false;
             this.$levelItems = this.$levels.querySelectorAll('.jmv-variable-editor-level');
             setTimeout(() => {
                 this.$addLevelButton.focus();
+                setTimeout(() => {
+                    this._restoringLevelFocus = false;
+                }, 0);
             }, 10);
         });
 
@@ -460,16 +466,17 @@ class DataVarWidget extends HTMLElement {
         this.model.suspendAutoApply();
         this.$levelsCrtl.classList.add('super-focus');
         tarp.show('levels', true, 0.1, 299).then(() => {
-            let $ctrl = this.$levelsCrtl;
-            $ctrl.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
-            $ctrl.classList.remove('super-focus');
-            this.model.apply();
+            this._closeLevelControls();
         }, () => {
-            let $ctrl = this.$levelsCrtl;
-            $ctrl.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
-            $ctrl.classList.remove('super-focus');
-            this.model.apply();
+            this._closeLevelControls();
         });
+    }
+
+    _closeLevelControls() {
+        this.$levelsCrtl.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+        this.$levelsCrtl.classList.remove('super-focus');
+        this.levelsLoop.deactivate({ source: 'programmatic' });
+        this.model.apply();
     }
 
     _clickLevel(event: Event) {

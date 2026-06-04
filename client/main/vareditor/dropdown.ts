@@ -1,6 +1,6 @@
 'use strict';
 
-import focusLoop from '../../common/focusloop';
+import interactionManager, { type FocusLoop } from '../../common/interactionmanager';
 
 export interface DropdownContent extends HTMLElement {
     isScrollTarget: (target: EventTarget | null) => boolean;
@@ -23,6 +23,7 @@ class Dropdown extends HTMLElement {
     private $content: DropdownContent | null = null;
     private $contents: HTMLDivElement;
     private _boundHide: (() => void) | null = null;
+    private loop: FocusLoop;
 
     constructor() {
         super();
@@ -34,11 +35,13 @@ class Dropdown extends HTMLElement {
         this.$contents.className = 'jmv-dropdown-contents';
         this.append(this.$contents);
 
-        focusLoop.addFocusLoop(this, {
+        this.loop = interactionManager.registerLoop(this, {
             level: 1,
             hoverFocus: false,
-            closeHandler: () => this.hide({ data: { dropdown: this, check: false } }),
             exitKeys: ['Escape']
+        });
+        this.loop.on('deactivate', () => {
+            this.hide({ data: { dropdown: this, check: false } });
         });
 
         window.addEventListener('resize', () => this._findPosition());
@@ -125,7 +128,7 @@ class Dropdown extends HTMLElement {
         }
 
         setTimeout(() => {
-            focusLoop.enterFocusLoop(this, { withMouse: false, exitSelector: formulaEl });
+            this.loop.activate({ withMouse: false, exitSelector: formulaEl });
         }, 200);
 
         if (this._shown && formulaEl === this.$formula) {
@@ -193,7 +196,7 @@ class Dropdown extends HTMLElement {
     }
 
     public enter() {
-        focusLoop.enterFocusLoop(this, { withMouse: false, exitSelector: this.$formula! });
+        this.loop.activate({ withMouse: false, exitSelector: this.$formula! });
     }
 
     public hasFocus(relatedTarget: Element | null = document.activeElement): boolean {

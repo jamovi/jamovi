@@ -1,7 +1,8 @@
 
 'use strict';
 
-import focusLoop  from '../common/focusloop';
+import interactionManager, { IFocusLoopActivateOptions, type FocusLoop } from '../common/interactionmanager';
+
 import { EventEmitter } from 'eventemitter3';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
@@ -15,6 +16,7 @@ export class EditorPanel extends EventEmitter {
     attachedItem: HTMLElement;
     onBack: () => void;
     $icon: HTMLElement;
+    private loop: FocusLoop;
 
     constructor(el: HTMLElement) {
         super();
@@ -27,7 +29,7 @@ export class EditorPanel extends EventEmitter {
 
         //this.$el.empty();
         //this.$el.addClass('jmv-editor-panel');
-        focusLoop.addFocusLoop(this.el, { level: 1 });
+        this.loop = interactionManager.registerLoop(this.el, { level: 1 });
 
         let main = HTML.create('div', {class: 'jmv-editor-panel-main'});
         this.el.append(main);
@@ -105,7 +107,6 @@ export class EditorPanel extends EventEmitter {
                 let event = new CustomEvent('editor:hidden');
                 this.el.dispatchEvent(event);
                 //this.$el.trigger('editor:hidden');
-                //focusLoop.leaveFocusLoop(this.el);
                 this.visible = false;
             }
         }
@@ -116,7 +117,7 @@ export class EditorPanel extends EventEmitter {
                 this.el.dispatchEvent(event);
                 //this.$el.trigger('editor:visible');
                 setTimeout(() => {
-                    focusLoop.enterFocusLoop(this.el);
+                    this.loop.activate();
                 }, 200);
                 this.visible = true;
             }
@@ -130,6 +131,10 @@ export class EditorPanel extends EventEmitter {
 
     isVisible() {
         return this.el.classList.contains('hidden') === false;
+    }
+
+    activate(options?: IFocusLoopActivateOptions) {
+        this.loop.activate(options);
     }
 
 }

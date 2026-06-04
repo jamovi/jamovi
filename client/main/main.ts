@@ -25,9 +25,8 @@ import I18ns from '../common/i18n';
 
 import Instance from './instance';
 import Notify from './notification';
-import _focusLoop from '../common/focusloop';
 import { UserFacingError } from './errors';
-import Keyboard from '../common/focusloop';
+import interactionManager, { keyTips, shortcuts } from '../common/interactionmanager';
 
 import './utils/headeralert';
 import type { HeaderAlert } from './utils/headeralert';
@@ -45,9 +44,15 @@ import keyboardJS  from 'keyboardjs';
 import HighContrast from '../common/highcontrast';
 import Store from './store';
 
+declare global {
+    interface Window {
+        interactionManager: typeof interactionManager;
+    }
+}
+
 window._ = I18ns.get('app')._;
 window.n_ = I18ns.get('app')._n;
-window.A11y = Keyboard;
+window.interactionManager = interactionManager;
 
 function ready(fn: () => void) {
     if (document.readyState !== 'loading')
@@ -112,7 +117,7 @@ catch (e) {
     console.log(e);
 }
 
-Keyboard.setDirection(i18n.isRTL() ? 'rtl' : 'ltr');
+shortcuts.setDirection(i18n.isRTL() ? 'rtl' : 'ltr');
 
 
 keyboardJS.Keyboard.prototype.pause = function(key) {
@@ -278,54 +283,54 @@ ready(async() => {
         document.body.classList.add('electron');
 
 
-    Keyboard.addKeyboardListener('F10', () => host.toggleDevTools(), 'Toggle Developer Tools', false);
-    Keyboard.addKeyboardListener('F9',  () => instance.restartEngines(), 'Restart jamovi engines', false);
-    Keyboard.addKeyboardListener('Ctrl+Shift+KeyS', () => ActionHub.get('saveAs').do(), _('Project Save As'));
-    Keyboard.addKeyboardListener('Ctrl+KeyS', () => ActionHub.get('save').do(), _('Save project'));
-    Keyboard.addKeyboardListener('Ctrl+KeyO', () => ActionHub.get('open').do(), _('Open data file'));
-    Keyboard.addKeyboardListener('Escape', () => {
-        if (splitPanel.getSection(0).width < 100 && Keyboard.focusMode === 'default')
+    shortcuts.register('F10', () => host.toggleDevTools(), 'Toggle Developer Tools', false);
+    shortcuts.register('F9',  () => instance.restartEngines(), 'Restart jamovi engines', false);
+    shortcuts.register('Ctrl+Shift+KeyS', () => ActionHub.get('saveAs').do(), _('Project Save As'));
+    shortcuts.register('Ctrl+KeyS', () => ActionHub.get('save').do(), _('Save project'));
+    shortcuts.register('Ctrl+KeyO', () => ActionHub.get('open').do(), _('Open data file'));
+    shortcuts.register('Escape', () => {
+        if (splitPanel.getSection(0).width < 100 && interactionManager.getMode() === 'default')
             optionspanel.hideOptions();
     }, _('Hide analysis options'));
-    Keyboard.addKeyboardListener('Alt+KeyS', () => { // navigate to spreadsheet
+    shortcuts.register('Alt+KeyS', () => { // navigate to spreadsheet
         optionspanel.hideOptions();
         ribbonModel.set('selectedTab', 'data');
-        Keyboard.setFocusMode('default');
+        interactionManager.setMode('default');
     }, _('Focus on spreadsheet'));
-    Keyboard.addKeyboardListener('Alt+KeyD', () => { // navigate to variables view
+    shortcuts.register('Alt+KeyD', () => { // navigate to variables view
         optionspanel.hideOptions();
         ribbonModel.set('selectedTab', 'variables');
-        Keyboard.setFocusMode('default');
+        interactionManager.setMode('default');
     }, _('Focus on variable list'));
-    Keyboard.addKeyboardListener('Alt+KeyF', () => { // navigate to file menu
-        Keyboard.setFocusMode('keyboard');
+    shortcuts.register('Alt+KeyF', () => { // navigate to file menu
+        interactionManager.setMode('keyboard');
         optionspanel.hideOptions();
         ribbon.openFileMenu(false);
     }, _('Open the main menu'));
-    Keyboard.addKeyboardListener('F3', () => { // toggle variable setup
+    shortcuts.register('F3', () => { // toggle variable setup
         viewController._toggleVariableEditor();
     }, _('Toggle variable setup'));
-    Keyboard.addKeyboardListener('Alt+KeyE', () => { // navigate to variable setup
-        Keyboard.setFocusMode('keyboard');
+    shortcuts.register('Alt+KeyE', () => { // navigate to variable setup
+        interactionManager.setMode('keyboard');
         optionspanel.hideOptions();
         viewController.showVariableEditor();
         editor.setFocus();
     }, _('Focus on the variable setup'));
-    Keyboard.addKeyboardListener('Alt+KeyM', () => { // navigate to Application menu
-        Keyboard.setFocusMode('keyboard');
+    shortcuts.register('Alt+KeyM', () => { // navigate to Application menu
+        interactionManager.setMode('keyboard');
         ribbon.appMenu.toggleMenu(false);
     }, _('Open application menu'));
-    Keyboard.addKeyboardListener('Alt+KeyL', () => { // navigate to Modules library
-        Keyboard.setFocusMode('keyboard');
+    shortcuts.register('Alt+KeyL', () => { // navigate to Modules library
+        interactionManager.setMode('keyboard');
         ribbonModel.getTab('analyses').store.show(1);
     }, _('Open the jamovi module library'));
-    Keyboard.addKeyboardListener('Alt+ArrowLeft', () => { // navigate to Options panel
+    shortcuts.register('Alt+ArrowLeft', () => { // navigate to Options panel
         let iframe = document.querySelector(`.results-loop-highlighted-item > iframe`);
         if (iframe) {
             let id = parseInt(iframe.getAttribute('data-id'));
             let analysis = instance.analyses().get(id);
             if (analysis) {
-                Keyboard.setFocusMode('keyboard');
+                interactionManager.setMode('keyboard');
                 resultsView.hideWelcome();
                 instance.set('selectedAnalysis', analysis);
                 if (analysis.hasUserOptions())
@@ -335,62 +340,62 @@ ready(async() => {
             }
         }
     }, _('Returns to the previously selected analysis and opens the options panel, with focus set in the options panel.'));
-    Keyboard.addKeyboardListener('Alt+ArrowRight', () => { // navigate to results panel
+    shortcuts.register('Alt+ArrowRight', () => { // navigate to results panel
         resultsView.hideWelcome();
-        Keyboard.setFocusMode('keyboard');
+        interactionManager.setMode('keyboard');
         resultsView.selectedView.setFocus();
     }, _('Returns to the previously selected analysis and shifts focus to the results output.'));
-    Keyboard.addKeyboardListener('Alt+ArrowDown', () => { // navigate to analysis content
+    shortcuts.register('Alt+ArrowDown', () => { // navigate to analysis content
         let iframe = document.querySelector<HTMLIFrameElement>(`.results-loop-highlighted-item > iframe`);
         if (iframe) {
             resultsView.hideWelcome();
-            Keyboard.setFocusMode('keyboard');
+            interactionManager.setMode('keyboard');
             iframe.focus();
             setTimeout(() => { // needed for firefox cross iframe focus
                 iframe.contentWindow.focus();
             }, 100);
         }
     }, _('Returns to the previously selected analysis and shifts focus into the results output.'));
-    Keyboard.addKeyboardListener('Alt+ArrowUp', () => { // navigate to results panel
+    shortcuts.register('Alt+ArrowUp', () => { // navigate to results panel
             resultsView.hideWelcome();
-            Keyboard.setFocusMode('keyboard');
+            interactionManager.setMode('keyboard');
             resultsView.selectedView.setFocus();
     }, _('Returns to the previously selected analysis and shifts focus to the results output.'));
 
 
     if (host.isElectron)
-        Keyboard.addKeyboardListener('Ctrl+F4', () => host.closeWindow(), _('Close jamovi window'));
+        shortcuts.register('Ctrl+F4', () => host.closeWindow(), _('Close jamovi window'));
 
-    Keyboard.on('focus', (event) => {
+    interactionManager.on('focus', (event) => {
         setTimeout(() => {
             if (document.activeElement === null || document.activeElement === document.body || document.activeElement === document.documentElement) { // has no focus
-                if (Keyboard.inAccessibilityMode())
+                if (interactionManager.isAccessibilityActive())
                     ribbonModel.getSelectedTab().el.focus();
                 else 
-                    Keyboard.setFocusMode('default');
+                    interactionManager.setMode('default');
             }
         }, 0);
     });
 
-    Keyboard.on('focusModeChanged', (options) => {
-        if (Keyboard.inAccessibilityMode()) {
+    interactionManager.on('modeChanged', () => {
+        if (interactionManager.isAccessibilityActive()) {
             keyboardJS.pause('accessibility');
-            if (Keyboard.focusMode === 'shortcuts') {
+            if (interactionManager.getMode() === 'keyTips') {
                 if (backstageModel.get('activated')) {
-                    Keyboard.updateShortcuts({ shortcutPath: 'F' });
+                    keyTips.update({ keyTipPath: 'F' });
                     setTimeout(() => {
-                        Keyboard.enterFocusLoop(backstage, { withMouse: true });
+                        backstage.loop.activate({ withMouse: true });
                     }, 100);
                 }
                 else
                     ribbonModel.getSelectedTab().el.focus();
             }
         }
-        else if (Keyboard.focusMode === 'default') {
+        else if (interactionManager.getMode() === 'default') {
 
             if (backstageModel.get('activated')) {
                 setTimeout(() => {
-                    Keyboard.enterFocusLoop(backstage);
+                    backstage.loop.activate();
                 }, 100);
 
             }
@@ -401,7 +406,7 @@ ready(async() => {
                     element.focus();
             }
         }
-        else if (Keyboard.focusMode === 'keyboard' || Keyboard.focusMode === 'hover')
+        else if (interactionManager.getMode() === 'keyboard' || interactionManager.getMode() === 'hover')
             keyboardJS.pause('accessibility');
 
     });
@@ -461,7 +466,7 @@ ready(async() => {
     ribbon.addEventListener('tabSelected', function(event: CustomEvent<{tabName: keyof TabTypes, withMouse: boolean}>) {
         let {tabName, withMouse} = event.detail
         if (tabName === 'file')
-            backstage.activate(withMouse);
+            backstage.activate({ withMouse });
         else if (tabName === 'data') {
             setMainTableMode('spreadsheet');
             if (splitPanel.mode === 'results')
@@ -696,7 +701,7 @@ ready(async() => {
         if ('activated' in event.changed) {
             mainTable.setActive( ! event.changed.activated);
             if (! event.changed.activated) {
-                if (Keyboard.inAccessibilityMode())
+                if (interactionManager.isAccessibilityActive())
                     ribbonModel.getSelectedTab().el.focus();
             }
         }

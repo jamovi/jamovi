@@ -3,7 +3,7 @@
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
 import { FormatDef, TermFormat } from './formatdef';
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 
 export type TermLabelProperties = GridOptionControlProperties<string[]> & {
@@ -42,7 +42,7 @@ export class TermLabel extends OptionControl<TermLabelProperties> {
 
         let displayValue = this._format.toString(value);
 
-        this.labelId = focusLoop.getNextAriaElementId('label');
+        this.labelId = interactionManager.nextAriaId('label');
         this.label = HTML.parse(`<div id="${this.labelId}" aria-label="${ this.getAriaLabel() }" style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">${ displayValue }</div>`);
 
         this.el.append(this.label);

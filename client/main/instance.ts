@@ -21,8 +21,6 @@ import ProgressStream from './utils/progressstream';
 import { UserFacingError } from './errors';
 import { CancelledError } from './errors';
 import { EventMap } from '../common/eventmap';
-import _dialogs from 'dialogs';
-import focusLoop from '../common/focusloop';
 
 class FileExistsError extends Error { }
 
@@ -36,9 +34,9 @@ interface CreateAnalysisOptions {
 
 import { parse as parseJsonLines } from './utils/jsonlines';
 import { ISaveOptions } from './backstage/fsentry';
-import Q from 'q';
 import Coms, { QQ } from './coms';
 import { ResultsView } from './results';
+import MsgDialog from '../common/msgdialog';
 
 export interface IInstanceOpenOptions {
     path?: string,
@@ -145,8 +143,6 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             edited: false,
             resultsLanguage: I18ns.get('app').language
         })
-
-        this.dialogs = _dialogs({cancel: _('Cancel'), ok: _('OK')});
 
         this._settings = new Settings({ coms: this.attributes.coms });
         this._modules = new Modules({ instance: this });
@@ -547,24 +543,12 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             } catch (e) {
 
                 if (e instanceof FileExistsError && ! options.overwrite) {
-                    await new Promise<void>((resolve, reject) => {
-                        let msg = _(`The file '{filename}' already exists. Overwrite this file?`, { filename });
-                        this.dialogs.confirm(msg, (result) => {
-                            let widget = document.body.querySelector<HTMLElement>('.dialog-widget.confirm');
-                            focusLoop.leaveFocusLoop(widget);
-                            if (result)
-                                resolve();
-                            else
-                                reject();
-                        });
-                        let widget = document.body.querySelector<HTMLElement>('.dialog-widget.confirm');
-                        focusLoop.addFocusLoop(widget, { level: 2, modal: true, closeFocusMode: 'default' });
-                        focusLoop.enterFocusLoop(widget);
-                    }).then(() => {
-                        options.overwrite = true;
-                        retrying = true;
-                    }).catch(() => {
-                        // do nothing
+                    let msg = _(`The file '{filename}' already exists. Overwrite this file?`, { filename });
+                    await MsgDialog.show(msg, {cancel: _('Cancel'), ok: _('OK')}).then((result) => {
+                        if (result.action === 'ok') {
+                            options.overwrite = true;
+                            retrying = true;
+                        }
                     });
                 }
                 else if (e instanceof UserFacingError) {

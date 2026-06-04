@@ -1,7 +1,7 @@
 'use strict';
 
 import MeasureListItem from './measurelistitem';
-import focusLoop from '../../common/focusloop';
+import interactionManager from '../../common/interactionmanager';
 import { MeasureType } from '../dataset';
 import { DropdownContent } from './dropdown';
 
@@ -15,7 +15,7 @@ export default class MeasureList extends HTMLElement implements DropdownContent 
     constructor(includeAuto: boolean = true) {
         super();
         this.includeAuto = includeAuto;
-        this.id = focusLoop.getNextAriaElementId('list');
+        this.id = interactionManager.nextAriaId('list');
 
         this.classList.add('jmv-measure-list');
         this.setAttribute('role', 'list');

@@ -1,7 +1,7 @@
 'use strict';
 
 import I18ns from '../common/i18n';
-import focusLoop from '../common/focusloop';
+import interactionManager, { type FocusLoop } from '../common/interactionmanager';
 
 import { exportElem } from '../common/utils/formatio';
 
@@ -54,6 +54,7 @@ class ResultsPanel extends EventDistributor {
     _ready: boolean = false;
     mode: string;
     iframeUrl: string;
+    loop: FocusLoop;
 
 
     constructor(model: Instance, iframeUrl: string, mode: string) {
@@ -73,7 +74,7 @@ class ResultsPanel extends EventDistributor {
         this.resultsLooper = new selectionLoop('results-loop', this);
         this.analysisCount = 0;
 
-        focusLoop.addFocusLoop(this);
+        this.loop = interactionManager.registerLoop(this);
 
         this._menuId = null;
         ContextMenu.el.addEventListener('menuClicked', (event: CustomEvent<ContextMenuButton>) => {
@@ -1155,7 +1156,7 @@ class ResultsPanel extends EventDistributor {
     }
 
     setFocus() {
-        focusLoop.enterFocusLoop(this);
+        this.loop.activate();
     }
 
     _selectedChanged(event) {

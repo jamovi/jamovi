@@ -2,7 +2,7 @@
  * Copyright (C) 2016 Jonathon Love
  */
 
-.jmv-variable-editor > .shortcut-key-tag {
+.jmv-variable-editor > .keytip-key-tag {
     top: 50px;
     inset-inline-start: 20%;
 }

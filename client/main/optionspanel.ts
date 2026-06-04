@@ -8,7 +8,7 @@ if ('default' in Framesg) // this import is handled differently between browseri
 import host from './host';
 import I18ns, { I18nData } from '../common/i18n';
 
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
 import { EventEmitter } from 'tsee';
 import DataSetViewModel from './dataset';
@@ -205,7 +205,7 @@ class AnalysisResources extends EventEmitter {
                 this.jamoviVersion = version;
             })
         ]).then(() => {
-            return this.frameComms.send("setOptionsDefinition", this.def, this.i18nDef, I18ns.get('app').localeData, this.jamoviVersion, analysis.id, focusLoop.focusMode);
+            return this.frameComms.send("setOptionsDefinition", this.def, this.i18nDef, I18ns.get('app').localeData, this.jamoviVersion, analysis.id, interactionManager.getMode());
         });
     }
 
@@ -360,8 +360,8 @@ class OptionsPanel {
         if (this._currentResources !== null) {
             this._currentResources.frame.style.height = '';
             this._currentResources.frame.classList.remove('silky-hidden-options-control');
-            if (focusLoop.inAccessibilityMode())
-                focusLoop.transferFocus(this._currentResources.frame);
+            if (interactionManager.isAccessibilityActive())
+                interactionManager.transferFocus(this._currentResources.frame);
         }
     }
 
