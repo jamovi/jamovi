@@ -2,7 +2,7 @@
 'use strict';
 
 import host from './host';
-import focusLoop, { FocusMode } from '../common/focusloop';
+import interactionManager, { FocusMode, type FocusLoop } from '../common/interactionmanager';
 
 export interface InfoBoxData {
     'message-src'?: string;
@@ -41,7 +41,9 @@ export class InfoBox extends HTMLElement {
     _iframe: HTMLIFrameElement;
     _displayInfo: InfoBoxData | InfoBoxElement;
     _currentElement: InfoBoxElement;
-    _focusLoopElement: HTMLElement;
+    _containerLoop: FocusLoop;
+    _currentLoop: FocusLoop | null;
+    _focusLoop: FocusLoop | null;
     _cancelable: boolean;
     _resolve: (data: any) => void;
     _cssStyles: {[style: string]: string};
@@ -95,7 +97,7 @@ export class InfoBox extends HTMLElement {
         this._button.addEventListener('click', () => this.clicked());
         window.addEventListener('message', (event) => this.onMessage(event));
 
-        focusLoop.addFocusLoop(this._container, { level: 1, modal: true, allowKeyPaths: true } );
+        this._containerLoop = interactionManager.registerLoop(this._container, { level: 1, modal: true, allowKeyPaths: true } );
     }
 
     setup(info: InfoBoxData | InfoBoxElement, params?: { cancelable?: boolean, class?: string[] | string }, closeFocusMode?: FocusMode) {
@@ -152,17 +154,19 @@ export class InfoBox extends HTMLElement {
 
             if (info instanceof HTMLElement) {
                 if (info !== this._currentElement) {
-                    if (this._currentElement)
-                        focusLoop.removeFocusLoop(this._currentElement);
+                    if (this._currentElement) {
+                        this._currentLoop.unregister();
+                        this._currentLoop = null;
+                    }
 
                     this._currentElement = info;
 
-                    focusLoop.addFocusLoop(this._currentElement, { level: 1, modal: true, allowKeyPaths: true } );
+                    this._currentLoop = interactionManager.registerLoop(this._currentElement, { level: 1, modal: true, allowKeyPaths: true } );
 
                     if (params.class)
                         this._local.classList.add(...params.class);
                 }
-                this._focusLoopElement = this._currentElement;
+                this._focusLoop = this._currentLoop;
                 this.appendChild(this._currentElement);
                 if (this._currentElement.focusElement)
                     setTimeout(() => {
@@ -175,7 +179,7 @@ export class InfoBox extends HTMLElement {
                 this._host.setAttribute('status', info.status || '');
                 params.cancelable = info.cancelable === undefined ? false : info.cancelable;
                 this._processEnterKey = true;
-                this._focusLoopElement = this._container;
+                this._focusLoop = this._containerLoop;
                 setTimeout(() => {
                         this._button.focus();
                 }, 100);
@@ -186,8 +190,8 @@ export class InfoBox extends HTMLElement {
         }
 
         if (show) {
-            if (this._focusLoopElement)
-                focusLoop.enterFocusLoop(this._focusLoopElement, { withMouse: false, closeFocusMode });
+            if (this._focusLoop)
+                this._focusLoop.activate({ withMouse: false, closeFocusMode });
             this._host.style.display = null;
             setTimeout(() => {
                 this._body.style.opacity = '1';
@@ -233,9 +237,9 @@ export class InfoBox extends HTMLElement {
         this._body.style.opacity = null;
         this._processEnterKey = false;
 
-        if (this._focusLoopElement) {
-            focusLoop.leaveFocusLoop(this._focusLoopElement);
-            this._focusLoopElement = null;
+        if (this._focusLoop) {
+            this._focusLoop.deactivate({ source: 'programmatic' });
+            this._focusLoop = null;
         }
     }
 

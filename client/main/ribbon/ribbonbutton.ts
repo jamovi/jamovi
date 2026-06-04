@@ -6,7 +6,7 @@ import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
 import RibbonGroup from './ribbongroup';
 
 import ActionHub from '../actionhub';
-import focusLoop, { IShortcutTokenOptions } from '../../common/focusloop';
+import interactionManager, { keyTips, type IKeyTipTokenOptions } from '../../common/interactionmanager';
 import Menu from '../../common/menu';
 import { s6e } from '../../common/utils';
 import RibbonTab, { RibbonItem } from './ribbontab';
@@ -17,7 +17,7 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
     _menuGroup: RibbonGroup;
     parent: RibbonTab;
     labelId: string;
-    shortcutKey: string;
+    keyTipKey: string;
     tabName: string;
     _definedTabName: boolean;
     size: 'small' | 'medium' | 'large';
@@ -52,7 +52,7 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
         let margin =  params.margin === undefined ? 'normal' : params.margin;
         let classes =  params.class === undefined ? null : params.class;
         let level = params.level === undefined ? 0 : params.level;
-        let shortcutKey = params.shortcutKey === undefined ? null : params.shortcutKey.toUpperCase();
+        let keyTipKey = params.keyTipKey === undefined ? null : params.keyTipKey.toUpperCase();
 
         this.classList.add('jmv-ribbon-button');
         this.classList.add('jmv-ribbon-button-size-' + size);
@@ -61,14 +61,14 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
         if (params.ariaLabel)
             this.setAttribute('aria-label', params.ariaLabel);
 
-        this.labelId = focusLoop.getNextAriaElementId('label');
+        this.labelId = interactionManager.nextAriaId('label');
 
-        if (shortcutKey) {
-            this.shortcutKey = shortcutKey.toUpperCase();
-            let stcOptions: IShortcutTokenOptions = { key: this.shortcutKey, action: event => this._clicked(event, false), label: params.ariaLabel || title };
-            if (params.shortcutPosition)
-                stcOptions.position = params.shortcutPosition;
-            focusLoop.applyShortcutOptions(this, stcOptions);
+        if (keyTipKey) {
+            this.keyTipKey = keyTipKey.toUpperCase();
+            let keyTipOptions: IKeyTipTokenOptions = { key: this.keyTipKey, action: event => this._clicked(event, false), label: params.ariaLabel || title };
+            if (params.keyTipPosition)
+                keyTipOptions.position = params.keyTipPosition;
+            keyTips.register(this, keyTipOptions);
         }
 
         if (classes !== null)
@@ -93,7 +93,7 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
             this.classList.add('has-icon');
 
         this.setAttribute('data-name', this.name.toLowerCase());
-        //this.focusId = focusLoop.getNextFocusId();
+        //this.focusId = interactionManager.getNextFocusId();
         //this.setAttribute('data-focus-id', this.focusId);
         this.setAttribute('aria-disabled', 'true');
         if (right)
@@ -149,18 +149,18 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
             this.classList.remove('checked');
     }
 
-    setParent(parent: RibbonTab, parentShortcutPath, inMenu: boolean) {
+    setParent(parent: RibbonTab, parentKeyTipPath, inMenu: boolean) {
         this.parent = parent;
 
-        let shortcutPath = parentShortcutPath;
-        if (this.shortcutKey)
-            focusLoop.applyShortcutOptions(this, { path: parentShortcutPath });
+        let keyTipPath = parentKeyTipPath;
+        if (this.keyTipKey)
+            keyTips.register(this, { path: parentKeyTipPath });
 
         if (inMenu) {
             this.setAttribute('role', 'menuitem');
             this.inMenu = inMenu;
 
-            focusLoop.createHoverItem(this, () => {
+            interactionManager.createHoverItem(this, () => {
                 if (this.menu)
                     this.showMenu(true);
                 else
@@ -169,7 +169,7 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
         }
 
         if (this._menuGroup !== undefined)
-            this._menuGroup.setParent(parent, shortcutPath + this.shortcutKey, true);
+            this._menuGroup.setParent(parent, keyTipPath + this.keyTipKey, true);
     }
 
     setTabName(name) {

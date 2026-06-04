@@ -3,7 +3,7 @@
 import Annotations from './annotations';
 
 import Elem, { CollectionView, View as Element, ElementData, ElementModel } from './element';
-import _focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import { AnalysisStatus, IElement } from './create';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import { Item } from './itemtracker';
@@ -64,7 +64,7 @@ export class View extends CollectionView<Model> {
             this.classList.add('jmv-results-group');
 
 
-            let labelId = _focusLoop.getNextAriaElementId('label');
+            let labelId = interactionManager.nextAriaId('label');
 
             this.setAttribute('aria-labelledby', labelId);
 

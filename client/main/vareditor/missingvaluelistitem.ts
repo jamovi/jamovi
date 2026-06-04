@@ -54,7 +54,7 @@ class MissingValueListItem extends HTMLElement {
         let $fp = HTML.parse('<div class="formula-list-item"></div>');
         this.append($fp);
 
-        let $formula = HTML.parse('<div class="formula" type="text" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" spellcheck="false" style="text-indent:' + indent + '">' + formula + '</div>');
+        let $formula = HTML.parse('<div class="formula" tabindex="0" type="text" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" spellcheck="false" style="text-indent:' + indent + '">' + formula + '</div>');
         $fp.append($formula);
 
         let indexOfDollar = prefix.indexOf('$');
@@ -66,7 +66,7 @@ class MissingValueListItem extends HTMLElement {
 
         $fp.append(HTML.parse('<div class="equal">' + prefix + '</div>'));
 
-        let $rm = HTML.parse('<div class="remove-cond" data-index="0"><span class="mif-cross"></span></div>');
+        let $rm = HTML.parse('<button class="remove-cond" data-index="0"><span class="mif-cross"></span></button>');
         $fp.append($rm);
         $rm.addEventListener('click', (event) => {
             this.dispatchEvent(new CustomEvent('removed'));

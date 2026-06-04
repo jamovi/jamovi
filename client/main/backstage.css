@@ -268,15 +268,15 @@ body[dir="rtl"] .silky-bs-back-button > div {
     background-color: #f6f9fd ;
 }
 
-.silky-bs-op-place .shortcut-key-tag {
+.silky-bs-op-place .keytip-key-tag {
     inset-inline-start: 3em;
 }
 
-.silky-bs-fslist-entry .shortcut-key-tag {
+.silky-bs-fslist-entry .keytip-key-tag {
     inset-inline-start: 3em;
 }
 
-.silky-bs-op-button .shortcut-key-tag {
+.silky-bs-op-button .keytip-key-tag {
     inset-inline-start: 2em;
     font-size: 80%;
 }
@@ -477,7 +477,7 @@ body[dir="rtl"] .silky-bs-back-button > div {
     margin-inline-end: 2px ;
 }
 
-.silky-bs-fslist-item > .shortcut-key-tag {
+.silky-bs-fslist-item > .keytip-key-tag {
     inset-inline-start: 0px;
     top: 0px;
 }

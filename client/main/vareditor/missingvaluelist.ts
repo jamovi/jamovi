@@ -14,6 +14,7 @@ class MissingValueList extends HTMLElement {
         super();
 
         this.classList.add('jmv-missing-value-list');
+        this.tabIndex = 0;
 
         this.$list = HTML.parse('<div class="list"></div>');
         this.append(this.$list);

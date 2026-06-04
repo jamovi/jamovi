@@ -4,7 +4,7 @@ import type { FSEntryListModel, BackstagePanelView } from './fsentry';
 export interface IPlace {
     name: string;
     title: string;
-    shortcutKey: string;
+    keyTipKey: string,
     model?: FSEntryListModel;
     view?: BackstagePanelView;
     action?: () => any;

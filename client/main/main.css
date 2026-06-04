@@ -57,6 +57,7 @@
 @import "../common/toolbar/toolbarbutton.css";
 @import "../common/toolbar/toolbargroup.css";
 @import "../common/toolbar/toolbarseparator.css";
-@import "../common/focusloop.css";
+@import "../common/interactionmanager/focusloop.css";
+@import "../common/interactionmanager/keytips.css";
 @import "../common/menu.css";
 @import "../common/icon.css";

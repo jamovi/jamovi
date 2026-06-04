@@ -9,7 +9,7 @@ import  { ControlContainer, ControlContainerProperties } from './controlcontaine
 import LayoutGrid from './layoutgrid';
 import EnumPropertyFilter from './enumpropertyfilter';
 import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
-import focusLoop from '../common/focusloop';
+import interactionManager from '../common/interactionmanager';
 import type { SupplierTargetList } from './gridtargetcontrol';
 import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
 import LayoutCell from './layoutcell';
@@ -228,7 +228,7 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
 
         this.baseLayout.append(this.$warning);
 
-        let labelId = focusLoop.getNextAriaElementId('label');
+        let labelId = interactionManager.nextAriaId('label');
 
         let label = this.getPropertyValue('label');
         let nextRow = 0;

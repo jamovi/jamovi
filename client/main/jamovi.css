@@ -283,7 +283,7 @@ body.windows.electron #header-buttons {
     visibility: hidden;
 }
 
-#results > .shortcut-key-tag, #main-options > .shortcut-key-tag {
+#results > .keytip-key-tag, #main-options > .keytip-key-tag {
     top: 3px;
     inset-inline-start: 3px;
 }
