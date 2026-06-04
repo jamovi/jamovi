@@ -19,13 +19,13 @@ import { validate } from 'jsonschema'
 import sourcify from './sourcify.js';
 
 let analysisSchemaPath = path.join(__dirname, 'schemas', 'analysisschema.yaml');
-let analysisSchema = yaml.load(fs.readFileSync(analysisSchemaPath));
+let analysisSchema = yaml.load(fs.readFileSync(analysisSchemaPath, 'utf-8'));
 let resultsSchemaPath = path.join(__dirname, 'schemas', 'resultsschema.yaml');
-let resultsSchema = yaml.load(fs.readFileSync(resultsSchemaPath));
+let resultsSchema = yaml.load(fs.readFileSync(resultsSchemaPath, 'utf-8'));
 let optionSchemasPath = path.join(__dirname, 'schemas', 'optionschemas.yaml');
-let optionSchemas = yaml.load(fs.readFileSync(optionSchemasPath));
+let optionSchemas = yaml.load(fs.readFileSync(optionSchemasPath, 'utf-8'));
 let resultsSchemasPath = path.join(__dirname, 'schemas', 'resultelementschemas.yaml');
-let resultsSchemas = yaml.load(fs.readFileSync(resultsSchemasPath));
+let resultsSchemas = yaml.load(fs.readFileSync(resultsSchemasPath, 'utf-8'));
 
 const reject = function(filePath, message) {
     throw "Unable to compile '" + path.basename(filePath) + "':\n\t" + message;
