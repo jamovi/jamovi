@@ -12,7 +12,8 @@ from .i18n import _
 
 
 class DownloadError(Exception):
-    def __init__(self, message=None):
+    def __init__(self, message=None, status=None):
+        self.status = status
         if message is None:
             message = _('Unable to reach the library')
         super().__init__(message)
@@ -79,6 +80,8 @@ class Download:
                 info.file.flush()
                 info.file.seek(0)
             info.stream.set_result(info.file)
+        except aiohttp.ClientResponseError as e:
+            raise DownloadError(status=e.status) from e
         except aiohttp.ClientSSLError as e:
             try:
                 async with aiohttp.ClientSession() as session:

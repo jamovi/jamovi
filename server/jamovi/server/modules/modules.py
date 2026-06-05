@@ -7,20 +7,21 @@ import json
 from zipfile import ZipFile
 from asyncio import ensure_future as create_task
 from collections import namedtuple
+from functools import lru_cache
+
+import yaml
 
 from jamovi.core import Dirs
 from jamovi.core import PlatformInfo
 
+import jamovi.server.i18n as i18n
 from jamovi.server.utils import conf
 from jamovi.server.downloader import Downloader
+from jamovi.server.downloader import DownloadError
 from jamovi.server.utils.stream import ProgressStream
 from jamovi.server.utils.zipverify import verify_jmo
 from jamovi.server.appinfo import determine_r_version
 from jamovi.server.appinfo import app_info
-from functools import lru_cache
-
-
-import yaml
 
 try:
     from yaml import CSafeLoader as Loader
@@ -34,13 +35,17 @@ log = logging.getLogger('jamovi')
 LibraryContent = namedtuple('Library', 'message modules')
 
 
+class LibraryError(Exception):
+    pass
+
+
 class DataSetMeta:
     def __init__(self):
-        self.module = None
-        self.name = None
-        self.title = None
-        self.description = None
-        self.tags = [ ]
+        self.name = ''
+        self.title = ''
+        self.description = ''
+        self.path = ''
+        self.tags: list = []
 
 
 class License:
@@ -51,25 +56,25 @@ class License:
 
 class ModuleMeta:
     def __init__(self):
-        self.name = None
-        self.title = None
+        self.name = ''
+        self.title = ''
         self.build_time = 0
         self.version = [0, 0, 0]
-        self.description = None
-        self.authors = [ ]
-        self.analyses = [ ]
-        self.datasets = [ ]
-        self.path = None
+        self.description = ''
+        self.authors: list = []
+        self.analyses: list = []
+        self.datasets: list = []
+        self.path = ''
         self.is_sys = False
         self.new = False
-        self.min_app_version = 0
-        self.license = None
-        self.datasets_license = None
+        self.min_app_version = [0, 0, 0, 0]
+        self.license: License | None = None
+        self.datasets_license: License | None = None
         self.visible = True
         self.incompatible = False
-        self.i18n_msgs = None
-        self.category = None
-        self._code = None
+        self.i18n_msgs: dict | None = None
+        self.category = ''
+        self._code: str | None = None
         self.index = 1
 
     def get(self, name):
@@ -103,7 +108,7 @@ class ModuleMeta:
     @lru_cache(None)
     def _load_translations(self, code):
         if code:
-            i18n_root = os.path.join(self.path, 'R', self.name, 'i18n', code + '.json')
+            i18n_root = os.path.join(self.path, 'R', self.name, 'i18n', f'{code}.json')
             if os.path.exists(i18n_root):
                 with open(i18n_root, 'r', encoding='utf-8') as stream:
                     i18n_def = json.load(stream)
@@ -132,25 +137,26 @@ class ModuleMeta:
 
 class AnalysisMeta:
     def __init__(self):
-        self.name = None
-        self.ns = None
-        self.title = None
+        self.name = ''
+        self.ns = ''
+        self.title = ''
         self.ribbon = ''
         self.menuGroup = ''
         self.menuSubgroup = ''
         self.menuTitle = ''
         self.menuSubtitle = ''
-        self.addon_for = None
-        self.addons = [ ]
+        self.addon_for: list | None = None
+        self.addons: list = []
         self.in_menu = True
-        self.defn = ''
+        self.defn: dict = {}
         self.translated = ''
+        self.category = ''
 
     def translate_defaults(self, module_meta, code):
         if self.translated == code:
             return
 
-        if module_meta.load_translations(code) == False:
+        if not module_meta.load_translations(code):
             return
 
         options_defn = self.defn['options']
@@ -182,20 +188,20 @@ class AnalysisMeta:
                     if translated is not None:
                         _default_value[i] = translated
 
-        return _default_value;
+        return _default_value
+
+
+LIBRARY_ROOT = f'https://library.jamovi.org/{app_info.os}/R{app_info.r_version}'
 
 
 class Modules:
-
-    LIBRARY_ROOT = 'https://library.jamovi.org/{}/R{}/'.format(app_info.os, app_info.r_version)
-    LIBRARY_INDEX = 'index'
 
     def __init__(self, settings):
         self._settings = settings
         self._read = False
         self._modules = [ ]
         self._listeners = [ ]
-        self._original = None
+        self._original: list | None = None
         self._read_task = None
 
     def get(self, name):
@@ -214,8 +220,7 @@ class Modules:
         for module in self._modules:
             if module.name == name:
                 return True
-        else:
-            return False
+        return False
 
     def add_listener(self, listener):
         self._listeners.append(listener)
@@ -237,18 +242,26 @@ class Modules:
         if self._read_task is not None and not self._read_task.done():
             self._read_task.cancel()
 
-        url = '{}{}'.format(Modules.LIBRARY_ROOT, Modules.LIBRARY_INDEX)
         out_stream = ProgressStream()
-        in_stream = Downloader.download(url)
 
-        async def transform():
+        async def transform() -> None:
             try:
-                async for progress in in_stream:
-                    out_stream.write(progress)
-                modules = self._parse_index(in_stream.result())
-                out_stream.set_result(modules)
+                lang_code = i18n.get_language()
+                if lang_code and not lang_code.startswith('en'):
+                    lang_stream = Downloader.download(
+                        f'{LIBRARY_ROOT}/index-{lang_code}')
+                    try:
+                        result = await lang_stream
+                        out_stream.set_result(self._parse_index(result))
+                        return
+                    except DownloadError as e:
+                        if e.status != 404:
+                            raise
+
+                url = f'{LIBRARY_ROOT}/index'
+                result = await Downloader.download(url)
+                out_stream.set_result(self._parse_index(result))
             except Exception as e:
-                in_stream.cancel()
                 out_stream.set_exception(e)
 
         self._read_task = create_task(transform())
@@ -260,7 +273,7 @@ class Modules:
             modules = [ ]
             module_data = yaml.load(path, Loader=Loader)
             if 'jds' not in module_data:
-                raise Exception('No jds')
+                raise LibraryError('No jds')
             jds = float(module_data['jds'])
             if jds > 1.4:
                 raise ValueError('The library requires a newer version of jamovi. Please upgrade to the latest version of jamovi.')
@@ -273,7 +286,7 @@ class Modules:
             return content
         except Exception as e:
             log.exception(e)
-            raise ValueError('Unable to parse module list. Please try again later.')
+            raise ValueError('Unable to parse module list. Please try again later.') from e
 
     def _read_module(self, path, is_sys=False):
         defn = None
@@ -302,7 +315,7 @@ class Modules:
             try:
                 module = self._read_module(entry.path, is_system)
                 if not is_system:
-                    module.new = self._read and (module.name in self._original) is False
+                    module.new = self._read and module.name not in (self._original or [])
                 modules.append(module)
             except Exception as e:
                 log.exception(e)
@@ -384,14 +397,14 @@ class Modules:
 
     async def install_from_file(self, path, update: bool = False):
 
-        with ZipFile(path) as zip:
+        with ZipFile(path) as zip_file:
 
             module_dir = os.path.join(Dirs.app_data_dir(), 'modules')
-            module_name = zip.namelist()[0].split('/')[0]
+            module_name = zip_file.namelist()[0].split('/')[0]
             module_path = os.path.join(module_dir, module_name)
 
             shutil.rmtree(module_path, ignore_errors=True)
-            zip.extractall(module_dir)
+            zip_file.extractall(module_dir)
 
         meta = self._read_module(module_path)
 
@@ -409,7 +422,7 @@ class Modules:
 
             in_stream = None
             try:
-                if path.startswith(Modules.LIBRARY_ROOT):
+                if path.startswith(LIBRARY_ROOT):
                     in_stream = Downloader.download(path)
                     async for progress in in_stream:
                         out_stream.write(progress)
@@ -452,7 +465,7 @@ class Modules:
         else:
             for arch in defn.get('architectures', [ ]):
                 if arch['name'] == '*' or arch['name'] in PlatformInfo.platform():
-                    module.path = Modules.LIBRARY_ROOT + arch['path']
+                    module.path = f'{LIBRARY_ROOT}/{arch["path"]}'
                     break
             else:
                 module.path = ''
@@ -480,12 +493,10 @@ class Modules:
             module.incompatible = incompatible
 
         if 'requires' in defn and 'jamovi' in defn['requires']:
-            min_app_version = defn['requires']['jamovi']
-            min_app_version = min_app_version[2:]
-            min_app_version = min_app_version.split('.')
+            min_app_version = defn['requires']['jamovi'].lstrip('>=').strip().split('.')
             min_app_version = list(map(int, min_app_version))
         else:
-            min_app_version = [ 0, 0, 0, 0 ]
+            min_app_version = [0, 0, 0, 0]
 
         module.min_app_version = min_app_version
 
