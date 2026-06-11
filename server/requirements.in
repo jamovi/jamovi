@@ -9,6 +9,7 @@ nanomsg
 openpyxl
 pyexcel-ezodf
 aiohttp
+cryptography
 protobuf
 loguru
 certifi

@@ -10,7 +10,11 @@ attrs==25.4.0
     # via aiohttp
 certifi==2026.2.25
     # via -r requirements.in
+cffi==2.0.0
+    # via cryptography
 chardet==6.0.0.post1
+    # via -r requirements.in
+cryptography==48.0.1
     # via -r requirements.in
 cython==3.2.4
     # via -r requirements.in
@@ -50,6 +54,8 @@ propcache==0.4.1
     #   yarl
 protobuf==7.34.0
     # via -r requirements.in
+pycparser==3.0
+    # via cffi
 pyexcel-ezodf==0.3.4
     # via -r requirements.in
 pygments==2.19.2

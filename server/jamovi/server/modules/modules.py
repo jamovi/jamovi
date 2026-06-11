@@ -14,6 +14,7 @@ from jamovi.core import PlatformInfo
 from jamovi.server.utils import conf
 from jamovi.server.downloader import Downloader
 from jamovi.server.utils.stream import ProgressStream
+from jamovi.server.utils.zipverify import verify_jmo
 from jamovi.server.appinfo import determine_r_version
 from jamovi.server.appinfo import app_info
 from functools import lru_cache
@@ -413,6 +414,7 @@ class Modules:
                     async for progress in in_stream:
                         out_stream.write(progress)
                     path = in_stream.result()
+                    verify_jmo(path)
 
                 await self.install_from_file(path)
                 out_stream.set_result((1, 1))
