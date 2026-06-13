@@ -11,6 +11,7 @@ const Menu = electron.Menu;
 
 const { clipboard } = electron;
 const { nativeImage } = electron;
+const { session } = electron;
 
 const ini = require('./ini');
 const tmp = require('./tmp');
@@ -208,6 +209,26 @@ if ( ! firstInstance) {
 
 // proxy servers can interfere with accessing localhost
 app.commandLine.appendSwitch('no-proxy-server');
+
+// on a packaged (MSIX / full-trust) build, windows pops a one-time location-
+// consent prompt ("...signals like GPS or Wi-Fi...") on first launch, even
+// though jamovi never uses geolocation. the trigger is NOT the geolocation
+// stack - it's chromium's network service classifying the active connection:
+// by default NetworkChangeNotifierWin enumerates the network interfaces and
+// reads the connected wi-fi SSID (wlanapi.dll WlanQueryInterface), and windows
+// gates wi-fi SSID access behind the location permission. the prompt is raised
+// by a broker process that blocks the renderer (leaving a blank window) and is
+// not gated by the session permission handlers below (those are web-content
+// only). see net/base/network_change_notifier_win.cc.
+//
+// the WLAN read has several call sites in the network service (connection type,
+// connection subtype/PHY, SSID), so closing them one chromium feature at a time
+// is whack-a-mole. instead we sandbox the network service (as chrome does by
+// default): the sandboxed process token can't reach wlanapi at all, so no call
+// site can trigger the prompt, and chromium degrades gracefully. electron ships
+// it un-sandboxed (--service-sandbox-type=none), so we opt back in here.
+// must be set before app 'ready'.
+app.commandLine.appendSwitch('enable-features', 'NetworkServiceSandbox');
 
 const BrowserWindow = electron.BrowserWindow;
 const ipc = electron.ipcMain;
