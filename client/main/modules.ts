@@ -121,6 +121,7 @@ export class ModulesBase extends EventMap<IModulesModel> {
         install.then(() => {
             this.set('status', 'done');
         }, error => {
+            this.set('status', 'done');
             throw error;
         }, progress => {
             this.set('progress', progress);
