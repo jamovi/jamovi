@@ -114,8 +114,17 @@ const compile = function(srcDir, moduleDir, paths, packageInfo, rVersion, rArch,
     depends = depends.concat(imports);
     depends = depends.concat(suggests);
     depends = depends.concat(linkingTo);
+    // extract package names from remote specs (e.g. 'user/SomePackage@v1.0' -> 'SomePackage')
+    // so they aren't installed from CRAN — they'll be handled by the remotes install below
+    let remotePackageNames = remotes.map(remote => {
+        let parts = remote.split('/');
+        let name = parts[parts.length - 1];
+        return name.replace(/@.*$/, '');
+    });
+
     depends = depends.filter(x => included.indexOf(x) === -1);
     depends = depends.filter(x => installed.indexOf(x) === -1);
+    depends = depends.filter(x => remotePackageNames.indexOf(x) === -1);
     // remove duplicates
     depends = Array.from(new Set(depends));
 
