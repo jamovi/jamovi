@@ -3186,9 +3186,7 @@
 }
 .ani-spanner,
 .ani-hover-spanner:hover {
-  transform-origin-x: 90%;
-  transform-origin-y: 35%;
-  transform-origin-z: initial;
+  transform-origin: 90% 35%;
   -webkit-animation: ani-wrench 2.5s ease infinite;
           animation: ani-wrench 2.5s ease infinite;
 }
@@ -3204,9 +3202,7 @@
 }
 .ani-ring,
 .ani-hover-ring:hover {
-  transform-origin-x: 50%;
-  transform-origin-y: 0px;
-  transform-origin-z: initial;
+  transform-origin: 50% 0px;
   -webkit-animation: ani-ring 2s ease infinite;
           animation: ani-ring 2s ease infinite;
 }
@@ -4462,9 +4458,7 @@
 }
 .mif-ani-spanner,
 .mif-ani-hover-spanner:hover {
-  transform-origin-x: 90%;
-  transform-origin-y: 35%;
-  transform-origin-z: initial;
+  transform-origin: 90% 35%;
   -webkit-animation: ani-wrench 2.5s ease infinite;
           animation: ani-wrench 2.5s ease infinite;
 }
@@ -4480,9 +4474,7 @@
 }
 .mif-ani-ring,
 .mif-ani-hover-ring:hover {
-  transform-origin-x: 50%;
-  transform-origin-y: 0px;
-  transform-origin-z: initial;
+  transform-origin: 50% 0px;
   -webkit-animation: ani-ring 2s ease infinite;
           animation: ani-ring 2s ease infinite;
 }
