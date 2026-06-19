@@ -228,7 +228,16 @@ app.commandLine.appendSwitch('no-proxy-server');
 // site can trigger the prompt, and chromium degrades gracefully. electron ships
 // it un-sandboxed (--service-sandbox-type=none), so we opt back in here.
 // must be set before app 'ready'.
-app.commandLine.appendSwitch('enable-features', 'NetworkServiceSandbox');
+//
+// only the packaged (MSIX) build triggers the prompt and needs this: a plain
+// Win32 process (the .zip and the NSIS-installed build) reading wlanapi doesn't
+// go through the location broker, so it never raises the prompt. sandboxing it
+// would also relaunch our exe under an AppContainer token that can't access it
+// from a non-WindowsApps location ("Sandbox cannot access executable" -> crash
+// loop on the portable .zip). process.windowsStore is true only for appx/MSIX
+// packaged apps, which always run from WindowsApps where the sandbox works.
+if (process.windowsStore)
+    app.commandLine.appendSwitch('enable-features', 'NetworkServiceSandbox');
 
 const BrowserWindow = electron.BrowserWindow;
 const ipc = electron.ipcMain;
