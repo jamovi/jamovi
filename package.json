@@ -9,6 +9,7 @@
   },
   "scripts": {
     "test": "mocha",
+    "test:i18n": "node --test test/040-i18n.test.mjs",
     "start": "node index.js"
   },
   "repository": {

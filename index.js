@@ -129,17 +129,13 @@ try {
             Usage: jmc --i18n path  --create code`;
         }
         else if (args.create) {
-            let code = args.create.toLowerCase();
-            if (code === 'catalog')
-                code = 'c';
+            let code = args.create;
             i18n.create(code, defDir, srcDir, args.verbose);
         }
         else if (args.update === null || args.update) {
             let code = null;
             if (args.update) {
-                code = args.update.toLowerCase();
-                if (code === 'catalog')
-                    code = 'c';
+                code = args.update;
             }
             i18n.update(code, defDir, srcDir, args.verbose);
         }
