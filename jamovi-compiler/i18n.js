@@ -189,6 +189,25 @@ const parseContext = function(value) {
     return data;
 }
 
+const unescapeRString = function(value) {
+    return value.replace(/\\(["'\\nrtbf])/g, (match, escaped) => {
+        switch (escaped) {
+            case 'n':
+                return '\n';
+            case 'r':
+                return '\r';
+            case 't':
+                return '\t';
+            case 'b':
+                return '\b';
+            case 'f':
+                return '\f';
+            default:
+                return escaped;
+        }
+    });
+}
+
 const extract = function(obj, address, filter, exclude = []) {
 
     for (let property in obj) {
@@ -290,10 +309,68 @@ const checkItem = function(item, address, customFilter, exclude = ['usage']) {
 
 }
 
+const isValidWeblateLanguageCode = function(code) {
+    const weblateRegex = /^[a-z]{2,3}(?:_[A-Z][a-z]{3})?(?:_(?:[A-Z]{2}|\d{3}))?(?:_(?:[a-z0-9]{5,8}|\d{4}))*$/;
+
+    return typeof code === 'string' && weblateRegex.test(code);
+}
+
+const resolveLanguageCode = function(code) {
+    if (typeof code !== 'string')
+        return null;
+
+    if (code.toLowerCase() === 'catalog' || code.toLowerCase() === 'c')
+        return 'c';
+
+    if (isValidWeblateLanguageCode(code) === false)
+        return null;
+
+    return code;
+}
+
+
+const languageCodeFromTranslationFile = function(file) {
+    if (file === 'catalog.pot')
+        return 'c';
+    if (file.endsWith('.po'))
+        return path.basename(file, '.po');
+    if (file.endsWith('.pot'))
+        return path.basename(file, '.pot');
+    return null;
+}
+
+const validatePOCode = function(po, file) {
+    const fileCode = languageCodeFromTranslationFile(file);
+    const headerCode = po.headers.Language || po.headers.language || po.headers.lang;
+    const code = headerCode || fileCode;
+    const resolvedCode = resolveLanguageCode(code);
+
+    if (resolvedCode === null)
+        throw `Invalid language code '${code}' in ${file}. Expected a Weblate language code.`;
+
+    if (fileCode) {
+        const resolvedFileCode = resolveLanguageCode(fileCode);
+        if (resolvedFileCode === null)
+            throw `Invalid language code '${fileCode}' in filename ${file}. Expected a Weblate language code.`;
+
+        if (headerCode && fileCode !== 'c' && fileCode !== headerCode)
+            throw `Language code mismatch in ${file}: filename is '${fileCode}' but header is '${headerCode}'.`;
+    }
+
+    return { code: fileCode || code, resolvedCode };
+}
+
 const load = function(defDir, code, create) {
     let transDir = path.join(defDir, 'i18n');
     if (defDir.endsWith('i18n'))
         transDir = defDir;
+
+    if (code) {
+        const requestedCode = code;
+        code = resolveLanguageCode(requestedCode);
+        if (code === null)
+            throw `Invalid language code '${requestedCode}'. Expected a Weblate language code.`;
+    }
 
     if ( ! utils.exists(transDir)) {
         if (create)
@@ -332,11 +409,12 @@ const load = function(defDir, code, create) {
             continue;
 
         if (code) {
+            const fileCode = resolveLanguageCode(languageCodeFromTranslationFile(file));
             if (translationLoaded)
                 break;
-            if (code.toLowerCase() === 'c' && file !== 'catalog.pot')
+            if (code === 'c' && file !== 'catalog.pot')
                 continue;
-            else if (file.startsWith(code.toLowerCase()) === false)
+            else if (fileCode !== code)
                 continue;
             else if (create) {
                 throw `Translation for language code ${code} already exists.`;
@@ -347,11 +425,20 @@ const load = function(defDir, code, create) {
 
         // strip obsolete previous-msgid lines (#~|) which gettext-parser cannot handle
         const poContent = fs.readFileSync(langPath, 'utf-8').replace(/^#~\|.*$/gm, '');
-        const po = gettextParser.po.parse(poContent);
+        let po = null;
+        try {
+            po = gettextParser.po.parse(poContent);
+        }
+        catch (e) {
+            throw `Error parsing ${file}: ${e.message || e}`;
+        }
 
-        const lang = po.headers.Language || po.headers.language || po.headers.lang;
+        const { code: originalLang, resolvedCode: lang } = validatePOCode(po, file);
 
-        translations[lang.toLowerCase()] = po;
+        if (lang !== 'c')
+            po.headers.Language = originalLang;
+
+        translations[lang] = po;
         translationLoaded = true;
     }
 
@@ -478,9 +565,9 @@ const scanAnalyses = function(defDir, srcDir) {
         let filePath = path.join(rDir, fileName);
         let content = fs.readFileSync(filePath, 'UTF-8').replace(/\\u[0-9A-Fa-f]{4}/g, (x) => JSON.parse(`"${x}"`));
 
-        // extract strings from .("...") and .('...') calls, unescaping inner quotes
-        const dQuoted = [...content.matchAll(reDQ)].map(m => m[1].replaceAll('\\"', '"'));
-        const sQuoted = [...content.matchAll(reSQ)].map(m => m[1].replaceAll("\\'", "'"));
+        // extract strings from .("...") and .('...') calls, unescaping R string escapes
+        const dQuoted = [...content.matchAll(reDQ)].map(m => unescapeRString(m[1]));
+        const sQuoted = [...content.matchAll(reSQ)].map(m => unescapeRString(m[1]));
 
         for (let match of [...dQuoted, ...sQuoted]) {
             let value = parseContext(match);
@@ -606,4 +693,4 @@ To create a new language code file use:
     jmc --i18n path  --create code`);
 }
 
-export default { create, update, load, finalise, list, translations, createTranslationJSON };
+export default { create, update, load, finalise, list, translations, createTranslationJSON, isValidWeblateLanguageCode };

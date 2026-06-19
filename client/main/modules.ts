@@ -515,7 +515,8 @@ class Module {
                             return await response.json() as I18nData;
                         }
                         catch (e) {
-                            throw new ModuleCorruptError();
+                            return null;
+                            //throw new ModuleCorruptError();
                         }
                     }
                     else {

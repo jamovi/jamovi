@@ -811,7 +811,7 @@ class Server:
             (fr'{ path_a }/([a-f0-9-]+)/coms', ClientConnection, { 'session': self._session }),
             (fr'{ path_a }/([a-f0-9-]+/dl/.*)', DownloadFileHandler, { 'path': self._session.session_path }),
             (fr'{ path_a }/modules/([0-9a-zA-Z]+)', ModuleDescriptor, { 'session': self._session }),
-            (fr'{ path_a }/modules/([0-9a-zA-Z]+)/i18n/([a-z]{{2}}(?:-[a-z]{{2}})?)', ModuleI18nDescriptor, { 'session': self._session }),
+            (fr'{ path_a }/modules/([0-9a-zA-Z]+)/i18n/([^/.]+)', ModuleI18nDescriptor, { 'session': self._session }),
             (fr'{ path_a }/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)/([.0-9a-zA-Z]+)', AnalysisDescriptor, { 'session': self._session }),
             (fr'{ path_a }/analyses/([0-9a-zA-Z]+)/([0-9a-zA-Z]+)()', AnalysisDescriptor, { 'session': self._session }),
             (fr'{ path_a }/utils/to-pdf', PDFConverter, { 'pdfservice': self }),

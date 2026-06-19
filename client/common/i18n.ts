@@ -92,6 +92,18 @@ export const isI18nData = function (obj: unknown): obj is I18nData {
     );
 }
 
+interface LangCodeParts {
+    language: string | null;
+    extlang: string | null;
+    script: string | null;
+    region: string | null;
+    variant: string | null;
+    code: string;
+    originalCode: string;
+    isValid: boolean;
+    scriptWasInferred: boolean;
+}
+
 export class I18n {
     _availableLanguages: Array<string>;
     language: string;
@@ -269,64 +281,198 @@ export class I18n {
         if (languages) {
             for (let lang of languages) {
                 if (this.parseLangCode(lang).isValid)
-                    return lang.toLowerCase();
+                    return lang;
             }
         }
 
         return 'en';
     }
 
-    // for information about language codes
-    // https://www.w3.org/International/articles/language-tags/
-    parseLangCode(code: string) {
-
-        let parts = {
+    createLangCodeParts(code: string): LangCodeParts {
+        let parts: LangCodeParts = {
             language: null,
             extlang: null,
             script: null,
             region: null,
             variant: null,
-            code: null,
-            isValid: true
+            code: code,
+            originalCode: code,
+            isValid: true,
+            scriptWasInferred: false
         };
 
-        if (!code) {
-            parts.isValid = false;
-            parts.code = code;
-        }
-        else {
-            parts.code = code.toLowerCase();
+        return parts;
+    }
 
-            let sections = code.split('-');
-            let partIndex = 0;
-            for (let i = 0; i < sections.length && partIndex < 5 && parts.isValid; i++) {
-                let value = sections[i];
-                if (partIndex === 0 && /^[a-zA-Z]{2,3}$/g.test(value)) {  // language code of length 2 or 3 characters
-                    parts.language = value.toLowerCase();
-                    partIndex = 1;
-                }
-                else if (partIndex > 0 && partIndex <= 1 && /^[a-zA-Z]{3}$/g.test(value)) {  // language extension code of length 3 characters
-                    parts.extlang = value.toLowerCase();
-                    partIndex = 2;
-                }
-                else if (partIndex > 0 && partIndex <= 2 && /^[a-zA-Z]{4}$/g.test(value)) {  // language script code of length 4 characters
-                    parts.script = value.toLowerCase();
-                    partIndex = 3;
-                }
-                else if (partIndex > 0 && partIndex <= 3 && /\d{3}$|^[a-zA-Z]{2}$/g.test(value)) {  // region code of length 2 characters or 3 digits
-                    parts.region = value.toLowerCase();
-                    partIndex = 4;
-                }
-                else if (partIndex > 0 && partIndex <= 4 && /^\d{4}$|^[a-zA-Z]{5}$/g.test(value)) {  // variant code of length 5 characters or 4 digits
-                    parts.variant = value.toLowerCase();
-                    partIndex = 5;
-                }
-                else
-                    parts.isValid = false;
-            }
+    /**
+     * Validates whether a string conforms to BCP 47 language tag format.
+     * Underscores are accepted as separator aliases for dashes.
+     *
+     * @param locale - The string to validate.
+     * @returns boolean - True if valid, false otherwise.
+     */
+    isValidLocaleOrLanguageTag(locale: string): boolean {
+        const bcp47Regex = /^[a-zA-Z]{2,4}(?:-[a-zA-Z0-9]{2,8})*(?:-[a-zA-Z0-9]{1,8})*$/;
+
+        return typeof locale === 'string' && bcp47Regex.test(locale.replace(/_/g, '-'));
+    }
+
+    toBCP47LanguageTag(code: string) {
+        let normalizedCode = code.trim();
+
+        if (!normalizedCode)
+            return null;
+
+        if (this.isValidLocaleOrLanguageTag(normalizedCode) === false)
+            return null;
+
+        normalizedCode = normalizedCode.replace(/_/g, '-');
+
+        try {
+            const Locale = (Intl as any).Locale;
+            if (Locale)
+                normalizedCode = new Locale(normalizedCode).toString();
         }
+        catch (e) {
+            return null;
+        }
+
+        return normalizedCode;
+    }
+
+    normalizeLocaleCode(code: string) {
+        return this.toBCP47LanguageTag(code);
+    }
+
+    parseLangCodeFallback(code: string, originalCode: string) {
+        let parts = this.createLangCodeParts(originalCode);
+        parts.code = code;
+
+        let sections = code.split('-');
+        let partIndex = 0;
+        for (let i = 0; i < sections.length && partIndex < 5 && parts.isValid; i++) {
+            let value = sections[i];
+            if (partIndex === 0 && /^[a-zA-Z]{2,3}$/.test(value)) {  // language code of length 2 or 3 characters
+                parts.language = value.toLowerCase();
+                partIndex = 1;
+            }
+            else if (partIndex > 0 && partIndex <= 1 && /^[a-zA-Z]{3}$/.test(value)) {  // language extension code of length 3 characters
+                parts.extlang = value.toLowerCase();
+                partIndex = 2;
+            }
+            else if (partIndex > 0 && partIndex <= 2 && /^[a-zA-Z]{4}$/.test(value)) {  // language script code of length 4 characters
+                parts.script = value.toLowerCase();
+                partIndex = 3;
+            }
+            else if (partIndex > 0 && partIndex <= 3 && /^(\d{3}|[a-zA-Z]{2})$/.test(value)) {  // region code of length 2 characters or 3 digits
+                parts.region = value.toLowerCase();
+                partIndex = 4;
+            }
+            else if (partIndex > 0 && partIndex <= 4 && (/^(\d{4}|[a-zA-Z0-9]{5,8})$/.test(value))) {  // variant code of length 5 to 8 characters or 4 digits
+                parts.variant = value.toLowerCase();
+                partIndex = 5;
+            }
+            else
+                parts.isValid = false;
+        }
+
+        this.inferScript(parts);
 
         return parts;
+    }
+
+    inferScript(parts: LangCodeParts) {
+        if (parts.isValid && parts.language === 'zh' && parts.script === null) {
+            if (parts.region === 'cn' || parts.region === 'sg' || parts.region === 'my') {
+                parts.script = 'hans';
+                parts.scriptWasInferred = true;
+            }
+            else if (parts.region === 'tw' || parts.region === 'hk' || parts.region === 'mo') {
+                parts.script = 'hant';
+                parts.scriptWasInferred = true;
+            }
+        }
+    }
+
+    // for information about language codes
+    // https://www.w3.org/International/articles/language-tags/
+    parseLangCode(code: string) {
+
+        if (!code) {
+            let parts = this.createLangCodeParts(code);
+            parts.isValid = false;
+            parts.code = code;
+            return parts;
+        }
+
+        const normalized = this.normalizeLocaleCode(code);
+        if (normalized === null) {
+            let parts = this.createLangCodeParts(code);
+            parts.isValid = false;
+            parts.code = code;
+            return parts;
+        }
+
+        try {
+            const Locale = (Intl as any).Locale;
+            if (Locale) {
+                const locale = new Locale(normalized);
+                const baseName = locale.baseName ? locale.baseName : locale.toString();
+                let parts = this.parseLangCodeFallback(baseName.toLowerCase(), code);
+                parts.language = locale.language ? locale.language.toLowerCase() : parts.language;
+                parts.script = locale.script ? locale.script.toLowerCase() : parts.script;
+                parts.region = locale.region ? locale.region.toLowerCase() : parts.region;
+                parts.code = locale.toString().toLowerCase();
+                this.inferScript(parts);
+                return parts;
+            }
+        }
+        catch (e) {
+            // Fall through to the small parser below for older or less common tags.
+        }
+
+        return this.parseLangCodeFallback(normalized, code);
+    }
+
+    getDisplayName(code: string): string {
+        if (!code)
+            return code;
+
+        const parsed = this.parseLangCode(code);
+        if (parsed.isValid === false)
+            return code;
+
+        try {
+            const DisplayNames = (Intl as any).DisplayNames;
+            if (DisplayNames) {
+                let displayLang = parsed.code;
+
+                // Chinese is shown in English ("Simplified/Traditional Chinese") rather than its
+                // endonym. The native label for traditional is contested — 繁體 ("complex form")
+                // vs 正體 ("orthodox form") — and the choice is politically loaded in Taiwan.
+                // English sidesteps having to pick a side. (Per feedback from a Taiwanese user.)
+                if (parsed.language === 'zh')
+                    displayLang = 'en';
+
+                // drop the region (Intl.DisplayNames appends it in parentheses,
+                // e.g. "norsk bokmål (Norge)"), but keep the script, since that's
+                // what distinguishes Simplified vs Traditional Chinese (zh-Hans / zh-Hant)
+                let nameCode = parsed.language;
+                if (nameCode && parsed.script)
+                    nameCode += `-${parsed.script}`;
+
+                const displayNames = new DisplayNames([ displayLang ], { type: 'language' });
+                const displayName = displayNames.of(nameCode || parsed.code);
+
+                if (displayName)
+                    return displayName;
+            }
+        }
+        catch (e) {
+            // Fall through to the code-based display below.
+        }
+
+        return parsed.code ? parsed.code : code;
     }
 
     findBestMatchingLanguage(code: string, codes: string[], options?: { excludeDev?: boolean }) {
@@ -352,7 +498,8 @@ export class I18n {
         let languages = codes.map(code => this.parseLangCode(code));
 
         // compares the tags of the two languages. Every matching tag increases the ranking.
-        // Mismatched tags disqualify the compare, except if the target tag being compared is null
+        // Script mismatches disqualify the compare, because they usually mean different written forms.
+        // Region mismatches are allowed, so region-based and script-based language packs can match.
         let compare = (desired, target) => {
             if (target.isValid === false)
                 return 0;
@@ -360,28 +507,24 @@ export class I18n {
             let rank = 0;
             if (desired.language === target.language)
                 rank += 5;
-            else if (target.language !== null)
+            else
                 return 0;
 
             if (desired.extlang === target.extlang)
-                rank += 4;
-            else if (target.extlang !== null)
+                rank += desired.extlang !== null ? 4 : 0;
+            else if (desired.extlang !== null && target.extlang !== null)
                 return 0;
 
             if (desired.script === target.script)
-                rank += 3;
-            else if (target.script !== null)
+                rank += desired.script !== null ? 3 : 0;
+            else if (desired.script !== null && target.script !== null)
                 return 0;
 
             if (desired.region === target.region)
-                rank += 2;
-            else if (target.region !== null)
-                return 0;
+                rank += desired.region !== null ? 2 : 0;
 
             if (desired.variant === target.variant)
-                rank += 1;
-            else if (target.variant !== null)
-                return 0;
+                rank += desired.variant !== null ? 1 : 0;
 
             return rank;
         };
@@ -390,15 +533,26 @@ export class I18n {
         let currentRank = 0;
         for (let language of languages) {
             let rank = compare(desiredLanguage, language);
+            if (rank <= 0)
+                continue;
 
-            // If two languages have the same best rank then the shortest code is used.
-            if (rank > currentRank || (rank === currentRank && (bestLanguage === null || bestLanguage.code.Length > language.code.length))) {
+            // Higher rank wins. On a tie the shortest code is used, and if codes
+            // are the same length the alphabetically first is used, so selection
+            // is deterministic regardless of the order the codes are listed in.
+            let candidateCode = language.code || '';
+            let bestCode = bestLanguage ? (bestLanguage.code || '') : '';
+            if (bestLanguage === null
+                    || rank > currentRank
+                    || (rank === currentRank
+                        && (candidateCode.length < bestCode.length
+                            || (candidateCode.length === bestCode.length
+                                && candidateCode < bestCode)))) {
                 currentRank = rank;
                 bestLanguage = language;
             }
         }
 
-        return bestLanguage ? bestLanguage.code : null;
+        return bestLanguage ? bestLanguage.originalCode : null;
     }
 }
 

@@ -70,15 +70,17 @@ try {
     
     i18n.setAvailableLanguages(languages.available);
     let current = languages.current;
-    if ( ! current) {
-        let options: {
-            excludeDev?: boolean;
-        } = {};
-        if (host.isElectron)
-            // prevent the use of in-dev languages as 'system default' in electron
-            options.excludeDev = true;
+    let options: {
+        excludeDev?: boolean;
+    } = {};
+    if (host.isElectron)
+        // prevent the use of in-dev languages as 'system default' in electron
+        options.excludeDev = true;
+    if ( ! current)
         current = i18n.findBestMatchingLanguage(i18n.systemLanguage(), languages.available, options);
-    }
+    else // this is a bit of a hack to ensure that the current language is valid, and falls back to english if not, also corrects any important region/script issues (e.g. zh-cn vs zh-Hans-CN)
+        current = i18n.findBestMatchingLanguage(current, languages.available, options);
+
     if ( ! current)
         current = 'en';
 

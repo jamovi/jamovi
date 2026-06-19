@@ -251,19 +251,8 @@ export class AppMenuButton extends EventDistributor {
             if (code === '---')
                 return `</optgroup><optgroup label="${ _('In development') }">`;
 
-            let ownName;
-            if (code === 'zh-cn') {
-                // sensitive! shouldn't be translated
-                ownName = 'Chinese (Simplified)';
-            }
-            else if (code === 'zh-tw') {
-                // sensitive! shouldn't be translated
-                ownName = 'Chinese (Traditional)';
-            }
-            else {
-                ownName = new Intl.DisplayNames([code], { type: 'language' }).of(code);
-                ownName = `${ ownName[0].toUpperCase() }${ ownName.slice(1) }`; // capitalise first letter
-            }
+            let ownName = I18ns.get('app').getDisplayName(code);
+            //ownName = `${ ownName[0].toUpperCase() }${ ownName.slice(1) }`; // capitalise first letter
             return `<option value="${ code }">${ ownName }</option>`;
         });
         available.unshift(`<optgroup label="${ _('Available') }">`);
