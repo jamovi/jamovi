@@ -2,7 +2,8 @@
     "compilerOptions": {
       "module": "ESNext",
       "target": "esnext",
-      "moduleResolution": "node",
+      "lib": ["ESNext", "DOM", "DOM.Iterable"],
+      "moduleResolution": "bundler",
       "allowSyntheticDefaultImports": true,
       "noImplicitThis": true
     }
