@@ -59,7 +59,7 @@ void Dirs::throwError(const string &message, int code)
     }
 }
 
-string Dirs::appDataDir(bool sh0rt)
+string Dirs::appDataDir()
 {
     if (Dirs::_appDataDir == "")
     {
@@ -101,22 +101,6 @@ string Dirs::appDataDir(bool sh0rt)
 
         Dirs::_appDataDir = dir;
     }
-
-#ifdef _WIN32
-    if (sh0rt)
-    {
-        wstring wide = nowide::widen(Dirs::_appDataDir);
-        long   length = 0;
-        TCHAR* buffer = NULL;
-        length = GetShortPathName(wide.c_str(), NULL, 0);
-        buffer = new TCHAR[length];
-        length = GetShortPathName(wide.c_str(), buffer, length);
-        string sh = nowide::narrow(buffer);
-        delete buffer;
-
-        return sh;
-    }
-#endif
 
     return Dirs::_appDataDir;
 }

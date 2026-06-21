@@ -283,8 +283,6 @@ void EngineR::setLibPaths(const std::string &moduleName)
     if ( ! isSafeIdentifier(moduleName))
         throw std::invalid_argument("Invalid module name: '" + moduleName + "'");
 
-    stringstream ss;
-
     char *cPath;
     string path;
     vector<string> sysR;
@@ -303,38 +301,39 @@ void EngineR::setLibPaths(const std::string &moduleName)
     boost::algorithm::split(moduleR, path, boost::algorithm::is_any_of(PATH_DELIM), boost::algorithm::token_compress_on);
 
     bool suppressUserModules = isTruthy(boost::nowide::getenv("JAMOVI_SUPPRESS_USER_MODULES"));
-    bool hasPath = false;
 
-    ss << "base::.libPaths(c(";
+    vector<string> libPaths;
 
+    // pass the real (long) UTF-8 paths to R. modern R (UCRT, >= 4.2) handles
+    // international characters in paths natively, so we no longer munge these
+    // into 8.3 'blah~1' short paths
     if ( ! suppressUserModules)
+        libPaths.push_back(Dirs::appDataDir() + "/modules/" + moduleName + "/R");
+
+    for (auto &p : moduleR)
     {
-        ss << "'" << Dirs::appDataDir(true) << "/modules/" << moduleName << "/R'";
-        hasPath = true;
+        string base = makeAbsolute(p);
+        libPaths.push_back(base + "/" + moduleName + "/R");
+        libPaths.push_back(base + "/jmv/R");
+        libPaths.push_back(base + "/base/R");
     }
 
-    for (auto path : moduleR)
-    {
-        if (hasPath)
-            ss << ",";
+    for (auto &p : sysR)
+        libPaths.push_back(makeAbsolute(p));
 
-        ss << "'" << makeAbsolute(path) << "/" << moduleName << "/R'";
-        ss << ",'" << makeAbsolute(path) << "/jmv/R'";
-        ss << ",'" << makeAbsolute(path) << "/base/R'";
-        hasPath = true;
+    // build the character vector with its encoding explicitly marked UTF-8,
+    // otherwise R may reinterpret the bytes in the native code page and fail
+    // to find directories that contain international characters
+    Rcpp::CharacterVector paths(libPaths.size());
+    for (size_t i = 0; i < libPaths.size(); i++)
+    {
+        Rcpp::String s(libPaths[i]);
+        s.set_encoding(CE_UTF8);
+        paths[i] = s;
     }
 
-    for (auto path : sysR)
-    {
-        if (hasPath)
-            ss << ",";
-        ss << "'" << makeAbsolute(path) << "'";
-        hasPath = true;
-    }
-
-    ss << "))\n";
-
-    _rInside->parseEvalQNT(ss.str());
+    Rcpp::Function setLibPathsInR = _rInside->parseEvalNT("base::.libPaths");
+    setLibPathsInR(paths);
 }
 
 SEXP EngineR::checkpoint(SEXP results)
@@ -476,23 +475,6 @@ void EngineR::initR()
         Rcpp::Function sysSetenv = _rInside->parseEvalNT("Sys.setenv");
         sysSetenv(Rcpp::Named("RSTUDIO_PANDOC", std::string(pandoc)));
     }
-
-    // override .libPaths(), the R version munges international characters
-    // and wrecks those short blah~1 type paths
-    _rInside->parseEvalQNT(""
-        "base <- base::.getNamespace('base')\n"
-        "base::unlockBinding('.libPaths', base)\n"
-        ".lib.loc <- base$.libPaths()\n"
-        "base$.libPaths <- function (new)\n"
-        "{\n"
-        "    if ( ! missing(new)) {\n"
-        "        paths <- c(new, .Library.site, .Library)\n"
-        "        paths <- paths[dir.exists(paths)]\n"
-        "        .lib.loc <<- unique(paths)\n"
-        "    } else .lib.loc\n"
-        "}\n"
-        "base::lockBinding('.libPaths', base)\n"
-    );
 
     // define lockFunctions helper for locking down R functions
     _rInside->parseEvalQNT(""
