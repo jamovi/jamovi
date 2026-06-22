@@ -85,6 +85,9 @@ else
 				"-D_WIN32_WINNT=_WIN32_WINNT_VISTA" \
 				"-DWIN32_LEAN_AND_MEAN" \
 				"-fpermissive"
+
+	# embed the manifest that sets the process active code page to UTF-8
+	WINRES = engine/jamovi-engine.res.o
 endif
 endif
 
@@ -108,6 +111,7 @@ SRCS  = $(subst $(SRCDIR)/,,$(ABS_SRCS))
 
 OBJS += jamovi.pb.cc.o
 OBJS += $(SRCS:.cpp=.cpp.o)
+OBJS += $(WINRES)
 
 ifeq ($(os),OSX)
 	ABS_M_SRCS  = $(wildcard $(SRCDIR)/../server/jamovi/common/*.m)
@@ -133,6 +137,9 @@ jamovi.pb.cc.o: jamovi.pb.cc
 
 engine/%.cpp.o: $(SRCDIR)/engine/%.cpp
 	$(CXX) -c -o $@ $^ $(CXXFLAGS) $(INCLUDES)
+
+engine/%.res.o: $(SRCDIR)/engine/%.rc $(SRCDIR)/engine/%.manifest
+	windres -I $(<D) -i $< -o $@ -O coff
 
 all: $(TARGET)
 

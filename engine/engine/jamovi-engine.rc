@@ -1,0 +1,3 @@
+// embeds the application manifest (resource id 1, type RT_MANIFEST = 24)
+// which sets the process active code page to UTF-8; see jamovi-engine.manifest
+1 24 "jamovi-engine.manifest"
