@@ -16,6 +16,7 @@ bool Host::isOrphan()
 #ifdef _WIN32
 
     static DWORD ppid = 0;
+    static HANDLE parent = NULL;
 
     if (ppid == 0) {
         HANDLE h = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
@@ -35,10 +36,12 @@ bool Host::isOrphan()
          CloseHandle(h);
     }
 
-    if (ppid != 0) {
-        HANDLE h = OpenProcess(PROCESS_QUERY_INFORMATION, false, ppid);
+    if (parent == NULL && ppid != 0)
+        parent = OpenProcess(PROCESS_QUERY_INFORMATION, false, ppid);
+
+    if (parent != NULL) {
         DWORD exitCode = 0;
-        if (GetExitCodeProcess(h, &exitCode))
+        if (GetExitCodeProcess(parent, &exitCode))
                 return exitCode != STILL_ACTIVE;
     }
     return false;
