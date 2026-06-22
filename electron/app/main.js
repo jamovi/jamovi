@@ -210,16 +210,16 @@ if ( ! firstInstance) {
 // proxy servers can interfere with accessing localhost
 app.commandLine.appendSwitch('no-proxy-server');
 
-// on a packaged (MSIX / full-trust) build, windows pops a one-time location-
-// consent prompt ("...signals like GPS or Wi-Fi...") on first launch, even
-// though jamovi never uses geolocation. the trigger is NOT the geolocation
-// stack - it's chromium's network service classifying the active connection:
-// by default NetworkChangeNotifierWin enumerates the network interfaces and
-// reads the connected wi-fi SSID (wlanapi.dll WlanQueryInterface), and windows
-// gates wi-fi SSID access behind the location permission. the prompt is raised
-// by a broker process that blocks the renderer (leaving a blank window) and is
-// not gated by the session permission handlers below (those are web-content
-// only). see net/base/network_change_notifier_win.cc.
+// on first launch windows can pop a one-time location-consent prompt
+// ("...signals like GPS or Wi-Fi...") even though jamovi never uses geolocation.
+// the trigger is NOT the geolocation stack - it's chromium's network service
+// classifying the active connection: by default NetworkChangeNotifierWin
+// enumerates the network interfaces and reads the connected wi-fi SSID
+// (wlanapi.dll WlanQueryInterface), and windows gates wi-fi SSID access behind
+// the location permission. the prompt is raised by a broker process that blocks
+// the renderer (leaving a blank window) and is not gated by the session
+// permission handlers below (those are web-content only).
+// see net/base/network_change_notifier_win.cc.
 //
 // the WLAN read has several call sites in the network service (connection type,
 // connection subtype/PHY, SSID), so closing them one chromium feature at a time
@@ -229,14 +229,19 @@ app.commandLine.appendSwitch('no-proxy-server');
 // it un-sandboxed (--service-sandbox-type=none), so we opt back in here.
 // must be set before app 'ready'.
 //
-// only the packaged (MSIX) build triggers the prompt and needs this: a plain
-// Win32 process (the .zip and the NSIS-installed build) reading wlanapi doesn't
-// go through the location broker, so it never raises the prompt. sandboxing it
-// would also relaunch our exe under an AppContainer token that can't access it
-// from a non-WindowsApps location ("Sandbox cannot access executable" -> crash
-// loop on the portable .zip). process.windowsStore is true only for appx/MSIX
-// packaged apps, which always run from WindowsApps where the sandbox works.
-if (process.windowsStore)
+// the catch: sandboxing relaunches the network process under an AppContainer/LPAC
+// token, and that token can only read our files when the install location grants
+// the application-package ACE (ALL APPLICATION PACKAGES S-1-15-2-1 / ALL
+// RESTRICTED APPLICATION PACKAGES S-1-15-2-2). two of our distributions qualify:
+// the MSIX build (always under WindowsApps) and the NSIS build (lands in
+// %ProgramFiles%, which carries those ACEs by default, inherited to children).
+// the portable .zip does NOT - a user can extract it to e.g. Downloads/Desktop,
+// where the token can't read the exe ("Sandbox cannot access executable" -> crash
+// loop). so we only opt in where we know the token can read us: process.windowsStore
+// is true for the MSIX build, and the docker build bakes JAMOVI_NETWORK_SANDBOX=1
+// into the NSIS payload's env.conf. the portable .zip is built from the same
+// payload but without the marker.
+if (process.windowsStore || readConfig().env.JAMOVI_NETWORK_SANDBOX === '1')
     app.commandLine.appendSwitch('enable-features', 'NetworkServiceSandbox');
 
 const BrowserWindow = electron.BrowserWindow;
