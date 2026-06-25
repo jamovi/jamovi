@@ -28,7 +28,7 @@ from .notifications import SessionShutdownIdleNotification
 from .notifications import SessionShutdownTimeLimitNotification
 
 from .backend import NoBackend
-from .backend import FirestoreBackend
+from .backend import HTTPBackend
 from .backend import FileSystemBackend
 from .modules import Modules
 
@@ -86,9 +86,9 @@ class Session(dict):
         if backend_mode == 'file':
             settings_path = os.path.join(Dirs.app_data_dir(), 'settings.json')
             self._backend = FileSystemBackend(settings_path=settings_path)
-        elif backend_mode == 'firestore':
+        elif backend_mode == 'http':
             backend_url = conf.get('backend_url')
-            self._backend = FirestoreBackend(firestore_url=backend_url)
+            self._backend = HTTPBackend(backend_url=backend_url)
         else:
             self._backend = NoBackend()
 

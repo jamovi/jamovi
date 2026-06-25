@@ -28,7 +28,7 @@ class Backend:
 
     def read_settings_nowait(self):
         raise NotImplementedError
-    
+
     def is_synchronous(self):
         return True
 
@@ -57,9 +57,9 @@ class NoBackend(Backend):
 
 
 try:
-    from .backend2 import FirestoreBackend
+    from .backend2 import HTTPBackend
 except ModuleNotFoundError:
-    class FirestoreBackend(NoBackend):
+    class HTTPBackend(NoBackend):
         pass
 
 
