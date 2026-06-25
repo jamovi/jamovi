@@ -13,6 +13,10 @@ validateSafeFormula(fmla, additional_allowed_functions = NULL)
 \item{additional_allowed_functions}{Optional character vector of extra
 function names to permit for this validation call.}
 }
+\value{
+Invisibly returns `NULL`. Throws an error if the formula contains
+  security violations.
+}
 \description{
 Secure formula validation using allowlist approach
 Prevents code injection while allowing legitimate statistical formulas
@@ -22,6 +26,8 @@ Prevents code injection while allowing legitimate statistical formulas
 validateSafeFormula(y ~ x + z)
 validateSafeFormula(y ~ I(x^2) + log(z))
 
-# Blocks dangerous code:
-validateSafeFormula(y ~ I(system('whoami')))  # Throws error
+\dontrun{
+# Blocks dangerous code (throws an error):
+validateSafeFormula(y ~ I(system('whoami')))
+}
 }

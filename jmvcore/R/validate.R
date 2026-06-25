@@ -5,7 +5,9 @@
 #' @param fmla A formula object to validate.
 #' @param additional_allowed_functions Optional character vector of extra
 #'   function names to permit for this validation call.
-#' @throws Error if formula contains security violations
+#'
+#' @return Invisibly returns `NULL`. Throws an error if the formula contains
+#'   security violations.
 #' @export
 #'
 #' @examples
@@ -13,8 +15,10 @@
 #' validateSafeFormula(y ~ x + z)
 #' validateSafeFormula(y ~ I(x^2) + log(z))
 #'
-#' # Blocks dangerous code:
-#' validateSafeFormula(y ~ I(system('whoami')))  # Throws error
+#' \dontrun{
+#' # Blocks dangerous code (throws an error):
+#' validateSafeFormula(y ~ I(system('whoami')))
+#' }
 validateSafeFormula <- function(fmla, additional_allowed_functions = NULL) {
 
   formula_text <- paste(deparse(fmla, width.cutoff = 500), collapse = " ")
@@ -115,6 +119,7 @@ validateSafeFormula <- function(fmla, additional_allowed_functions = NULL) {
 
 #' Internal function to validate I() expression content
 #' Only allows mathematical operations and variable references
+#' @noRd
 .validate_i_expression <- function(i_content) {
 
   # Check for function calls - only allow basic math

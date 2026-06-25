@@ -4,7 +4,8 @@
 \alias{asFormula}
 \title{Convert and validate an object as a formula}
 \usage{
-asFormula(object, env = parent.frame(), additional_allowed_functions = NULL)
+asFormula(object, env = parent.frame(),
+  additional_allowed_functions = NULL)
 }
 \arguments{
 \item{object}{A formula-like object (typically a character string or formula).}
