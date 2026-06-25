@@ -3,6 +3,7 @@
 import json
 import os
 
+from asyncio import CancelledError
 from asyncio import Queue
 from asyncio import QueueEmpty
 from asyncio import create_task
@@ -10,8 +11,8 @@ from asyncio import sleep
 
 
 class Backend:
-    def __init__(self, *, flush_rate=None):
-        self._flush_rate = flush_rate
+    def __init__(self, *, flush_delay=None):
+        self._flush_delay = flush_delay
         self._queue = Queue(maxsize=1)
         self._flush_task = None
 
@@ -22,9 +23,16 @@ class Backend:
         if self._queue.full():
             self._queue.get_nowait()
         self._queue.put_nowait(values)
-        if self._flush_task is None or self._flush_task.done():
-            self._flush_task = create_task(self._flush())
-            self._flush_task.add_done_callback(lambda t: t.result())
+        # debounce: restart the timer on every change, so we only flush
+        # once activity has settled for flush_delay seconds
+        if self._flush_task is not None and not self._flush_task.done():
+            self._flush_task.cancel()
+        self._flush_task = create_task(self._flush())
+        self._flush_task.add_done_callback(self._flush_done)
+
+    def _flush_done(self, task):
+        if not task.cancelled():
+            task.result()
 
     def read_settings_nowait(self):
         raise NotImplementedError
@@ -36,8 +44,12 @@ class Backend:
         pass
 
     async def _flush(self):
-        if self._flush_rate is not None:
-            await sleep(self._flush_rate)
+        try:
+            if self._flush_delay is not None:
+                await sleep(self._flush_delay)
+        except CancelledError:
+            # superseded by a newer change; let the new task flush instead
+            return
         await self.flush()
 
     async def flush(self):
@@ -66,7 +78,7 @@ except ModuleNotFoundError:
 class FileSystemBackend(Backend):
 
     def __init__(self, *, settings_path):
-        super().__init__(flush_rate=5)
+        super().__init__(flush_delay=5)
         self._settings_path = settings_path
 
     def read_settings_nowait(self):
