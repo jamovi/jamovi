@@ -114,7 +114,7 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
             let filePath = this.model.attributes.suggestedPath;
             if (filePath) {
                 let extension = path.extname(filePath);
-                filePath = s6e(path.basename(filePath, extension));
+                filePath = path.basename(filePath, extension);
             }
             else
                 filePath = '';
