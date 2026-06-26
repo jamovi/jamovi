@@ -8,7 +8,7 @@ Maintainer: Jonathon Love <jon@thon.cc>
 Description: A framework for creating rich interactive analyses for the jamovi
     platform (see <https://www.jamovi.org> for more information).
 URL: https://www.jamovi.org
-BugReports: https://github.com/jamovi/jmvcore/issues
+BugReports: https://github.com/jamovi/jamovi/issues
 License: GPL (>= 2)
 ByteCompile: yes
 Depends:
