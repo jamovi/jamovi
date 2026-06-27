@@ -290,7 +290,14 @@ Options <- R6::R6Class(
             }
         },
         compProtoBuf=function(pb) {
-            changes <- character()
+
+            # pb contains the old options, here we computed what has changed
+
+            # new options showing up
+            added <- setdiff(names(private$.options), pb$names)
+
+            changes <- added
+
             for (i in seq_along(pb$names)) {
                 name <- pb$names[[i]]
                 optionPB <- pb$options[[i]]
