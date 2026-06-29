@@ -185,7 +185,14 @@ const compile = function(srcDir, moduleDir, paths, packageInfo, rVersion, rArch,
 
         for (let remote of remotes) {
 
-            cmd = util.format('"%s" --vanilla --slave -e "remotes::install_github(\'%s\', lib=\'%s\', type=%s, INSTALL_opts=c(\'--no-data\', \'--no-help\', \'--no-demo\', \'--no-html\', \'--no-docs\', \'--no-multiarch\'), dependencies=FALSE, upgrade=FALSE)"', paths.rExe, remote, buildDir, installType);
+            // prefer pak when it's installed, otherwise fall back to remotes. the
+            // check runs inside R so this works regardless of whether pak has been
+            // provisioned. note pak has no INSTALL_opts equivalent, so the size
+            // flags only apply on the remotes fallback path.
+            const pakInstall = `pak::pkg_install('github::${ remote }', lib='${ buildDir }', dependencies=FALSE, upgrade=FALSE, ask=FALSE)`;
+            const remotesInstall = `remotes::install_github('${ remote }', lib='${ buildDir }', type=${ installType }, INSTALL_opts=c('--no-data', '--no-help', '--no-demo', '--no-html', '--no-docs', '--no-multiarch'), dependencies=FALSE, upgrade=FALSE)`;
+            const rExpr = `if (requireNamespace('pak', quietly=TRUE)) ${ pakInstall } else ${ remotesInstall }`;
+            cmd = `"${ paths.rExe }" --vanilla --slave -e "${ rExpr }"`;
             cmd = cmd.replace(/\\/g, '/');
             try {
                 sh(cmd, { stdio: [0, 1, 1], encoding: 'utf-8', env: env } );
