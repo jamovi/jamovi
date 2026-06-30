@@ -183,7 +183,15 @@ const compile = function(srcDir, moduleDir, paths, packageInfo, rVersion, rArch,
         console.log('Installing remotes');
         console.log(remotes.join(', '));
 
-        for (let remote of remotes) {
+        const remotesDelay = (options.remotesDelay || 0) * 1000;
+
+        for (let i = 0; i < remotes.length; i++) {
+            let remote = remotes[i];
+
+            if (i > 0 && remotesDelay > 0) {
+                log.debug(`waiting ${ options.remotesDelay }s before installing next remote`);
+                Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, remotesDelay);
+            }
 
             // prefer pak when it's installed, otherwise fall back to remotes. the
             // check runs inside R so this works regardless of whether pak has been
