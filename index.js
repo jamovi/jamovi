@@ -35,6 +35,7 @@ const ARGS = [
     { name: 'patch-version', type: Boolean },
     { name: 'skip-remotes', type: Boolean },
     { name: 'skip-deps', type: Boolean },
+    { name: 'remotes-delay', type: Number },
     { name: 'i18n', type: String },
     { name: 'i18n-repo', type: String },
     { name: 'create', type: String },
@@ -592,7 +593,7 @@ try {
             }
 
             log.debug('compiling R package');
-            compileR(srcDir, modDir, paths, packageInfo, rVersion, rArch, log, { mirror, skipRemotes, skipDeps: args['skip-deps'] });
+            compileR(srcDir, modDir, paths, packageInfo, rVersion, rArch, log, { mirror, skipRemotes, skipDeps: args['skip-deps'], remotesDelay: args['remotes-delay'] });
             log.debug('compiled');
 
             if (isBuilding) {
