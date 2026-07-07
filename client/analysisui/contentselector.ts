@@ -3,7 +3,7 @@
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import EnumPropertyFilter from './enumpropertyfilter';
 import interactionManager from '../common/interactionmanager';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, attrs, rich }  from '../common/htmlelementcreator';
 import type MultiContainer from './multicontainer';
 import LayoutGrid from './layoutgrid';
 
@@ -71,19 +71,19 @@ export class ContentSelector extends OptionControl<ContentSelectorProperties> {
         groupText = this.translate(groupText);
 
         this.labelId = interactionManager.nextAriaId('label');
-        this.header = HTML.parse(`<div class="selector-body silky-control-margin-${this.getPropertyValue("margin")}">
-                            <label id="${this.labelId}">${groupText}</label>
-                          </div>`);
+        this.header = h('div',  { class: `selector-body silky-control-margin-${this.getPropertyValue("margin")}` }, 
+                            h('label', { id: this.labelId }, rich(groupText))
+                        );
 
         this.tablist = null;
         if (form === 'listbox') {
-            this.tablist = HTML.parse(`<select aria-labeledby="${this.labelId}" name="${name}">`);
+            this.tablist = h('select', attrs({ "aria-labelledby": this.labelId, name: name }));
             this.tablist.addEventListener('change', (event) => {
                 this.setValue((this.tablist as HTMLInputElement).value);
             });
         }
         else {
-            this.tablist = HTML.parse(`<div class="tablist"></div>`);
+            this.tablist = h('div', { class: "tablist" });
         }
         this.header.append(this.tablist);
 
@@ -124,24 +124,24 @@ export class ContentSelector extends OptionControl<ContentSelectorProperties> {
             let name = this.getPropertyValue('name');
             let form = this.getPropertyValue('form');
 
-            this.tablist.innerHTML = '';
+            this.tablist.replaceChildren();
 
             for (let i = 0; i < options.length; i++) {
                 let optionTitle = this.translate(options[i].title);
                 switch (form) {
                     case 'tabs':
-                        let button = HTML.parse(`<button class="clickable" value="${options[i].name}">${optionTitle}</button>`);
+                        let button = h('button', { class: "clickable", value: options[i].name }, rich(optionTitle));
                         this.tablist.append(button);
                         break;
                     case 'radio':
                         let labelId = interactionManager.nextAriaId('label');
-                        let label = HTML.parse(`<label id="${labelId}">${optionTitle}</label>`);
-                        let radio = HTML.parse(`<input class="clickable" type="radio" name="${name}" value="${options[i].name}"/>`);
+                        let label = h('label', { id: labelId }, rich(optionTitle));
+                        let radio = h('input', { class:"clickable", type:"radio", name: name, value: options[i].name} );
                         label.prepend(radio);
                         this.tablist.append(label);
                         break;
                     default:
-                        let option = HTML.parse(`<option value="${options[i].name}">${optionTitle}</option>`);
+                        let option = h('option', { value: options[i].name }, optionTitle );
                         this.tablist.append(option);
                         break;
                 }

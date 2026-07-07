@@ -11,7 +11,7 @@ import EnumPropertyFilter from './enumpropertyfilter';
 import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
 import interactionManager from '../common/interactionmanager';
 import type { SupplierTargetList } from './gridtargetcontrol';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich }  from '../common/htmlelementcreator';
 import LayoutCell from './layoutcell';
 import BorderLayoutGrid from './layoutgridbordersupport';
 import Format from './format';
@@ -215,7 +215,7 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
         this.baseLayout = new LayoutGrid();
         this.baseLayout.classList.add('jmv-variable-supplier-base');
 
-        this.$warning = HTML.parse('<div class="msg"></div>');
+        this.$warning = h('div', { class: 'msg' });
 
         this.$warning.addEventListener('mouseenter', () => {
             if (this.$warning.classList.contains('active'))
@@ -234,7 +234,7 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
         let nextRow = 0;
         if (label !== null) {
             label = this.translate(label);
-            this.baseLayout.addCell(0, nextRow++, HTML.parse(`<div id="${labelId}" style="white-space: nowrap;" class="silky-options-supplier-group-header">${label}</div>`));
+            this.baseLayout.addCell(0, nextRow++, h('div', { id: labelId, style: 'white-space: nowrap;', class: 'silky-options-supplier-group-header' }, rich(label)));
         }
 
         this.supplier = new SelectableLayoutGrid();
@@ -284,11 +284,13 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
 
 
         //////////////////////////////////
-        this.$searchButton = HTML.parse(`<button class="search" aria-label="${_('Search list items')}"><div class="image"></div></button>`);
+        this.$searchButton = h('button', { class: 'search', 'aria-label': _('Search list items') }, h('div', { class: 'image' }));
         this.supplier.append(this.$searchButton);
         this.$searchButton.style.display = 'none';
 
-        let $search = HTML.parse(`<div class="supplier-search"><div class="outer-text"><input type="search" class="text" placeholder="${_('Search')}"></input></div></div>`);
+        let $search = h('div', { class: 'supplier-search' },
+            h('div', { class: 'outer-text' },
+                h('input', { type: 'search', class: 'text', placeholder: _('Search') })));
         this.$searchInput = $search.querySelector<HTMLInputElement>('input');
 
         let searchCell = this.supplier.addCell(0, 0, $search, { visible: false });
@@ -565,11 +567,11 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
     }
 
     render_term(item: IItem<U>, row: number) {
-        let $item = HTML.parse('<div style="white-space: nowrap;" class="silky-list-item silky-format-term"></div>');
+        let $item = h('div', { style: 'white-space: nowrap;', class: 'silky-list-item silky-format-term' });
 
         item.el = $item;
 
-        $item.append(HTML.parse('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + item.value.toString() + '</div>'));
+        $item.append(h('div', { style: 'white-space: nowrap;  display: inline-block;', class: 'silky-list-item-value' }, rich(item.value.toString())));
 
         let c1 = this.supplier.getCell(0, row);
 
@@ -594,7 +596,7 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
 
     render_variable(item: IItem<U>, row: number) {
 
-        let $item = HTML.parse('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>');
+        let $item = h('div', { style: 'white-space: nowrap;', class: 'silky-list-item silky-format-variable' });
 
         item.el = $item;
 
@@ -611,19 +613,15 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
 
         item.properties.power = 1;
 
-        $item.append(HTML.parse('<div style="display: inline-block;" class="silky-variable-type-img silky-variable-type-' + variableType + ' jmv-data-type-' + dataType + '"></div>'));
-        $item.append(HTML.parse('<div style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">' + item.value.toString() + '</div>'));
+        $item.append(h('div', { style: 'display: inline-block;', class: `silky-variable-type-img silky-variable-type-${variableType} jmv-data-type-${dataType}` }));
+        $item.append(h('div', { style: 'white-space: nowrap;  display: inline-block;', class: 'silky-list-item-value' }, rich(item.value.toString())));
 
         if (this._higherOrder) {
-            $item.append(HTML.parse(
-                            `<div class="power-box">
-                                <div class="value" contenteditable="true">1</div>
-                                <div class="button-box">
-                                    <div class="up button"></div>
-                                    <div class="down button"></div>
-                                </div>
-                            </div>`
-                        ));
+            $item.append(h('div', { class: 'power-box' },
+                h('div', { class: 'value', contenteditable: 'true' }, '1'),
+                h('div', { class: 'button-box' },
+                    h('div', { class: 'up button' }),
+                    h('div', { class: 'down button' }))));
             let $powerItem = $item.querySelector<HTMLElement>('.power-box');
             $powerItem.addEventListener('mousedown', (event) => {
                 event.stopPropagation();

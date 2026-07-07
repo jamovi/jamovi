@@ -1,7 +1,7 @@
 
 'use strict';
 
-import { HTMLElementCreator as HTML }  from '../htmlelementcreator';
+import { h }  from '../htmlelementcreator';
 import { EventEmitter } from 'eventemitter3';
 
 export class ToolbarGroup extends EventEmitter {
@@ -33,7 +33,7 @@ export class ToolbarGroup extends EventEmitter {
         let title = params.title === undefined ? null : params.title;
         let orientation = params.orientation === undefined ? 'horizontal' : params.orientation;
         let right = params.right === undefined ? false : params.right;
-        let el = params.el === undefined ? HTML.create('div') : params.el;
+        let el = params.el === undefined ? h('div') : params.el;
         let classes = params.classes === undefined ? '' : params.classes;
 
         this.el = el;
@@ -52,14 +52,14 @@ export class ToolbarGroup extends EventEmitter {
 
         this.items = [];
 
-        let body = HTML.create('div', { class: `jmv-toolbar-group-body jmv-toolbar-group-body-${orientation}` });
+        let body = h('div', { class: `jmv-toolbar-group-body jmv-toolbar-group-body-${orientation}` });
         this.el.append(body);
         if (title !== null) {
-            let label = HTML.create('div', { class: 'jmv-toolbar-group-label' }, title);
+            let label = h('div', { class: 'jmv-toolbar-group-label' }, title);
             this.el.append(label);
         }
 
-        this.separator = HTML.create('div', { class: 'jmv-toolbar-button-separator' });
+        this.separator = h('div', { class: 'jmv-toolbar-button-separator' });
         body.append(this.separator);
 
         if (params.items !== undefined) {

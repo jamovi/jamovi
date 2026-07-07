@@ -4,7 +4,7 @@ import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
 import { FormatDef, VariableFormat } from './formatdef';
 import interactionManager from '../common/interactionmanager';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich }  from '../common/htmlelementcreator';
 
 export type VariableLabelProperties = GridOptionControlProperties<string> & {
     format: VariableFormat;
@@ -22,7 +22,7 @@ export class VariableLabel extends OptionControl<VariableLabelProperties> {
 
         this.dataSupport = GetRequestDataSupport(this);
 
-        this.setRootElement(HTML.parse('<div style="white-space: nowrap;" class="silky-list-item silky-format-variable"></div>'));
+        this.setRootElement(h('div', { style: 'white-space: nowrap;', class: 'silky-list-item silky-format-variable' }));
     }
 
     protected override registerProperties(properties) {
@@ -52,8 +52,8 @@ export class VariableLabel extends OptionControl<VariableLabelProperties> {
 
         this.labelId = interactionManager.nextAriaId('label');
 
-        this.label = HTML.parse(`<div id="${this.labelId}" aria-label="${ this.getAriaLabel() }" style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">${ displayValue }</div>`);
-        this.icon = HTML.parse('<div class="silky-variable-type-img" style="display: inline-block; overflow: hidden;"></div>');
+        this.label = h('div', { id: this.labelId, 'aria-label': this.getAriaLabel(), style: 'white-space: nowrap;  display: inline-block;', class: 'silky-list-item-value' }, rich(displayValue));
+        this.icon = h('div', { class: 'silky-variable-type-img', style: 'display: inline-block; overflow: hidden;' });
 
         this.el.append(this.icon);
         this.el.append(this.label);
@@ -115,7 +115,9 @@ export class VariableLabel extends OptionControl<VariableLabelProperties> {
             return;
 
         let displayValue = this.getValue();
-        this.label.innerText = displayValue;
+        if (displayValue === null)
+            displayValue = '';
+        this.label.replaceChildren(rich(displayValue));
         this._updateIcon(displayValue);
         this.label.setAttribute('aria-label', this.getAriaLabel());
     }

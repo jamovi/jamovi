@@ -7,7 +7,7 @@ import EditorWidget from './vareditor/editorwidget';
 import EditorPanel from './editorpanel';
 import TransformEditor from './editors/transformeditor';
 import interactionManager, { type FocusLoop } from '../common/interactionmanager';
-import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
+import { h } from '../common/htmlelementcreator';
 import DataSetViewModel, { ColumnType } from './dataset';
 import ViewController from './viewcontroller';
 import Selection from './selection';
@@ -55,11 +55,11 @@ export class VariableEditor extends HTMLElement {
         this.currentIds = null;
 
         // Main container
-        this.$main = HTML.parse('<div class="jmv-variable-editor-main" data-type="none"></div>');
+        this.$main = h('div', { class: 'jmv-variable-editor-main', 'data-type': 'none' });
         this.append(this.$main);
 
         // Stage editor
-        this.$stageEditor = HTML.parse('<div id="import-editor" class="hidden"></div>');
+        this.$stageEditor = h('div', { id: 'import-editor', class: 'hidden' });
         this.append(this.$stageEditor);
 
         this.$stageEditor.addEventListener('editor:hidden', () => {
@@ -92,27 +92,22 @@ export class VariableEditor extends HTMLElement {
 
         this.transformEditor = new TransformEditor(this.model);
 
-        this.$ok = HTML.parse(`
-            <button aria-label="${_('OK')}" tabindex="0" class="jmv-variable-editor-ok jmv-tooltip" title="${_('Hide variable setup')}">
-                <span class="mif-checkmark"></span><span class="mif-arrow-up"></span>
-            </button>`) as HTMLButtonElement;
+        this.$ok = h('button', { 'aria-label': _('OK'), tabindex: '0', class: 'jmv-variable-editor-ok jmv-tooltip', title: _('Hide variable setup') },
+            h('span', { class: 'mif-checkmark' }),
+            h('span', { class: 'mif-arrow-up' }));
         this.$main.append(this.$ok);
 
         const dir = getComputedStyle(this).direction;
 
-        this.$right = HTML.parse(`
-            <button aria-label="${_('Next variable')}" tabindex="0" class="jmv-variable-editor-button-right jmv-tooltip" title="${_('Next variable')}">
-                <span class="${dir === 'rtl' ? 'mif-chevron-left' : 'mif-chevron-right'}"></span>
-            </button>`) as HTMLButtonElement;
+        this.$right = h('button', { 'aria-label': _('Next variable'), tabindex: '0', class: 'jmv-variable-editor-button-right jmv-tooltip', title: _('Next variable') },
+            h('span', { class: dir === 'rtl' ? 'mif-chevron-left' : 'mif-chevron-right' }));
         this.$main.append(this.$right);
 
-        this.$left = HTML.parse(`
-            <button aria-label="${_('Previous variable')}" tabindex="0" class="jmv-variable-editor-button-left jmv-tooltip" title="${_('Previous variable')}">
-                <span class="${dir === 'rtl' ? 'mif-chevron-right' : 'mif-chevron-left'}"></span>
-            </button>`) as HTMLButtonElement;
+        this.$left = h('button', { 'aria-label': _('Previous variable'), tabindex: '0', class: 'jmv-variable-editor-button-left jmv-tooltip', title: _('Previous variable') },
+            h('span', { class: dir === 'rtl' ? 'mif-chevron-right' : 'mif-chevron-left' }));
         this.$main.append(this.$left);
 
-        this.$hoverHeader = HTML.parse('<div class="hover-header"></div>');
+        this.$hoverHeader = h('div', { class: 'hover-header' });
         this.append(this.$hoverHeader);
 
         this.$hoverHeader.addEventListener('mouseout', () => {

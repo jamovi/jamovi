@@ -5,7 +5,7 @@ import type LayoutGrid from './layoutgrid';
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import { FormatDef, StringFormat } from './formatdef';
 import interactionManager from '../common/interactionmanager';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich }  from '../common/htmlelementcreator';
 import { VerticalAlignment } from './layoutcell';
 
 export type GridComboboxProperties = GridOptionControlProperties<string> & {
@@ -89,7 +89,7 @@ export class GridCombobox extends OptionControl<GridComboboxProperties> {
         let columnUsed = 0;
         let cell = null;
         if (label !== "") {
-            this.label = HTML.parse(`<label for="${id}" class="silky-option-combo-label silky-control-margin-${this.getPropertyValue("margin")}" style="display: inline; white-space: nowrap;" >${label}</label>`);
+            this.label = h('label', { for:id, class: `silky-option-combo-label silky-control-margin-${this.getPropertyValue("margin")}`, style: "display: inline; white-space: nowrap;" }, rich(label));
             this.$label = $(this.label);
             cell = grid.addCell(column, row, this.label);
             cell.setAlignment("left", "center");
@@ -98,12 +98,10 @@ export class GridCombobox extends OptionControl<GridComboboxProperties> {
 
         let options = this.getOptionsProperty();
 
-        let t = `<select id="${id}" class="silky-option-input silky-option-combo-input silky-control-margin-${this.getPropertyValue("margin")}">`;
+        this.input = h('select', { id: id, class: `silky-option-input silky-option-combo-input silky-control-margin-${this.getPropertyValue("margin")}` });
         for (let i = 0; i < options.length; i++)
-            t += '<option>' + this.translate(options[i].title) + '</option>';
-        t += '</select>';
+            this.input.appendChild(h('option', {}, this.translate(options[i].title)));
 
-        this.input = HTML.parse(t);
         this.$input = $(this.input);
         this.updateDisplayValue();
         this.input.addEventListener('change', (event) => {
@@ -156,11 +154,7 @@ export class GridCombobox extends OptionControl<GridComboboxProperties> {
 
         let options = this.getOptionsProperty();
 
-        let html = '';
-        for (let i = 0; i < options.length; i++)
-            html += '<option>' + this.translate(options[i].title) + '</option>';
-
-        this.input.innerHTML = html;
+        this.input.replaceChildren(...options.map(option => h('option', {}, this.translate(option.title))));
 
         this.updateDisplayValue();
     }

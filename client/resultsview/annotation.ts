@@ -12,7 +12,7 @@ const TextBlot = Quill.import('blots/text');
 
 import { QuillDeltaToHtmlConverter } from 'quill-delta-to-html';
 import interactionManager from '../common/interactionmanager';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h } from '../common/htmlelementcreator';
 import { AnnotationAction, IAnnotation } from './annotations';
 
 //////////////////////////////////////////////////////////////////////////////
@@ -113,9 +113,8 @@ class Annotation extends HTMLElement implements IAnnotation {
         this.ariaRoleDescription = title;
         this.ariaDescription = _('Press enter to edit');
         
-        this.innerHTML = `<div class="editor-box">
-                <div class="editor jmv-note-theme"></div>
-            </div>`;
+        this.replaceChildren(h('div', { class: 'editor-box' },
+            h('div', { class: 'editor jmv-note-theme' })));
 
         this.addEventListener('formula-clicked', (event: CustomEvent) => {
             let blot = event.detail;
@@ -178,7 +177,13 @@ class Annotation extends HTMLElement implements IAnnotation {
             event.preventDefault();
         });
 
-        let $formulaHelp = HTML.parse<HTMLLinkElement>(`<a class="ql-help" rel="noopener noreferrer" target="_blank" href="https://katex.org/docs/supported.html" style="margin-inline-start: 20px;">${_('Help')}</a>`);
+        let $formulaHelp = h('a', {
+            class: 'ql-help',
+            rel: 'noopener noreferrer',
+            target: '_blank',
+            href: 'https://katex.org/docs/supported.html',
+            style: 'margin-inline-start: 20px;'
+        }, _('Help'));
         $formulaHelp.addEventListener('click', (event) => {
             window.openUrl('https://katex.org/docs/supported.html');
             event.stopPropagation();

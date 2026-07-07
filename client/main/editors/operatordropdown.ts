@@ -26,7 +26,7 @@ function allFunctions(functionsContent): Descriptions {
         div.className = 'item';
         div.dataset.name = name;
         div.dataset.value = value;
-        div.innerHTML = value;
+        div.textContent = value;
         functionsContent.appendChild(div);
         descriptions[name] = { label: labelText, content: '' };
     };

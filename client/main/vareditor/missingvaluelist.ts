@@ -3,7 +3,7 @@
 
 
 import MissingValueListItem from './missingvaluelistitem';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 
 class MissingValueList extends HTMLElement {
 
@@ -16,12 +16,14 @@ class MissingValueList extends HTMLElement {
         this.classList.add('jmv-missing-value-list');
         this.tabIndex = 0;
 
-        this.$list = HTML.parse('<div class="list"></div>');
+        this.$list = h('div', { class: 'list' });
         this.append(this.$list);
 
-        let $bottom = HTML.parse('<div class="bottom"></div>');
+        let $bottom = h('div', { class: 'bottom' });
         this.append($bottom);
-        let $createNew = HTML.parse(`<div class="add-missing-value" tabindex="0"><div class="insert"></div><div>${_('Add Missing Value')}</div></div>`);
+        let $createNew = h('div', { class: 'add-missing-value', tabindex: '0' },
+            h('div', { class: 'insert' }),
+            h('div', {}, _('Add Missing Value')));
         $bottom.append($createNew);
 
         $createNew.addEventListener('click', (event) => {

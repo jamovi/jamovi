@@ -20,7 +20,7 @@ import View, { utils } from './actions';
 import LayoutActionManager from './layoutactionmanager';
 import { applyMagicEvents as ApplyMagicEvents } from './applymagicevents';
 import interactionManager from '../common/interactionmanager';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich }  from '../common/htmlelementcreator';
 
 import I18ns, { I18n, I18nData } from "../common/i18n";
 import HighContrast from '../common/highcontrast';
@@ -325,21 +325,17 @@ function loadAnalysis(def, i18nDef: I18nData, appI18nDef: I18nData, jamoviVersio
     let $optionsBlock = document.querySelector('.jmv-options-block');
     let $title = document.querySelector('.silky-options-title');
     if (def.error) {
-        $title.innerHTML = '';
-        $title.append(def.error);
+        $title.replaceChildren(def.error);
 
         $optionsBlock.querySelectorAll('.placeholder-options')?.forEach(el => el.remove());
-        let $moduleDetails = HTML.parse(`<div class="module-error-details"'>
-                    <div class="top">
-                        <div class="image"></div>
-                        <h2>Module: ${def.data.moduleName} ${def.data.version}</h2>
-                    </div>
-                    <div class="msg">${s_('This module is either <em>missing or incompatible</em> with this version of jamovi.')}</div>
-                    <div class="msg">${s_('Please <em>install or update</em> this module from the jamovi library.')}</div>
-                    <div class="list">
-                        <button class="find-module">${s_('Find module in jamovi library')}</button
-                    </div>
-                </div>`);
+        let $moduleDetails = h('div', { class: 'module-error-details' },
+            h('div', { class: 'top' },
+                h('div', { class: 'image' }),
+                h('h2', {}, `Module: ${def.data.moduleName} ${def.data.version}`)),
+            h('div', { class: 'msg' }, rich(s_('This module is either <em>missing or incompatible</em> with this version of jamovi.'))),
+            h('div', { class: 'msg' }, rich(s_('Please <em>install or update</em> this module from the jamovi library.'))),
+            h('div', { class: 'list' },
+                h('button', { class: 'find-module' }, s_('Find module in jamovi library'))));
 
         const $findButton = $moduleDetails.querySelector('.find-module');
         $findButton.addEventListener('click', (event) => {
@@ -355,20 +351,16 @@ function loadAnalysis(def, i18nDef: I18nData, appI18nDef: I18nData, jamoviVersio
             analysis = new Analysis(def, i18nDef, jamoviVersion, id);
 
             let title = analysis.getTitle();
-            $title.innerHTML = '';
-            $title.append(title);
+            $title.replaceChildren(title);
 
             if (analysis.errors) {
-                let errors = ``;
-                for (let error of analysis.errors) {
-                    errors += `<div class="error"><div class="error-icon"></div><span>${ error }<span></div>\n`;
-                }
-                let $errorList = HTML.parse(`<div class="jmv-options-error-list"'>
-                    <div class="title">Option panel errors</div>
-                    <div class="list">
-                        ${ errors }
-                    </div>
-                    </div>`);
+                let $list = h('div', { class: 'list' });
+                for (let error of analysis.errors)
+                    $list.append(h('div', { class: 'error' }, h('div', { class: 'error-icon' }), h('span', {}, error)));
+
+                let $errorList = h('div', { class: 'jmv-options-error-list' },
+                    h('div', { class: 'title' }, 'Option panel errors'),
+                    $list);
                 $optionsBlock.querySelectorAll('.placeholder-options')?.forEach(el => el.remove());
                 $optionsBlock.append($errorList);
             }
@@ -389,7 +381,7 @@ function setTitle(title) {
         return;
 
     let $title = document.querySelector('.silky-options-title');
-    $title.innerHTML = '';
+    $title.replaceChildren();
 
     let original = analysis.getTitle();
     if (title === null || title.trim() === '')
@@ -398,7 +390,7 @@ function setTitle(title) {
 
     $title.append(title);
     if (title !== original)
-        $title.append(HTML.parse(`<div class="sub-title">${ original }</div>`));
+        $title.append(h('div', { class: 'sub-title' }, original));
 }
 
 function updateOptions(values) {

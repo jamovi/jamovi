@@ -3,7 +3,7 @@
 import tarp from '../utils/tarp';
 import MissingValueList from '../vareditor/missingvaluelist';
 import VariableModel from '../vareditor/variablemodel';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 import interactionManager, { type FocusLoop } from '../../common/interactionmanager';
 
 
@@ -63,7 +63,7 @@ class MissingValueEditor extends HTMLElement {
     }
 
     _init() {
-        let $contents = HTML.parse('<div class="contents"></div>');
+        let $contents = h('div', { class: 'contents' });
         this.append($contents)
 
         this.missingValueList = new MissingValueList();

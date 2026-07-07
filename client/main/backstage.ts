@@ -26,7 +26,7 @@ import type { WDType, BackstagePanelView } from './backstage/fsentry';
 import type { IPlace } from './backstage/types';
 
 import { FSEntryBrowserView } from './backstage/fsentrybrowserview';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h }  from '../common/htmlelementcreator';
 
 
 function isUrl(s) {
@@ -1264,18 +1264,11 @@ export class BackstageView  extends EventDistributor {
 
         this.classList.add('silky-bs');
 
-        let html = '';
-
-        html += '<div class="silky-bs-op silky-bs-op-panel" role="presentation">';
-        html += '    <div class="silky-bs-header">';
-        html += '        <div class="silky-bs-back">';
-        html += `            <div  role="menuitem" aria-label="${_('Close file menu')}" class="silky-bs-back-button bs-menu-list-item bs-menu-action" tabindex="-1" keytip-key="B"><div></div></div>`;
-        html += '        </div>';
-        html += '        <div class="silky-bs-logo"></div>';
-        html += '    </div>';
-        html += '</div>';
-
-        this.opPanel = HTML.parse(html);
+        this.opPanel = h('div', { class: 'silky-bs-op silky-bs-op-panel', role: 'presentation' },
+            h('div', { class: 'silky-bs-header' },
+                h('div', { class: 'silky-bs-back' },
+                    h('div', { role: 'menuitem', 'aria-label': _('Close file menu'), class: 'silky-bs-back-button bs-menu-list-item bs-menu-action', tabindex: '-1', 'keytip-key': 'B' }, h('div'))),
+                h('div', { class: 'silky-bs-logo' })));
 
         let backButton = this.opPanel.querySelector<HTMLElement>('.silky-bs-back-button');
         let keyTipOptions: IKeyTipTokenOptions = { key: 'Escape', path: 'F', action: event => this.deactivate(), label: backButton.getAttribute('aria-label') };
@@ -1299,7 +1292,7 @@ export class BackstageView  extends EventDistributor {
 
         this.append(this.main);
 
-        let opList = HTML.parse(`<div class="silky-bs-op-list" role="group" aria-label="${_('File menu items')}"></div>`);
+        let opList = h('div', { class: 'silky-bs-op-list', role: 'group', 'aria-label': _('File menu items') });
 
         let currentOp = null;
         for (let i = 0; i < this.model.attributes.ops.length; i++) {
@@ -1309,8 +1302,8 @@ export class BackstageView  extends EventDistributor {
                 currentOp = op;
 
             let labelId = interactionManager.nextAriaId('label');
-            let opElement = HTML.parse(`<div class="silky-bs-menu-item" data-op="${s6e(op.name)}-item" role="none"></div>`);
-            let opTitle = HTML.parse(`<div id="${labelId}" class="silky-bs-op-button bs-menu-list-item" role="menuitem" tabindex="-1" data-op="${s6e(op.name)}">${ s6e(op.title) }</div>`);
+            let opElement = h('div', { class: 'silky-bs-menu-item', 'data-op': `${op.name}-item`, role: 'none' });
+            let opTitle = h('div', { id: labelId, class: 'silky-bs-op-button bs-menu-list-item', role: 'menuitem', tabindex: '-1', 'data-op': op.name }, op.title);
             opElement.append(opTitle)
             if (op.action)
                 opTitle.classList.add('bs-menu-action');
@@ -1327,10 +1320,10 @@ export class BackstageView  extends EventDistributor {
                 this.menuSelection.highlightElement(opTitle);
 
             if ('places' in op) {
-                let opPlaces = HTML.parse(`<div class="silky-bs-op-places" role="group" aria-label="${ s6e(op.title) }"></div>`);
+                let opPlaces = h('div', { class: 'silky-bs-op-places', role: 'group', 'aria-label': op.title });
                 for (let place of op.places) {
-                    opPlaces.append(HTML.parse(`<div class="icon" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }" role="none"></div>`));
-                    let opPlace = HTML.parse(`<div class="silky-bs-op-place bs-menu-list-item" ignore-focus-size tabindex="-1" data-op="${s6e(op.name)}" data-place="${ s6e(place.name) }" role="menuitem" aria-label="${ s6e(place.title) }">${ s6e(place.title) }</div>`);
+                    opPlaces.append(h('div', { class: 'icon', 'data-op': op.name, 'data-place': place.name, role: 'none' }));
+                    let opPlace = h('div', { class: 'silky-bs-op-place bs-menu-list-item', 'ignore-focus-size': '', tabindex: '-1', 'data-op': op.name, 'data-place': place.name, role: 'menuitem', 'aria-label': place.title }, place.title);
                     if (place.action)
                         opPlace.classList.add('bs-menu-action');
                     if (place.keyTipKey) {
@@ -1354,16 +1347,16 @@ export class BackstageView  extends EventDistributor {
 
         const mode = this.model.instance.settings().getSetting('mode', 'normal');
         if (mode !== 'cloud') {
-            this.opPanel.append(HTML.parse('<div class="silky-bs-op-separator"></div>'));
+            this.opPanel.append(h('div', { class: 'silky-bs-op-separator' }));
 
             let recentsLabelId = interactionManager.nextAriaId('label');
-            let opElement = HTML.parse(`<div class="silky-bs-op-recents-main" role="group" aria-label="${'Recently opened files'}"></div>`);
+            let opElement = h('div', { class: 'silky-bs-op-recents-main', role: 'group', 'aria-label': 'Recently opened files' });
             if (this.model.get('dialogMode'))
                 opElement.style.display = 'none';
             else
                 opElement.style.display = '';
 
-            opElement.append(HTML.parse(`<label id="${recentsLabelId}" class="silky-bs-op-header" data-op="Recent">${_('Recent')}</label>`));
+            opElement.append(h('label', { id: recentsLabelId, class: 'silky-bs-op-header', 'data-op': 'Recent' }, _('Recent')));
 
             this.opPanel.append(opElement);
 
@@ -1585,7 +1578,7 @@ export class BackstageChoices extends EventDistributor {
         this.model.on('change:place', this._placeChanged, this);
 
         this.innerHTML = '';
-        this.append(HTML.create('div', { class: "silky-bs-choices-list" }));
+        this.append(h('div', { class: "silky-bs-choices-list" }));
         this._placeChanged();
     }
 

@@ -4,7 +4,7 @@ import { FormatDef, VariablesFormat } from './formatdef';
 import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
 import interactionManager from '../common/interactionmanager';
 import { SelectableOptionListControl, SelectableOptionListControlProperties } from './optionlistcontrol';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h }  from '../common/htmlelementcreator';
 import { IItem } from './dragndrop';
 import DefaultControls from './defaultcontrols';
 import { Column, MeasureType } from '../main/dataset';
@@ -116,10 +116,10 @@ export class VariablesListBox extends SelectableOptionListControl<VariablesListB
     _renderSuggestedIcons() {
         if (this._suggestedVariableTypes.length > 0) {
             let count = this.getPropertyValue('maxItemCount');
-            this.$count = HTML.parse(`<div class="silky-variablelist-max-count">${_('Max: {count}', { count })}</div>`);
-            this.$icons = HTML.parse('<div class="silky-variablelist-icons"></div>');
+            this.$count = h('div', { class: 'silky-variablelist-max-count' }, _('Max: {count}', { count }));
+            this.$icons = h('div', { class: 'silky-variablelist-icons' });
             for (let i = 0; i < this._suggestedVariableTypes.length; i++) {
-                this.$icons.append(HTML.parse('<div style="display: inline-block; overflow: hidden;" class="silky-variable-type-img silky-variable-type-' + this._suggestedVariableTypes[i] + '"></div>'));
+                this.$icons.append(h('div', { style: 'display: inline-block; overflow: hidden;', class: `silky-variable-type-img silky-variable-type-${this._suggestedVariableTypes[i]}` }));
             }
 
             this.checkScrollBars();
@@ -132,7 +132,10 @@ export class VariablesListBox extends SelectableOptionListControl<VariablesListB
         if (this.hasProperty('permitted')) {
             let permitted = this.getPropertyValue('permitted');
             if (permitted.includes('output')) {
-                this.$createButton = HTML.parse(`<div class="variablelist-button-box"><div class="button"><span class="mif-plus"></span><div class="text">Add New Variable</div></div></div>`);
+                this.$createButton = h('div', { class: 'variablelist-button-box' },
+                    h('div', { class: 'button' },
+                        h('span', { class: 'mif-plus' }),
+                        h('div', { class: 'text' }, 'Add New Variable')));
                 this.fillerCell.setContent(this.$createButton);
                 this.fillerCell.makeSticky({ bottom: '0px' });
                 this.$createButton = this.$createButton.querySelector<HTMLElement>('.button');

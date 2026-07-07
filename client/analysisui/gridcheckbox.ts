@@ -7,7 +7,7 @@ import createChildLayoutSupport from './childlayoutsupport';
 import { BooleanFormat, FormatDef } from './formatdef';
 import Icons from './iconsupport';
 import interactionManager from '../common/interactionmanager';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich }  from '../common/htmlelementcreator';
 
 export type GridCheckboxProperties = GridOptionControlProperties<boolean|string[]> & {
     format: BooleanFormat;
@@ -39,7 +39,7 @@ export class GridCheckbox extends OptionControl<GridCheckboxProperties, boolean>
 
         Icons.addSupport(this);
     
-        this._subel = HTML.parse('<div role="presentation" class="silky-option-checkbox silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"></div>');
+        this._subel = h('div', { role: "presentation", class: `silky-option-checkbox silky-control-margin-${this.getPropertyValue("margin")}`, style: "white-space: nowrap;"} );
     
         if (this.el === undefined)
             this.setRootElement(this._subel);
@@ -120,19 +120,18 @@ export class GridCheckbox extends OptionControl<GridCheckboxProperties, boolean>
     }
 
     createItem() {
-        let type = "checkbox";
         this.checkedValue = this.getPropertyValue('optionPart');
 
-        let value = this.getSourceValue();
         let label = this.getTranslatedProperty('label');
         if (label === null)
             label = this.getTranslatedProperty('name');
 
         this.labelId = interactionManager.nextAriaId('label');
-        let checkbox = HTML.parse(`<label id="${this.labelId}" style="white-space: nowrap;"></label>`);
-        this.input = HTML.parse('<input class="silky-option-input" tabindex="0" type="checkbox" value="value" ' +  (value ? 'checked' : '') + ' >');
+        let checkbox = h('label', { id: this.labelId, style: "white-space: nowrap;" });
+        this.input = h('input', { class: "silky-option-input", tabindex: "0", type: "checkbox", value: "value" });
+        this.input.checked = this.getValue();
         this.$input = $(this.input);
-        this.label = HTML.parse('<span>' + label + '</span>');
+        this.label = h('span', { }, rich(label));
         this.$label = $(this.label);
         checkbox.append(this.input);
         checkbox.append(this.label);

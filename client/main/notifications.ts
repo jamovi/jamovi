@@ -2,7 +2,7 @@
 'use strict';
 
 import { EventDistributor } from "../common/eventmap";
-import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
+import { h } from '../common/htmlelementcreator';
 import Notify from "./notification";
 
 class NotificationView extends EventDistributor {
@@ -30,33 +30,33 @@ class NotificationView extends EventDistributor {
         this.model.on('change', () => this._update());
         this.model.on('change:dismissed', () => this.dismiss());
 
-        let $icon  = HTML.parse('<div class="jmv-notification-icon"></div>');
+        let $icon  = h('div', { class: 'jmv-notification-icon' });
         this.append($icon);
 
-        let $info = HTML.parse('<div class="jmv-notification-info"></div>');
+        let $info = h('div', { class: 'jmv-notification-info' });
         this.append($info);
 
-        this.$title = HTML.parse('<div class="jmv-notification-title"></div>');
+        this.$title = h('div', { class: 'jmv-notification-title' });
         $info.append(this.$title);
 
-        let $body  = HTML.parse('<div class="jmv-notification-body"></div>');
+        let $body  = h('div', { class: 'jmv-notification-body' });
         $info.append($body);
 
-        let $content = HTML.parse('<div class="jmv-notification-content"></div>');
+        let $content = h('div', { class: 'jmv-notification-content' });
         $body.append($content);
 
-        this.$progressBar = HTML.parse('<div class="jmv-notification-progressbar"></div>');
+        this.$progressBar = h('div', { class: 'jmv-notification-progressbar' });
         $content.append(this.$progressBar);
-        this.$progressBarBar = HTML.parse('<div class="jmv-notification-progressbarbar"></div>');
+        this.$progressBarBar = h('div', { class: 'jmv-notification-progressbarbar' });
         this.$progressBar.append(this.$progressBarBar);
 
-        this.$message = HTML.parse('<div class="jmv-notification-message"></div>');
+        this.$message = h('div', { class: 'jmv-notification-message' });
         $content.append(this.$message);
 
-        this.$buttons = HTML.parse('<div class="jmv-notification-buttons"></div>');
+        this.$buttons = h('div', { class: 'jmv-notification-buttons' });
         $content.append(this.$buttons);
 
-        let $cancel = HTML.parse(`<div class="jmv-notification-button-cancel">${_('Cancel')}</div>`);
+        let $cancel = h('div', { class: 'jmv-notification-button-cancel' }, _('Cancel'));
         this.$buttons.append($cancel);
 
         this.$buttons.style.display = (this.model.attributes.cancel ? null : 'none');

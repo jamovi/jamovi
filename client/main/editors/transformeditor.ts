@@ -10,7 +10,7 @@ import ColourPalette from './colourpalette';
 import Notify from '../notification';
 import interactionManager, { type FocusLoop } from '../../common/interactionmanager';
 import DataSetViewModel, { Column, MeasureType, Transform } from '../dataset';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 
 type IsExactlyString<T> = [T] extends [string]
     ? string extends T
@@ -33,6 +33,18 @@ type TransformDetails = {
     $formulas: HTMLElement[];
     $formulaMessage: HTMLElement;
 };
+
+function prefixChildren(prefix: string): Array<string | Node> {
+    let indexOfDollar = prefix.indexOf('$');
+    if (indexOfDollar === -1)
+        return [prefix];
+
+    return [
+        prefix.slice(0, indexOfDollar),
+        h('span', {}, prefix.slice(indexOfDollar, indexOfDollar + 1)),
+        prefix.slice(indexOfDollar + 1)
+    ];
+}
 
 class TransformEditor extends HTMLElement {
     model: DataSetViewModel;
@@ -82,7 +94,7 @@ class TransformEditor extends HTMLElement {
         this.classList.add('jmv-transform-editor');
 
         this.title = _('Transform');
-        this.$icon = HTML.parse('<div class="transform-colour"></div>');
+        this.$icon = h('div', { class: 'transform-colour' });
 
         this._id = null;
 
@@ -107,22 +119,22 @@ class TransformEditor extends HTMLElement {
 
         this.formula = [ '' ];
 
-        let $top = HTML.parse('<div class="jmv-transform-editor-top"></div>');
+        let $top = h('div', { class: 'jmv-transform-editor-top' });
         this.append($top);
-        this.$title = HTML.parse('<input class="jmv-transform-editor-widget-title" type="text" spellcheck="true" maxlength="63">');
+        this.$title = h('input', { class: 'jmv-transform-editor-widget-title', type: 'text', spellcheck: 'true', maxlength: '63' });
         $top.append(this.$title);
-        let $descBox = HTML.parse('<div class="desc-box"></div>');
+        let $descBox = h('div', { class: 'desc-box' });
         $top.append($descBox);
-        this.$description = HTML.parse(`<div class="jmv-transform-editor-widget-description" type="text" spellcheck="true" placeholder="${_('Description')}" contenteditable="true" tabindex="0">`);
+        this.$description = h('div', { class: 'jmv-transform-editor-widget-description', type: 'text', spellcheck: 'true', placeholder: _('Description'), contenteditable: 'true', tabindex: '0' });
         $descBox.append(this.$description);
-        this.$shortname = HTML.parse(`<div class="jmv-transform-editor-widget-shortname" type="text" spellcheck="false" placeholder="${_('Variable suffix')}" contenteditable="true" tabindex="0">`);
+        this.$shortname = h('div', { class: 'jmv-transform-editor-widget-shortname', type: 'text', spellcheck: 'false', placeholder: _('Variable suffix'), contenteditable: 'true', tabindex: '0' });
         $descBox.append(this.$shortname);
 
         this.setInputEvents(this.$title, 'name');
         this.setInputEvents(this.$description, 'description');
         this.setInputEvents(this.$shortname, 'suffix');
 
-        this.$contents = HTML.parse('<div class="contents" tabindex="0"></div>');
+        this.$contents = h('div', { class: 'contents', tabindex: '0' });
         this.append(this.$contents);
 
         this.loop = interactionManager.registerLoop(this.$contents, {
@@ -140,26 +152,28 @@ class TransformEditor extends HTMLElement {
             tarp.hide('recode-formula');
         });
 
-        let $insertBox = HTML.parse('<button class="insert-box"></button>');
+        let $insertBox = h('button', { class: 'insert-box' });
         this.$contents.append($insertBox);
-        let $insert = HTML.parse('<div class="insert"></div>');
+        let $insert = h('div', { class: 'insert' });
         $insertBox.append($insert)
-        $insertBox.append(HTML.parse(`<div>${_('Add recode condition')}</div>`));
+        $insertBox.append(h('div', {}, _('Add recode condition')));
 
         $insertBox.addEventListener('click', (event) => {
             this._createRecodeConditionUI();
         });
 
-        let $list = HTML.parse('<div class="content-list"></div>');
+        let $list = h('div', { class: 'content-list' });
         this.$contents.append($list);
-        this.$options = HTML.parse('<div class="jmv-transform-editor-options"></div>');
+        this.$options = h('div', { class: 'jmv-transform-editor-options' });
         $list.append(this.$options);
 
-        this.$rightBox = HTML.parse('<div class="right-box hidden"></div>');
+        this.$rightBox = h('div', { class: 'right-box hidden' });
         $list.append(this.$rightBox);
-        let $moveup = HTML.parse('<div class="move-up button"><span class="mif-arrow-up"></span></div>');
+        let $moveup = h('div', { class: 'move-up button' },
+            h('span', { class: 'mif-arrow-up' }));
         this.$rightBox.append($moveup);
-        let $movedown = HTML.parse('<div class="move-down button"><span class="mif-arrow-down"></span></div>');
+        let $movedown = h('div', { class: 'move-down button' },
+            h('span', { class: 'mif-arrow-down' }));
         this.$rightBox.append($movedown);
 
         $moveup.addEventListener('mousedown', (event) => {
@@ -189,23 +203,22 @@ class TransformEditor extends HTMLElement {
         });
 
 
-        let $bottom = HTML.parse('<div class="jmv-transform-editor-bottom"></div>');
+        let $bottom = h('div', { class: 'jmv-transform-editor-bottom' });
         this.append($bottom);
 
-        let $measureBox = HTML.parse('<div class="measure-box"></div>');
+        let $measureBox = h('div', { class: 'measure-box' });
         $bottom.append($measureBox);
-        $measureBox.append(HTML.parse(`<div class="transform-label">${_('Measure type')}</div>`));
+        $measureBox.append(h('div', { class: 'transform-label' }, _('Measure type')));
         
-        this.$measureList = HTML.parse(`<select id="transform-measure-type">
-                                    <option value="none">${_('Auto')}</option>
-                                    <option value="nominal">${_('Nominal')}</option>
-                                    <option value="ordinal">${_('Ordinal')}</option>
-                                    <option value="continuous">${_('Continuous')}</option>
-                                    <option value="id">${_('ID')}</option>
-                                </select>`);
+        this.$measureList = h('select', { id: 'transform-measure-type' },
+            h('option', { value: 'none' }, _('Auto')),
+            h('option', { value: 'nominal' }, _('Nominal')),
+            h('option', { value: 'ordinal' }, _('Ordinal')),
+            h('option', { value: 'continuous' }, _('Continuous')),
+            h('option', { value: 'id' }, _('ID')));
         $measureBox.append(this.$measureList);
         this.$measureList.value = 'none';
-        this.$measureIcon = HTML.parse('<div class="transform-measure-icon"></div>');
+        this.$measureIcon = h('div', { class: 'transform-measure-icon' });
         $measureBox.append(this.$measureIcon);
 
         this.measureList = new MeasureList();
@@ -234,11 +247,11 @@ class TransformEditor extends HTMLElement {
             dropdown.hide();
         });
 
-        let $usageBox = HTML.parse('<div class="usage-box"></div>');
+        let $usageBox = h('div', { class: 'usage-box' });
         $bottom.append($usageBox);
-        let $connectionInfo = HTML.parse(`<div class="usage-label">${_('used by')}</div>`);
+        let $connectionInfo = h('div', { class: 'usage-label' }, _('used by'));
         $usageBox.append($connectionInfo);
-        this.$viewConnectionInfo = HTML.parse('<div class="view-button"></div>');
+        this.$viewConnectionInfo = h('div', { class: 'view-button' });
         $usageBox.append(this.$viewConnectionInfo);
 
         this.variableList = new VariableList();
@@ -529,7 +542,7 @@ class TransformEditor extends HTMLElement {
     }
 
     _createFormulaUI(hasTransition) {
-        this.$options.innerHTML = '';
+        this.$options.replaceChildren();
         for (let i = 0; i < this.formula.length; i += 2)
             this._addTransformUIItem(this.formula[i], this.formula[i+1], hasTransition);
     }
@@ -575,9 +588,9 @@ class TransformEditor extends HTMLElement {
             }
         }
 
-        this.$title.innerHTML = '';
-        this.$description.innerHTML = '';
-        this.$shortname.innerHTML = '';
+        this.$title.value = '';
+        this.$description.textContent = '';
+        this.$shortname.textContent = '';
     }
 
     outerHeight(el: HTMLElement, includeMargin = false) {
@@ -669,7 +682,8 @@ class TransformEditor extends HTMLElement {
     }
 
     _createFormulaButtons(elements: TransformDetails) {
-        let $rm = HTML.parse('<button class="remove-cond" data-index="0"><span class="mif-cross"></span></button>');
+        let $rm = h('button', { class: 'remove-cond', 'data-index': '0' },
+            h('span', { class: 'mif-cross' }));
         elements.$formulaGrid.append($rm);
         $rm.addEventListener('click', (event) => {
             elements.$formulaBox.addEventListener("transitionend", (event) => {
@@ -718,7 +732,7 @@ class TransformEditor extends HTMLElement {
         if (hasTransition)
             className = className + ' hidden';
 
-        let $formulaBox = HTML.parse('<div class="formula-box ' + className + '"></div>');
+        let $formulaBox = h('div', { class: 'formula-box ' + className });
 
         if ($elseBox) {
             if ( ! isCondition)
@@ -729,10 +743,11 @@ class TransformEditor extends HTMLElement {
         else
             $parent.append($formulaBox);
 
-        let $showEditor = HTML.parse(`<button class="show-editor" aria-label="${_('Show formula editor')}"><div class="down-arrow"></div></button>`);
+        let $showEditor = h('button', { class: 'show-editor', 'aria-label': _('Show formula editor') },
+            h('div', { class: 'down-arrow' }));
         $formulaBox.append($showEditor);
 
-        let $formulaGrid = HTML.parse('<div class="formula-grid"></div>');
+        let $formulaGrid = h('div', { class: 'formula-grid' });
         $formulaBox.append($formulaGrid);
 
         return { $formulaBox,  $showEditor, $formulaGrid, _subFocusClicked: false, _opEditClicked: false, $focusedFormula: undefined, $formulas: undefined, $formulaMessage: undefined };
@@ -789,7 +804,7 @@ class TransformEditor extends HTMLElement {
             _sign = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))].s + ' ';
         }
 
-        let $fp = HTML.parse('<div class="formula-list-item item-' + index + '" style="grid-column-start: ' + (index + 1) + '; grid-row-start: 1;"></div>');
+        let $fp = h('div', { class: 'formula-list-item item-' + index, style: 'grid-column-start: ' + (index + 1) + '; grid-row-start: 1;' });
         if (!hasOp) {
             $fp.style.gridColumnEnd = '-2';
         }
@@ -799,17 +814,10 @@ class TransformEditor extends HTMLElement {
         if (elements.$formulas === undefined)
             elements.$formulas = [ ];
 
-        let $formula = HTML.parse<HTMLDivElement>('<div class="formula" tabindex="0" type="text" spellcheck="false" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" data-index="' + index + '">' + formula + '</div>');
+        let $formula = h('div', { class: 'formula', tabindex: '0', type: 'text', spellcheck: 'false', placeholder: _sign + 'e.g. ' + _example, contenteditable: 'true', 'data-index': index.toString() }, formula);
         $fp.append($formula);
 
-        let indexOfDollar = prefix.indexOf('$');
-        if (indexOfDollar !== -1) {
-            prefix = prefix.slice(0, indexOfDollar) + "<span>" + prefix.slice(indexOfDollar);
-            indexOfDollar = prefix.indexOf('$');
-            prefix = prefix.slice(0, indexOfDollar+1) + "</span>" + prefix.slice(indexOfDollar+1);
-        }
-
-        let $equal = HTML.parse('<div class="equal">' + prefix + '</div>');
+        let $equal = h('div', { class: 'equal' }, ...prefixChildren(prefix));
         $fp.append($equal);
         setTimeout(() => {
             let indent = ($equal.clientWidth + 1) + 'px';
@@ -855,7 +863,7 @@ class TransformEditor extends HTMLElement {
         });
 
         if (hasOp) {
-            $opEdit = HTML.parse('<div class="down-arrow">a</div>');
+            $opEdit = h('div', { class: 'down-arrow' }, 'a');
             $fp.append($opEdit)
             setTimeout(() => {
                 let indent = ($equal.clientWidth + 1) + 'px';
@@ -921,9 +929,9 @@ class TransformEditor extends HTMLElement {
             }
         });
 
-        let $formulaMessageBox = HTML.parse('<div class="formula-message-box  item-' + index + '" style="grid-column-start: ' + (index + 1) + '; grid-row-start: 2;"></div>');
+        let $formulaMessageBox = h('div', { class: 'formula-message-box  item-' + index, style: 'grid-column-start: ' + (index + 1) + '; grid-row-start: 2;' });
         $formulaGrid.append($formulaMessageBox);
-        elements.$formulaMessage = HTML.parse('<div class="formula-message"></div>');
+        elements.$formulaMessage = h('div', { class: 'formula-message' });
         $formulaMessageBox.append(elements.$formulaMessage);
 
         return elements;

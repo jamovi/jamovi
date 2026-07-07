@@ -3,7 +3,7 @@
 import Elem, { ElementData, ElementModel } from './element';
 
 import I18ns, { stringToParagraphs } from '../common/i18n';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, htmlTrusted }  from '../common/htmlelementcreator';
 import { AnalysisStatus } from './create';
 
 export enum NoticeType {
@@ -43,7 +43,9 @@ export class NoticeView extends Elem.View<Model> {
 
         this.classList.add('jmv-results-notice');
 
-        let $html = HTML.parse('<div class="notice-box"><div class="icon"></div><div class="content"></div></div>');
+        let $html = h('div', { class: 'notice-box' },
+            h('div', { class: 'icon' }),
+            h('div', { class: 'content' }));
         this.addContent($html);
 
         this.render();
@@ -83,7 +85,8 @@ export class NoticeView extends Elem.View<Model> {
 
         const content = I18ns.get('app').__(doc.content, { prefix: '<strong>', postfix: '</strong>' });
 
-        $content.innerHTML = stringToParagraphs(content);
+        let paragraphs = htmlTrusted<HTMLDivElement>('<div>' + stringToParagraphs(content) + '</div>');
+        $content.replaceChildren(...Array.from(paragraphs.childNodes));
 
         this.querySelectorAll('a[href]').forEach(el => el.addEventListener('click', this._handleLinkClick));
     }

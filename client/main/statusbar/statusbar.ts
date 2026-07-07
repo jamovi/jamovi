@@ -1,7 +1,7 @@
 'use strict';
 
 import StatusbarButton from './statusbarbutton';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 
 export type StatusbarItemProperties = { dock?: 'left' | 'right', value? : any, label?: string };
 export type StatusbarItem = { $el: HTMLElement, properties: StatusbarItemProperties };
@@ -15,11 +15,9 @@ class Statusbar extends HTMLElement {
         this.classList.add('jmv-status-bar');
         this.setAttribute('role', 'region');
         this.setAttribute('aria-label', _('Data status bar'));
-        let html = `<div class="left-dock" role="presentation">
-                    </div>
-                    <div class="right-dock" role="presentation">
-                    </div>`;
-        this.innerHTML = html;
+        this.replaceChildren(
+            h('div', { class: 'left-dock', role: 'presentation' }),
+            h('div', { class: 'right-dock', role: 'presentation' }));
 
         this.addEventListener('dblclick', event => this._dblclicked(event));
 
@@ -52,9 +50,8 @@ class Statusbar extends HTMLElement {
         if (properties === undefined)
             properties = { value: '' };
 
-        let html = '<div class="jmv-status-bar-info-item" data-id="' + id + '">' + (properties.label === undefined ? properties.value : (properties.label + ' ' + properties.value)) + '</div>';
-
-        this.addElement(id, HTML.parse(html), properties);
+        let label = properties.label === undefined ? properties.value : (properties.label + ' ' + properties.value);
+        this.addElement(id, h('div', { class: 'jmv-status-bar-info-item', 'data-id': id }, label), properties);
     }
 
     updateInfoLabel(id: string, value: any) {

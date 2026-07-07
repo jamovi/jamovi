@@ -3,7 +3,7 @@
 
 import RibbonGroup from './toolbargroup';
 import Menu from '../menu';
-import { HTMLElementCreator as HTML }  from '../htmlelementcreator';
+import { h }  from '../htmlelementcreator';
 import { EventEmitter } from 'eventemitter3';
 
 export class ToolbarButton extends EventEmitter {
@@ -18,7 +18,7 @@ export class ToolbarButton extends EventEmitter {
         let name = params.name;
         let size = params.size === undefined ? 'medium' : params.size;
         let right = params.right === undefined ? false : params.right;
-        let el = params.el === undefined ? HTML.create('button') : params.el;
+        let el = params.el === undefined ? h('button') : params.el;
         let classes = params.classes === undefined ? '' : params.classes;
         let hasIcon = params.hasIcon === undefined ? true : params.hasIcon;
         let hasMenuArrow = params.hasMenuArrow === undefined ? true : params.hasMenuArrow;
@@ -140,11 +140,11 @@ export class ToolbarButton extends EventEmitter {
                 this.el.dispatchEvent(clickEvent);
             });
 
-            let menugroup = HTML.create('div');
+            let menugroup = h('div');
             this._menuGroup = new RibbonGroup({ orientation: 'vertical', el: menugroup });
             this.menu.append(this._menuGroup.el);
             if (this.hasMenuArrow)
-                this.el.append(HTML.create('div', { class: 'jmv-toolbar-menu-arrow' }));
+                this.el.append(h('div', { class: 'jmv-toolbar-menu-arrow' }));
             this.el.classList.add("jmv-toolbar-dropdown");
         }
 
@@ -166,13 +166,13 @@ export class ToolbarButton extends EventEmitter {
     }
 
     _render() {
-        let html = '';
+        let children = [];
         if (this.hasIcon)
-            html += '   <div class="jmv-toolbar-button-icon"></div>';
+            children.push(h('div', { class: 'jmv-toolbar-button-icon' }));
         if (this.size === 'medium' || this.size === 'large')
-            html += '   <div class="jmv-toolbar-button-label">' + this.title + '</div>';
+            children.push(h('div', { class: 'jmv-toolbar-button-label' }, this.title));
 
-        this.el.innerHTML = html;
+        this.el.replaceChildren(...children);
     }
 
     hideMenu(fromMouse) {

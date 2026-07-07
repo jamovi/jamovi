@@ -12,7 +12,7 @@ import Tracker from './itemtracker';
 import I18ns, { I18nData } from '../common/i18n';
 import interactionManager, { type FocusLoop } from '../common/interactionmanager';
 import { contextMenuListener } from '../common/utils';
-import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
+import { h } from '../common/htmlelementcreator';
 import { CollectionView, View } from "./element";
 import HighContrast from '../common/highcontrast';
 
@@ -500,10 +500,13 @@ class Main {  // this is constructed at the bottom
                 this.resultsDefn.results.title = '';
                 this.resultsDefn.hasTitle = false;
                 this.resultsDefn.allowAnnotations = false;
-                this.$results = HTML.parse(`<div id="results" class="weights"><div class="title-box"><div class="icon"></div><div class="title">${_('Weights')}</div></div></div>`);
+                this.$results = h('div', { id: 'results', class: 'weights' },
+                    h('div', { class: 'title-box' },
+                        h('div', { class: 'icon' }),
+                        h('div', { class: 'title' }, _('Weights'))));
             }
             else {
-                this.$results = HTML.parse('<div id="results"></div>');
+                this.$results = h('div', { id: 'results' });
                 if (this.resultsDefn.isEmpty) {
                     this.$results.classList.add('annotation');
                     document.body.setAttribute('aria-roledescription', `Annotation`);
@@ -540,12 +543,12 @@ class Main {  // this is constructed at the bottom
                 this.resultsDefn.allowAnnotations = false;
 
                 this.$results.classList.add('weights');
-                const ff = HTML.parse(`<div class="title-box"><div class="icon"></div><div class="title">${_('Weights')}</div></div>`);
+                const ff = h('div', { class: 'title-box' },
+                    h('div', { class: 'icon' }),
+                    h('div', { class: 'title' }, _('Weights')));
                 this.$results.prepend(ff);
-                //this.$results = HTML.parse(`<div id="results" class="weights"><div class="title-box"><div class="icon"></div><div class="title">${_('Weights')}</div></div></div>`);
             }
             else {
-                //this.$results = HTML.parse('<div id="results"></div>');
                 if (this.resultsDefn.isEmpty) {
                     this.$results.classList.add('annotation');
                     document.body.setAttribute('aria-roledescription', `Annotation`);
@@ -561,7 +564,7 @@ class Main {  // this is constructed at the bottom
             this._updateAnnotationStates();
             this.$body.append(this.$results);
 
-            this.$body.append(HTML.parse('<div id="selector"></div>'));
+            this.$body.append(h('div', { id: 'selector' }));
 
             this.$body.addEventListener('annotation-editing', this.onAnnotationEditing);
             this.$body.addEventListener('annotation-lost-focus', this.onAnnotationLostFocus);

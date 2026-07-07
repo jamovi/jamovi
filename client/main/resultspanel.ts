@@ -16,7 +16,7 @@ import { contextMenuListener } from '../common/utils';
 
 import path from 'path';
 import { EventDistributor } from '../common/eventmap';
-import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
+import { h } from '../common/htmlelementcreator';
 import Instance from './instance';
 import { Analysis } from './analyses';
 
@@ -198,23 +198,18 @@ class ResultsPanel extends EventDistributor {
 
         this._updateRefs(analysis);
 
-        let element = `
-            <iframe
-                data-id="${ analysis.id }"
-                src="${ this.iframeUrl }${ this.model.instanceId() }/${ analysis.id }/"
-                class="analysis"
-                sandbox="allow-scripts allow-same-origin"
-                scrolling="no"
-                style="border: 0 ; height : 0 ;"
-            ></iframe>`;
-
         let isEmptyAnalysis = analysis.name === 'empty';
         let classes = '';
         if (isEmptyAnalysis)
             classes = 'empty-analysis';
 
 
-        let $container = HTML.parse(`<div class="jmv-results-container results-loop-list-item results-loop-auto-select  ${ classes }" tabindex="-1" role="listitem" aria-label="${ isEmptyAnalysis ? 'Annotation Field' : (analysis.results.title + '- Results')}"></div>`);
+        let $container = h('div', {
+            class: `jmv-results-container results-loop-list-item results-loop-auto-select ${ classes }`,
+            tabindex: '-1',
+            role: 'listitem',
+            'aria-label': isEmptyAnalysis ? 'Annotation Field' : (analysis.results.title + '- Results')
+        });
 
         $container.addEventListener('keydown', (event) => {
             if ((event.ctrlKey || event.metaKey) && event.code === 'KeyC') {
@@ -240,9 +235,16 @@ class ResultsPanel extends EventDistributor {
         if ( ! isEmptyAnalysis || analysis.index === 0)
             this.resultsLooper.highlightElement($container[0], true, false);
 
-        let $cover = HTML.parse('<div class="jmv-results-cover"></div>');
+        let $cover = h('div', { class: 'jmv-results-cover' });
         $container.append($cover);
-        let iframe = HTML.parse<HTMLIFrameElement>(element);
+        let iframe = h('iframe', {
+            'data-id': analysis.id.toString(),
+            src: `${ this.iframeUrl }${ this.model.instanceId() }/${ analysis.id }/`,
+            class: 'analysis',
+            sandbox: 'allow-scripts allow-same-origin',
+            scrolling: 'no',
+            style: 'border: 0 ; height : 0 ;'
+        });
         $container.append(iframe);
 
         $container.addEventListener('keydown', (event) => {

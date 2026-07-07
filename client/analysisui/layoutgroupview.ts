@@ -8,7 +8,7 @@ import EnumPropertyFilter from './enumpropertyfilter';
 import { FormatDef, StringFormat } from './formatdef';
 import Icons from './iconsupport';
 import interactionManager from '../common/interactionmanager';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich }  from '../common/htmlelementcreator';
 import { GridControlProperties, VerticalAlignment } from './gridcontrol';
 import { Margin } from './controlbase';
 import { Control, CtrlDef } from './optionsview';
@@ -74,7 +74,7 @@ export class LabelControl extends TitledGridControl<LabelControlProperties> {
         classes += isHeading ? ' heading-formating' : '';
 
         this.labelId = interactionManager.nextAriaId('label');
-        this._subel = HTML.parse(`<div id="${ this.labelId }" role="heading" aria-level="3" class="silky-control-label silky-control-margin-${ this.getPropertyValue("margin") } ${ classes }" style="white-space: nowrap;"><span>${ groupText }</span></div>`);
+        this._subel = h('div', { id: this.labelId, role: 'heading', 'aria-level': '3', class: `silky-control-label silky-control-margin-${ this.getPropertyValue("margin") } ${ classes }`, style: 'white-space: nowrap;' }, h('span', {}, rich(groupText)));
         if (this.el === undefined)
             this.setRootElement(this._subel);
 
@@ -103,7 +103,12 @@ export class LabelControl extends TitledGridControl<LabelControlProperties> {
 
         value = this.translate(value);
 
-        this._subel.innerHTML = '<span>' + value + '</span>';
+        let label = this._subel.querySelector('span');
+        if (label === null) {
+            label = h('span');
+            this._subel.append(label);
+        }
+        label.replaceChildren(rich(value));
         let event = new CustomEvent('contentchanged');
         this._subel.dispatchEvent(event);
 
@@ -163,7 +168,7 @@ export class OptionLabelControl extends OptionControl<OptionedLabelControlProper
         classes += isHeading ? ' heading-formating' : '';
 
         this.labelId = interactionManager.nextAriaId('label');
-        this._subel = HTML.parse(`<div id="${ this.labelId }" role="heading" aria-level="3" class="silky-control-label silky-control-margin-${ this.getPropertyValue("margin") } ${ classes }" style="white-space: nowrap;"><span></span></div>`);
+        this._subel = h('div', { id: this.labelId, role: 'heading', 'aria-level': '3', class: `silky-control-label silky-control-margin-${ this.getPropertyValue("margin") } ${ classes }`, style: 'white-space: nowrap;' }, h('span'));
         if (this.el === undefined)
             this.setRootElement(this._subel);
 
@@ -192,7 +197,12 @@ export class OptionLabelControl extends OptionControl<OptionedLabelControlProper
 
         value = this.translate(value);
 
-        this._subel.innerHTML = '<span>' + value + '</span>';
+        let label = this._subel.querySelector('span');
+        if (label === null) {
+            label = h('span');
+            this._subel.append(label);
+        }
+        label.replaceChildren(rich(value));
         let event = new CustomEvent('contentchanged');
         this._subel.dispatchEvent(event);
 

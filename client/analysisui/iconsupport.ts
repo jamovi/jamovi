@@ -2,15 +2,15 @@
 'use strict';
 
 import EnumPropertyFilter from './enumpropertyfilter';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { attrs, h }  from '../common/htmlelementcreator';
 
 const get = function(parent) {
 
     let icons = parent.getPropertyValue('icons');
     let iconPosition = parent.getPropertyValue('iconPosition');
-    let el = HTML.parse('<div class="jmv-option-icons" data-icon-position="' + iconPosition + '"></div>');
+    let el = h('div', attrs({ class: 'jmv-option-icons', 'data-icon-position': iconPosition }));
     for (let i = 0; i < icons.length; i++) {
-        let icon = HTML.parse('<div class="jmv-option-icon" data-icon="' + icons[i] + '"></div>');
+        let icon = h('div', attrs({ class: 'jmv-option-icon', 'data-icon': icons[i] }));
         el.append(icon);
     }
 

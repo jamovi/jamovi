@@ -4,7 +4,7 @@
 
 import formulaToolbar from './formulatoolbar';
 import dropdown from './dropdown';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 import VariableModel from './variablemodel';
 
 class ComputedVarWidget extends HTMLElement{
@@ -40,19 +40,19 @@ class ComputedVarWidget extends HTMLElement{
         dropdown.init();
         this.formulasetup = new formulaToolbar(this.model.dataset);
 
-        let $methods = HTML.parse('<div class="jmv-variable-computed-methods"></div>');
+        let $methods = h('div', { class: 'jmv-variable-computed-methods' });
         this.append($methods);
 
-        let $top = HTML.parse('<div class="top"></div>');
+        let $top = h('div', { class: 'top' });
         $methods.append($top);
-        $top.append(HTML.parse(`<div class="item">${_('Formula')}</div>`));
+        $top.append(h('div', { class: 'item' }, _('Formula')));
 
-        $methods.append(HTML.parse('<div class="separator"></div>'));
+        $methods.append(h('div', { class: 'separator' }));
 
-        let $bottom = HTML.parse('<div class="bottom"></div>');
+        let $bottom = h('div', { class: 'bottom' });
         $methods.append($bottom);
 
-        let $options = HTML.parse('<div class="jmv-variable-computed-options"></div>');
+        let $options = h('div', { class: 'jmv-variable-computed-options' });
         this.append($options);
         this._createFormulaBox($options);
 
@@ -101,12 +101,13 @@ class ComputedVarWidget extends HTMLElement{
     }
 
     _createFormulaBox($parent: HTMLElement) {
-        let $formulaBox = HTML.parse('<div class="formula-box"></div>');
+        let $formulaBox = h('div', { class: 'formula-box' });
         $parent.append($formulaBox);
 
-        $formulaBox.append(HTML.parse('<div class="equal">=</div>'))
+        $formulaBox.append(h('div', { class: 'equal' }, '='))
 
-        this.$showEditor = HTML.parse(`<button class="show-editor" aria-label="${_('Show formula editor')}" aria-controls="${this.formulasetup.id}"><div class="down-arrow"></div></button>`);
+        this.$showEditor = h('button', { class: 'show-editor', 'aria-label': _('Show formula editor'), 'aria-controls': this.formulasetup.id },
+            h('div', { class: 'down-arrow' }));
         $formulaBox.append(this.$showEditor);
 
         this.$showEditor.addEventListener('click', (event) => {
@@ -125,11 +126,11 @@ class ComputedVarWidget extends HTMLElement{
             this._editorClicked = true;
         });
 
-        let $formulaPair = HTML.parse('<div class="formula-pair"></div>');
+        let $formulaPair = h('div', { class: 'formula-pair' });
         $formulaBox.append($formulaPair);
 
         let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))];
-        this.$formula = HTML.parse('<div class="formula" type="text" placeholder="eg: ' + _example + '" contenteditable="true" spellcheck="false" aria-label="formula" tabindex="0"></div>');
+        this.$formula = h('div', { class: 'formula', type: 'text', placeholder: 'eg: ' + _example, contenteditable: 'true', spellcheck: 'false', 'aria-label': 'formula', tabindex: '0' }) as HTMLInputElement;
         $formulaPair.append(this.$formula);
 
         document.addEventListener("selectionchange", () => {
@@ -145,9 +146,9 @@ class ComputedVarWidget extends HTMLElement{
             dropdown.updatePosition();
         });
 
-        let $formulaMessageBox = HTML.parse('<div class="formulaMessageBox""></div>');
+        let $formulaMessageBox = h('div', { class: 'formulaMessageBox' });
         $formulaPair.append($formulaMessageBox);
-        this.$formulaMessage = HTML.parse('<div class="formulaMessage""></div>');
+        this.$formulaMessage = h('div', { class: 'formulaMessage' });
         $formulaMessageBox.append(this.$formulaMessage);
     }
 

@@ -9,7 +9,7 @@ import PageSideload  from './store/pagesideload';
 import tarp from './utils/tarp';
 import interactionManager, { type FocusLoop } from '../common/interactionmanager';
 import selectionLoop from '../common/selectionloop';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h }  from '../common/htmlelementcreator';
 import { RibbonModel } from './ribbon';
 import Settings from './settings';
 import { Modules } from './modules';
@@ -34,19 +34,19 @@ class Store extends HTMLElement {
             this._hide();
         });
 
-        const $header = HTML.parse('<div class="jmv-store-header"></div>');
+        const $header = h('div', { class: 'jmv-store-header' });
         this.append($header);
 
-        const $logo = HTML.parse(`<div class="jmv-store-header-logo"></div>`);
+        const $logo = h('div', { class: 'jmv-store-header-logo' });
         $header.append($logo);
-        const $close = HTML.parse(`<button class="jmv-store-button-close" aria-label="${_('Hide library')}"><span class="mif-arrow-up"></span></button>`);
+        const $close = h('button', { class: 'jmv-store-button-close', 'aria-label': _('Hide library') }, h('span', { class: 'mif-arrow-up' }));
         $header.append($close);
 
         $close.addEventListener('click', event => {
             this.hide();
         });
 
-        const $tabContainer = HTML.parse('<div class="jmv-store-tab-container"></div>');
+        const $tabContainer = h('div', { class: 'jmv-store-tab-container' });
         this.append($tabContainer);
 
         const tabSelection = new selectionLoop('store-tabs', $tabContainer);
@@ -65,16 +65,17 @@ class Store extends HTMLElement {
             { name: 'store', title: _('Available') },
             { name: 'sideload', title: _('Sideload')} ]) {
 
-            let $tab = HTML.parse(`<div class="jmv-store-tab store-tabs-list-item store-tabs-auto-select" data-tab="${tab.name}" data-index="${i++}" tabindex="-1" role="tab"><div class="jmv-store-tab-inner">${tab.title}</div></div>`);
+            let $tab = h('div', { class: 'jmv-store-tab store-tabs-list-item store-tabs-auto-select', 'data-tab': tab.name, 'data-index': String(i++), tabindex: '-1', role: 'tab' },
+                h('div', { class: 'jmv-store-tab-inner' }, tab.title));
             $tabContainer.append($tab);
         }
 
         this.$tabs = $tabContainer.querySelectorAll<HTMLElement>(".jmv-store-tab");
 
-        this.$highlight = HTML.parse('<div class="jmv-store-tab-highlight"></div>');
+        this.$highlight = h('div', { class: 'jmv-store-tab-highlight' });
         $tabContainer.append(this.$highlight);
 
-        const $pageContainer = HTML.parse('<div class="jmv-store-page-container"></div>');
+        const $pageContainer = h('div', { class: 'jmv-store-page-container' });
         this.append($pageContainer)
 
         const pageInst = new PageModules({ settings, modules });
@@ -91,9 +92,9 @@ class Store extends HTMLElement {
                 $pageContainer.append(pageStore);
             }
             else {
-                const $pageStore = HTML.parse('<div class="jmv-store-page jmv-store-page-store" aria-hidden="true"></div>');
+                const $pageStore = h('div', { class: 'jmv-store-page jmv-store-page-store', 'aria-hidden': 'true' });
                 $pageContainer.append($pageStore);
-                $pageStore.append(HTML.parse(`<div class="mode-msg">${_('The jamovi library is not available to your session.')}</div>`));
+                $pageStore.append(h('div', { class: 'mode-msg' }, _('The jamovi library is not available to your session.')));
             }
             this.$pages = $pageContainer.querySelectorAll<HTMLElement>('.jmv-store-page');
         });
@@ -108,9 +109,9 @@ class Store extends HTMLElement {
                 pageSideload.addEventListener('close', () => this.hide());
             }
             else {
-                const $pageSideload = HTML.parse('<div class="jmv-store-page jmv-store-page-sideload right" aria-hidden="true"></div>');
+                const $pageSideload = h('div', { class: 'jmv-store-page jmv-store-page-sideload right', 'aria-hidden': 'true' });
                 $pageContainer.append($pageSideload);
-                $pageSideload.append(HTML.parse(`<div class="mode-msg">${_('Side-loading modules is not available.')}</div>`));
+                $pageSideload.append(h('div', { class: 'mode-msg' }, _('Side-loading modules is not available.')));
             }
             this.$pages = $pageContainer.querySelectorAll<HTMLElement>('.jmv-store-page');
         });
