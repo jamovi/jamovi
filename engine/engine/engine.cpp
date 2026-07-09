@@ -16,6 +16,7 @@
 
 #include "host.h"
 #include "enginer.h"
+#include "exceptions.h"
 #include "jamovi.pb.h"
 
 using namespace std;
@@ -152,7 +153,21 @@ void Engine::messageLoop()
 
     while (_exiting == false)
     {
-        AnalysisRequest request = _coms->read();
+        AnalysisRequest request;
+
+        try
+        {
+            request = _coms->read();
+        }
+        catch (const NoConnectionException &e)
+        {
+            // the connection to the server has dropped, most likely because
+            // it is shutting down. exit cleanly rather than allowing the
+            // exception to escape this thread and abort the process (SIGABRT).
+            if ( ! _exiting)
+                terminate();
+            break;
+        }
 
         if (request.restartengines())
         {
