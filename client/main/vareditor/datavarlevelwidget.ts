@@ -2,7 +2,7 @@
 'use strict';
 
 import VariableModel from "./variablemodel";
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 
 class DataVarLevelWidget extends HTMLElement {
 
@@ -22,6 +22,9 @@ class DataVarLevelWidget extends HTMLElement {
         this.readOnly = readOnly ? true : false;
         this.model = model;
 
+        let importValue = level.importValue === null || level.importValue === undefined ? '' : level.importValue.toString();
+        let label = level.label === null || level.label === undefined ? '' : level.label.toString();
+
         let diff = level.importValue !== level.label;
         this.index = i;
         this.setAttribute('data-index', i.toString());
@@ -31,7 +34,7 @@ class DataVarLevelWidget extends HTMLElement {
         if (level.pinned)
             this.classList.add('pinned');
 
-        let $pin = HTML.parse(`<button class="pin" aria-label="${ _('Pin level') }"></button>`);
+        let $pin = h('button', { class: 'pin', 'aria-label': _('Pin level') });
         this.append($pin);
         $pin.addEventListener('click', () => {
             setTimeout(() => { // delay so that the parent control click can suspend applying the settings
@@ -44,14 +47,14 @@ class DataVarLevelWidget extends HTMLElement {
             }, 0);
 
         });
-        this.$value = HTML.parse('<div class="jmv-variable-editor-level-value">' + level.importValue + '</div>');
+        this.$value = h('div', { class: 'jmv-variable-editor-level-value' }, importValue);
         this.append(this.$value);
 
 
         if (this.readOnly === false)
-            this.$label = HTML.parse('<input class="jmv-variable-editor-level-label" data-index="' + i + '" type="text" spellcheck="true" value="' + level.label + '" />');
+            this.$label = h('input', { class: 'jmv-variable-editor-level-label', 'data-index': i.toString(), type: 'text', spellcheck: 'true', value: label });
         else
-            this.$label = HTML.parse('<div class="jmv-variable-editor-level-label">' + level.label + '</div>');
+            this.$label = h('div', { class: 'jmv-variable-editor-level-label' }, label) as HTMLInputElement;
 
         this.append(this.$label);
 

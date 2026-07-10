@@ -2,7 +2,7 @@
 
 import interactionManager, { keyTips, type IKeyTipTokenOptions } from '../../common/interactionmanager';
 import Menu from '../../common/menu';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h, rich }  from '../../common/htmlelementcreator';
 import { RibbonItem } from './ribbontab';
 import AnalyseTab from './analysetab';
 
@@ -250,16 +250,21 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         if (item.subtitle && item.subtitle !== item.title)
             labelId2 = interactionManager.nextAriaId('label');
 
-        let html = `<button role="menuitem" aria-labelledby="${labelId1} ${labelId2}" data-name="${ item.name }" data-ns="${ item.ns }" data-title="${ item.title }" data-rtitle="${ item.resultsTitle }" class="${ classes }" tabindex="0">`;
-        html += '<div class="description">';
-        html += `<div id="${labelId1}">${item.title}</div>`;
+        let description = h('div', { class: 'description' },
+            h('div', { id: labelId1 }, rich(item.title)));
         if (item.subtitle)
-            html += `<div id="${labelId2}" class="jmv-ribbon-menu-item-sub">${item.subtitle}</div>`;
+            description.append(h('div', { id: labelId2, class: 'jmv-ribbon-menu-item-sub' }, rich(item.subtitle)));
 
-        html += '</div>';
-        html += '</button>';
-
-        item.el = HTML.parse(html);
+        item.el = h('button', {
+            role: 'menuitem',
+            'aria-labelledby': `${labelId1} ${labelId2}`,
+            'data-name': item.name,
+            'data-ns': item.ns,
+            'data-title': item.title,
+            'data-rtitle': item.resultsTitle,
+            class: classes,
+            tabindex: '0'
+        }, description);
 
         interactionManager.createHoverItem(item.el);
 
@@ -274,25 +279,32 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         if (item.subtitle && item.subtitle !== item.title)
             subTitleId = interactionManager.nextAriaId('label');
 
-        let html = `<button role="menuitem" aria-labelledby="${titleId}${subTitleId}" data-name="${ item.name }" data-ns="${  item.ns }" data-title="${ item.title }" class="${ classes }" tabindex="0">`;
-        html += '<div class="to-analyses-arrow"></div>';
-        html += '<div class="description">';
-        html += `<div id="${titleId}">${item.title}</div>`;
+        let description = h('div', { class: 'description' },
+            h('div', { id: titleId }, rich(item.title)));
         if (item.subtitle)
-            html += `<div id="${subTitleId}" class="jmv-ribbon-menu-item-sub">${ item.subtitle }</div>`;
-        html += '</div>';
-        html += '</button>';
-        item.el = HTML.parse(html);
+            description.append(h('div', { id: subTitleId, class: 'jmv-ribbon-menu-item-sub' }, rich(item.subtitle)));
+
+        item.el = h('button', {
+            role: 'menuitem',
+            'aria-labelledby': `${titleId}${subTitleId}`,
+            'data-name': item.name,
+            'data-ns': item.ns,
+            'data-title': item.title,
+            class: classes,
+            tabindex: '0'
+        },
+            h('div', { class: 'to-analyses-arrow' }),
+            description);
         if (item.analyses !== undefined) {
 
             let labelId = interactionManager.nextAriaId('label');
             item.sidePanel = new Menu(item.el, level + 1, { exitKeys:['InlineArrowRight'] });
-            item.sidePanel.setAttribute('aria-laeblledby', labelId);
+            item.sidePanel.setAttribute('aria-labelledby', labelId);
             item.sidePanel.classList.add('side-panel');
-            item.sidePanel.append(HTML.create('div', { class: 'side-panel-heading', id: labelId }, `Module - ${ item.name }`));
+            item.sidePanel.append(h('div', { class: 'side-panel-heading', id: labelId }, `Module - ${ item.name }`));
             item.sidePanel.append(
-                                        HTML.create('label', { class: 'display-in-menu' }, 
-                                            HTML.create('input', { type:'checkbox', role: 'menuitemcheckbox', 'data-name': item.name, 'data-ns': item.ns, checked: item.checked ? 'true' : undefined }), _('Show in main menu'))
+                                        h('label', { class: 'display-in-menu' }, 
+                                            h('input', { type:'checkbox', role: 'menuitemcheckbox', 'data-name': item.name, 'data-ns': item.ns, checked: item.checked ? 'true' : undefined }), _('Show in main menu'))
                                     ); 
 
             let sidePanel = item.sidePanel;
@@ -327,11 +339,11 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
 
     _createMenuGroup(group, level:number) {
         let labelId = interactionManager.nextAriaId('label');
-        let groupElement = HTML.create('div', { class: 'jmv-ribbon-menu-group',  role: 'group', 'aria-labelledby': labelId }, 
-                                HTML.create('label', { class: 'jmv-ribbon-menu-heading', id: labelId }, group.title)
+        let groupElement = h('div', { class: 'jmv-ribbon-menu-group',  role: 'group', 'aria-labelledby': labelId },
+                                h('label', { class: 'jmv-ribbon-menu-heading', id: labelId }, rich(group.title))
                             );
 
-        let itemsElement = HTML.create('div', { class: 'jmv-group-items', role: 'presentation' });
+        let itemsElement = h('div', { class: 'jmv-group-items', role: 'presentation' });
 
         let allHidden = true;
         for (let i = 0; i < group.items.length; i++) {
@@ -354,8 +366,8 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
 
         let html = '';
 
-        let iconElement = HTML.create('div', { class: 'jmv-ribbon-button-icon' });
-        let labelElement = HTML.create('div', { class: 'jmv-ribbon-button-label', id: this.labelId}, this.title);
+        let iconElement = h('div', { class: 'jmv-ribbon-button-icon' });
+        let labelElement = h('div', { class: 'jmv-ribbon-button-label', id: this.labelId}, rich(this.title || ''));
 
         if ( ! this.menu) {
             this.menu = new Menu(this, 1, { className: 'analysis-menu', exitKeys: [ 'Alt+ArrowUp' ] });
@@ -395,7 +407,7 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
             this.removeChild(this.firstChild);
         this.append(iconElement);
         this.append(labelElement);
-        this.append(HTML.create('div', { class: 'jmv-ribbon-menu-arrow', style: 'margin: 7px 0 0 0;' }));
+        this.append(h('div', { class: 'jmv-ribbon-menu-arrow', style: 'margin: 7px 0 0 0;' }));
 
         if (allHidden) {
             this.classList.add('menu-item-hiding');

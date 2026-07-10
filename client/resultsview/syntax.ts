@@ -3,7 +3,7 @@
 
 import { AnalysisStatus } from './create';
 import Elem, { ElementData, ElementModel } from './element';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, setRich }  from '../common/htmlelementcreator';
 
 export class Model extends Elem.Model<ElementModel<string>> {
     constructor(data?: ElementModel<string>) {
@@ -30,10 +30,10 @@ export class View extends Elem.View<Model> {
 
         this.classList.add('jmv-results-syntax');
 
-        this.$title = HTML.parse('<h' + (this.level+1) + ' class="jmv-results-image-title"></h' + (this.level+1) + '>');
+        this.$title = h(`h${this.level+1}` as keyof HTMLElementTagNameMap, { class: 'jmv-results-image-title' }) as HTMLHeadingElement;
         this.addContent(this.$title);
 
-        this.$syntax = HTML.parse('<pre class="jmv-results-syntax-text" dir="ltr"></pre>');
+        this.$syntax = h('pre', { class: 'jmv-results-syntax-text', dir: 'ltr' });
         this.addContent(this.$syntax);
 
         this.render();
@@ -51,9 +51,9 @@ export class View extends Elem.View<Model> {
 
         if (this.$title) {
             if (this.model.attributes.title)
-                this.$title.innerText = this.model.attributes.title;
+                setRich(this.$title, this.model.attributes.title);
             else
-                this.$title.innerHTML = '';
+                this.$title.textContent = '';
         }
 
         if (this.model.attributes.stale)

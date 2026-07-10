@@ -1,7 +1,7 @@
 
 'use strict';
 
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 import VariableModel from './variablemodel';
 import DataVarLevelWidget from './datavarlevelwidget';
 
@@ -18,20 +18,20 @@ class  OutputVarWidget extends HTMLElement {
         this.model = model;
         this.classList.add('jmv-variable-editor-outputvarwidget', 'OutputVarWidget');
 
-        let $body = HTML.parse('<div class="jmv-outputvarwidget-body"></div>');
+        let $body = h('div', { class: 'jmv-outputvarwidget-body' });
         this.append($body);
 
-        let $left = HTML.parse('<div class="top-box"></div>');
+        let $left = h('div', { class: 'top-box' });
         $body.append($left);
 
-        let $levelsCrtl = HTML.parse('<div class="jmv-variable-editor-levels-control"></div>');
+        let $levelsCrtl = h('div', { class: 'jmv-variable-editor-levels-control' });
         $body.append($levelsCrtl);
 
-        let $levelsContainer = HTML.parse('<div class="container"></div>');
+        let $levelsContainer = h('div', { class: 'container' });
         $levelsCrtl.append($levelsContainer);
 
-        $levelsContainer.append(HTML.parse(`<div class="title">${_('Levels')}</div>`));
-        this.$levels = HTML.parse('<div class="levels"></div>');
+        $levelsContainer.append(h('div', { class: 'title' }, _('Levels')));
+        this.$levels = h('div', { class: 'levels' });
         $levelsContainer.append(this.$levels);
 
         this.$levelItems = this.$levels.querySelectorAll('.jmv-variable-editor-level');

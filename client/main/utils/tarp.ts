@@ -1,7 +1,7 @@
 
 'use strict';
 
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 
 let tarps = { };
 let params = { };
@@ -12,7 +12,7 @@ const init = function(name) {
 
     let body = document.body;
 
-    let tarp = HTML.create('div', {class: 'tarp'});
+    let tarp = h('div', {class: 'tarp'});
     body.append(tarp)
     tarp.addEventListener('click', event => {
         let newEvent = new CustomEvent('tarp-clicked', {detail: event});

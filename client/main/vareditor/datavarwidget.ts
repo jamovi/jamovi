@@ -7,10 +7,9 @@ import dropdown from './dropdown';
 import MissingValueEditor from '../editors/missingvalueeditor';
 import MeasureList from './measurelist';
 import interactionManager, { type FocusLoop } from '../../common/interactionmanager';
-import { s6e } from '../../common/utils';
 import { DataType, MeasureType } from '../dataset';
 import VariableModel from './variablemodel';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 import MsgDialog from '../../common/msgdialog';
 
 class DataVarWidget extends HTMLElement {
@@ -52,26 +51,29 @@ class DataVarWidget extends HTMLElement {
 
         this.classList.add('jmv-variable-editor-datavarwidget', 'DataVarWidget');
 
-        let $body = HTML.parse('<div class="jmv-datavarwidget-body"></div>');
+        let $body = h('div', { class: 'jmv-datavarwidget-body' });
         this.append($body);
-        this.$left = HTML.parse('<div class="jmv-variable-editor-widget-left"></div>');
+        this.$left = h('div', { class: 'jmv-variable-editor-widget-left' });
         $body.append(this.$left);
 
         this._createMeasureTypeListBox();
 
-        let $dataType = HTML.parse(`<div class="jmv-vareditor-datatype"></div>`);
+        let $dataType = h('div', { class: 'jmv-vareditor-datatype' });
         this.$left.append($dataType);
-        let $dataLabel = HTML.parse(`<label for="data-type">${_('Data type')}</label>`);
+        let $dataLabel = h('label', { for: 'data-type' }, _('Data type'));
         $dataType.append($dataLabel)
-        this.$dataTypeList = HTML.parse(`<select id="data-type"><option value="integer">${_('Integer')}</option><option value="decimal">${_('Decimal')}</option><option value="text">${_('Text')}</option></select>`);
+        this.$dataTypeList = h('select', { id: 'data-type' },
+            h('option', { value: 'integer' }, _('Integer')),
+            h('option', { value: 'decimal' }, _('Decimal')),
+            h('option', { value: 'text' }, _('Text')));
         $dataLabel.append(this.$dataTypeList);
-        this.$autoType = HTML.parse(`<div class="jmv-variable-editor-autotype">${_('(auto)')}</div>`);
+        this.$autoType = h('div', { class: 'jmv-variable-editor-autotype' }, _('(auto)'));
         $dataType.append(this.$autoType);
 
 
         this._createMissingValuesCtrl();
 
-        this.$levelsCrtl = HTML.parse('<div class="jmv-variable-editor-levels-control" tabindex="0"></div>');
+        this.$levelsCrtl = h('div', { class: 'jmv-variable-editor-levels-control', tabindex: '0' });
         $body.append(this.$levelsCrtl);
         this.levelsLoop = interactionManager.registerLoop(this.$levelsCrtl, {
             level: 1,
@@ -86,20 +88,23 @@ class DataVarWidget extends HTMLElement {
                 tarp.hide('levels');
             }
         });
-        this.$addLevelButton = HTML.parse(`<button class="add-level" aria-label="${_('Add new level')}"><span class="mif-plus"></span></button>`);
+        this.$addLevelButton = h('button', { class: 'add-level', 'aria-label': _('Add new level') },
+            h('span', { class: 'mif-plus' }));
         this.$levelsCrtl.append(this.$addLevelButton);
-        let $levelsContainer = HTML.parse('<div class="container"></div>');
+        let $levelsContainer = h('div', { class: 'container' });
         this.$levelsCrtl.append($levelsContainer);
-        $levelsContainer.append(HTML.parse(`<div class="title">${_('Levels')}</div>`));
-        this.$levels = HTML.parse('<div class="levels"></div>');
+        $levelsContainer.append(h('div', { class: 'title' }, _('Levels')));
+        this.$levels = h('div', { class: 'levels' });
         $levelsContainer.append(this.$levels);
         this.$levelItems =this.$levels.querySelectorAll('.jmv-variable-editor-level');
 
-        let $move = HTML.parse('<div class="jmv-variable-editor-widget-move"></div>');
+        let $move = h('div', { class: 'jmv-variable-editor-widget-move' });
         this.$levelsCrtl.append($move);
-        this.$moveUp = HTML.parse('<button class="jmv-variable-editor-widget-move-up"><span class="mif-arrow-up"></span></button>');
+        this.$moveUp = h('button', { class: 'jmv-variable-editor-widget-move-up' },
+            h('span', { class: 'mif-arrow-up' }));
         $move.append(this.$moveUp);
-        this.$moveDown = HTML.parse('<button class="jmv-variable-editor-widget-move-down"><span class="mif-arrow-down"></span></button>');
+        this.$moveDown = h('button', { class: 'jmv-variable-editor-widget-move-down' },
+            h('span', { class: 'mif-arrow-down' }));
         $move.append(this.$moveDown);
 
         this.$levelsCrtl.addEventListener('focusin', (event) => {
@@ -278,10 +283,9 @@ class DataVarWidget extends HTMLElement {
         if ( ! this.attached)
             return;
 
-        let label = '';
+        let labels = [];
         //let missings = this.model.get('missingValues');
         if (missings !== null) {
-            let c = 0;
             for (let i = 0; i < missings.length; i++) {
                 let part = missings[i].trim();
                 if (part.startsWith('==')) {
@@ -293,18 +297,18 @@ class DataVarWidget extends HTMLElement {
                 }
 
                 if (part !== '')
-                    label = `${ label }<span>${ s6e(part) }</span>`;
+                    labels.push(part);
             }
         }
-        this.$missingValueButton.querySelector('.list').innerHTML = label;
+        this.$missingValueButton.querySelector('.list').replaceChildren(...labels.map(label => h('span', {}, label)));
     }
 
     _createMissingValuesCtrl() {
         this.missingValueEditor = new MissingValueEditor(this.model);
-        this.$missingValueButton = HTML.parse(`
-            <div class="missing-values">
-                <label class="label">${_('Missing values')}<button class="list" tabindex="0"></button></label>
-            </div>`);
+        this.$missingValueButton = h('div', { class: 'missing-values' },
+            h('label', { class: 'label' },
+                _('Missing values'),
+                h('button', { class: 'list', tabindex: '0' })));
         this.$left.append(this.$missingValueButton);
         let $list = this.$missingValueButton.querySelector('.list');
         $list.addEventListener('click', () => {
@@ -329,18 +333,17 @@ class DataVarWidget extends HTMLElement {
     }
 
     _createMeasureTypeListBox() {
-        let $measureBox = HTML.parse('<div class="measure-box"></div>');
+        let $measureBox = h('div', { class: 'measure-box' });
         this.$left.append($measureBox);
-        let $measureLabel = HTML.parse(`<label class="label">${_('Measure type')}</label>`);
+        let $measureLabel = h('label', { class: 'label' }, _('Measure type'));
         $measureBox.append($measureLabel);
-        this.$measureIcon = HTML.parse('<div class="icon"></div>');
+        this.$measureIcon = h('div', { class: 'icon' });
         $measureBox.append(this.$measureIcon);
-        this.$measureList = HTML.parse(`<select id="type">
-                                    <option value="nominal">${_('Nominal')}</option>
-                                    <option value="ordinal">${_('Ordinal')}</option>
-                                    <option value="continuous">${_('Continuous')}</option>
-                                    <option value="id">${_('ID')}</option>
-                                </select>`);
+        this.$measureList = h('select', { id: 'type' },
+            h('option', { value: 'nominal' }, _('Nominal')),
+            h('option', { value: 'ordinal' }, _('Ordinal')),
+            h('option', { value: 'continuous' }, _('Continuous')),
+            h('option', { value: 'id' }, _('ID')));
         $measureLabel.append(this.$measureList);
         this.$measureList.value = 'nominal';
 

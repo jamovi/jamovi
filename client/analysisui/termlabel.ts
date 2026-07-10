@@ -4,7 +4,7 @@ import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
 import { FormatDef, TermFormat } from './formatdef';
 import interactionManager from '../common/interactionmanager';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich }  from '../common/htmlelementcreator';
 
 export type TermLabelProperties = GridOptionControlProperties<string[]> & {
     format: TermFormat;
@@ -21,7 +21,7 @@ export class TermLabel extends OptionControl<TermLabelProperties> {
 
         this.dataSupport = GetRequestDataSupport(this);
 
-        this.setRootElement(HTML.parse('<div style="white-space: nowrap;" class="silky-list-item silky-format-term"></div>'));
+        this.setRootElement(h('div', { style: 'white-space: nowrap;', class: 'silky-list-item silky-format-term' }));
 
         this._format = this.getPropertyValue('format');
     }
@@ -43,7 +43,7 @@ export class TermLabel extends OptionControl<TermLabelProperties> {
         let displayValue = this._format.toString(value);
 
         this.labelId = interactionManager.nextAriaId('label');
-        this.label = HTML.parse(`<div id="${this.labelId}" aria-label="${ this.getAriaLabel() }" style="white-space: nowrap;  display: inline-block;" class="silky-list-item-value">${ displayValue }</div>`);
+        this.label = h('div', { id: this.labelId, 'aria-label': this.getAriaLabel(), style: 'white-space: nowrap;  display: inline-block;', class: 'silky-list-item-value' }, rich(displayValue));
 
         this.el.append(this.label);
         if (value !== null)
@@ -57,7 +57,7 @@ export class TermLabel extends OptionControl<TermLabelProperties> {
         if (this.label) {
             let value = this.getValue();
             let displayValue = this._format.toString(value);
-            this.label.innerHTML = displayValue;
+            this.label.replaceChildren(rich(displayValue));
             this.label.setAttribute('aria-label', this._format.toAriaLabel(value));
             if (value !== null)
                 this.updateView(value);

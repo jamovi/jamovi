@@ -1,7 +1,7 @@
 
 'use strict';
 
-import { HTMLElementCreator as HTML }  from '../htmlelementcreator';
+import { h }  from '../htmlelementcreator';
 import { EventEmitter } from 'eventemitter3';
 import ToolbarButton from './toolbarbutton';
 
@@ -14,7 +14,7 @@ export class Toolbar extends EventEmitter {
 
         this.items = items;
 
-        this.el = HTML.create('div');
+        this.el = h('div');
 
         this.el.classList.add('jmv-toolbar');
 
@@ -41,8 +41,8 @@ export class Toolbar extends EventEmitter {
         if (this._rendered)
             return;
 
-        this.el.innerHTML = '';
-        this.separator = HTML.create('div', { class: 'mv-toolbar-button-separator' });
+        this.el.replaceChildren();
+        this.separator = h('div', { class: 'mv-toolbar-button-separator' });
         this.el.append(this.separator);
 
         for (let i = 0; i < items.length; i++) {

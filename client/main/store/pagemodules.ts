@@ -13,7 +13,7 @@ import interactionManager from '../../common/interactionmanager';
 import selectionLoop from '../../common/selectionloop';
 import { ModulesBase } from '../modules';
 import Settings from '../settings';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h, richDescriptionOptions, richParagraphs }  from '../../common/htmlelementcreator';
 import MsgDialog from '../../common/msgdialog';
 
 type ModulePageOptions = {
@@ -66,23 +66,33 @@ class PageModules extends HTMLElement {
         this._moduleLeave = this._moduleLeave.bind(this);
         this._moduleKeyDown = this._moduleKeyDown.bind(this);
 
-        this.$message    = HTML.parse('<div class="jmv-store-message"><div class="icon"></div><div class="text"></div></div>');
+        this.$message    = h('div', { class: 'jmv-store-message' },
+            h('div', { class: 'icon' }),
+            h('div', { class: 'text' }));
         this.append(this.$message);
 
-        let $searchBox = HTML.parse('<div class="store-page-searchbox"><div class="search-icon"></div></div>');
+        let $searchBox = h('div', { class: 'store-page-searchbox' },
+            h('div', { class: 'search-icon' }));
         this.append($searchBox);
         let searchAriaLabel = this.classList.contains('jmv-store-page-store') ? _('Search available modules') : _('Search installed modules');
-        this.$search    = HTML.parse(`<input class="search-text" type="text" spellcheck="true" placeholder="${_('Search')}" aria-label="${searchAriaLabel}"></input>`);
+        this.$search    = h('input', { class: 'search-text', type: 'text', spellcheck: 'true', placeholder: _('Search'), 'aria-label': searchAriaLabel });
         $searchBox.append(this.$search);
-        this.$body    = HTML.parse('<div class="jmv-store-body"></div>');
+        this.$body    = h('div', { class: 'jmv-store-body' });
         this.append(this.$body);
-        this.$content = HTML.parse(`<div class="jmv-store-content" aria-label="${_('Modules')}"></div>`);
+        this.$content = h('div', { class: 'jmv-store-content', 'aria-label': _('Modules') });
         this.$body.append(this.$content);
-        this.$body.append(HTML.parse('<div class="jmv-store-loading"></div>'));
+        this.$body.append(h('div', { class: 'jmv-store-loading' }));
         let progressLabelId = interactionManager.nextAriaId('label');
-        const $installing = HTML.parse(`<div class="jmv-store-installing" role="progressbar" aria-labelledby="${progressLabelId}" aria-valuenow="0"><h2 id="${progressLabelId}">Installing</h2><div class="jmv-store-progress"><div class="jmv-store-progress-bar"></div></div><div class="jmv-store-installing-description">Installing module</div><!--button class="jmv-store-cancel">Cancel</button--></div>`);
+        const $installing = h('div', { class: 'jmv-store-installing', role: 'progressbar', 'aria-labelledby': progressLabelId, 'aria-valuenow': '0' },
+            h('h2', { id: progressLabelId }, 'Installing'),
+            h('div', { class: 'jmv-store-progress' },
+                h('div', { class: 'jmv-store-progress-bar' })),
+            h('div', { class: 'jmv-store-installing-description' }, 'Installing module'));
         this.$body.append($installing);
-        this.$error   = HTML.parse('<div class="jmv-store-error" aria-hidden="true" style="display:none;"><h2 class="jmv-store-error-message"></h2><div class="jmv-store-error-cause"></div><button class="jmv-store-error-retry">Retry</button></div>');
+        this.$error   = h('div', { class: 'jmv-store-error', 'aria-hidden': 'true', style: 'display:none;' },
+            h('h2', { class: 'jmv-store-error-message' }),
+            h('div', { class: 'jmv-store-error-cause' }),
+            h('button', { class: 'jmv-store-error-retry' }, 'Retry'));
         this.$body.append(this.$error);
 
         const moduleSelection = new selectionLoop('modules', this.$content);
@@ -298,15 +308,26 @@ class PageModules extends HTMLElement {
 
             const hasPlots = module.category === 'plots';
 
-            let html = `
-                <div class="jmv-store-module modules-list-item modules-auto-select" data-has-plots="${hasPlots}" data-name="${ module.name }" tabindex="-1" aria-labelledby="${labelId}" role="listitem">
-                    <div class="jmv-store-module-lhs">
-                        <div class="jmv-store-module-icon"></div>
-                    </div>
-                    <div class="jmv-store-module-rhs">
-                        <h2 id=${labelId} class="mark-search">${ moduleLabel }<span class="version">${ version }</span></h2>
-                        <div class="authors">${module.authors.join(', ')}</div>
-                        <div class="description">${translator(module.description)}</div>`;
+            let $lhs = h('div', { class: 'jmv-store-module-lhs' },
+                h('div', { class: 'jmv-store-module-icon' }));
+            let $heading = h('h2', { id: labelId, class: 'mark-search' },
+                moduleLabel,
+                h('span', { class: 'version' }, version));
+            let $rhs = h('div', { class: 'jmv-store-module-rhs' },
+                $heading,
+                h('div', { class: 'authors' }, module.authors.join(', ')),
+                h('div', { class: 'description' }, ...richParagraphs(translator(module.description), {
+                    ...richDescriptionOptions,
+                    linkTarget: '_blank',
+                })));
+            let $newModule = h('div', {
+                class: 'jmv-store-module modules-list-item modules-auto-select',
+                'data-has-plots': hasPlots.toString(),
+                'data-name': module.name,
+                tabindex: '-1',
+                'aria-labelledby': labelId,
+                role: 'listitem'
+            }, $lhs, $rhs);
 
             for (let op of module.ops) {
                 let disabled = (op === 'installed' || op === 'old' || op === 'incompatible');
@@ -358,37 +379,29 @@ class PageModules extends HTMLElement {
                     break;
                 }
 
-                html += `
-                    <button
-                        ${ disabled ? 'disabled' : '' }
-                        data-path="${ (op === 'update' && module.url) ? module.url : module.path }"
-                        data-name="${ module.name }"
-                        data-op="${ op }"
-                        class="jmv-store-module-button"
-                        aria-label="${ ariaLabel || moduleLabel }"
-                        tabindex="-1"
-                    >
-                        ${ label }
-                    </button>`;
+                $rhs.append(h('button', {
+                    disabled: disabled ? 'disabled' : undefined,
+                    'data-path': (op === 'update' && module.url) ? module.url : module.path,
+                    'data-name': module.name,
+                    'data-op': op,
+                    class: 'jmv-store-module-button',
+                    'aria-label': ariaLabel || moduleLabel,
+                    tabindex: '-1'
+                }, label));
             }
-
-            html += `
-                    </div>
-                </div>`;
-
 
             let $module = this.$content.querySelector(`.jmv-store-module[data-name="${ module.name }"]`);
             if ($module === null) {
-                $module = HTML.parse(html);
-                this.$content.append($module);
+                $module = $newModule;
+                this.$content.append($newModule);
             }
             else {
                 $module.removeEventListener('keyup', this._moduleEnter);
                 $module.removeEventListener('keydown', this._moduleKeyDown);
                 $module.classList.remove('to-be-removed');
-                $module.outerHTML = html;
+                $module.replaceWith($newModule);
+                $module = $newModule;
             }
-            $module = this.$content.querySelector(`.jmv-store-module[data-name="${ module.name }"]`);
             $module.addEventListener('keydown', this._moduleKeyDown);
             $module.addEventListener('keyup', this._moduleEnter);  // must be key up otherwise the internal buttons are clicked on key up after focus is moved
 

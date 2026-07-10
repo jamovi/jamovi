@@ -2,7 +2,7 @@
 
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import { BooleanFormat, FormatDef } from './formatdef';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich }  from '../common/htmlelementcreator';
 
 
 export type GridActionButtonProperties = GridOptionControlProperties<boolean> & {
@@ -15,7 +15,7 @@ export class GridActionButton extends OptionControl<GridActionButtonProperties> 
     constructor(params: GridActionButtonProperties, parent) {
         super(params, parent);
         
-        this.setRootElement(HTML.parse('<button class="jmv-action-button"></button>'));
+        this.setRootElement(h('button', { class: "jmv-action-button" }));
 
         let horizontalAlign = this.getPropertyValue("horizontalAlignment");
         this.el.setAttribute('data-horizontal-align', horizontalAlign);
@@ -46,7 +46,7 @@ export class GridActionButton extends OptionControl<GridActionButtonProperties> 
         if (label === null)
             label = this.getTranslatedProperty('name');
 
-        this.el.innerText = label;
+        this.el.replaceChildren(rich(label));
 
         this.el.addEventListener('click', (event) => {
             let enabled = this.getPropertyValue('enable');

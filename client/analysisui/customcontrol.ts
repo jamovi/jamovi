@@ -3,7 +3,7 @@
 
 import { GridControl, GridControlProperties } from './gridcontrol';
 import GetRequestDataSupport from './requestdatasupport';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h }  from '../common/htmlelementcreator';
 
 type CustomControlProperties = GridControlProperties & {
     update: () => void;
@@ -18,7 +18,7 @@ export class CustomControl extends GridControl<CustomControlProperties> {
 
         GetRequestDataSupport(this);
 
-        this.setRootElement(HTML.parse('<div class="silky-custom-control silky-control-margin-' + this.getPropertyValue("margin") + '"></div>'));
+        this.setRootElement(h('div', { class: `silky-custom-control silky-control-margin-${this.getPropertyValue("margin")}` }));
 
         this.timeoutId = null;
     }

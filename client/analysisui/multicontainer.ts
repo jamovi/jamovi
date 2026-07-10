@@ -2,7 +2,7 @@
 
 
 import GridControl, { GridControlProperties } from './gridcontrol';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h }  from '../common/htmlelementcreator';
 import { ControlContainer } from './controlcontainer';
 
 export class MultiContainer extends GridControl<GridControlProperties> {
@@ -28,7 +28,7 @@ export class MultiContainer extends GridControl<GridControlProperties> {
 
         this._visibleContainer = null;
 
-        this.setRootElement(HTML.parse('<div class="jmv-multi-container"></div>'));
+        this.setRootElement(h('div', { class: 'jmv-multi-container' }));
     }
 
     createItem() {

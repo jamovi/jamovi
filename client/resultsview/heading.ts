@@ -1,7 +1,7 @@
 
 'use strict';
 
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich, setRich }  from '../common/htmlelementcreator';
 import { AnnotationAction, IAnnotation } from './annotations';
 
 export class Heading extends HTMLElement implements IAnnotation {
@@ -12,6 +12,7 @@ export class Heading extends HTMLElement implements IAnnotation {
     path: string;
     address: string[];
     originalHeading: string;
+    originalHeadingText: string;
     isFocused: boolean;
 
     finaliseBlur: NodeJS.Timeout;
@@ -30,15 +31,17 @@ export class Heading extends HTMLElement implements IAnnotation {
         this.address = address;
         this.isFocused = false;
         this.originalHeading = text;
+        this.originalHeadingText = this._plainHeadingText(text);
 
         this.classList.add('jmv-editable-header');
         this.tabIndex = 0;
-        this.ariaLabel = _(`Analysis Heading - {title}`, {title: text});
         this.role = 'textbox';
         this.ariaDescription = _('Press enter to edit');
 
-        this.$heading = HTML.parse(`<h1 contenteditable spellcheck="false" tabindex="-1">${ text }</h1>`);
+        this.$heading = h('h1', { contenteditable: '', spellcheck: 'false', tabindex: '-1' });
+        setRich(this.$heading, text);
         this.append(this.$heading);
+        this._headingChanged();
 
 
         this.addEventListener('keydown', (event) => {
@@ -126,14 +129,22 @@ export class Heading extends HTMLElement implements IAnnotation {
     setContents(contents) {
 
         let newText = null;
-        if (contents === null)
+        let useRich = false;
+        if (contents === null) {
             newText = this.originalHeading;
+            this.originalHeadingText = this._plainHeadingText(this.originalHeading);
+            useRich = true;
+        }
         else
             newText = contents;
 
         let text = this.$heading.innerText;
-        if (newText !== text) {
-            this.$heading.innerText = newText;
+        let newPlainText = useRich ? this._plainHeadingText(newText) : newText;
+        if (newPlainText !== text) {
+            if (useRich)
+                setRich(this.$heading, newText);
+            else
+                this.$heading.innerText = newText;
 
             text = this.$heading.innerText;
             let edited = text === this.originalHeading;
@@ -152,7 +163,7 @@ export class Heading extends HTMLElement implements IAnnotation {
 
     isEdited() {
         let text = this.$heading.innerText;
-        return text !== this.originalHeading;
+        return text !== this.originalHeadingText;
     }
 
     _textChanged(event) {
@@ -236,10 +247,16 @@ export class Heading extends HTMLElement implements IAnnotation {
 
         if (text !== undefined && text !== '') {
             this.$heading.innerText = text;
-            if (text !== this.originalHeading) {
+            if (text !== this.originalHeadingText) {
                 this.classList.add('edited');
             }
         }
+    }
+
+    _plainHeadingText(text: string) {
+        let container = document.createElement('div');
+        container.append(rich(text));
+        return container.textContent ?? '';
     }
 
     refocus() {

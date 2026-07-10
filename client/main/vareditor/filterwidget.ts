@@ -4,7 +4,7 @@
 import formulaToolbar from './formulatoolbar';
 import dropdown from './dropdown';
 import Notify from '../notification';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 import DataSetViewModel, { Column, ColumnActiveChangedEvent, ColumnType } from '../dataset';
 import { NotifData } from '../ribbon/notifs';
 
@@ -56,12 +56,12 @@ class FilterWidget extends HTMLElement {
         this.formulaSetup = new formulaToolbar(this.model);
 
         this.classList.add('jmv-filter-widget', 'FilterWidget');
-        let $filterListButtons = HTML.parse('<div class="jmv-filter-list-buttons"></div>');
+        let $filterListButtons = h('div', { class: 'jmv-filter-list-buttons' });
         this.append($filterListButtons);
-        this.$filterList = HTML.parse('<div class="jmv-filter-list-box"></div>');
+        this.$filterList = h('div', { class: 'jmv-filter-list-box' });
         this.append(this.$filterList);
 
-        let $addFilter = HTML.parse(`<button class="filter-button filter-button-tooltip add-filter" aria-label="${_('Add new filter')}"></button>`);
+        let $addFilter = h('button', { class: 'filter-button filter-button-tooltip add-filter', 'aria-label': _('Add new filter') });
         $filterListButtons.append($addFilter);
         $addFilter.addEventListener('click', (event) => {
             this._internalCreate = true;
@@ -80,7 +80,7 @@ class FilterWidget extends HTMLElement {
 
         let filtersVisible = this.model.get('filtersVisible');
 
-        this.$showFilter = HTML.parse(`<button class="filter-button filter-button-tooltip ${(filtersVisible ? 'show-filter-columns' : 'hide-filter-columns')}" aria-label="${_('Show filter columns')}"></button>`);
+        this.$showFilter = h('button', { class: `filter-button filter-button-tooltip ${(filtersVisible ? 'show-filter-columns' : 'hide-filter-columns')}`, 'aria-label': _('Show filter columns') });
         $filterListButtons.append()
         this.$showFilter.addEventListener('click', (event) => {
             this.model.toggleFilterVisibility();
@@ -432,7 +432,7 @@ class FilterWidget extends HTMLElement {
     }
 
     _createFormulaBox(rootColumn: Column, relatedColumn: Column, rIndex: number, $filter: Element, $formulaList: Element) {
-        let $formulaBox = HTML.parse('<div class="formula-box filter-hidden" data-columnid="' + relatedColumn.id + '" data-rootid="' + rootColumn.id + '"></div>');
+        let $formulaBox = h('div', { class: 'formula-box filter-hidden', 'data-columnid': relatedColumn.id.toString(), 'data-rootid': rootColumn.id.toString() });
 
         let $list = $formulaList.querySelectorAll('.formula-box:not(.remove)');
         if (rIndex >= $list.length)
@@ -441,19 +441,22 @@ class FilterWidget extends HTMLElement {
             $formulaList.insertBefore($formulaBox, $list[rIndex]);
 
         if (rIndex > 0) {
-            $formulaBox.append(HTML.parse(`<div class="equal">${_('and')}</div>`));
-            let $removeNested = HTML.parse(`<button class="remove-nested" aria-label="${_('Remove nested filter')}" data-id="${relatedColumn.id}"><span class="mif-cross"></span></button>`);
+            $formulaBox.append(h('div', { class: 'equal' }, _('and')));
+            let $removeNested = h('button', { class: 'remove-nested', 'aria-label': _('Remove nested filter'), 'data-id': relatedColumn.id.toString() },
+                h('span', { class: 'mif-cross' }));
             $formulaBox.append($removeNested);
             this.removeNestedEvents($removeNested);
         }
         else {
-            $formulaBox.append(HTML.parse('<div class="equal">=</div>'));
-            let $addNested = HTML.parse(`<button class="add-nested" aria-label="${_('Add another nested filter')}"><span class="mif-plus"></span></button>`);
+            $formulaBox.append(h('div', { class: 'equal' }, '='));
+            let $addNested = h('button', { class: 'add-nested', 'aria-label': _('Add another nested filter') },
+                h('span', { class: 'mif-plus' }));
             $formulaBox.append($addNested);
             this.addNestedEvents($addNested, rootColumn.id);
         }
 
-        let $showEditor = HTML.parse(`<button aria-controls="${this.formulaSetup.id}" class="show-editor" aria-label="${_('Show formula editor')}"><div class="down-arrow"></div></button>`);
+        let $showEditor = h('button', { 'aria-controls': this.formulaSetup.id, class: 'show-editor', 'aria-label': _('Show formula editor') },
+            h('div', { class: 'down-arrow' }));
         $formulaBox.append($showEditor);
 
         $showEditor.addEventListener('click', (event) => {
@@ -471,11 +474,11 @@ class FilterWidget extends HTMLElement {
             this._editorClicked = true;
         });
 
-        let $formulaPair = HTML.parse('<div class="formula-pair"></div>');
+        let $formulaPair = h('div', { class: 'formula-pair' });
         $formulaBox.append($formulaPair);
 
         let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))];
-        let $formula = HTML.parse<HTMLTextAreaElement>('<div class="formula' + ((rIndex > 0) ? ' and-formula' : '') + '" type="text" spellcheck="false" placeholder="e.g. ' + _example + '" contenteditable="true" tabindex="0"></div>');
+        let $formula = h('div', { class: 'formula' + ((rIndex > 0) ? ' and-formula' : ''), type: 'text', spellcheck: 'false', placeholder: 'e.g. ' + _example, contenteditable: 'true', tabindex: '0' }) as HTMLTextAreaElement;
         $formulaPair.append($formula);
 
         document.addEventListener("selectionchange", () => {
@@ -505,9 +508,9 @@ class FilterWidget extends HTMLElement {
             $showEditor.classList.remove('is-active');
         });
 
-        let $formulaMessageBox = HTML.parse('<div class="formulaMessageBox""></div>');
+        let $formulaMessageBox = h('div', { class: 'formulaMessageBox' });
         $formulaPair.append($formulaMessageBox);
-        let $formulaMessage = HTML.parse('<div class="formulaMessage""></div>');
+        let $formulaMessage = h('div', { class: 'formulaMessage' });
         $formulaMessageBox.append($formulaMessage);
 
         $formula.textContent = relatedColumn.formula;
@@ -546,38 +549,41 @@ class FilterWidget extends HTMLElement {
         if ($filters.length > 0 && index < $filters.length)
             insertBefore = index;
 
-        let $filter = HTML.parse('<div class="jmv-filter-options filter-hidden" data-columnid="' + column.id + '"></div>');
+        let $filter = h('div', { class: 'jmv-filter-options filter-hidden', 'data-columnid': column.id.toString() });
         if (insertBefore !== -1) {
             this.$filterList.insertBefore($filters[insertBefore], $filter);
-            this.$filterList.insertBefore($filters[insertBefore], HTML.parse('<div class="jmv-filter-splitter"></div>'));
+            this.$filterList.insertBefore($filters[insertBefore], h('div', { class: 'jmv-filter-splitter' }));
         }
         else {
             if (index !== 0)
-                this.$filterList.append(HTML.parse('<div class="jmv-filter-splitter"></div>'));
+                this.$filterList.append(h('div', { class: 'jmv-filter-splitter' }));
             this.$filterList.append($filter);
         }
 
-        let $titleBox = HTML.parse('<div class="title-box"></div>');
+        let $titleBox = h('div', { class: 'title-box' });
         $filter.append($titleBox);
-        $titleBox.append(HTML.parse(`<div class="label-parent"><div class="label">${_('Filter {i}', {i: (index + 1)} )}</div></div>`));
-        let $middle = HTML.parse('<div class="middle-box"></div>');
+        $titleBox.append(h('div', { class: 'label-parent' },
+            h('div', { class: 'label' }, _('Filter {i}', {i: (index + 1)} ))));
+        let $middle = h('div', { class: 'middle-box' });
         $titleBox.append($middle);
-        let $statusBox = HTML.parse('<div class="status-box" tabindex="0"></div>');
+        let $statusBox = h('div', { class: 'status-box', tabindex: '0' });
         $middle.append($statusBox);
-        let $active = HTML.parse(`<div class="active" aria-label="${_('Filter is active')}"><div class="switch"></div></div>`);
+        let $active = h('div', { class: 'active', 'aria-label': _('Filter is active') },
+            h('div', { class: 'switch' }));
         $statusBox.append($active);
-        let $status = HTML.parse(`<div class="status">${_('active')}</div>`);
+        let $status = h('div', { class: 'status' }, _('active'));
         $statusBox.append($status);
-        $titleBox.append(HTML.parse('<div class="header-splitter"></div>'));
+        $titleBox.append(h('div', { class: 'header-splitter' }));
 
 
-        let $removeButton = HTML.parse(`<button class="remove-filter-btn" aria-label="${_('Remove filter')}"><span class="mif-cross"></button></div>`);
+        let $removeButton = h('button', { class: 'remove-filter-btn', 'aria-label': _('Remove filter') },
+            h('span', { class: 'mif-cross' }));
         $titleBox.append($removeButton);
 
 
-        let $formulaList = HTML.parse('<div class="formula-list"></div>');
+        let $formulaList = h('div', { class: 'formula-list' });
         $filter.append($formulaList);
-        let $description = HTML.parse<HTMLTextAreaElement>(`<div class="description" type="text" spellcheck="true" placeholder="${_('Description')}" tabindex="0"></div>`);
+        let $description = h('div', { class: 'description', type: 'text', spellcheck: 'true', placeholder: _('Description'), tabindex: '0' }) as HTMLTextAreaElement;
         $filter.append($description);
 
         $removeButton.addEventListener('click', async (event) => {

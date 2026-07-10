@@ -6,9 +6,25 @@ import { EventDistributor } from "../../common/eventmap";
 import I18ns from '../../common/i18n';
 import interactionManager, { type FocusLoop } from '../../common/interactionmanager';
 import host from '../host';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 import { RibbonModel } from "../ribbon";
 import { Theme } from "../settings";
+
+function selectOption(value: string, label: string) {
+    return h('option', { value: value }, label);
+}
+
+function optGroup(label: string, ...options: HTMLOptionElement[]) {
+    return h('optgroup', { label: label }, ...options);
+}
+
+function appMenuItem(...children: Array<string | Node>) {
+    return h('div', { class: 'jmv-ribbon-appmenu-item' }, ...children);
+}
+
+function separator() {
+    return h('div', { class: 'jmv-ribbon-appmenu-separator' });
+}
 
 export class AppMenuButton extends EventDistributor {
 
@@ -45,16 +61,16 @@ export class AppMenuButton extends EventDistributor {
         let mode = this.model.settings().getSetting('mode', 'normal');
         this.dataset.mode = mode;
 
-        let $decoration = HTML.parse('<span class="mif-more-vert" role="none"></span>');
+        let $decoration = h('span', { class: 'mif-more-vert', role: 'none' });
         this.append($decoration);
-        let $positioner = HTML.parse('<div class="jmv-ribbon-appmenu-positioner"></div>');
+        let $positioner = h('div', { class: 'jmv-ribbon-appmenu-positioner' });
         this.append($positioner);
 
         let menuId = interactionManager.nextAriaId('menu');
-        this.$menuPanel = HTML.parse(`<div id="${menuId}" class="jmv-ribbon-appmenu-menu-panel" tabindex="-1" role="grid" aria-label="Application preferences" aria-modal="true"></div>`);
+        this.$menuPanel = h('div', { id: menuId, class: 'jmv-ribbon-appmenu-menu-panel', tabindex: '-1', role: 'grid', 'aria-label': 'Application preferences', 'aria-modal': 'true' });
         $positioner.append(this.$menuPanel);
 
-        let $menu = HTML.parse(`<div class="jmv-ribbon-appmenu-menu"></div>`)
+        let $menu = h('div', { class: 'jmv-ribbon-appmenu-menu' });
         this.$menuPanel.append($menu);
 
         this.loop = interactionManager.registerLoop(this.$menuPanel, { level: 1, exitSelector: '.jmv-ribbon-appmenu' } );
@@ -79,122 +95,162 @@ export class AppMenuButton extends EventDistributor {
                 this.hide(false);
         });
 
-        let $header = HTML.parse('<div class="jmv-ribbon-appmenu-header" role="none"></div>');
+        let $header = h('div', { class: 'jmv-ribbon-appmenu-header', role: 'none' });
         $menu.append($header);
-        $header.append(HTML.parse('<div class="jmv-ribbon-appmenu-icon" role="none"></div>'));
-        let $backOuter = HTML.parse('<div class="jmv-ribbon-appmenu-back" role="none"></div>');
+        $header.append(h('div', { class: 'jmv-ribbon-appmenu-icon', role: 'none' }));
+        let $backOuter = h('div', { class: 'jmv-ribbon-appmenu-back', role: 'none' });
         $header.append($backOuter);
-        let $back = HTML.parse(`<button class="jmv-ribbon-appmenu-back-button" aria-label="${_('Close preferences')}"></button>`);
+        let $back = h('button', { class: 'jmv-ribbon-appmenu-back-button', 'aria-label': _('Close preferences') });
         $backOuter.append($back);
-        $back.append(HTML.parse('<div></div>'));
+        $back.append(h('div'));
 
         $back.addEventListener('click', event => {
             this.loop.deactivate({ source: event.detail > 0 ? 'mouse' : 'programmatic' });
             event.stopPropagation();
         });
 
-        let $content = HTML.parse('<div class="jmv-ribbon-appmenu-content" role="none"></div>');
+        let $content = h('div', { class: 'jmv-ribbon-appmenu-content', role: 'none' });
         $menu.append($content);
 
         let zoomId = interactionManager.nextAriaId('label');
-        let $zoom = HTML.parse('<div class="jmv-ribbon-appmenu-item jmv-zoom"></div>');
+        let $zoom = h('div', { class: 'jmv-ribbon-appmenu-item jmv-zoom' });
         $content.append($zoom);
-        $zoom.append(HTML.parse(`<div id="${zoomId}">${_('Zoom')}</div>`));
-        let $zoomButtons = HTML.parse('<div class="jmv-ribbon-appmenu-zoom-buttons"></div>');
+        $zoom.append(h('div', { id: zoomId }, _('Zoom')));
+        let $zoomButtons = h('div', { class: 'jmv-ribbon-appmenu-zoom-buttons' });
         $zoom.append($zoomButtons);
-        let $zoomOut = HTML.parse(`<button class="jmv-ribbon-appmenu-zoomout" aria-label="${_('Zoom out')}">&minus;</button>`);
+        let $zoomOut = h('button', { class: 'jmv-ribbon-appmenu-zoomout', 'aria-label': _('Zoom out') }, '-');
         $zoomButtons.append($zoomOut);
-        this.$zoomLevel = HTML.parse('<div class="jmv-ribbon-appmenu-zoomlevel">100%</div>');
+        this.$zoomLevel = h('div', { class: 'jmv-ribbon-appmenu-zoomlevel' }, '100%');
         $zoomButtons.append(this.$zoomLevel);
-        let $zoomIn = HTML.parse(`<button class="jmv-ribbon-appmenu-zoomin" aria-label="${_('Zoom in')}">+</button>`);
+        let $zoomIn = h('button', { class: 'jmv-ribbon-appmenu-zoomin', 'aria-label': _('Zoom in') }, '+');
         $zoomButtons.append($zoomIn);
 
-        $content.append(HTML.parse('<div class="jmv-ribbon-appmenu-separator"></div>'));
+        $content.append(separator());
 
         let resultsId = interactionManager.nextAriaId('label');
-        let $results = HTML.parse(`<div class="jmv-results" role="group" aria-labelledby="${resultsId}"></div>`);
+        let $results = h('div', { class: 'jmv-results', role: 'group', 'aria-labelledby': resultsId });
         $content.append($results);
-        $results.append(HTML.parse(`<div id="${resultsId}" class="jmv-ribbon-appmenu-subheading">${_('Results')}</div>`));
+        $results.append(h('div', { id: resultsId, class: 'jmv-ribbon-appmenu-subheading' }, _('Results')));
 
         let nFormatId = interactionManager.nextAriaId('label');
-        let $nFormat = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
+        let $nFormat = appMenuItem();
         $results.append($nFormat);
-        $nFormat.append(HTML.parse(`<div id="${nFormatId}">${_('Number format')}</div>`));
-        this.$nFormatList = HTML.parse(`<select aria-labelledby="${nFormatId}"><optgroup label="${_('significant figures')}"><option value="sf:3">${ _('{n} sf', { n: '3' }) }</option><option value="sf:4">${ _('{n} sf', { n: '4' }) }</option><option value="sf:5">${ _('{n} sf', { n: '5' }) }</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:2">${ _('{n} dp', { n: '2' }) }</option><option value="dp:3">${ _('{n} dp', { n: '3' }) }</option><option value="dp:4">${ _('{n} dp', { n: '4' }) }</option><option value="dp:5">${ _('{n} dp', { n: '5' }) }</option><option value="dp:16">${ _('{n} dp', { n: '16' }) }</option></optgroup></select>`)
+        $nFormat.append(h('div', { id: nFormatId }, _('Number format')));
+        this.$nFormatList = h('select', { 'aria-labelledby': nFormatId },
+            optGroup(_('significant figures'),
+                selectOption('sf:3', _('{n} sf', { n: '3' })),
+                selectOption('sf:4', _('{n} sf', { n: '4' })),
+                selectOption('sf:5', _('{n} sf', { n: '5' }))),
+            optGroup(_('decimal places'),
+                selectOption('dp:2', _('{n} dp', { n: '2' })),
+                selectOption('dp:3', _('{n} dp', { n: '3' })),
+                selectOption('dp:4', _('{n} dp', { n: '4' })),
+                selectOption('dp:5', _('{n} dp', { n: '5' })),
+                selectOption('dp:16', _('{n} dp', { n: '16' }))));
         $nFormat.append(this.$nFormatList);
         this.$nFormatList.addEventListener('click', event => event.stopPropagation());
         this.$nFormatList.addEventListener('change', event => this._changeResultsFormat());
 
         let pFormatId = interactionManager.nextAriaId('label');
-        let $pFormat = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
+        let $pFormat = appMenuItem();
         $results.append($pFormat);
-        $pFormat.append(HTML.parse(`<div id="${pFormatId}">${_('p-value format')}</div>`));
-        this.$pFormatList = HTML.parse(`<select aria-labelledby="${pFormatId}"><optgroup label="${_('significant figures')}"><option value="sf:3">${ _('{n} sf', { n: '3' }) }</option><option value="sf:4">${ _('{n} sf', { n: '4' }) }</option><option value="sf:5">${ _('{n} sf', { n: '5' }) }</option></optgroup><optgroup label="${_('decimal places')}"><option value="dp:3">${ _('{n} dp', { n: '3' }) }</option><option value="dp:4">${ _('{n} dp', { n: '4' }) }</option><option value="dp:5">${ _('{n} dp', { n: '5' }) }</option><option value="dp:16">${ _('{n} dp', { n: '16' }) }</option></optgroup></select>`);
+        $pFormat.append(h('div', { id: pFormatId }, _('p-value format')));
+        this.$pFormatList = h('select', { 'aria-labelledby': pFormatId },
+            optGroup(_('significant figures'),
+                selectOption('sf:3', _('{n} sf', { n: '3' })),
+                selectOption('sf:4', _('{n} sf', { n: '4' })),
+                selectOption('sf:5', _('{n} sf', { n: '5' }))),
+            optGroup(_('decimal places'),
+                selectOption('dp:3', _('{n} dp', { n: '3' })),
+                selectOption('dp:4', _('{n} dp', { n: '4' })),
+                selectOption('dp:5', _('{n} dp', { n: '5' })),
+                selectOption('dp:16', _('{n} dp', { n: '16' }))));
         $pFormat.append(this.$pFormatList);
         this.$pFormatList.addEventListener('click', event => event.stopPropagation())
         this.$pFormatList.addEventListener('change', event => this._changeResultsFormat());
 
         let decSymbolId = interactionManager.nextAriaId('label');
-        let $decSymbol = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
+        let $decSymbol = appMenuItem();
         $results.append($decSymbol);
-        $decSymbol.append(HTML.parse(`<div id="${decSymbolId}">${_('Decimal symbol')}</div>`));
-        this.$decSymbolList = HTML.parse(`<select aria-labelledby="${decSymbolId}"><option value=".">${_('Dot')}</option><option value=",">${_('Comma')}</option></select>`);
+        $decSymbol.append(h('div', { id: decSymbolId }, _('Decimal symbol')));
+        this.$decSymbolList = h('select', { 'aria-labelledby': decSymbolId },
+            selectOption('.', _('Dot')),
+            selectOption(',', _('Comma')));
         $decSymbol.append(this.$decSymbolList);
         this.$decSymbolList.addEventListener('click', event => event.stopPropagation())
         this.$decSymbolList.addEventListener('change', event => this._changeDecSymbol(event.target.value));
 
         let refsModeId = interactionManager.nextAriaId('label');
-        let $refsMode = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
+        let $refsMode = appMenuItem();
         $results.append($refsMode);
-        $refsMode.append(HTML.parse(`<div id="${refsModeId}">${_('References')}</div>`));
-        this.$refsModeList = HTML.parse(`<select aria-labelledby="${refsModeId}"><option value="bottom">${_('Visible')}</option><option value="hidden">${_('Hidden')}</option></select>`)
+        $refsMode.append(h('div', { id: refsModeId }, _('References')));
+        this.$refsModeList = h('select', { 'aria-labelledby': refsModeId },
+            selectOption('bottom', _('Visible')),
+            selectOption('hidden', _('Hidden')));
         $refsMode.append(this.$refsModeList);
         this.$refsModeList.addEventListener('click', event => event.stopPropagation())
         this.$refsModeList.addEventListener('change', event => this._changeRefsMode());
 
         let syntaxId = interactionManager.nextAriaId('label');
-        let $syntax = HTML.parse('<label class="jmv-ribbon-appmenu-item checkbox" for="syntaxMode"></label>');
+        let $syntax = h('label', { class: 'jmv-ribbon-appmenu-item checkbox', for: 'syntaxMode' });
         $results.append($syntax);
-        $syntax.append(HTML.parse(`<div id="${syntaxId}">${_('Syntax mode')}</div>`));
-        let $syntaxModeCheck = HTML.parse<HTMLInputElement>(`<input aria-labelledby="${syntaxId}" class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="syntaxMode">`);
+        $syntax.append(h('div', { id: syntaxId }, _('Syntax mode')));
+        let $syntaxModeCheck = h('input', { 'aria-labelledby': syntaxId, class: 'jmv-ribbon-appmenu-checkbox', type: 'checkbox', id: 'syntaxMode' });
         $syntax.append($syntaxModeCheck);
 
-        $content.append(HTML.parse('<div class="jmv-ribbon-appmenu-separator"></div>'));
+        $content.append(separator());
 
         let plotsId = interactionManager.nextAriaId('label');
-        let $plots = HTML.parse(`<div class="jmv-results" role="group" aria-labelledby="${plotsId}"></div>`);
+        let $plots = h('div', { class: 'jmv-results', role: 'group', 'aria-labelledby': plotsId });
         $content.append($plots);
-        $plots.append(HTML.parse(`<div id="${plotsId}" class="jmv-ribbon-appmenu-subheading">${_('Plots')}</div>`));
+        $plots.append(h('div', { id: plotsId, class: 'jmv-ribbon-appmenu-subheading' }, _('Plots')));
 
 
         let themeId = interactionManager.nextAriaId('label');
-        let $theme = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
+        let $theme = appMenuItem();
         $plots.append($theme);
-        $theme.append(HTML.parse(`<div id="${themeId}">${_('Plot theme')}</div>`));
-        this.$themeList = HTML.parse(`<select aria-labelledby="${themeId}"><option value="default">${_('Default')}</option><option value="minimal">${_('Minimal')}</option><option value="iheartspss">${_('I ♥ SPSS')}</option><option value="hadley">${_('Hadley')}</option><option value="bw">${_('Black & white')}</option></select>`);
+        $theme.append(h('div', { id: themeId }, _('Plot theme')));
+        this.$themeList = h('select', { 'aria-labelledby': themeId },
+            selectOption('default', _('Default')),
+            selectOption('minimal', _('Minimal')),
+            selectOption('iheartspss', _('I ♥ SPSS')),
+            selectOption('hadley', _('Hadley')),
+            selectOption('bw', _('Black & white')));
         $theme.append(this.$themeList);
         this.$themeList.addEventListener('click', event => event.stopPropagation())
         this.$themeList.addEventListener('change', event => this._changeTheme(this.$themeList.value));
 
         let paletteId = interactionManager.nextAriaId('label');
-        let $palette = HTML.parse('<div class="jmv-ribbon-appmenu-item"></div>');
+        let $palette = appMenuItem();
         $plots.append($palette);
-        $palette.append(HTML.parse(`<div id="${paletteId}">${_('Color palette')}</div>`));
-        this.$paletteList = HTML.parse(`<select aria-labelledby="${paletteId}"><optgroup label="${_('qualitative')}"><option value="jmv">jmv</option><option value="Dark2">${_('Dark2')}</option><option value="Set1">${_('Set1')}</option><option value="Accent">${_('Accent')}</option><option value="spss">${_('I ♥ SPSS')}</option><option value="hadley">${_('Hadley')}</option></optgroup><optgroup label="${_('sequential')}"><option value="Greys">${_('Greys')}</option><option value="Blues">${_('Blues')}</option><option value="Greens">${_('Greens')}</option></optgroup></select>`);
+        $palette.append(h('div', { id: paletteId }, _('Color palette')));
+        this.$paletteList = h('select', { 'aria-labelledby': paletteId },
+            optGroup(_('qualitative'),
+                selectOption('jmv', 'jmv'),
+                selectOption('Dark2', _('Dark2')),
+                selectOption('Set1', _('Set1')),
+                selectOption('Accent', _('Accent')),
+                selectOption('spss', _('I ♥ SPSS')),
+                selectOption('hadley', _('Hadley'))),
+            optGroup(_('sequential'),
+                selectOption('Greys', _('Greys')),
+                selectOption('Blues', _('Blues')),
+                selectOption('Greens', _('Greens'))));
         $palette.append(this.$paletteList);
         this.$paletteList.addEventListener('click', event => event.stopPropagation())
         this.$paletteList.addEventListener('change', event => this._changePalette(this.$paletteList.value));
 
-        $content.append(HTML.parse('<div class="jmv-ribbon-appmenu-separator"></div>'));
+        $content.append(separator());
 
         let importId = interactionManager.nextAriaId('label');
-        let $import = HTML.parse(`<div class="jmv-results" role="group" aria-labelledby="${importId}"></div>`);
+        let $import = h('div', { class: 'jmv-results', role: 'group', 'aria-labelledby': importId });
         $content.append($import);
-        $import.append(HTML.parse(`<div id="${importId}" class="jmv-ribbon-appmenu-subheading">${_('Import')}</div>`));
+        $import.append(h('div', { id: importId, class: 'jmv-ribbon-appmenu-subheading' }, _('Import')));
 
-        let $missings = HTML.parse(`<label class="jmv-ribbon-appmenu-item"><div>${_('Default missings')}</div></label>`);
+        let $missings = h('label', { class: 'jmv-ribbon-appmenu-item' },
+            h('div', {}, _('Default missings')));
         $import.append($missings);
-        this.$missingsInput = HTML.parse('<input type="text" spellcheck="false" size="10" class="jmv-import-missings" list="missings">');
+        this.$missingsInput = h('input', { type: 'text', spellcheck: 'false', size: '10', class: 'jmv-import-missings', list: 'missings' });
         $missings.append(this.$missingsInput);
         this.$missingsInput.addEventListener('keydown', (event) => {
             if (event.keyCode === 13)
@@ -202,25 +258,21 @@ export class AppMenuButton extends EventDistributor {
         });
         this.$missingsInput.addEventListener('blur', () => { this._changeMissings(); });
 
-        // this.$embed = HTML.parse('<label class="jmv-ribbon-appmenu-item"><div>Embed raw data</div></label>').appendTo($import);
-        // this.$embedList = HTML.parse('<select><option value="never">Never</option><option value="< 1 Mb">&lt; 1 Mb</option><option value="< 10 Mb">&lt; 10 Mb</option><option value="< 100 Mb">&lt; 100 Mb</option><option value="always">Always</option></select>')
-        //     .appendTo(this.$embed)
-        //     .on('change', (event) => this.model.settings().setSetting('embedCond', event.target.value));
-        $content.append(HTML.parse('<div class="jmv-ribbon-appmenu-separator"></div>'));
+        $content.append(separator());
 
         let languageId = interactionManager.nextAriaId('label');
-        let $language = HTML.parse('<div class="jmv-language-selector jmv-ribbon-appmenu-item"></div>');
+        let $language = h('div', { class: 'jmv-language-selector jmv-ribbon-appmenu-item' });
         $content.append($language);
-        $language.append(HTML.parse(`<div id="${languageId}">${_('Language')}</div>`));
-        this.$languageList = HTML.parse(`<select aria-labelledby="${languageId}"></select>`)
+        $language.append(h('div', { id: languageId }, _('Language')));
+        this.$languageList = h('select', { 'aria-labelledby': languageId });
         $language.append(this.$languageList)
         this.$languageList.addEventListener('click', event => event.stopPropagation())
         this.$languageList.addEventListener('change', event => this._changeLanguage());
 
-        let $dev = HTML.parse('<label class="jmv-ribbon-appmenu-item checkbox jmv-devmode" for="devMode"></label>');
+        let $dev = h('label', { class: 'jmv-ribbon-appmenu-item checkbox jmv-devmode', for: 'devMode' });
         $content.append($dev);
-        $dev.append(HTML.parse(`<div>${_('Developer mode')}</div>`));
-        this.$devModeCheck = HTML.parse('<input class="jmv-ribbon-appmenu-checkbox" type="checkbox" id="devMode">');
+        $dev.append(h('div', {}, _('Developer mode')));
+        this.$devModeCheck = h('input', { class: 'jmv-ribbon-appmenu-checkbox', type: 'checkbox', id: 'devMode' });
         $dev.append(this.$devModeCheck);
 
         $zoomIn.addEventListener('click', event => { this.model.settings().zoomIn(); event.stopPropagation(); });
@@ -231,8 +283,8 @@ export class AppMenuButton extends EventDistributor {
             this.$zoomLevel.innerText = z;
         });
 
-        $menu.append(HTML.parse('<div class="jmv-ribbon-appmenu-spacer"></div>'));
-        let $version = HTML.parse('<div class="jmv-ribbon-appmenu-version"></div>');
+        $menu.append(h('div', { class: 'jmv-ribbon-appmenu-spacer' }));
+        let $version = h('div', { class: 'jmv-ribbon-appmenu-version' });
         $menu.append($version);
 
         host.version.then(version => {
@@ -254,21 +306,22 @@ export class AppMenuButton extends EventDistributor {
         this.model.settings().on('change:refsMode',     () => this._updateUI());
         this.model.settings().on('change:selectedLanguage', () => this._updateUI());
 
-        let available = I18ns.get('app').availableLanguages().map((code) => {
-            if (code === '---')
-                return `</optgroup><optgroup label="${ _('In development') }">`;
+        let availableGroup = optGroup(_('Available'));
+        let inDevelopmentGroup = optGroup(_('In development'));
+        let currentGroup = availableGroup;
+        for (let code of I18ns.get('app').availableLanguages()) {
+            if (code === '---') {
+                currentGroup = inDevelopmentGroup;
+                continue;
+            }
 
             let ownName = I18ns.get('app').getDisplayName(code);
-            //ownName = `${ ownName[0].toUpperCase() }${ ownName.slice(1) }`; // capitalise first letter
-            return `<option value="${ code }">${ ownName }</option>`;
-        });
-        available.unshift(`<optgroup label="${ _('Available') }">`);
-        available.push('</optgroup>');
+            currentGroup.append(selectOption(code, ownName));
+        }
 
-        available.unshift(`<option value="">${ _('System default') }</option>`);
-
-
-        this.$languageList.innerHTML = available.join('');
+        this.$languageList.replaceChildren(selectOption('', _('System default')), availableGroup);
+        if (inDevelopmentGroup.children.length > 0)
+            this.$languageList.append(inDevelopmentGroup);
 
         this._updateUI();
     }

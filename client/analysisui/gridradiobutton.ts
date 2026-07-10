@@ -5,8 +5,7 @@ import $ from 'jquery';  // for backwards compatibility
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 import createChildLayoutSupport from './childlayoutsupport';
 import interactionManager from '../common/interactionmanager';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
-import { GridComboboxProperties } from './gridcombobox';
+import { h, rich }  from '../common/htmlelementcreator';
 
 export class GridRadioButton extends OptionControl<GridOptionControlProperties<string>, boolean> {
     checkedValue: string;
@@ -33,7 +32,7 @@ export class GridRadioButton extends OptionControl<GridOptionControlProperties<s
     constructor(params: GridOptionControlProperties<string>, parent) {
         super(params, parent);
     
-        this._subel = HTML.parse('<div role="presentation" class="silky-option-radio silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"><label></label></div>');
+        this._subel = h('div', { role: "presentation", class: `silky-option-radio silky-control-margin-${this.getPropertyValue("margin")}`, style:"white-space: nowrap;"}, h('label'));
         if (this.el === undefined)
             this.setRootElement(this._subel);
     }
@@ -87,10 +86,11 @@ export class GridRadioButton extends OptionControl<GridOptionControlProperties<s
         label = this.translate(label);
 
         this.labelId = interactionManager.nextAriaId('label');
-        let radioButton = HTML.parse(`<label id="${this.labelId}" style="white-space: nowrap;"></label>`);
-        this.input = HTML.parse('<input id="' + name + '" class="silky-option-input" type="radio" name="' + name + '" value="value" ' +  ((this.checkedValue === optionValue) ? 'checked' : '') + ' >');
+        let radioButton = h('label', { id: this.labelId, style: "white-space: nowrap;" });
+        this.input = h('input', { id: name, class: "silky-option-input", type: "radio", name: name, value: "value" });
+        this.input.checked = this.checkedValue === optionValue;
         this.$input = $(this.input);
-        this.label = HTML.parse('<span>' + label + '</span>');
+        this.label = h('span', {}, rich(label));
         this.$label = $(this.label);
         radioButton.append(this.input);
         radioButton.append(this.label);

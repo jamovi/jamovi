@@ -11,7 +11,7 @@ import Notify, { NotifyData } from './notification';
 import ContextMenu from './contextmenu';
 import Statusbar from './statusbar/statusbar';
 import interactionManager from '../common/interactionmanager';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h } from '../common/htmlelementcreator';
 
 import { s6e, contextMenuListener } from '../common/utils';
 import DataSetViewModel, { Column, ColumnActiveChangedEvent, ColumnEvent, ColumnType, DataType, MeasureType, Viewport } from './dataset';
@@ -172,25 +172,29 @@ class TableView extends HTMLElement implements DataSetView {
         this.setAttribute('role', 'grid');
         this.setAttribute('aria-multiselectable', 'true');
 
-        this.innerHTML = `
-            <div class="jmv-table-header" role="row">
-                <div class="jmv-column-header place-holder" style="width: 110%">&nbsp;</div>
-                <div class="jmv-table-header-background"></div>
-                <div class="jmv-column-header select-all"></div>
-                <div class="jmv-table-column-highlight"></div>
-            </div>
-            <div class="jmv-table-container" role="presentation">
-                <div class="jmv-table-body" role="presentation">
-                    <div class="jmv-column-row-header" style="inset-inline-start: 0 ;" aria-hidden="true");></div>
-                    <div class="jmv-sub-selections"></div>
-                    <div class="jmv-table-cell-selected has-edit-focus">
-                        <div class="selection-sizer top-left-sizer"></div>
-                        <div class="selection-sizer bottom-right-sizer"></div>
-                    </div>
-                    <div class="jmv-table-row-highlight-wrapper"><div class="jmv-table-row-highlight"></div></div>
-                </div>
-            </div>
-            <div id="aria-speakable" style="position: absolute; left: 0px; top: -1px; z-index: -2; opacity: 0;" role="region" aria-live="polite" aria-atomic="false" aria-hidden="false"></div>`;
+        this.append(
+            h('div', { class: 'jmv-table-header', role: 'row' },
+                h('div', { class: 'jmv-column-header place-holder', style: 'width: 110%' }, '\u00a0'),
+                h('div', { class: 'jmv-table-header-background' }),
+                h('div', { class: 'jmv-column-header select-all' }),
+                h('div', { class: 'jmv-table-column-highlight' })),
+            h('div', { class: 'jmv-table-container', role: 'presentation' },
+                h('div', { class: 'jmv-table-body', role: 'presentation' },
+                    h('div', { class: 'jmv-column-row-header', style: 'inset-inline-start: 0;', 'aria-hidden': 'true' }),
+                    h('div', { class: 'jmv-sub-selections' }),
+                    h('div', { class: 'jmv-table-cell-selected has-edit-focus' },
+                        h('div', { class: 'selection-sizer top-left-sizer' }),
+                        h('div', { class: 'selection-sizer bottom-right-sizer' })),
+                    h('div', { class: 'jmv-table-row-highlight-wrapper' },
+                        h('div', { class: 'jmv-table-row-highlight' })))),
+            h('div', {
+                id: 'aria-speakable',
+                style: 'position: absolute; left: 0px; top: -1px; z-index: -2; opacity: 0;',
+                role: 'region',
+                'aria-live': 'polite',
+                'aria-atomic': 'false',
+                'aria-hidden': 'false'
+            }));
 
         const $sizers = this.querySelectorAll('.selection-sizer');
         $sizers.forEach(el => el.addEventListener('pointerdown', (event: PointerEvent) => {
@@ -257,7 +261,7 @@ class TableView extends HTMLElement implements DataSetView {
         this.$header.style.height = `${this._rowHeight}px`;
 
         this.$rhColumn.style.width = `${this._rowHeaderWidth}px`;
-        this.$rhColumn.innerHTML = '';
+        this.$rhColumn.replaceChildren();
 
         this.$topLeftCell.style.height = `${this._rowHeight}px`;
         this.$topLeftCell.style.width = `${this._rowHeaderWidth}px`;*/
@@ -383,7 +387,7 @@ class TableView extends HTMLElement implements DataSetView {
         this.$header.style.height = `${this._rowHeight}px`;
 
         this.$rhColumn.style.width = `${this._rowHeaderWidth}px`;
-        this.$rhColumn.innerHTML = '';
+        this.$rhColumn.replaceChildren();
 
         this.$topLeftCell.style.height = `${this._rowHeight}px`;
         this.$topLeftCell.style.width = `${this._rowHeaderWidth}px`;
@@ -456,28 +460,12 @@ class TableView extends HTMLElement implements DataSetView {
         let width  = column.width;
         let left = this._bodyWidth;
 
-        let html = this._createHeaderHTML(column.dIndex, left);
-
-        let $header = HTML.parse(html);
+        let $header = this._createHeader(column.dIndex, left);
         this.$headers.push($header);
 
         this._addResizeListeners($header);
 
-        let $column = HTML.parse(
-            `<div
-                data-id="${ column.id }"
-                data-datatype="${ column.dataType }"
-                data-columntype="${ column.columnType }"
-                data-measuretype="${ column.measureType }"
-                data-fmlaok="${ this._isColumnOk(column) ? '1' : '0' }"
-                data-active="${ column.active ? '1' : '0' }"
-                class="jmv-column"
-                style="
-                    inset-inline-start: ${ left }px ;
-                    width: ${ column.width }px ;
-                "
-            >
-            </div>`);
+        let $column = this._createColumn(column, left);
 
         this.$columns.push($column);
 
@@ -498,7 +486,7 @@ class TableView extends HTMLElement implements DataSetView {
             header.remove();
         for (let column of this.$columns)
             column.remove();
-        this.$rhColumn.innerHTML = '';
+        this.$rhColumn.replaceChildren();
 
         this.$columns = [ ];
         this.$headers = [ ];
@@ -1306,7 +1294,7 @@ class TableView extends HTMLElement implements DataSetView {
 
         let $elements = [];
         for (let selection of selections) {
-            let $secondarySelection = HTML.parse('<div class="jmv-table-cell-secondary-selected"></div>');
+            let $secondarySelection = h('div', { class: 'jmv-table-cell-secondary-selected' });
 
             let nRows = selection.bottom - selection.top + 1;
             let x = this._lefts[selection.left];
@@ -2235,31 +2223,15 @@ class TableView extends HTMLElement implements DataSetView {
                     let dIndex = column.dIndex;
 
                     let left = this._lefts[dIndex];
-                    let html = this._createHeaderHTML(dIndex, left);
-
                     let $after = this.$headers[column.dIndex];
-                    let $header = HTML.parse(html);
+                    let $header = this._createHeader(dIndex, left);
                     $after.before($header);
                     this.$headers.splice(column.dIndex, 0, $header);
 
                     this._addResizeListeners($header);
 
                     $after = this.$columns[column.dIndex];
-                    let $column = HTML.parse(`
-                        <div
-                            data-id="${ column.id }"
-                            data-columntype="${ column.columnType }"
-                            data-datatype="${ column.dataType }"
-                            data-measuretype="${ column.measureType }"
-                            data-fmlaok="${ this._isColumnOk(column) ? '1' : '0' }"
-                            data-active="${ column.active ? '1' : '0' }"
-                            class="jmv-column"
-                            style="
-                                inset-inline-start: ${ left }px ;
-                                width: ${ column.width }px ;
-                            "
-                        >
-                        </div>`);
+                    let $column = this._createColumn(column, left);
                     $after.before($column);
                     this.$columns.splice(column.dIndex, 0, $column);
 
@@ -2335,7 +2307,7 @@ class TableView extends HTMLElement implements DataSetView {
                     for (let i of needsClear) {
                         let $column = this.$columns[i];
                         $column.remove();
-                        $column.innerHTML = '';
+                        $column.replaceChildren();
                     }
 
                     this.selection.refreshSelection();
@@ -2632,9 +2604,9 @@ class TableView extends HTMLElement implements DataSetView {
         }
         else if (isFC) {
             if (content === 1 || content === '1' || content === 'true')
-                content = '<div class="true"></div>';
+                content = 'true';
             else
-                content = '<div class="false"></div>';
+                content = 'false';
             type = 'bool';
         }
         else if (typeof(content) === 'number') {
@@ -2657,7 +2629,7 @@ class TableView extends HTMLElement implements DataSetView {
             cell.value = content;
         }
         else if (type === 'bool') {
-            cell.innerHTML = content;
+            cell.replaceChildren(h('div', { class: content }));
         }
         else {
             if ( ! populate)
@@ -2774,32 +2746,55 @@ class TableView extends HTMLElement implements DataSetView {
         this.refreshCells(oldViewport, this.viewport);
     }
 
-    _createHeaderHTML(colNo: number, left: number) {
+    _createHeader(colNo: number, left: number) {
 
         let column = this.model.getColumn(colNo, true);
+        let label = column.name === '' ? _('New column {0}', [column.dIndex - this.model.visibleRealColumnCount() + 1]) : column.name;
 
-        return `
-            <div
-                data-fmlaok="${ this._isColumnOk(column) ? '1' : '0' }"
-                data-active="${ column.active ? '1' : '0' }"
-                data-index="${ column.dIndex }"
-                data-columntype="${ column.columnType }"
-                data-datatype="${ column.dataType }"
-                data-measuretype="${ column.measureType }"
-                data-id="${ column.id }"
-                class="jmv-column-header"
-                style="
-                    inset-inline-start: ${ left }px ;
-                    width: ${ column.width }px ;
-                    height: ${ this._rowHeight }px ;
-                "
-            >
-                <div class="jmv-column-header-icon"></div>
-                <div class="jmv-column-header-label" id="column-${column.id}" role="columnheader" aria-colindex="${column.dIndex}" aria-label="${s6e(column.name) === '' ? _('New column {0}', [column.dIndex - this.model.visibleRealColumnCount() + 1]) : s6e(column.name)}">${ s6e(column.name) }</div>
-                <div class="jmv-column-header-resizer" data-index="${ column.dIndex }"></div>
-                <div class="jmv-column-header-colour"></div>
-                <div class="sub-selection-bar"></div>
-            </div>`;
+        let header = h('div', {
+            'data-fmlaok': this._isColumnOk(column) ? '1' : '0',
+            'data-active': column.active ? '1' : '0',
+            'data-index': String(column.dIndex),
+            'data-columntype': String(column.columnType),
+            'data-datatype': String(column.dataType),
+            'data-measuretype': String(column.measureType),
+            'data-id': String(column.id),
+            class: 'jmv-column-header',
+        },
+            h('div', { class: 'jmv-column-header-icon' }),
+            h('div', {
+                class: 'jmv-column-header-label',
+                id: `column-${column.id}`,
+                role: 'columnheader',
+                'aria-colindex': String(column.dIndex),
+                'aria-label': label,
+            }, column.name),
+            h('div', { class: 'jmv-column-header-resizer', 'data-index': String(column.dIndex) }),
+            h('div', { class: 'jmv-column-header-colour' }),
+            h('div', { class: 'sub-selection-bar' }));
+
+        header.style.insetInlineStart = `${left}px`;
+        header.style.width = `${column.width}px`;
+        header.style.height = `${this._rowHeight}px`;
+
+        return header;
+    }
+
+    _createColumn(column: Column, left: number) {
+        let $column = h('div', {
+            'data-id': String(column.id),
+            'data-datatype': String(column.dataType),
+            'data-columntype': String(column.columnType),
+            'data-measuretype': String(column.measureType),
+            'data-fmlaok': this._isColumnOk(column) ? '1' : '0',
+            'data-active': column.active ? '1' : '0',
+            class: 'jmv-column',
+        });
+
+        $column.style.insetInlineStart = `${left}px`;
+        $column.style.width = `${column.width}px`;
+
+        return $column;
     }
 
     _createCell<K extends "div" | "input">(top: number, height: number, rowNo: number, colNo: number, tag: K = "div" as K): HTMLElementTagNameMap[K] {
@@ -2862,9 +2857,9 @@ class TableView extends HTMLElement implements DataSetView {
                     let $header = this.$headers[i];
                     $header.remove();
                     $column.remove();
-                    $column.innerHTML = '';
+                    $column.replaceChildren();
                 }
-                this.$rhColumn.innerHTML = '';
+                this.$rhColumn.replaceChildren();
             }
 
             let nRows = n.bottom - n.top + 1;
@@ -2929,7 +2924,7 @@ class TableView extends HTMLElement implements DataSetView {
                     let $header = this.$headers[o.right - i];
                     $header.remove();
                     $column.remove();
-                    $column.innerHTML = '';
+                    $column.replaceChildren();
                 }
             }
 
@@ -2964,7 +2959,7 @@ class TableView extends HTMLElement implements DataSetView {
                     let $header = this.$headers[o.left + i];
                     $header.remove();
                     $column.remove();
-                    $column.innerHTML = '';
+                    $column.replaceChildren();
                 }
             }
 

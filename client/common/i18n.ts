@@ -155,7 +155,7 @@ export class I18n {
         else
             value = this.jed.dcnpgettext(undefined, extracted.context, key);
 
-        value = s6e(value);
+        //value = s6e(value);
 
         if (formats)
             value = this.format(value, formats, options);
@@ -173,7 +173,7 @@ export class I18n {
         if (formats)
             value = this.format(value, formats);
 
-        value = s6e(value);
+        //value = s6e(value);
 
         return value;
     }
@@ -198,7 +198,7 @@ export class I18n {
         if (formats)
             value = this.format(value, formats);
 
-        value = s6e(value);
+        //value = s6e(value);
 
         return value;
     }
@@ -227,7 +227,7 @@ export class I18n {
         if (formats)
             value = this.format(value, formats);
 
-        value = s6e(value);
+        //value = s6e(value);
 
         return value;
     }

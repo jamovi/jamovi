@@ -1,57 +1,56 @@
 import interactionManager, { type FocusLoop } from './interactionmanager';
+import { h } from './htmlelementcreator';
 
 const template = document.createElement('template');
-template.innerHTML = `
-<style>
-.msg-dialog-inner {
-  display: block;
-}
-dialog::backdrop {
-  background: #00000069;
-}
-.msg-dialog-inner .dialog-body {
-  margin: 0 0 1rem;
-  white-space: pre-wrap;
-  line-height: 1.5;
-}
-.msg-dialog-inner .input-field {
-  width: 100%;
-  box-sizing: border-box;
-  margin: 0 0 1rem;
-  padding: 0.5rem;
-  border: 1px solid #b7b7b7;
-  border-radius: 4px;
-  font: inherit;
-  display: none;
-}
-.msg-dialog-inner .buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-.msg-dialog-inner button {
-  min-width: 80px;
-  padding: 0.5rem 0.85rem;
-  border: 1px solid #8a8a8a;
-  border-radius: 3px;
-  background: #e8e8e8;
-  color: #000;
-  cursor: pointer;
-}
-.msg-dialog-inner button:hover {
-  background: #dcdcdc;
-}
-.msg-dialog-inner button:focus {
-  outline: 2px solid #005a9e;
-  outline-offset: 2px;
-}
-</style>
-<div class="msg-dialog-inner" tabindex="-1">
-  <div class="dialog-body"></div>
-  <input class="input-field" type="text" />
-  <div class="buttons"></div>
-</div>
-`;
+template.content.append(
+  h('style', {}, `
+    .msg-dialog-inner {
+      display: block;
+    }
+    dialog::backdrop {
+      background: #00000069;
+    }
+    .msg-dialog-inner .dialog-body {
+      margin: 0 0 1rem;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+    .msg-dialog-inner .input-field {
+      width: 100%;
+      box-sizing: border-box;
+      margin: 0 0 1rem;
+      padding: 0.5rem;
+      border: 1px solid #b7b7b7;
+      border-radius: 4px;
+      font: inherit;
+      display: none;
+    }
+    .msg-dialog-inner .buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+    .msg-dialog-inner button {
+      min-width: 80px;
+      padding: 0.5rem 0.85rem;
+      border: 1px solid #8a8a8a;
+      border-radius: 3px;
+      background: #e8e8e8;
+      color: #000;
+      cursor: pointer;
+    }
+    .msg-dialog-inner button:hover {
+      background: #dcdcdc;
+    }
+    .msg-dialog-inner button:focus {
+      outline: 2px solid #005a9e;
+      outline-offset: 2px;
+    }
+  `),
+  h('div', { class: 'msg-dialog-inner', tabindex: '-1' },
+    h('div', { class: 'dialog-body' }),
+    h('input', { class: 'input-field', type: 'text' }),
+    h('div', { class: 'buttons' })));
 
 type MsgDialogResult = { action: 'ok' | 'cancel'; value?: string };
 
@@ -172,19 +171,15 @@ export default class MsgDialog extends HTMLDialogElement {
   }
 
   private renderButtons() {
-    this.buttonsEl.innerHTML = '';
+    this.buttonsEl.replaceChildren();
 
     if (this.buttonLabels.cancel) {
-      const cancelButton = document.createElement('button');
-      cancelButton.type = 'button';
-      cancelButton.textContent = this.buttonLabels.cancel;
+      const cancelButton = h('button', { type: 'button' }, this.buttonLabels.cancel);
       cancelButton.addEventListener('click', () => this.closeDialog('cancel'));
       this.buttonsEl.appendChild(cancelButton);
     }
 
-    const okButton = document.createElement('button');
-    okButton.type = 'button';
-    okButton.textContent = this.buttonLabels.ok;
+    const okButton = h('button', { type: 'button' }, this.buttonLabels.ok);
     okButton.autofocus = !this.showInput;
     okButton.addEventListener('click', () => {
       this.closeDialog('ok', this.showInput ? this.inputEl.value : undefined);

@@ -1,7 +1,7 @@
 
 'use strict';
 
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 import ActionHub from '../actionhub';
 import interactionManager from '../../common/interactionmanager';
 import RibbonTab, { RibbonItem } from './ribbontab';
@@ -65,10 +65,11 @@ export class RibbonGroup extends HTMLElement implements RibbonItem {
 
         this.items = [];
 
-        this.body = HTML.create('div', { class: `jmv-ribbon-group-body jmv-ribbon-group-body-${orientation}`, style: `style="align-items:${align};"`, role: 'none'});
+        this.body = h('div', { class: `jmv-ribbon-group-body jmv-ribbon-group-body-${orientation}`, role: 'none' });
+        this.body.style.alignItems = align;
         this.append(this.body);
         if (title !== null)
-            this.append(HTML.create('div', { class: 'jmv-ribbon-group-label', id: labelId }, title));
+            this.append(h('div', { class: 'jmv-ribbon-group-label', id: labelId }, title));
 
         if (params.items !== undefined) {
             for (let i = 0; i < params.items.length; i++)
@@ -109,7 +110,7 @@ export class RibbonGroup extends HTMLElement implements RibbonItem {
         this.items.push(item);
 
         if (this.separator === undefined && item.dock === 'right') {
-            this.separator = HTML.create('div', { class: 'jmv-ribbon-button-separator' });
+            this.separator = h('div', { class: 'jmv-ribbon-button-separator' });
             this.body.append(this.separator)
         }
 

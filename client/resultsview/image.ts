@@ -3,7 +3,7 @@
 import interactionManager from '../common/interactionmanager';
 
 import Elem, { ElementData, ElementModel } from './element';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, setRich }  from '../common/htmlelementcreator';
 
 import { flatten } from '../common/utils/addresses';
 import { AnalysisStatus } from './create';
@@ -68,17 +68,17 @@ export class View extends Elem.View<Model> {
         this.setAttribute('role', 'img');
         this.setAttribute('aria-labelledby', imageId);
 
-        const $status = HTML.parse('<div class="jmv-results-image-status-indicator"></div>');
+        const $status = h('div', { class: 'jmv-results-image-status-indicator' });
         this.prepend($status);
         
-        this.$title = HTML.parse(`<h${this.level+1} id="${imageId}" class="jmv-results-image-title"></h${this.level+1}>`);
+        this.$title = h(`h${this.level+1}` as keyof HTMLElementTagNameMap, { id: imageId, class: 'jmv-results-image-title' }) as HTMLHeadingElement;
         this.prepend(this.$title);
 
         if (this.model === null)
             this.model = new Model();
 
         let address = flatten(this.address());
-        this.$image = HTML.parse(`<div class="jmv-results-image-image" data-address="${ encodeURI(address) }">`);
+        this.$image = h('div', { class: 'jmv-results-image-image', 'data-address': encodeURI(address) });
         this.append(this.$image);
 
         this.addEventListener('keyup', (event: KeyboardEvent) => {
@@ -119,7 +119,7 @@ export class View extends Elem.View<Model> {
             }
         });
 
-        this.$size = HTML.parse('<div class="size-display ignore-html"></div>');
+        this.$size = h('div', { class: 'size-display ignore-html' });
         this.append(this.$size);
 
         window.addEventListener('keydown', e => {
@@ -244,11 +244,11 @@ export class View extends Elem.View<Model> {
     render() {
         if (this.$title) {
             if (this.model.attributes.title) {
-                this.$title.textContent = this.model.attributes.title;
+                setRich(this.$title, this.model.attributes.title);
                 this.$title.style.display = '';
             }
             else {
-                this.$title.innerHTML = '';
+                this.$title.textContent = '';
                 this.$title.style.display = 'none';
             }
         }

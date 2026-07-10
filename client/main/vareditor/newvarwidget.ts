@@ -1,7 +1,7 @@
 
 'use strict';
 
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 import { ColumnType } from '../dataset';
 import VariableModel from './variablemodel';
 
@@ -19,23 +19,23 @@ class NewVarWidget extends HTMLElement {
 
         this.classList.add('jmv-variable-new-widget', 'NewVarWidget');
 
-        let $container = HTML.parse('<div class="jmv-variable-new-container var-buttons"></div>');
+        let $container = h('div', { class: 'jmv-variable-new-container var-buttons' });
         this.append($container);
 
-        let $data = HTML.parse('<button class="button data-variable var-buttons-list-item var-buttons-auto-select"></button>');
+        let $data = h('button', { class: 'button data-variable var-buttons-list-item var-buttons-auto-select' },
+            h('div', { class: 'icon' }),
+            h('div', { class: 'text' }, _('New data variable')));
         $container.append($data);
-        $data.append(HTML.parse('<div class="icon"</div>'));
-        $data.append(HTML.parse(`<div class="text">${_('New data variable')}</div>`));
 
-        let $computed = HTML.parse('<button class="button computed-variable var-buttons-list-item var-buttons-auto-select"></button>');
+        let $computed = h('button', { class: 'button computed-variable var-buttons-list-item var-buttons-auto-select' },
+            h('div', { class: 'icon' }),
+            h('div', { class: 'text' }, _('New computed variable')));
         $container.append($computed);
-        $computed.append(HTML.parse('<div class="icon"</div>'));
-        $computed.append(HTML.parse(`<div class="text">${_('New computed variable')}</div>`));
 
-        let $recoded = HTML.parse('<button class="button transformed-variable var-buttons-list-item var-buttons-auto-select"></button>');
+        let $recoded = h('button', { class: 'button transformed-variable var-buttons-list-item var-buttons-auto-select' },
+            h('div', { class: 'icon' }),
+            h('div', { class: 'text' }, _('New transformed variable')));
         $container.append($recoded);
-        $recoded.append(HTML.parse('<div class="icon"</div>'));
-        $recoded.append(HTML.parse(`<div class="text">${_('New transformed variable')}</div>`));
 
         $data.addEventListener('click', (event) => {
             this.model.set('columnType', ColumnType.DATA);

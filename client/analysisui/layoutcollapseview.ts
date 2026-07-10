@@ -6,7 +6,7 @@ import LayoutGrid from './layoutgrid';
 import GridControl, { GridControlProperties } from './gridcontrol';
 import MultiContainer from './multicontainer';
 import interactionManager from '../common/interactionmanager';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich }  from '../common/htmlelementcreator';
 import LayoutCell from './layoutcell';
 
 export type CollapseViewProperties = GridControlProperties & {
@@ -57,9 +57,10 @@ export class LayoutCollapseView<P extends CollapseViewProperties> extends GridCo
 
         let groupText = this.getPropertyValue('label');
         groupText = this.translate(groupText);
-        let t = '<div class="silky-options-collapse-icon" style="display: inline;"> <span class="silky-dropdown-toggle"></span></div>';
         this.labelId = interactionManager.nextAriaId('label');
-        this.header = HTML.parse(`<button id="${this.labelId}" aria-level="2" class="silky-options-collapse-button silky-control-margin-${this.getPropertyValue("margin")}" style="white-space: nowrap;">${t + groupText }</button>`);
+        this.header = h('button', { id: this.labelId, 'aria-level': '2', class: `silky-options-collapse-button silky-control-margin-${this.getPropertyValue("margin")}`, style: 'white-space: nowrap;' },
+            h('div', { class: 'silky-options-collapse-icon', style: 'display: inline;' }, h('span', { class: 'silky-dropdown-toggle' })),
+            rich(groupText));
 
         this.header.setAttribute('aria-expanded', (! this._collapsed).toString());
 

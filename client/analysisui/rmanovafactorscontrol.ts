@@ -3,7 +3,7 @@
 import OptionControl, { OptionControlProperties } from './optioncontrol';
 import LayoutGrid from './layoutgrid';
 import HiddenScrollBarSupport from './hiddenscrollbarsupport';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich }  from '../common/htmlelementcreator';
 import { GridControlProperties } from './gridcontrol';
 
 class rmafcItem extends LayoutGrid {
@@ -33,7 +33,7 @@ class rmafcItem extends LayoutGrid {
 
     render(index: number) {
         this._topIndex = index;
-        this.$closeButton = HTML.parse('<div class="rma-delete-button"><span class="mif-cross"></span></div>');
+        this.$closeButton = h('div', { class: 'rma-delete-button' }, h('span', { class: 'mif-cross' }));
         this.listenForCompleteRemove(this.$closeButton);
 
         let levels = [];
@@ -45,7 +45,7 @@ class rmafcItem extends LayoutGrid {
             isEmpty = false;
         }
 
-        this.$label = HTML.parse('<input class="silky-option-listitem centre-text rma-factor-label" type="text" spellcheck="false" value="' + label + '">');
+        this.$label = h('input', { class: 'silky-option-listitem centre-text rma-factor-label', type: 'text', spellcheck: 'false', value: label });
         let blurCall = event => {
             if (event.target !== this.$label)
                 this.$label.blur();
@@ -160,7 +160,7 @@ class rmafcItem extends LayoutGrid {
             $levelButton = this.levelButtons[index];
         }
         else {
-            $t = HTML.parse('<input class="silky-option-listitem" type="text" spellcheck="false" value="' + text + '">');
+            $t = h('input', { class: 'silky-option-listitem', type: 'text', spellcheck: 'false', value: text });
             let blurCall = event => {
                 if (event.target !== $t)
                     $t.blur();
@@ -179,7 +179,7 @@ class rmafcItem extends LayoutGrid {
             //cell.ignoreContentMargin_bottom = true;
             cell.setStretchFactor(1);
 
-            $levelButton = HTML.parse('<div class="rma-delete-button"><span class="mif-cross"></span></div>');
+            $levelButton = h('div', { class: 'rma-delete-button' }, h('span', { class: 'mif-cross' }));
 
             this.listenForRemove($levelButton);
             this.levelButtons[index] = $levelButton;
@@ -392,13 +392,13 @@ export class RMAnovaFactorsControl extends OptionControl<RMAnovaFactorsControlPr
     override onRenderToGrid(grid: LayoutGrid, row, column, owner) {
 
         let width = 1;
-        if (grid.addCell('aux', row + 1, HTML.parse('<div class="supplier-button-filler"></div>')) !== null)
+        if (grid.addCell('aux', row + 1, h('div', { class: 'supplier-button-filler' })) !== null)
             width += 1;
 
         let label = this.getPropertyValue("label");
         if (label !== null) {
             label = this.translate(label);
-            grid.addCell(column, row, HTML.parse('<div style="white-space: nowrap;" class="silky-rmanova-factors-header">' + label + '</div>'));
+            grid.addCell(column, row, h('div', { style: 'white-space: nowrap;', class: 'silky-rmanova-factors-header' }, rich(label)));
         }
 
         let cell = grid.addCell(column, row + 1, this);

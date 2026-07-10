@@ -1,6 +1,6 @@
 'use strict';
 
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h }  from '../common/htmlelementcreator';
 import { FormattedValue } from './formatdef';
 
 type TargetInfo<T> =  {
@@ -396,14 +396,14 @@ export class DragNDrop<T> {
     }
 
     private constructDragElement(items) {
-        let itemsEl = HTML.create('div');
+        let itemsEl = h('div');
         for (let i = 0; i < items.length; i++) {
             let item = items[i];
             let itemEl = item.el.cloneNode(true);
             itemEl.style.opacity= '1';
             itemEl.style.visibility = 'visible';
             itemEl.style.width = item.el.offsetWidth + "px";
-            let itemOuter = HTML.parse('<div style="position: static;"></div>');
+            let itemOuter = h('div', { style: "position: static;" });
             itemOuter.style.position = 'relative';
             itemOuter.append(itemEl);
             itemEl.style.position = 'static';

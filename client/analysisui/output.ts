@@ -2,7 +2,7 @@
 
 import createChildLayoutSupport from './childlayoutsupport';
 import { FormatDef, OutputFormat } from './formatdef';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich }  from '../common/htmlelementcreator';
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 
 export type OutputControlProperties = GridOptionControlProperties<{value:boolean, vars: string[]}> & {
@@ -23,7 +23,7 @@ export class OutputControl extends OptionControl<OutputControlProperties> {
     constructor(params: OutputControlProperties, parent) {
         super(params, parent);
 
-        this._subel = HTML.parse('<div class="silky-option-checkbox silky-control-margin-' + this.getPropertyValue("margin") + '" style="white-space: nowrap;"></div>');
+        this._subel = h('div', { class: `silky-option-checkbox silky-control-margin-${this.getPropertyValue("margin")}`, style: 'white-space: nowrap;' });
 
         if (this.el === undefined)
             this.setRootElement(this._subel);
@@ -56,17 +56,16 @@ export class OutputControl extends OptionControl<OutputControlProperties> {
         if (this.data === null)
             this.data = { value: false, vars: [] };
 
-        let value = this.data.value;
-
         let label = this.getPropertyValue('label');
         if (label === null)
             label = this.getPropertyValue('name');
 
         label = this.translate(label);
 
-        let checkbox = HTML.parse('<label style="white-space: nowrap;"></label>');
-        this.input = HTML.parse('<input class="silky-option-input" type="checkbox" value="value" ' +  (value ? 'checked' : '') + ' >');
-        this.label = HTML.parse('<span>' + label + '</span>');
+        let checkbox = h('label', { style: 'white-space: nowrap;' });
+        this.input = h('input', { class: 'silky-option-input', type: 'checkbox', value: 'value' });
+        this.input.checked = this.data.value;
+        this.label = h('span', {}, rich(label));
         checkbox.append(this.input);
         checkbox.append(this.label);
         this._subel.append(checkbox);
