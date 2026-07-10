@@ -1,6 +1,5 @@
 
 import pathtools from '../utils/pathtools';
-import { s6e } from '../../common/utils';
 import interactionManager, { keyTips } from '../../common/interactionmanager';
 import * as path from 'path';
 
@@ -9,7 +8,7 @@ import { FSItemType } from './fsentry';
 import { isUrl } from './fsentry';
 
 import host from '../host';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 import type { IBrowseType, IBackstagePanelView } from './fsentry';
 
 import { EventDistributor } from '../../common/eventmap';
@@ -277,46 +276,34 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
     }
 
     private _createFileTypeSelector() {
-        let html = '';
-        html += '           <div class="silky-bs-fslist-browser-save-filetype">';
-        html += `               <select class="silky-bs-fslist-browser-save-filetype-inner" aria-label="${ _('File type') }">`;
+        let selector = h('div', { class: 'silky-bs-fslist-browser-save-filetype' });
+        let select = h('select', { class: 'silky-bs-fslist-browser-save-filetype-inner', 'aria-label': _('File type') });
         for (let i = 0; i < this.model.fileExtensions.length; i++) {
             let exts = this.model.fileExtensions[i].extensions;
             let desc = this.model.fileExtensions[i].description === undefined ? this.model.fileExtensions[i].name : this.model.fileExtensions[i].description;
-            let selected = '';
-            if (i === 0)
-                selected = 'selected';
-            html += "                   <option data-extensions='" + JSON.stringify(exts) + "' " + selected + " value=" + i + ">" + desc + "</option>";
+            select.append(h('option', { 'data-extensions': JSON.stringify(exts), selected: i === 0 ? 'true' : undefined, value: i.toString() }, desc));
         }
-        html += '               </select>';
-        html += '           </div>';
-        return html;
+        selector.append(select);
+        return selector;
     }
 
     private _createFooter() {
         let isSaving = this.model.clickProcess === 'save' || this.model.clickProcess === 'export';
         let multiSelect = this.model.get('multiselect');
 
-        let html = '';
-        html += '<div class="silky-bs-fslist-footer">';
+        this.footer = h('div', { class: 'silky-bs-fslist-footer' });
 
         if (isSaving === false) {
-            html += this._createFileTypeSelector();
-            let extension = null;
+            this.footer.append(this._createFileTypeSelector());
 
             if (multiSelect) {
-                html += '   <div class="silky-bs-fslist-import-options hidden" style="display: flex; flex-flow: row nowrap;">';
-                html += `       <input class="silky-bs-fslist-browser-import-name" type="text" spellcheck="false" placeholder="${_('Enter file name here')}" />`;
-                html += '       <div class="silky-bs-fslist-browser-import-button" style="display: flex; flex: 0 0 auto;">';
-                html += '           <div class="silky-bs-flist-import-icon"></div>';
-                html += `           <span>${_('Import')}</span>`;
-                html += '       </div>';
-                html += '   </div>';
+                this.footer.append(h('div', { class: 'silky-bs-fslist-import-options hidden', style: 'display: flex; flex-flow: row nowrap;' },
+                    h('input', { class: 'silky-bs-fslist-browser-import-name', type: 'text', spellcheck: 'false', placeholder: _('Enter file name here') }),
+                    h('div', { class: 'silky-bs-fslist-browser-import-button', style: 'display: flex; flex: 0 0 auto;' },
+                        h('div', { class: 'silky-bs-flist-import-icon' }),
+                        h('span', {}, _('Import')))));
             }
         }
-
-        html += '</div>';
-        this.footer = HTML.parse(html);
 
         this.append(this.footer);
     }
@@ -328,11 +315,9 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
         let itemListId = interactionManager.nextAriaId('list');
 
         if ( ! isSaving) {
-            let searchHtml = `<div class="searchbox">
-                            <div class="image"></div>
-                            <input class="search" type="search" aria-label="${_('Search files')}" aria-controls="${itemListId}"></input>
-                        </div>`;
-            this.append(HTML.parse(searchHtml));
+            this.append(h('div', { class: 'searchbox' },
+                h('div', { class: 'image' }),
+                h('input', { class: 'search', type: 'search', 'aria-label': _('Search files'), 'aria-controls': itemListId })));
 
             //let $search = this.$el.find('.searchbox > .search');
             let search = this.querySelector<HTMLElement>('.searchbox > .search');
@@ -340,18 +325,17 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
                 keyTips.register(search, { key: 'S', position: { x: '5%', y: '50%' } });
         }
 
-        this.itemsList = HTML.create('div', { id: itemListId, role: 'list', 'aria-multiselectable': false, class:"silky-bs-fslist-items", style:"flex: 1 1 auto; overflow: auto; height:100%", tabindex:"0"});//`<div id="${itemListId}" role="list" aria-multiselectable="false" class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow: auto; height:100%" tabindex="0"></div>`);
+        this.itemsList = h('div', { id: itemListId, role: 'list', 'aria-multiselectable': false, class:"silky-bs-fslist-items", style:"flex: 1 1 auto; overflow: auto; height:100%", tabindex:"0"});//`<div id="${itemListId}" role="list" aria-multiselectable="false" class="silky-bs-fslist-items" style="flex: 1 1 auto; overflow: auto; height:100%" tabindex="0"></div>`);
         this.append(this.itemsList);
     }
 
     private _createHeader() {
-        let html = '';
         if ( ! host.isElectron) {
-            html = `<div class="title-bar"><div class="place-title">${ this.model.attributes.title }</div></div>`;
-            this.append(HTML.parse(html));
+            this.append(h('div', { class: 'title-bar' },
+                h('div', { class: 'place-title' }, this.model.attributes.title)));
         }
 
-        html = '<div class="silky-bs-fslist-header">';
+        this.header = h('div', { class: 'silky-bs-fslist-header' });
 
         let isSaving = this.model.clickProcess === 'save' || this.model.clickProcess === 'export';
 
@@ -359,52 +343,48 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
         let extension = null;
 
         if (isSaving) {
-            html += '   <div class="silky-bs-fslist-save-options" style="display: flex; flex-flow: row nowrap;">';
-            html += '       <div style="flex: 1 1 auto;">';
-
             let filePath = this.model.attributes.suggestedPath;
-            let insert = '';
+            let fileName = '';
             if (filePath) {
                 extension = path.extname(filePath);
-                insert = ' value="' + s6e(path.basename(filePath, extension)) + '"';
+                fileName = path.basename(filePath, extension);
             }
 
-            html += `           <input class="silky-bs-fslist-browser-save-name" type="text" spellcheck="false" placeholder="${_('Enter file name here')}" ${insert} />`;
+            let saveOptions = h('div', { class: 'silky-bs-fslist-save-options', style: 'display: flex; flex-flow: row nowrap;' });
+            let saveInputBox = h('div', { style: 'flex: 1 1 auto;' },
+                h('input', { class: 'silky-bs-fslist-browser-save-name', type: 'text', spellcheck: 'false', placeholder: _('Enter file name here'), value: fileName }));
 
-            html += this._createFileTypeSelector();
-            html += '       </div>';
-            html += '       <button class="silky-bs-fslist-browser-save-button' + s6e(filePath ? '' : " disabled-div") + '" style="display: flex; flex: 0 0 auto;">';
-            html += '           <div class="silky-bs-flist-save-icon"></div>';
+            saveInputBox.append(this._createFileTypeSelector());
+            saveOptions.append(saveInputBox);
+            let saveButton = h('button', { class: `silky-bs-fslist-browser-save-button${filePath ? '' : ' disabled-div'}`, style: 'display: flex; flex: 0 0 auto;' },
+                h('div', { class: 'silky-bs-flist-save-icon' }));
             if (this.model.clickProcess === 'save')
-                html += `           <span>${_('Save')}</span>`;
+                saveButton.append(h('span', {}, _('Save')));
             else if (this.model.clickProcess === 'export')
-                html += `           <span>${_('Export')}</span>`;
-            html += '       </button>';
-            html += '   </div>';
+                saveButton.append(h('span', {}, _('Export')));
+            saveOptions.append(saveButton);
+            this.header.append(saveOptions);
         }
 
         ////////////////////////////////////////////////
 
         if ( ! this.model.writeOnly) {
-            html += '   <div class="silky-bs-fslist-path-browser">';
+            let pathBrowser = h('div', { class: 'silky-bs-fslist-path-browser' });
             if (this.model.get('multiselect'))
-                html += '       <button class="silky-bs-fslist-browser-check-button"></button>';
-            html += `       <button class="silky-bs-fslist-browser-back-button" aria-label="${_('Move back directory')}"><span class="mif-arrow-up"></span></button>`;
-            html += '       <div class="silky-bs-fslist-browser-location" style="flex: 1 1 auto;"></div>';
+                pathBrowser.append(h('button', { class: 'silky-bs-fslist-browser-check-button' }));
+            pathBrowser.append(
+                h('button', { class: 'silky-bs-fslist-browser-back-button', 'aria-label': _('Move back directory') }, h('span', { class: 'mif-arrow-up' })),
+                h('div', { class: 'silky-bs-fslist-browser-location', style: 'flex: 1 1 auto;' }));
 
             if (this.model.attributes.browseable) {
 
-                html += '       <button class="silky-bs-fslist-browse-button">';
-                html += '           <div class="silky-bs-fslist-browser-location-icon silky-bs-flist-item-folder-browse-icon"></div>';
-                html += `           <span>${_('Browse')}</span>`;
-                html += '       </button>';
+                pathBrowser.append(h('button', { class: 'silky-bs-fslist-browse-button' },
+                    h('div', { class: 'silky-bs-fslist-browser-location-icon silky-bs-flist-item-folder-browse-icon' }),
+                    h('span', {}, _('Browse'))));
             }
 
-            html += '   </div>';
+            this.header.append(pathBrowser);
         }
-
-        html += '</div>';
-        this.header = HTML.parse(html);
 
         let multiMode = this.header.querySelector<HTMLElement>('.silky-bs-fslist-browser-check-button');
         if (multiMode)
@@ -540,22 +520,18 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
 
         this.itemsList.setAttribute('aria-label', _('{0} directory contents', [filePath]));
 
-        let html = '';
         this._orderItems('type', 1, items);
         this.items = [];
         this.itemsList.innerHTML = '';
 
         if (status === 'error') {
             let errorMessage = this.model.get('error');
-            this.itemsList.append(HTML.parse(`<span>${ s6e(errorMessage) }</span>`));
+            this.itemsList.append(h('span', {}, errorMessage));
         }
         else if (status === 'loading') {
-            this.itemsList.append(HTML.parse(`
-                <div class="indicator-box">
-                    <div class="loading-indicator"></div>
-                    <span>Loading directory information...</span>
-                </div>
-            `));
+            this.itemsList.append(h('div', { class: 'indicator-box' },
+                h('div', { class: 'loading-indicator' }),
+                h('span', {}, 'Loading directory information...')));
         }
         else if (status === 'ok') {
 
@@ -585,7 +561,6 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
 
             let itemIndex = 0;
             for (let i = 0; i < items.length; i++) {
-                html = '';
                 let item = items[i];
 
                 let name = item.name;
@@ -618,60 +593,59 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
 
                 let itemId = interactionManager.nextAriaId('listitem');
                 let labelId = interactionManager.nextAriaId('label');
-                html += `<div id="${itemId}" aria-labelledby="${labelId}" class="silky-bs-fslist-item" role="listitem">`;
+
+                let itemElement = h('div', { id: itemId, 'aria-labelledby': labelId, class: 'silky-bs-fslist-item', role: 'listitem' });
                 if (itemType === FSItemType.File)
-                    html += '<input class="jmv-bs-fslist-checkbox' + (this.multiMode ? '' : ' hidden') + '" type="checkbox" tabindex="-1">';
-                html += '   <div class="silky-bs-flist-item-icon">';
+                    itemElement.append(h('input', { class: `jmv-bs-fslist-checkbox${this.multiMode ? '' : ' hidden'}`, type: 'checkbox', tabindex: '-1' }));
+
+                let itemIcon = h('div', { class: 'silky-bs-flist-item-icon' });
                 if (itemType === FSItemType.File) { //file
                     if (item.isExample) // examples don't have extensions
-                        html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
+                        itemIcon.append(h('div', { class: 'silky-bs-flist-icon silky-bs-flist-item-csv-icon' }));
                     else if (lname.endsWith('.omv'))
-                        html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-omv-icon"></div>';
+                        itemIcon.append(h('div', { class: 'silky-bs-flist-icon silky-bs-flist-item-omv-icon' }));
                     else if (lname.endsWith('.omt'))
-                        html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-omt-icon"></div>';
+                        itemIcon.append(h('div', { class: 'silky-bs-flist-icon silky-bs-flist-item-omt-icon' }));
                     else if (lname.endsWith('.pdf'))
-                        html += '       <span class="mif-file-pdf"></span>';
+                        itemIcon.append(h('span', { class: 'mif-file-pdf' }));
                     else if (lname.endsWith('.htm') || name.endsWith('.html'))
-                        html += '       <span class="mif-file-empty"></span>';
+                        itemIcon.append(h('span', { class: 'mif-file-empty' }));
                     else
-                        html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-csv-icon"></div>';
+                        itemIcon.append(h('div', { class: 'silky-bs-flist-icon silky-bs-flist-item-csv-icon' }));
                 }
                 else if (itemType === FSItemType.Folder) //folder
-                    html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-folder-icon"></div>';
+                    itemIcon.append(h('div', { class: 'silky-bs-flist-icon silky-bs-flist-item-folder-icon' }));
                 else if (itemType === FSItemType.SpecialFolder) //special folder
-                    html += '       <div class="silky-bs-flist-icon silky-bs-flist-item-folder-special-icon"></div>';
+                    itemIcon.append(h('div', { class: 'silky-bs-flist-icon silky-bs-flist-item-folder-special-icon' }));
                 else if (itemType === FSItemType.Drive) //drive
-                    html += '       <span class="mif-drive"></span>';
-                html += '   </div>';
+                    itemIcon.append(h('span', { class: 'mif-drive' }));
+                itemElement.append(itemIcon);
 
                 if (item.description || item.tags || item.license) {
-                    html += `   <div id="${labelId}" class="silky-bs-fslist-entry-group">`;
-                    html += '       <div class="silky-bs-fslist-entry-name">' + name + '</div>';
-                    html += '       <div class="silky-bs-fslist-entry-meta">';
+                    let itemGroup = h('div', { id: labelId, class: 'silky-bs-fslist-entry-group' },
+                        h('div', { class: 'silky-bs-fslist-entry-name' }, name));
+                    let itemMeta = h('div', { class: 'silky-bs-fslist-entry-meta' });
                     if (item.description) {
-                        html += `<span class="description">${ s6e(item.description) }</span>`;
+                        itemMeta.append(h('span', { class: 'description' }, item.description));
                     }
                     if (item.tags) {
-                        html += '<div class="tags">';
+                        let tags = h('div', { class: 'tags' });
                         for (let tag of item.tags) {
                             let hue = crc16(tag) % 360;
-                            html += `<div class="tag" style="background-color: hsl(${ hue }, 70%, 45%); border-color: hsl(${ hue }, 70%, 45%);">${ s6e(tag) }</div>`;
+                            tags.append(h('div', { class: 'tag', style: `background-color: hsl(${ hue }, 70%, 45%); border-color: hsl(${ hue }, 70%, 45%);` }, tag));
                         }
-                        html += '</div>';
+                        itemMeta.append(tags);
                     }
                     if (item.license) {
-                        html += `<div class="license">Licensed ${ s6e(item.license) }</div>`;
+                        itemMeta.append(h('div', { class: 'license' }, `Licensed ${item.license}`));
                     }
-                    html += '       </div>';
-                    html += '   </div>';
+                    itemGroup.append(itemMeta);
+                    itemElement.append(itemGroup);
                 }
                 else {
-                    html += `   <div class="silky-bs-fslist-entry-name">${ s6e(name) }</div>`;
+                    itemElement.append(h('div', { class: 'silky-bs-fslist-entry-name' }, name));
                 }
 
-                html += '</div>';
-
-                let itemElement = HTML.parse(html);
                 let sct = this.createAlphaNumericTag('Q', ++itemIndex);
                 keyTips.register(itemElement, {
                     key: sct,
@@ -693,7 +667,7 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
             if (this.items.length === 0) {
                 this.clearSelection();
                 this.itemsList.setAttribute('tabindex', '');
-                this.itemsList.append(HTML.parse(`<span>${_('No recognised data files were found.')}</span>`));
+                this.itemsList.append(h('span', {}, _('No recognised data files were found.')));
             }
             else {
                 this.itemsList.setAttribute('tabindex', '0');

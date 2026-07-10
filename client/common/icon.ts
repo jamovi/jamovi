@@ -1,11 +1,11 @@
 'use strict';
-import { HTMLElementCreator as HTML }  from './htmlelementcreator';
+import { htmlTrusted }  from './htmlelementcreator';
 
 class jamoviIcon {
     el: HTMLElement;
 
     constructor(version: string) {
-        this.el = HTML.parse(`<div class="icon-info-box">
+        this.el = htmlTrusted(`<div class="icon-info-box">
             <div class="icon-version">
                 <svg width="75px" height="67.5px" viewBox="0 0 48.568981 47.277932" version="1.1">
                     <g transform="translate(-3.1769712,-1.2930852)">
@@ -13,9 +13,10 @@ class jamoviIcon {
                     </g>
                 </svg>
                 <div class="version-separator"></div>
-                <div class="version-text">version <span id="version">${this.cleanVersion(version)}</span></div>
+                <div class="version-text">version <span id="version"></span></div>
             </div>
         </div>`);
+        this.el.querySelector('#version').textContent = this.cleanVersion(version);
     }
 
     cleanVersion(version: string): string {

@@ -11,7 +11,7 @@ import Statusbar from './statusbar/statusbar';
 import { contextMenuListener } from '../common/utils';
 import interactionManager from '../common/interactionmanager';
 import DataSetViewModel, { Column, ColumnActiveChangedEvent } from './dataset';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h }  from '../common/htmlelementcreator';
 import ViewController, { DataSetView } from './viewcontroller';
 import Selection, { ISelection } from './selection';
 
@@ -111,16 +111,23 @@ class VariablesView extends HTMLElement  implements DataSetView {
         this.setAttribute('aria-label', `${_('Variables List View')}`);
         this.setAttribute('aria-hidden', 'true');
 
-        this.innerHTML = `
-            <div class="jmv-variables-searchbox" role="presentation">
-                <div class="image"></div>
-                <input type="search" class="search" placeholder="${_('Search variables')}"  aria-description="${_('Search variables')}"></input>
-            </div>
-            <div class="jmv-variables-container" role="none">
-                <div class="jmv-variables-body" role="listbox" aria-label="Variables List" aria-multiselectable="true" tabindex="0">
-
-                </div>
-            </div>`;
+        this.append(
+            h('div', { class: 'jmv-variables-searchbox', role: 'presentation' },
+                h('div', { class: 'image' }),
+                h('input', {
+                    type: 'search',
+                    class: 'search',
+                    placeholder: _('Search variables'),
+                    'aria-description': _('Search variables')
+                })),
+            h('div', { class: 'jmv-variables-container', role: 'none' },
+                h('div', {
+                    class: 'jmv-variables-body',
+                    role: 'listbox',
+                    'aria-label': 'Variables List',
+                    'aria-multiselectable': 'true',
+                    tabindex: '0'
+                })));
 
         this.statusbar = new Statusbar();
         this.append(this.statusbar);
@@ -134,7 +141,8 @@ class VariablesView extends HTMLElement  implements DataSetView {
         this.$body      = this.querySelector('.jmv-variables-body');
         this.$container = this.querySelector('.jmv-variables-container');
 
-        let $newVariable = HTML.parse('<div class="add-new-variable"><span class="mif-plus"></span></div>');
+        let $newVariable = h('div', { class: 'add-new-variable' },
+            h('span', { class: 'mif-plus' }));
         this.$container.append(this._createCell($newVariable, 0, 1, 'new-variable', false, 4));
 
         $newVariable.addEventListener('click', (event) => {
@@ -363,35 +371,36 @@ class VariablesView extends HTMLElement  implements DataSetView {
     }
 
     _createColumnResizer(gridIndex: number) {
-        let $resizer = HTML.parse(`<div class="resizer"  style="grid-area: 1 / ${ gridIndex } / -1 / span 1;"></div>`);
+        let $resizer = h('div', { class: 'resizer', style: `grid-area: 1 / ${ gridIndex } / -1 / span 1;` });
 
         return $resizer;
     }
 
     _createRow(column: Column, row: number) {
-        let $measureType = HTML.parse('<div  role="none" class="measure-box"><div class="measure-type-icon"></div>');
+        let $measureType = h('div', { role: 'none', class: 'measure-box' },
+            h('div', { class: 'measure-type-icon' }));
 
         if (column.columnType === 'computed' || column.columnType === 'recoded' || column.columnType === 'output') {
-            let $dot = HTML.parse('</div><div class="dot"></div>');
+            let $dot = h('div', { class: 'dot' });
             this._updateColumnColour(column, $dot);
             $measureType.append($dot);
         }
 
         let labelId = interactionManager.nextAriaId('label');
 
-        let $name = HTML.parse<HTMLDivElement>(`<div role="none" id="${ labelId }" class="name text" data-property="name" data-columnindex="${column.index}" tabindex="0">${ column.name }</div>`);
+        let $name = h('div', { role: 'none', id: labelId, class: 'name text', 'data-property': 'name', 'data-columnindex': column.index.toString(), tabindex: '0' }, column.name);
         if (column.columnType === 'filter')
             $name.classList.add('readonly');
         this._addTextEvents($name);
 
-        let $desc = HTML.parse<HTMLDivElement>(`<div role="none" class="description text" data-property="description" data-columnindex="${column.index}" tabindex="0">${ column.description }</div>`);
+        let $desc = h('div', { role: 'none', class: 'description text', 'data-property': 'description', 'data-columnindex': column.index.toString(), tabindex: '0' }, column.description);
         this._addTextEvents($desc);
 
         let colNo = column.index;
 
         let editingIds = this.model.get('editingVar');
 
-        let $select = HTML.parse<HTMLInputElement>(`<input role="option" aria-labelledby="${ labelId }" type="checkbox" data-index="${colNo}" class="select" tabindex="-1"></input>`);
+        let $select = h('input', { role: 'option', 'aria-labelledby': labelId, type: 'checkbox', 'data-index': colNo.toString(), class: 'select', tabindex: '-1' });
         this._addSelectEvents($select);
 
         this.$body.append(this._applyColumnData(this._createCell($select, row, 1, '', true), column, colNo));
@@ -419,14 +428,14 @@ class VariablesView extends HTMLElement  implements DataSetView {
         this._clearRowSelections();
 
         let columnCount = this.model.get('columnCount');
-        this.$body.innerHTML = '';
+        this.$body.replaceChildren();
 
         this.rows = [];
 
-        let $measureTypeHeader = HTML.parse('<div style="width:10px;"></div>');
-        let $nameHeader = HTML.parse(`<div>${_('Name')}</div>`);
-        let $descHeader = HTML.parse(`<div>${_('Description')}</div>`);
-        let $selectHeader = HTML.parse<HTMLInputElement>('<input type="checkbox" class="select-header-checkbox"></input>');
+        let $measureTypeHeader = h('div', { style: 'width:10px;' });
+        let $nameHeader = h('div', {}, _('Name'));
+        let $descHeader = h('div', {}, _('Description'));
+        let $selectHeader = h('input', { type: 'checkbox', class: 'select-header-checkbox' });
 
         $selectHeader.addEventListener('change', (event) => {
             if ($selectHeader.checked)
@@ -461,7 +470,7 @@ class VariablesView extends HTMLElement  implements DataSetView {
         }
 
         if (row === 2) {
-            this.$body.append(HTML.parse(`<div class="msg">${_('No variables match your query.')}</div>`));
+            this.$body.append(h('div', { class: 'msg' }, _('No variables match your query.')));
             this.statusbar.updateInfoLabel('selectedCount', 0);
         }
         else {
@@ -636,7 +645,7 @@ class VariablesView extends HTMLElement  implements DataSetView {
     _createCell($contents: HTMLElement, row: number, column: number, classes: string, hasEvents: boolean, columnSpan=1) {
         if (columnSpan ===undefined)
             columnSpan = 1;
-        let $cell = HTML.parse(`<div role="none" class="cell ${ classes }" style="grid-area: ${ row } / ${ column } / span 1 / span ${ columnSpan };"></div>`);
+        let $cell = h('div', { role: 'none', class: `cell ${ classes }`, style: `grid-area: ${ row } / ${ column } / span 1 / span ${ columnSpan };` });
         if (hasEvents) {
             $cell.addEventListener('mouseover', event => {
                 this.$body.querySelectorAll('.cell.hovering').forEach(el => el.classList.remove('hovering'));

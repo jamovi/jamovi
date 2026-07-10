@@ -5,7 +5,7 @@ import interactionManager from '../common/interactionmanager';
 
 import b64 from '../common/utils/b64';
 import { contextMenuListener } from '../common/utils';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h }  from '../common/htmlelementcreator';
 
 import './refs';
 import { EventMap } from '../common/eventmap';
@@ -79,7 +79,7 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
             return false;
         });
 
-        this.$errorPlacement = HTML.parse(`<div id="${errorMsgId}" class="jmv-results-error-placement"></div>`);
+        this.$errorPlacement = h('div', { id: errorMsgId, class: 'jmv-results-error-placement' });
         this.append(this.$errorPlacement);
 
         this.refs = new ReferenceNumbers();
@@ -113,13 +113,15 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
                 this.$errorPlacement.querySelector('.jmv-results-error-message').textContent = error.message;
             else {
                 this.classList.add('jmv-results-error');
-                this.$errorPlacement.append(HTML.parse(`<div class="error-box"><div class="icon"></div><div class="jmv-results-error-message">${ error.message }</div></div>`));
+                this.$errorPlacement.append(h('div', { class: 'error-box' },
+                    h('div', { class: 'icon' }),
+                    h('div', { class: 'jmv-results-error-message' }, error.message)));
             }
             this.setAttribute('aria-invalid', 'true');
         }
         else {
             this.classList.remove('jmv-results-error');
-            this.$errorPlacement.innerHTML = '';
+            this.$errorPlacement.replaceChildren();
             this.removeAttribute('aria-invalid');
         }
     }

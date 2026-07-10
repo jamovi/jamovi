@@ -3,7 +3,7 @@
 
 import TransformListItem from './transformlistitem';
 import interactionManager from '../../common/interactionmanager';
-import { HTMLElementCreator as HTML } from '../../common/htmlelementcreator';
+import { h } from '../../common/htmlelementcreator';
 import { Transform } from '../dataset';
 import { DropdownContent } from './dropdown';
 
@@ -22,19 +22,19 @@ export default class TransformList extends HTMLElement implements DropdownConten
         this.classList.add("jmv-transform-list");
         this.setAttribute('role', 'list');
 
-        this.top = HTML.parse(`<div class="top"></div>`);
+        this.top = h('div', { class: 'top' });
         this.appendChild(this.top);
 
-        this.none = HTML.parse<HTMLButtonElement>(`<button role="listitem" class="transform-none-item">${_('None')}</button>`);
+        this.none = h('button', { role: 'listitem', class: 'transform-none-item' }, _('None'));
         this.top.appendChild(this.none);
 
-        this.middle = HTML.parse(`<div role="presentation" class="middle"></div>`);
+        this.middle = h('div', { role: 'presentation', class: 'middle' });
         this.appendChild(this.middle);
 
-        this.bottom = HTML.parse(`<div role="presentation" class="bottom"></div>`);
+        this.bottom = h('div', { role: 'presentation', class: 'bottom' });
         this.appendChild(this.bottom);
 
-        this.createNew = HTML.parse<HTMLButtonElement>(`<button role="listitem" class="transform-create">${_('Create New Transform...')}</button>`);
+        this.createNew = h('button', { role: 'listitem', class: 'transform-create' }, _('Create New Transform...'));
         this.bottom.appendChild(this.createNew);
 
         this._attachEventHandlers();

@@ -3,6 +3,7 @@
 import interactionManager from '../../common/interactionmanager';
 import DataSetViewModel from '../dataset';
 import { DropdownContent } from './dropdown';
+import { richBoldOptions, setRich } from '../../common/htmlelementcreator';
 
 function insertText(el: HTMLElement, newText: string, cursorOffset = 0, range = null, checkEscape = true) {
     
@@ -52,9 +53,6 @@ function allFunctions(functionsContent) : Descriptions {
                 for (const [dKey, dValue] of Object.entries(value)) {
                     el.dataset[dKey] = dValue;
                 }
-            }
-            else if (key === 'html') {
-                el.innerHTML = value;
             }
             else {
                 el.setAttribute(key, value);
@@ -232,8 +230,7 @@ export class Toolbar extends HTMLElement implements DropdownContent {
 
     const info = this.descriptions.ABS;
     if (info) {
-      this.$description.innerHTML = info.content;
-      this.$label.innerHTML = info.label;
+      this.displayRichInfo(info);
     }
 
     this.$functionsContent.addEventListener("dblclick", (event: MouseEvent) => {
@@ -327,12 +324,16 @@ export class Toolbar extends HTMLElement implements DropdownContent {
 
     const info = this.descriptions[selectedItem.dataset.name!];
     if (info) {
-      this.$label.innerHTML = info.label;
-      this.$description.innerHTML = info.content;
+      this.displayRichInfo(info);
     } else {
       this.$label.textContent = '';
       this.$description.textContent = _('No information about this function is available');
     }
+  }
+
+  private displayRichInfo(info: FunctionDescription): void {
+    setRich(this.$label, info.label, richBoldOptions);
+    setRich(this.$description, info.content, richBoldOptions);
   }
 
   private insertFunction(value: string): void {
@@ -410,7 +411,7 @@ export class Toolbar extends HTMLElement implements DropdownContent {
   public show($formula: HTMLDivElement, variableName: string, useValue?: boolean): void {
     this.$formula = $formula;
 
-    this.$varsContent.innerHTML = '';
+    this.$varsContent.replaceChildren();
     if (useValue) {
       const sourceDiv = document.createElement('div');
       sourceDiv.setAttribute('role', 'option');

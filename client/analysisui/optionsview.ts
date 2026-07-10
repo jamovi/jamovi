@@ -6,7 +6,7 @@ import DefaultControls from './defaultcontrols';
 import Opt from './option';
 import { applyMagicEventsForCtrl as ApplyMagicEventsForCtrl } from './applymagicevents';
 import { DefaultEventMap, EventEmitter } from 'tsee';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h }  from '../common/htmlelementcreator';
 import Options from './options';
 import PropertySupplier, { EventHandlers } from './propertysupplier';
 import LayoutActionManager from './layoutactionmanager';
@@ -253,7 +253,7 @@ export class OptionsView extends EventEmitter implements IControlProvider {
     
     constructor(uiModel: IOptionsViewModel) {
         super();
-        this.el = HTML.parse('<div class="silky-options-content" role="presentation"></div>');
+        this.el = h('div', { class: 'silky-options-content', role: 'presentation' });
         this.model = uiModel;
     }
 
@@ -301,7 +301,7 @@ export class OptionsView extends EventEmitter implements IControlProvider {
             }, 0);
         }
         else {
-            this.el.append(HTML.parse('<div class="silky-analysis-under-development">This analysis is currently in development and will be available very soon!</div>'));
+            this.el.append(h('div', { class: 'silky-analysis-under-development' }, 'This analysis is currently in development and will be available very soon!'));
         }
     }
 

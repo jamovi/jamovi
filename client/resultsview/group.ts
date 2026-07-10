@@ -5,7 +5,7 @@ import Annotations from './annotations';
 import Elem, { CollectionView, View as Element, ElementData, ElementModel } from './element';
 import interactionManager from '../common/interactionmanager';
 import { AnalysisStatus, IElement } from './create';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, setRich }  from '../common/htmlelementcreator';
 import { Item } from './itemtracker';
 import Annotation from './annotation';
 import Heading from './heading';
@@ -58,9 +58,6 @@ export class View extends CollectionView<Model> {
         this.isEmptyAnalysis = data.isEmptyAnalysis;
 
         if (this.hasTitle) {
-            this.hoTag = `<h${ this.level + 1 }>`;
-            this.hcTag = `</h${ this.level + 1 }>`;
-
             this.classList.add('jmv-results-group');
 
 
@@ -76,7 +73,8 @@ export class View extends CollectionView<Model> {
             }
             else {
                 this.setAttribute('role', 'group');
-                this.$title = HTML.parse(this.hoTag + this.model.attributes.title + this.hcTag);
+                this.$title = h(`h${this.level+1}` as keyof HTMLElementTagNameMap) as HTMLHeadingElement;
+                setRich(this.$title, this.model.attributes.title);
                 this.$title.setAttribute('id', labelId);
                 this.prepend(this.$title);
             }
@@ -86,7 +84,7 @@ export class View extends CollectionView<Model> {
 
 
 
-        this.$container = HTML.parse('<div class="jmv-results-group-container"></div>');
+        this.$container = h('div', { class: 'jmv-results-group-container' });
         this.addContent(this.$container);
 
         this.render();
@@ -132,9 +130,9 @@ export class View extends CollectionView<Model> {
 
         if (this.$title) {
             if (this.model.attributes.title)
-                this.$title.textContent = this.model.attributes.title;
+                setRich(this.$title, this.model.attributes.title);
             else
-                this.$title.innerHTML = '';
+                this.$title.textContent = '';
         }
         else {
             let heading = Annotations.getControl(this.address(), 'heading');
@@ -234,7 +232,7 @@ export class View extends CollectionView<Model> {
 
     _includeBreak(current: Item, childAddress: string) {
         return this.layout.include(childAddress + ':break', () => {
-            const br = HTML.create('br');
+            const br = h('br');
             current.item.after(br);
             return br;
         });

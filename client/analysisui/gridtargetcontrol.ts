@@ -15,7 +15,7 @@ import ToolbarGroup from '../common/toolbar/toolbargroup';
 import { LayoutSupplierView, SupplierViewProperties } from './layoutsupplierview';
 import type { SupplierTarget, TransferAction } from './layoutsupplierview';
 import type { IPickupItem, IDragDropTarget, IItem } from './dragndrop'
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich }  from '../common/htmlelementcreator';
 import type LayoutGrid from './layoutgrid';
 import { Margin } from './controlbase';
 import { IControlProvider } from './optionsview';
@@ -417,7 +417,7 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
 
         if (name === 'label' && this.label) {
             let label = this.getTranslatedProperty('label');
-            this.label.innerText = label;
+            this.label.replaceChildren(rich(label));
         }
     }
 
@@ -1203,7 +1203,7 @@ export class GridTargetContainer<U> extends GridControl<GridTargetContainerPrope
         if (label !== null) {
             label = this.translate(label);
             this.labelId = interactionManager.nextAriaId('label');
-            this.label = HTML.parse(`<div id="${this.labelId}" style="white-space: nowrap;" class="silky-target-list-header silky-control-margin-${this.getPropertyValue('margin')}">${label}</div>`);
+            this.label = h('div', { id:this.labelId, style: "white-space: nowrap;", class: `silky-target-list-header silky-control-margin-${this.getPropertyValue('margin')}` }, rich(label));
             this.$label = $(this.label);
             grid.addCell(column, row, this.label);
             this.container.controls[0].el.setAttribute('aria-labelledby', this.labelId);

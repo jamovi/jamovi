@@ -1,7 +1,7 @@
 'use strict';
 
 import Elem, { ElementData, ElementModel } from './element';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, htmlTrusted }  from '../common/htmlelementcreator';
 import { AnalysisStatus } from './create';
 
 export interface HTMLElementData {
@@ -48,7 +48,7 @@ export class View extends Elem.View<Model> {
         }
 
         for (let script of doc.scripts) {
-            const el = HTML.create('script', { src: `module/${ script }`, class: 'module-asset' }) as HTMLScriptElement;
+            const el = h('script', { src: `module/${ script }`, class: 'module-asset' });
             const promise = new Promise<string>((resolve, reject) => {
                 el.addEventListener('load', () => resolve(script));
                 el.addEventListener('error', () => reject(new Error(`Failed to load script: ${ script }`)));
@@ -81,10 +81,11 @@ export class View extends Elem.View<Model> {
             let $content = this.querySelector('.content');
             if ($content) {
                 this.querySelectorAll('a[href]').forEach(el => el.removeEventListener('click', this._handleLinkClick));
-                $content.innerHTML = doc.content;
+                $content.replaceChildren(...Array.from(htmlTrusted<HTMLDivElement>('<div>' + doc.content + '</div>').childNodes));
             }
             else {
-                this.addContent(HTML.parse(`<div class="content">${ doc.content }</div>`));
+                this.addContent(h('div', { class: 'content' },
+                    ...Array.from(htmlTrusted<HTMLDivElement>('<div>' + doc.content + '</div>').childNodes)));
                 $content = this.querySelector('.content');
             }
             $content.querySelectorAll('a[href]').forEach(el => el.addEventListener('click', this._handleLinkClick));

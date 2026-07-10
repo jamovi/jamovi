@@ -3,7 +3,7 @@ import { s6e } from '../../common/utils';
 import interactionManager, { keyTips } from '../../common/interactionmanager';
 import { EventMap, EventDistributor } from '../../common/eventmap';
 import type { IExtensionGroup } from '../host';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 import { IInstanceOpenOptions } from '../instance';
 
 export enum FSItemType {
@@ -178,20 +178,17 @@ export class FSEntryListView extends EventDistributor {
             }
 
             let labelId = interactionManager.nextAriaId('label');
-            let html = `<div role="menuitem" aria-labelledby="${labelId}" class="silky-bs-fslist-entry bs-menu-list-item" data-path="${s6e(filePath)}" tabindex="-1">`;
+            let iconClass = 'silky-bs-fslist-entry-icon';
             if (name.endsWith('.omv'))
-                html += '    <div class="silky-bs-fslist-entry-icon silky-bs-flist-item-omv-icon"></div>';
+                iconClass += ' silky-bs-flist-item-omv-icon';
             else if (name.endsWith('.omt'))
-                html += '    <div class="silky-bs-fslist-entry-icon silky-bs-flist-item-omt-icon"></div>';
-            else
-                html += '   <div class="silky-bs-fslist-entry-icon"></div>';
-            html += `   <div id="${labelId}" class="silky-bs-fslist-entry-group">`;
-            html += '       <div class="silky-bs-fslist-entry-name">' + s6e(name) + '</div>';
-            html += '       <div class="silky-bs-fslist-entry-meta">' + s6e(location) + '</div>';
-            html += '   </div>';
-            html += '</div>';
+                iconClass += ' silky-bs-flist-item-omt-icon';
 
-            let itemElement = HTML.parse(html);
+            let itemElement = h('div', { role: 'menuitem', 'aria-labelledby': labelId, class: 'silky-bs-fslist-entry bs-menu-list-item', 'data-path': filePath, tabindex: '-1' },
+                h('div', { class: iconClass }),
+                h('div', { id: labelId, class: 'silky-bs-fslist-entry-group' },
+                    h('div', { class: 'silky-bs-fslist-entry-name' }, name),
+                    h('div', { class: 'silky-bs-fslist-entry-meta' }, location)));
             keyTips.register(itemElement, {
                 key: `${i + 1}`,
                 path: `F`,

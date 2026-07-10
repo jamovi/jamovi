@@ -7,7 +7,7 @@ import VariableList from './variablelist';
 import ColourPalette from '../editors/colourpalette';
 import Notify from '../notification';
 import VariableModel from './variablemodel';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 import { Column, Transform } from '../dataset';
 
 let instanceID = 0;
@@ -39,23 +39,24 @@ class RecodedVarWidget extends HTMLElement {
 
         this.classList.add('jmv-variable-recoded-widget', 'RecodedVarWidget');
         let id1 = `transform-var-list-${instanceID}`;
-        let $top = HTML.parse('<div class="jmv-variable-recoded-top"></div>');
+        let $top = h('div', { class: 'jmv-variable-recoded-top' });
         this.append($top);
-        $top.append(HTML.parse(`<label for="${id1}" class="variable-list-label single-variable-support">${_('Source variable')}</label>`));
-        this.$variableIcon = HTML.parse('<div class="variable-type-icon single-variable-support"></div>');
+        $top.append(h('label', { for: id1, class: 'variable-list-label single-variable-support' }, _('Source variable')));
+        this.$variableIcon = h('div', { class: 'variable-type-icon single-variable-support' });
         $top.append(this.$variableIcon);
-        this.$variableList = HTML.parse(`<select id="${id1}" class="recoded-from single-variable-support"></select>`);
+        this.$variableList = h('select', { id: id1, class: 'recoded-from single-variable-support' });
         $top.append(this.$variableList);
 
         let id2 = `transform-list-${instanceID}`;
-        $top.append(HTML.parse(`<label for="${id2}" class="transform-label">${_('using transform')}</label>`));
-        this.$transformIcon = HTML.parse('<div class="transform-icon"></div>');
+        $top.append(h('label', { for: id2, class: 'transform-label' }, _('using transform')));
+        this.$transformIcon = h('div', { class: 'transform-icon' });
         $top.append(this.$transformIcon);
-        this.$transformList = HTML.parse(`<select id="${id2}" id="transform-type"><option value="None">${_('None')}</option></select>`);
+        this.$transformList = h('select', { id: id2 },
+            h('option', { value: 'None' }, _('None')));
         $top.append(this.$transformList);
-        this.$editTransform = HTML.parse(`<button class="edit-button">${_('Edit...')}</button>`);
+        this.$editTransform = h('button', { class: 'edit-button' }, _('Edit...'));
         $top.append(this.$editTransform);
-        this.$errorMessage = HTML.parse(`<div class="error-msg">${_('This transform is in error and should be edited.')}</div>`);
+        this.$errorMessage = h('div', { class: 'error-msg' }, _('This transform is in error and should be edited.'));
         $top.append(this.$errorMessage);
         this.$editTransform.addEventListener('click', (event) => {
             let transformId = this.model.get('transform');
@@ -297,9 +298,9 @@ class RecodedVarWidget extends HTMLElement {
         this.variableList.populate(columns);
 
         this.$variableList.innerHTML = '';
-        this.$variableList.append(HTML.parse(`<option value="0">${_('None')}</option>`));
+        this.$variableList.append(h('option', { value: '0' }, _('None')));
         for (let i = 0; i < columns.length; i++)
-            this.$variableList.append(HTML.parse(`<option value=${ columns[i].id }>${ columns[i].name }</option>`));
+            this.$variableList.append(h('option', { value: columns[i].id.toString() }, columns[i].name));
 
         let parentId = this.model.get('parentId');
         let column = dataset.getColumnById(parentId);
@@ -349,9 +350,9 @@ class RecodedVarWidget extends HTMLElement {
         this.transformList.populate(transforms);
 
         this.$transformList.innerHTML = '';
-        this.$transformList.append(HTML.parse(`<option value="None">${_('None')}</option>`));
+        this.$transformList.append(h('option', { value: 'None' }, _('None')));
         for (let transform of transforms)
-            this.$transformList.append(HTML.parse('<option value="' + transform.name + '">' + transform.name + '</option>'));
+            this.$transformList.append(h('option', { value: transform.name }, transform.name));
 
         let transformId = this.model.get('transform');
 

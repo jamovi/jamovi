@@ -2,7 +2,7 @@
 'use strict';
 
 import { EventDistributor, EventMap } from '../../common/eventmap';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 
 export interface NotifData {
     id: number,
@@ -31,24 +31,16 @@ class View extends EventDistributor {
 
     _added(notif: Notif) {
         let index = this.notifs.indexOf(notif);
-        let html = `<div class="jmv-ribbon-notif" data-id="${notif.get('id')}">
-                        <div class="inner">
-                            <div class="message">
-                                ${notif.get('text')}
-                            </div>
-                            <div class="options">
-                                ${  (function() {
-                                        let buttons: string = '';
-                                        notif.get('options').forEach((option) => {
-                                            buttons += `<button data-id="${notif.get('id')}" data-name="${option.name}" data-dismiss="${option.dismiss !== false ? 1 : 0}">${option.text}</button>`;
-                                        })
-                                        return buttons;
-                                    })()
-                                }
-                            </div>
-                        </div>
-                    </div>`;
-        let el = HTML.parse(html);
+        let id = notif.get('id').toString();
+        let el = h('div', { class: 'jmv-ribbon-notif', 'data-id': id },
+            h('div', { class: 'inner' },
+                h('div', { class: 'message' }, notif.get('text')),
+                h('div', { class: 'options' },
+                    ...notif.get('options').map(option => h('button', {
+                        'data-id': id,
+                        'data-name': option.name,
+                        'data-dismiss': option.dismiss !== false ? '1' : '0'
+                    }, option.text)))));
 
         if (index === 0)
             this.prepend(el);

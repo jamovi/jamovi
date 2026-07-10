@@ -10,7 +10,7 @@ import TargetListValueFilter from './targetlistvaluefilter';
 import HiddenScrollBarSupport from './hiddenscrollbarsupport';
 import LayoutGrid from './layoutgrid';
 import LayoutCell, { HorizontalAlignment } from './layoutcell';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich }  from '../common/htmlelementcreator';
 import Format from './format';
 import { CtrlDef, IControlProvider, ControlType, Control } from './optionsview';
 import DefaultControls from './defaultcontrols';
@@ -336,7 +336,7 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
 
                 let row = 0;
                 if (this.showHeaders) {
-                    let hCell = this.el.addCell(i, row,  HTML.parse('<div style="white-space: nowrap;" class="silky-option-list-header" data-index="' + columnInfo.index + '">' + this.translate(columnInfo.label) + '</div>'));
+                    let hCell = this.el.addCell(i, row, h('div', { style: 'white-space: nowrap;', class: 'silky-option-list-header', 'data-index': String(columnInfo.index) }, rich(this.translate(columnInfo.label))));
                     hCell.isSelectable(false);
                     hCell.setStretchFactor(columnInfo.stretchFactor);
                     hCell.makeSticky();
@@ -347,13 +347,13 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
                     row += 1;
                 }
                 
-                let $filler = HTML.parse('<div style="white-space: nowrap;" class="list-item-ctrl"></div>');
+                let $filler = h('div', { style: 'white-space: nowrap;', class: 'list-item-ctrl' });
                 let fillerInUse = false;
                 let fillerZindex = '111';
                 if (i === 0) {
                     let ghostText = this.getPropertyValue("ghostText");
                     if (ghostText !== null) {
-                        this.$ghostTextLabel = HTML.parse('<div class="column-ghost-label">' + this.translate(ghostText) + '</div>');
+                        this.$ghostTextLabel = h('div', { class: 'column-ghost-label' }, this.translate(ghostText));
                         $filler.append(this.$ghostTextLabel);
                         fillerInUse = true;
                         fillerZindex = '10';
@@ -361,7 +361,9 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
 
 
                     if (addButtonText !== null) {
-                        this.addButton = HTML.parse('<div class="column-add-button" tabindex="0"><div class="list-add-button"><span class="mif-plus"></span></div>' + this.translate(addButtonText) + '</div>');
+                        this.addButton = h('div', { class: 'column-add-button', tabindex: '0' },
+                            h('div', { class: 'list-add-button' }, h('span', { class: 'mif-plus' })),
+                            this.translate(addButtonText));
                         this.$addButton = $(this.addButton);
                         this.addButton.addEventListener('click', addButtonClick);
                         this.addButton.addEventListener('keydown', addButtonKeyDown);
@@ -371,12 +373,12 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
 
                     let infoText = this.getPropertyValue("infoText");
                     
-                    this.infoTextBox = HTML.parse('<div class="list-info-box"><div class="info-icon"></div></div>');
+                    this.infoTextBox = h('div', { class: 'list-info-box' }, h('div', { class: 'info-icon' }));
                     if (infoText === null) {
                         infoText = '';
                         this.infoTextBox.style.display = 'none';
                     }
-                    this.infoTextLabel = HTML.parse('<div class="list-info-label">' + infoText + '</div>');
+                    this.infoTextLabel = h('div', { class: 'list-info-label' }, infoText);
                     this.infoTextBox.append(this.infoTextLabel);
                     $filler.append(this.infoTextBox);
                     fillerInUse = true;
@@ -494,7 +496,7 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
             let hadAddButton = this.getPropertyValue("addButton") !== null;
             if (hadAddButton) {
                 if (columnInfo === this._columnInfoList[this._columnInfoList.length - 1]) {
-                    let $closeButton = HTML.parse('<button class="list-item-delete-button" aria-label="Delete Item"><span class="mif-cross"></span></button>');
+                    let $closeButton = h('button', { class: 'list-item-delete-button', 'aria-label': 'Delete Item' }, h('span', { class: 'mif-cross' }));
                     $closeButton.addEventListener('click', (event) => {
                         let selectedIndices = this.getSelectedRowIndices();
                         this.getOption().removeAt(ctrl.getItemKey());
@@ -1171,7 +1173,7 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
         for (let columnInfo of this._columnInfoList) {
             let element = this.el.querySelector<HTMLElement>(`.silky-option-list-header[data-index="${columnInfo.index }"]`);
             if (element)
-                element.innerText = this.translate(columnInfo.label);
+                element.replaceChildren(rich(this.translate(columnInfo.label)));
         }
     }
 }

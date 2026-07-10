@@ -5,8 +5,7 @@ import interactionManager from '../common/interactionmanager';
 
 import Elem, { ElementModel } from './element';
 import { AnalysisStatus } from './create';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
-import { s6e, stringToParagraphs } from '../common/i18n';
+import { h, htmlTrusted, rich, richParagraphs, setRich } from '../common/htmlelementcreator';
 
 const SUPSCRIPTS = ["\u1D43", "\u1D47", "\u1D48", "\u1D49", "\u1DA0", "\u1D4D", "\u02B0", "\u2071",
                 "\u02B2", "\u1D4F", "\u02E1", "\u1D50", "\u207F", "\u1D52", "\u1D56", "\u02B3", "\u02E2",
@@ -244,6 +243,18 @@ const isVis = function(column: ITableColumn) {
     return column.visible === 0 || column.visible === 2;
 };
 
+const trustedContent = function(html: string): ChildNode[] {
+    const wrapper = htmlTrusted<HTMLDivElement>(`<div>${html}</div>`);
+    return Array.from(wrapper.childNodes);
+};
+
+const appendTableRichContent = function(element: Element, content: string) {
+    if (content === '')
+        element.append('\u00a0');
+    else
+        element.append(rich(content));
+};
+
 export class View extends Elem.View<Model> {
     $table: HTMLTableElement;
     $titleCell: HTMLTableCaptionElement;
@@ -272,26 +283,26 @@ export class View extends Elem.View<Model> {
         let rowSelectable = table.rowSelect ? ' row-selectable' : '';
 
         let titleId = interactionManager.nextAriaId('label');
-        this.$table = HTML.parse(`<table aria-labelledby="${titleId}" class="jmv-results-table-table${rowSelectable}"></table>`);
+        this.$table = h('table', { 'aria-labelledby': titleId, class: `jmv-results-table-table${rowSelectable}` });
 
         this.addContent(this.$table);
 
-        this.$titleCell = HTML.parse('<caption class="jmv-results-table-title-cell" scope="col" colspan="1"></caption>');
+        this.$titleCell = h('caption', { class: 'jmv-results-table-title-cell', scope: 'col', colspan: '1' });
         this.$table.prepend(this.$titleCell);
-        this.$tableHeader = HTML.parse('<thead></thead>');
+        this.$tableHeader = h('thead');
         this.$table.append(this.$tableHeader);
 
-        this.$titleText = HTML.parse(`<span id="${titleId}" class="jmv-results-table-title-text"></span>`);
+        this.$titleText = h('span', { id: titleId, class: 'jmv-results-table-title-text' });
         this.$titleCell.append(this.$titleText);
-        this.$status = HTML.parse('<div class="jmv-results-table-status-indicator"></div>');
+        this.$status = h('div', { class: 'jmv-results-table-status-indicator' });
         this.$titleCell.append(this.$status);
 
-        this.$columnHeaderRow = HTML.parse('<tr class="jmv-results-table-header-row-main"></tr>');
+        this.$columnHeaderRow = h('tr', { class: 'jmv-results-table-header-row-main' });
         this.$tableHeader.append(this.$columnHeaderRow);
 
-        this.$tableBody   = HTML.parse('<tbody></tbody>');
+        this.$tableBody   = h('tbody');
         this.$table.append(this.$tableBody);
-        this.$tableFooter = HTML.parse('<tfoot></tfoot>');
+        this.$tableFooter = h('tfoot');
         this.$table.append(this.$tableFooter);
 
         this._ascButtons = this.$tableHeader.querySelectorAll('button.sort-asc');
@@ -320,7 +331,6 @@ export class View extends Elem.View<Model> {
         let table = this.model.attributes.element;
         let columns = table.columns;
         let sortedCells = this.model.attributes.sortedCells;
-        let html;
         let fnIndices = { };
         let footnotes = [ ];
 
@@ -338,7 +348,7 @@ export class View extends Elem.View<Model> {
         }
 
         if (this.model.attributes.title)
-            this.$titleText.innerHTML = s6e(this.model.attributes.title);
+            setRich(this.$titleText, this.model.attributes.title);
 
         let columnCount = 0;
         let rowCount = 0;
@@ -386,7 +396,7 @@ export class View extends Elem.View<Model> {
 
             let sortable = column.sortable ? true : false;
 
-            cells.header[colNo] = { name : name, value : column.title, colIndex: colIndex, type: column.type, classes : classes, sortable : sortable };
+            cells.header[colNo] = { name : name, value : column.title, renderMode: 'rich', colIndex: colIndex, type: column.type, classes : classes, sortable : sortable };
 
             if (column.superTitle)
                 cells.superHeader[colNo] = { value : column.superTitle, classes : '' };
@@ -415,7 +425,7 @@ export class View extends Elem.View<Model> {
 
                 let sourceCell = sourceCells[rowNo];
 
-                let cell = { value : null, type: sourceColumn.type, superTitle: sourceColumn.superTitle, colIndex: sourceColNo, classes : rowFormat, sups : '' };
+                let cell = { value : null, renderMode: 'plain', type: sourceColumn.type, superTitle: sourceColumn.superTitle, colIndex: sourceColNo, classes : rowFormat, sups : '' };
 
                 if (sourceCell.format & Format.NEGATIVE)
                     cell.classes += ' jmv-results-table-cell-negative';
@@ -447,20 +457,24 @@ export class View extends Elem.View<Model> {
 
                 if (isIntegerCell(sourceCell)) {
                     cell.value = sourceCell.i;
+                    cell.renderMode = 'plain';
                 }
                 else if (isNumberCell(sourceCell)) {
                     let value = format(sourceCell.d, formattings[colNo]);
                     value = value.replace(/-/g , "\u2212").replace(/ /g,'<span style="visibility: hidden ;">0</span>');
                     cell.value = value;
+                    cell.renderMode = 'trusted';
                 }
                 else if (isStringCell(sourceCell)) {
-                    cell.value = s6e(sourceCell.s);
+                    cell.value = sourceCell.s;
+                    cell.renderMode = 'rich';
                 }
                 else if (isOtherCell(sourceCell)) {
                     if (sourceCell.o === CellValueOther.MISSING)
                         cell.value = '.';
                     else
                         cell.value = 'NaN';
+                    cell.renderMode = 'plain';
                 }
                 else {
                     throw new Error('Unknow cell type.');
@@ -619,11 +633,10 @@ export class View extends Elem.View<Model> {
             cells.body = swapped.body;
         }
 
-        html = '';
-
         if (hasSuperHeader) {
 
             let span = 1;
+            let superHeaderCells: HTMLTableCellElement[] = [];
             for (let i = 0; i < cells.superHeader.length; i++) {
                 let head = cells.superHeader[i];
 
@@ -644,16 +657,18 @@ export class View extends Elem.View<Model> {
                     span++;
                 }
                 else {
-                    html += '<th scope="colgroup" class="jmv-results-table-cell" colspan="' + (span) + '">' + s6e(content) + '</th>';
+                    let cell = h('th', { scope: 'colgroup', class: 'jmv-results-table-cell', colspan: span.toString() });
+                    appendTableRichContent(cell, content);
+                    superHeaderCells.push(cell);
                     span = 1;
                 }
             }
 
             if ( ! this.$columnHeaderRowSuper) {
-                this.$columnHeaderRowSuper = HTML.parse('<tr class="jmv-results-table-header-row-super"></tr>');
+                this.$columnHeaderRowSuper = h('tr', { class: 'jmv-results-table-header-row-super' });
                 this.$tableHeader.prepend(this.$columnHeaderRowSuper);
             }
-            this.$columnHeaderRowSuper.innerHTML = html;
+            this.$columnHeaderRowSuper.replaceChildren(...superHeaderCells);
         }
         else if (this.$columnHeaderRowSuper) {
             this.$columnHeaderRowSuper.remove();
@@ -661,14 +676,13 @@ export class View extends Elem.View<Model> {
         }
 
 
-        html = '';
-
+        let headerCells: HTMLTableCellElement[] = [];
         for (let head of cells.header) {
             let content = head.value;
-            if (content === '')
-                content = '&nbsp;';
             let classes = head.classes;
-            let sortStuff = '';
+            let headerCell = h('th', { scope: 'col', class: 'jmv-results-table-cell' + classes });
+            appendTableRichContent(headerCell, content);
+
             if (head.sortable) {
                 let asc = 'sort-asc';
                 let desc = 'sort-desc';
@@ -678,12 +692,14 @@ export class View extends Elem.View<Model> {
                     else
                         asc = 'sorted-asc';
                 }
-                sortStuff = `<button aria-label="Sort Column - Ascending" class="${asc}" data-name="${head.name}" data-sort="asc"></button><button class="${desc}" aria-label="Sort Column - decending" data-name="${head.name}" data-sort="desc"></button>`;
+                headerCell.append(
+                    h('button', { 'aria-label': 'Sort Column - Ascending', class: asc, 'data-name': head.name, 'data-sort': 'asc' }),
+                    h('button', { 'aria-label': 'Sort Column - decending', class: desc, 'data-name': head.name, 'data-sort': 'desc' }));
             }
-            html += '<th scope="col" class="jmv-results-table-cell' + classes + '">' + s6e(content) + sortStuff + '</th>';
+            headerCells.push(headerCell);
         }
 
-        this.$columnHeaderRow.innerHTML = html;
+        this.$columnHeaderRow.replaceChildren(...headerCells);
 
         if (cells.header.length === 0) {
             this.$titleCell.setAttribute('colspan', '1');
@@ -700,7 +716,7 @@ export class View extends Elem.View<Model> {
             else
                 this.$titleCell.setAttribute('scope', 'col');
 
-            this.$tableBody.innerHTML = '<tr><td colspan="' + nPhysCols + '">&nbsp;</td></tr>';
+            this.$tableBody.replaceChildren(h('tr', {}, h('td', { colspan: nPhysCols.toString() }, '\u00a0')));
             return;
         }
 
@@ -710,12 +726,11 @@ export class View extends Elem.View<Model> {
         else
             this.$titleCell.setAttribute('scope', 'col');
 
-        html = '';
-
         let rowHeadingCount = this.determineRowHeaderCount(cells);
+        let bodyRows: HTMLTableRowElement[] = [];
         for (let rowNo = 0; rowNo < cells.body.length; rowNo++) {
 
-            let rowHtml = '';
+            let rowCells: HTMLTableCellElement[] = [];
             for (let colNo = 0; colNo < cells.body[rowNo].length; colNo++) {
 
                 let cell = cells.body[rowNo][colNo];
@@ -755,42 +770,61 @@ export class View extends Elem.View<Model> {
 
                         let interpretation = this.determineAriaLabel(content);
 
-                        if (isRowHeader)
-                            rowHtml += `<th ${rowSpan > 1 ? 'scope="rowgroup" rowspan="' + rowSpan + '"' : 'scope="row"'} ${interpretation ? 'aria-label="' + interpretation + '"' : ''} class="jmv-results-table-cell ${classes}">${content}<span class="jmv-results-table-sup">${cell.sups}</span></td>`;
+                        let tableCell = isRowHeader
+                            ? h('th', { scope: rowSpan > 1 ? 'rowgroup' : 'row', class: `jmv-results-table-cell ${classes}` })
+                            : h('td', { class: `jmv-results-table-cell ${classes}` });
+                        if (rowSpan > 1)
+                            tableCell.setAttribute('rowspan', rowSpan.toString());
+                        if (interpretation)
+                            tableCell.setAttribute('aria-label', interpretation);
+                        if (content === '&nbsp;')
+                            tableCell.append('\u00a0');
+                        else if (cell.renderMode === 'rich')
+                            tableCell.append(rich(String(content)));
+                        else if (cell.renderMode === 'trusted')
+                            tableCell.append(...trustedContent(String(content)));
                         else
-                            rowHtml += `<td ${rowSpan > 1 ? 'rowspan="' + rowSpan + '"' : ''} ${interpretation ? 'aria-label="' + interpretation + '"' : ''}  class="jmv-results-table-cell ${classes}">${content}<span class="jmv-results-table-sup">${cell.sups}</span></td>`;
+                            tableCell.append(String(content));
+                        tableCell.append(h('span', { class: 'jmv-results-table-sup' }, cell.sups));
+                        rowCells.push(tableCell);
                     }
                     else if (colNo >= rowHeadingCount) { // don't add blank cells into heading area.
-                        rowHtml += '<td>&nbsp;</td>';
+                        rowCells.push(h('td', {}, '\u00a0'));
                     }
                 }
             }
 
-            let selected = '';
+            let rowClasses = 'content-row';
             let trans = this.model.attributes.sortTransform;
             if (table.rowSelected === trans[rowNo])
-                selected = ' selected';
+                rowClasses += ' selected';
 
-            html += '<tr class="content-row' + selected + '">' + rowHtml + '</tr>';
+            bodyRows.push(h('tr', { class: rowClasses }, ...rowCells));
         }
 
-        this.$tableBody.innerHTML = html;
+        this.$tableBody.replaceChildren(...bodyRows);
 
-        html = '';
-
+        let footerRows: HTMLTableRowElement[] = [];
         for (let i = 0; i < table.notes.length; i++) {
-            const note = stringToParagraphs(`<i>${ _('Note') }.</i> ${ s6e(table.notes[i].note) }`);
-            html += `<tr><td class="table-note" colspan="${ nPhysCols }">${note}</td></tr>`;
+            let noteCell = h('td', { class: 'table-note', colspan: nPhysCols.toString() });
+            let paragraphs = richParagraphs(table.notes[i].note);
+            if (paragraphs.length === 0)
+                paragraphs.push(h('p'));
+            paragraphs[0].prepend(h('i', {}, `${ _('Note') }.`), ' ');
+            noteCell.append(...paragraphs);
+            footerRows.push(h('tr', {}, noteCell));
         }
 
-        for (let i = 0; i < footnotes.length; i++)
-            html += `<tr><td colspan="${ nPhysCols }">${ SUPSCRIPTS[i] } ${ s6e(footnotes[i]) }</td></tr>`;
+        for (let i = 0; i < footnotes.length; i++) {
+            let footnoteCell = h('td', { colspan: nPhysCols.toString() });
+            footnoteCell.append(SUPSCRIPTS[i] + ' ', rich(footnotes[i]));
+            footerRows.push(h('tr', {}, footnoteCell));
+        }
 
-        //html += `<tr><td colspan="${ nPhysCols }"></td></tr>`;
-        this.$tableFooter.innerHTML = html;
+        this.$tableFooter.replaceChildren(...footerRows);
 
         if (this.refs.hasVisibleContent()) {
-            let $refsRow = HTML.parse(`<tr class="jmvrefs"><td colspan="${ nPhysCols }"></td></tr>`);
+            let $refsRow = h('tr', { class: 'jmvrefs' }, h('td', { colspan: nPhysCols.toString() }));
             // class="jmvrefs" excludes this from some exports/copy
             $refsRow.childNodes[0].appendChild(this.refs);
             this.$tableFooter.append($refsRow);

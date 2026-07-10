@@ -1,14 +1,13 @@
 
 'use strict';
 
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h, htmlTrusted, rich } from '../../common/htmlelementcreator';
 
 import RibbonGroup from './ribbongroup';
 
 import ActionHub from '../actionhub';
 import interactionManager, { keyTips, type IKeyTipTokenOptions } from '../../common/interactionmanager';
 import Menu from '../../common/menu';
-import { s6e } from '../../common/utils';
 import RibbonTab, { RibbonItem } from './ribbontab';
 import ButtonElement from '../utils/buttonelement';
 
@@ -215,11 +214,11 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
 
             this.setAttribute('role', 'menu');
             this.classList.add('has-children');
-            let menugroup = HTML.create('div');
+            let menugroup = h('div');
             this._menuGroup = new RibbonGroup({ orientation: 'vertical', el: menugroup });
 
             this.menu.append(this._menuGroup);
-            this.append(HTML.create('div', { class: 'jmv-ribbon-menu-arrow' }));
+            this.append(h('div', { class: 'jmv-ribbon-menu-arrow' }));
 
             this._menuGroup.addEventListener('menuActioned', (event: CustomEvent) => {
                 let item = event.detail;
@@ -247,17 +246,20 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
     }
 
     _refresh() {
-        let html = '';
-        html += '   <div class="jmv-ribbon-button-icon" role="none">' + (this.icon === null ? '' : this.icon) + '</div>';
+        let icon = h('div', { class: 'jmv-ribbon-button-icon', role: 'none' });
+        if (this.icon !== null)
+            icon.append(htmlTrusted(this.icon));
+
+        let children = [ icon ];
         if (this.size === 'medium' || this.size === 'large') {
-            html += `   <div id="${this.labelId}" class="jmv-ribbon-button-label">${s6e(this.title)}</div>`;
+            children.push(h('div', { id: this.labelId, class: 'jmv-ribbon-button-label' }, rich(this.title || '')));
             if ( ! this.ariaLabel)
                 this.setAttribute('aria-labelledby', this.labelId);
         }
         else
             this.setAttribute('aria-label', this.ariaLabel || this.title);
 
-        this.innerHTML = html;
+        this.replaceChildren(...children);
     }
 
     hideMenu(fromMouse?: boolean) {

@@ -218,7 +218,7 @@ export class OptionControlBase<T, V, P extends OptionControlBaseProperties<T>> e
         super.onDisposed();
 
         if (this.el)
-            this.el.innerHTML = '';
+            this.el.replaceChildren();
         this.setOption(null);
     }
 

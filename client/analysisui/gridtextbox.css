@@ -45,8 +45,10 @@
     z-index: 100;
 }
 
-.jmv-option-text-input-control {
+.jmv-option-text-input-suggested-container {
     position: relative;
+    display: inline-block;
+    width: 100%;
 }
 
 .centre-text {
@@ -55,17 +57,18 @@
 
 .jmv-option-text-input-suggested {
     position: absolute;
-    top: calc(100% + 2px);
-    inset-inline-start: 0;
-    z-index: 100;
+    top: 100%;
+    left: 0;
+    z-index: 101;
     background-color: white;
     border: 1px solid #bebebe;
-    box-sizing: border-box;
-    min-width: 100%;
+    width: 100%;
+    min-width: 100px;
     max-width: 300px;
     max-height: 200px;
     overflow-y: auto;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, .15);
+    box-sizing: border-box;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .jmv-option-text-input-suggested-option {
@@ -87,6 +90,6 @@
 }
 
 .jmv-option-text-input-suggested-option:hover,
-.jmv-option-text-input-suggested-option.active {
+.jmv-option-text-input-suggested-option.selected {
     background-color: #F2F2F2;
 }

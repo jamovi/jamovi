@@ -3,7 +3,7 @@
 import GetRequestDataSupport, { RequestDataSupport } from './requestdatasupport';
 import { FormatDef, StringFormat } from './formatdef';
 import interactionManager from '../common/interactionmanager';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, rich }  from '../common/htmlelementcreator';
 import type LayoutGrid from './layoutgrid';
 import { VerticalAlignment } from './layoutcell';
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
@@ -29,7 +29,7 @@ export class LevelSelector extends OptionControl<LevelSelectorProperties> {
 
         this.dataSupport = GetRequestDataSupport(this);
 
-        this.setRootElement(HTML.parse('<div style="white-space: nowrap;" class="silky-list-item silky-format-string"></div>'));
+        this.setRootElement(h('div', { style: 'white-space: nowrap;', class: 'silky-list-item silky-format-string' }));
     }
 
     protected override registerProperties(properties) {
@@ -69,18 +69,16 @@ export class LevelSelector extends OptionControl<LevelSelectorProperties> {
         let cell = null;
         let id = interactionManager.nextAriaId('ctrl');
         if (label !== '') {
-            this.label = HTML.parse(`<label for="${id}" class="silky-option-combo-label silky-control-margin-${this.getPropertyValue('margin')}" style="display: inline; white-space: nowrap;" >${label}</label>`);
+            this.label = h('label', { for: id, class: `silky-option-combo-label silky-control-margin-${this.getPropertyValue('margin')}`, style: 'display: inline; white-space: nowrap;' }, rich(label));
             cell = grid.addCell(column, row, this.label);
             cell.setAlignment('left', 'center');
             columnUsed += 1;
         }
 
-        let t = `<select id="${id}" class="silky-option-input silky-option-combo-input jmv-level-selector silky-control-margin-${this.getPropertyValue('margin')}">`;
+        this.input = h('select', { id: id, class: `silky-option-input silky-option-combo-input jmv-level-selector silky-control-margin-${this.getPropertyValue('margin')}` });
         if (this.getPropertyValue('allowNone'))
-            t += '<option>' + this.none + '</option>';
-        t += '</select>';
+            this.input.append(h('option', {}, this.none));
 
-        this.input = HTML.parse(t);
         this.update();
         this.input.addEventListener('change', (event) => {
             let value = this.input.value;
@@ -138,26 +136,25 @@ export class LevelSelector extends OptionControl<LevelSelectorProperties> {
             }
             this.input.disabled = enabled === false;
 
-            let html = '';
+            let options: HTMLOptionElement[] = [];
             let displayValue = this.getValue();
             this.levels = rData.levels;
             let selIndex = -1;
             if (allowNone)
-                html += '<option>' + this.none + '</option>';
+                options.push(h('option', {}, this.none));
             if (this.levels) {
                 for (let i = 0; i < this.levels.length; i++) {
                     if (this.levels[i].label === displayValue)
                         selIndex = i;
 
-                    html += '<option>' + this.levels[i].label + '</option>';
+                    options.push(h('option', {}, this.levels[i].label));
                 }
             }
             else
                 this.levels = [];
 
             selIndex = allowNone ? selIndex + 1 : selIndex;
-            this.input.innerHTML = html;
-            //this.$input.html(html);
+            this.input.replaceChildren(...options);
             this.input.selectedIndex = selIndex;
             if (selIndex === -1 && this.levels.length > 0) {
                 let defaultIndex = this.getPropertyValue('defaultLevelIndex');

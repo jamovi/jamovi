@@ -9,7 +9,7 @@ import FilterWidget from './filterwidget';
 import VariableListItem from './variablelistitem';
 import VariableModel from './variablemodel';
 
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 import { ColumnType } from '../dataset';
 
 declare global {
@@ -61,28 +61,28 @@ class EditorWidget extends HTMLElement {
         this.setAttribute('aria-hidden', 'true');
 
         // Label box
-        this.$labelBox = HTML.parse('<div class="label-box"></div>');
+        this.$labelBox = h('div', { class: 'label-box' });
         this.append(this.$labelBox);
 
-        this.$label = HTML.parse('<div class="jmv-variable-editor-widget-label"></div>');
+        this.$label = h('div', { class: 'jmv-variable-editor-widget-label' });
         this.$labelBox.append(this.$label);
 
-        this.$labelBox.append(HTML.parse('<div class="label-spacer"></div>'));
+        this.$labelBox.append(h('div', { class: 'label-spacer' }));
 
-        this.$importedAs = HTML.parse('<div class="imported-as single-variable-support"></div>');
+        this.$importedAs = h('div', { class: 'imported-as single-variable-support' });
         this.$labelBox.append(this.$importedAs);
 
-        this.$importedAsLabel = HTML.parse(`<div class="label ">${_('Imported as')}:</div>`);
+        this.$importedAsLabel = h('div', { class: 'label ' }, _('Imported as'), ':');
         this.$importedAs.append(this.$importedAsLabel);
 
-        this.$importedAsName = HTML.parse('<div class="name"></div>');
+        this.$importedAsName = h('div', { class: 'name' });
         this.$importedAs.append(this.$importedAsName);
 
         // Description box
-        this.$descBox = HTML.parse('<div class="desc-box"></div>');
+        this.$descBox = h('div', { class: 'desc-box' });
         this.append(this.$descBox);
 
-        this.$title = HTML.parse<HTMLInputElement>(`<input class="jmv-variable-editor-widget-title single-variable-support" type="text" maxlength="63" aria-label="${_('Variable Name')}">`);
+        this.$title = h('input', { class: 'jmv-variable-editor-widget-title single-variable-support', type: 'text', maxlength: '63', 'aria-label': _('Variable Name') });
         this.$descBox.append(this.$title);
 
         this._addTextEvents(this.$title, 'name');
@@ -98,7 +98,7 @@ class EditorWidget extends HTMLElement {
             this.model.set('name', this.$title.value);
         });
 
-        this.$description = HTML.parse(`<div class="jmv-variable-editor-widget-description single-variable-support" spellcheck="true" placeholder="${_('Description')}" aria-label="${_('Variable Description')}" contenteditable="true" tabindex="0"></div>`);
+        this.$description = h('div', { class: 'jmv-variable-editor-widget-description single-variable-support', spellcheck: 'true', placeholder: _('Description'), 'aria-label': _('Variable Description'), contenteditable: 'true', tabindex: '0' });
         this.$descBox.append(this.$description);
 
         this._addTextEvents(this.$description, 'description');
@@ -115,16 +115,16 @@ class EditorWidget extends HTMLElement {
         });
 
         // Multi variable info box
-        this.$multiVarBox = HTML.parse('<div class="multi-var-info"></div>');
+        this.$multiVarBox = h('div', { class: 'multi-var-info' });
         this.$descBox.append(this.$multiVarBox);
 
-        this.$multiVarLabel = HTML.parse(`<div class="multi-var-info-label">${_('Selected')}:</div>`);
+        this.$multiVarLabel = h('div', { class: 'multi-var-info-label' }, _('Selected'), ':');
         this.$multiVarBox.append(this.$multiVarLabel);
 
-        this.$scrollWrapper = HTML.parse('<div class="scroll-wrapper"></div>');
+        this.$scrollWrapper = h('div', { class: 'scroll-wrapper' });
         this.$multiVarBox.append(this.$scrollWrapper);
 
-        this.$multiVarList = HTML.parse('<div class="multi-var-info-list"></div>');
+        this.$multiVarList = h('div', { class: 'multi-var-info-list' });
         this.$scrollWrapper.append(this.$multiVarList);
 
         this.model.on('columnChanging', () => {
@@ -135,17 +135,17 @@ class EditorWidget extends HTMLElement {
         });
 
         // Body and footer
-        this.$body = HTML.parse('<div class="jmv-variable-editor-widget-body"></div>');
+        this.$body = h('div', { class: 'jmv-variable-editor-widget-body' });
         this.append(this.$body);
 
-        this.$footer = HTML.parse('<div class="jmv-variable-editor-widget-footer"></div>');
+        this.$footer = h('div', { class: 'jmv-variable-editor-widget-footer' });
         this.append(this.$footer);
 
-        const statusBox = HTML.parse('<div class="status-box"></div>');
-        const statusLabel = HTML.parse<HTMLLabelElement>(`<label class="status">${_('Retain unused levels in analyses')}</label>`);
+        const statusBox = h('div', { class: 'status-box' });
+        const statusLabel = h('label', { class: 'status' }, _('Retain unused levels in analyses'));
 
-        this.$active = HTML.parse<HTMLInputElement>('<input class="active" type="checkbox"/>');
-        const switchSpan = HTML.parse('<span class="switch"></span>');
+        this.$active = h('input', { class: 'active', type: 'checkbox' });
+        const switchSpan = h('span', { class: 'switch' });
 
         statusLabel.append(this.$active, switchSpan);
         statusBox.append(statusLabel);

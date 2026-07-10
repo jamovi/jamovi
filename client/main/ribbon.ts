@@ -12,7 +12,7 @@ import RibbonTab from './ribbon/ribbontab';
 import SelectionLoop from '../common/selectionloop';
 import Notifs, { NotifData } from './ribbon/notifs';
 import interactionManager, { keyTips } from '../common/interactionmanager';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h }  from '../common/htmlelementcreator';
 import { Modules } from './modules';
 import Settings from './settings';
 import Store from './store';
@@ -176,17 +176,13 @@ export class RibbonView extends EventDistributor {
         this.classList.add('jmv-ribbon');
         this.appMenu = new AppMenu(this.model);
 
-        this.append(HTML.parse(`
-            <div class="jmv-ribbon-header app-dragable" role="group" aria-orientation="horizontal">
-                <button class="jmv-ribbon-tab file-tab" data-tabname="file" role="toolbaritem"  aria-label="${_('File')}" aria-haspopup="true" aria-expanded="false"><span style="font-size: 150%; pointer-events: none;" class="mif-menu"></span></button>
-                <div class="ribbon-tabs" role="tablist"></div>
-                <div id="jmv-user-button"></div>
-                <button class="jmv-ribbon-fullscreen" aria-label="${_('Enable/disable full screen mode')}"></button>
-            </div>`));
-        this.append(HTML.parse(`<div id="ribbon-body" class="
-                jmv-ribbon-body
-                jmv-ribbon-group-body-horizontal" hloop="true" role="tabpanel" aria-roledescription="">
-            </div>`));
+        this.append(h('div', { class: 'jmv-ribbon-header app-dragable', role: 'group', 'aria-orientation': 'horizontal' },
+            h('button', { class: 'jmv-ribbon-tab file-tab', 'data-tabname': 'file', role: 'toolbaritem', 'aria-label': _('File'), 'aria-haspopup': 'true', 'aria-expanded': 'false' },
+                h('span', { style: 'font-size: 150%; pointer-events: none;', class: 'mif-menu' })),
+            h('div', { class: 'ribbon-tabs', role: 'tablist' }),
+            h('div', { id: 'jmv-user-button' }),
+            h('button', { class: 'jmv-ribbon-fullscreen', 'aria-label': _('Enable/disable full screen mode') })));
+        this.append(h('div', { id: 'ribbon-body', class: 'jmv-ribbon-body jmv-ribbon-group-body-horizontal', hloop: 'true', role: 'tabpanel', 'aria-roledescription': '' }));
 
         this.notifs = new Notifs();
         this.append(this.notifs);
@@ -238,7 +234,7 @@ export class RibbonView extends EventDistributor {
             let index = tabs.indexOf(data.target);
             let tab = this.model.getTab(index);
 
-            this.$body.setAttribute('aria-labeledby', `tab-${tab.name.toLowerCase()}`);
+            this.$body.setAttribute('aria-labelledby', `tab-${tab.name.toLowerCase()}`);
 
             this.model.set('selectedTab', tab.name);
         });
@@ -280,10 +276,18 @@ export class RibbonView extends EventDistributor {
             if (isSelected) {
                 classes += ' selected';
                 this.selectedTab = tab;
-                this.$body.setAttribute('aria-labeledby', `tab-${tab.name.toLowerCase()}`);
+                this.$body.setAttribute('aria-labelledby', `tab-${tab.name.toLowerCase()}`);
             }
 
-            let $tab = HTML.parse(`<div class="${ classes }" data-tabname="${ tab.name.toLowerCase() }" tabindex="${ isSelected ? 0 : -1 }" role="tab" aria-selected="${ isSelected ? true : false }" aria-controls="ribbon-body" id="tab-${tab.name.toLowerCase()}">${ tab.title }</div>`);
+            let $tab = h('div', {
+                class: classes,
+                'data-tabname': tab.name.toLowerCase(),
+                tabindex: isSelected ? '0' : '-1',
+                role: 'tab',
+                'aria-selected': isSelected ? 'true' : 'false',
+                'aria-controls': 'ribbon-body',
+                id: `tab-${tab.name.toLowerCase()}`
+            }, tab.title);
 
             if (tab.keyTipPath) {
                 keyTips.register($tab, {

@@ -2,9 +2,8 @@
 'use strict';
 
 import ContextMenus from './contextmenu/contextmenus';
-import interactionManager from '../common/interactionmanager';
 import Menu from '../common/menu';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import {  h }  from '../common/htmlelementcreator';
 import { EventEmitter } from 'eventemitter3';
 import { RibbonItem } from './ribbon/ribbontab';
 import { ResultsContextMenuItem } from '../common/contextmenutypes';
@@ -41,7 +40,7 @@ export class ContextMenu extends EventEmitter { // this is constructed at the bo
         this._showing = true;
 
         this.el.innerHTML = '';
-        this.separator = HTML.create('div', { class: 'jmv-click-menu-separator' });
+        this.separator = h('div', { class: 'jmv-click-menu-separator' });
         this.el.append(this.separator);
 
         let openButton: RibbonItem = null;

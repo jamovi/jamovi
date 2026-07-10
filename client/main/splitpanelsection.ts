@@ -2,7 +2,7 @@
 'use strict';
 
 import type { SplitPanel } from "./splitpanel";
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h }  from '../common/htmlelementcreator';
 
 class SplitPanelSection extends HTMLElement {
     listIndex: number;
@@ -83,7 +83,10 @@ class SplitPanelSection extends HTMLElement {
             return null;
 
         if (this._splitter === undefined) {
-            this._splitter = HTML.parse('<div class="silky-splitpanel-splitter" role="separator" aria-label="Window Splitter"><div style="font-size: 21px; color: #b0b0b0a6;"><span class="mif-more-vert"></span></div><div class="click-panel"></div></div>');
+            this._splitter = h('div', { class: 'silky-splitpanel-splitter', role: 'separator', 'aria-label': 'Window Splitter' },
+                h('div', { style: 'font-size: 21px; color: #b0b0b0a6;' },
+                    h('span', { class: 'mif-more-vert' })),
+                h('div', { class: 'click-panel' }));
             this._splitter.style.width = `${SplitPanelSectionSepWidth}px`;
             this._splitter.style.gridArea = `2 / ${ this.listIndex * 2 } / -1 / span 1`;
         }

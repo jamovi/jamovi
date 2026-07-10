@@ -9,7 +9,7 @@ import host from './host';
 import I18ns, { I18nData } from '../common/i18n';
 
 import interactionManager from '../common/interactionmanager';
-import { HTMLElementCreator as HTML } from '../common/htmlelementcreator';
+import { h } from '../common/htmlelementcreator';
 import { EventEmitter } from 'tsee';
 import DataSetViewModel from './dataset';
 import { Analysis } from './analyses';
@@ -56,15 +56,15 @@ class AnalysisResources extends EventEmitter {
 
         this.key = analysis.ns + '-' + analysis.name;
 
-        let element = `<iframe id="${this.key}"
-                name="${this.key}"
-                sandbox="allow-scripts allow-same-origin"
-                src="${iframeUrl}${instanceId}/"
-                class="silky-options-control silky-hidden-options-control"
-                style="overflow: hidden; box-sizing: border-box;"
-                aria-label="${analysis.name} Options"></iframe>`;
-
-        this.frame = HTML.parse(element);
+        this.frame = h('iframe', {
+            id: this.key,
+            name: this.key,
+            sandbox: 'allow-scripts allow-same-origin',
+            src: `${iframeUrl}${instanceId}/`,
+            class: 'silky-options-control silky-hidden-options-control',
+            style: 'overflow: hidden; box-sizing: border-box;',
+            'aria-label': `${analysis.name} Options`
+        });
         target.append(this.frame);
 
         this.settings.on('change:decSymbol', () => this.updateSettings());

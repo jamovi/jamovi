@@ -1,7 +1,7 @@
 
 'use strict';
 
-import { HTMLElementCreator as HTML }  from '../htmlelementcreator';
+import { h }  from '../htmlelementcreator';
 import { EventEmitter } from 'eventemitter3';
 
 export class ToolbarSeparator extends EventEmitter {
@@ -15,7 +15,7 @@ export class ToolbarSeparator extends EventEmitter {
 
         let right = params.right === undefined ? false : params.right;
         let orientation = params.orientation === undefined ? 'horizontal' : params.orientation;
-        let el = params.el === undefined ? HTML.create('div') : params.el;
+        let el = params.el === undefined ? h('div') : params.el;
 
         this.el = el;
         this.el.classList.add('jmv-toolbar-separator');

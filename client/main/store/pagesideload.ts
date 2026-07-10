@@ -7,7 +7,7 @@
 import host from '../host';
 import { Modules } from '../modules';
 import Notify from '../notification';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 
 class PageSideload extends HTMLElement {
     model: Modules;
@@ -21,9 +21,9 @@ class PageSideload extends HTMLElement {
         this.classList.add('PageSideload');
         this.classList.add('jmv-store-page-sideload');
         this.setAttribute('role', 'tabpanel');
-        this.$body = HTML.parse('<div class="jmv-store-body"></div>');
+        this.$body = h('div', { class: 'jmv-store-body' });
         this.append(this.$body);
-        this.$drop = HTML.parse<HTMLButtonElement>('<button class="jmv-store-page-installed-drop" tabindex="-1"><span class="mif-file-upload"></span></button>');
+        this.$drop = h('button', { class: 'jmv-store-page-installed-drop', tabindex: '-1' }, h('span', { class: 'mif-file-upload' }));
         this.$body.append(this.$drop);
         this.$drop.addEventListener('click', event => this._dropClicked());
     }

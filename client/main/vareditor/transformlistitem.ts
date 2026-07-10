@@ -1,7 +1,7 @@
 'use strict';
 
 import interactionManager from '../../common/interactionmanager';
-import { HTMLElementCreator as HTML } from '../../common/htmlelementcreator';
+import { h } from '../../common/htmlelementcreator';
 import { Transform } from '../dataset';
 
 
@@ -25,23 +25,24 @@ export default class TransformListItem extends HTMLElement {
 
         this.setAttribute('role', 'presentation');
         this.classList.add("jmv-transform-list-item");
-        this.icon = HTML.parse('<div class="icon"></div>');
+        this.icon = h('div', { class: 'icon' });
         this.appendChild(this.icon);
 
-        this.colour = HTML.parse(`<div class="colour" style="background-color: ${this._calculateColour(transform.colourIndex)}"></div>`);
+        this.colour = h('div', { class: 'colour', style: `background-color: ${this._calculateColour(transform.colourIndex)}` });
         this.appendChild(this.colour);
 
-        this.labelBtn = HTML.parse<HTMLButtonElement>(`<button role="listitem" id="${this.id}" class="label">${this.name}</button>`);
+        this.labelBtn = h('button', { role: 'listitem', id: this.id, class: 'label' }, this.name);
         this.labelBtn.id = interactionManager.nextAriaId('listitem');
         this.appendChild(this.labelBtn);
 
-        this.editBtn = HTML.parse<HTMLButtonElement>(`<button class="edit hidden" aria-label="${_('Edit transform - {transformName}', { transformName: this.name })}"></button>`);
+        this.editBtn = h('button', { class: 'edit hidden', 'aria-label': _('Edit transform - {transformName}', { transformName: this.name }) });
         this.appendChild(this.editBtn);
 
-        this.duplicateBtn = HTML.parse<HTMLButtonElement>(`<button class="duplicate hidden" aria-label="${_('Duplicate transform  - {transformName}', { transformName: this.name })}"></button>`);
+        this.duplicateBtn = h('button', { class: 'duplicate hidden', 'aria-label': _('Duplicate transform  - {transformName}', { transformName: this.name }) });
         this.appendChild(this.duplicateBtn);
 
-        this.removeBtn = HTML.parse<HTMLButtonElement>(`<button class="remove hidden" aria-label="${_('Delete transform  - {transformName}', { transformName: this.name })}"><span class="mif-cross"></span></button>`);
+        this.removeBtn = h('button', { class: 'remove hidden', 'aria-label': _('Delete transform  - {transformName}', { transformName: this.name }) },
+            h('span', { class: 'mif-cross' }));
         this.appendChild(this.removeBtn);
 
         this._setupEventListeners();

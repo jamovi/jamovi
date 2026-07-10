@@ -4,7 +4,7 @@
 import interactionManager, { IFocusLoopActivateOptions, type FocusLoop } from '../common/interactionmanager';
 
 import { EventEmitter } from 'eventemitter3';
-import { HTMLElementCreator as HTML }  from '../common/htmlelementcreator';
+import { h, attrs }  from '../common/htmlelementcreator';
 
 
 export class EditorPanel extends EventEmitter {
@@ -31,26 +31,26 @@ export class EditorPanel extends EventEmitter {
         //this.$el.addClass('jmv-editor-panel');
         this.loop = interactionManager.registerLoop(this.el, { level: 1 });
 
-        let main = HTML.create('div', {class: 'jmv-editor-panel-main'});
+        let main = h('div', {class: 'jmv-editor-panel-main'});
         this.el.append(main);
 
-        let ok =   HTML.create('button', { class: 'jmv-editor-panel-ok', 'aria-label': _('OK'), tabindex: "0" },
-                        HTML.create('span', { class: 'mif-checkmark' }),
-                        HTML.create('span', { class: 'mif-arrow-down' })
+        let ok =   h('button', attrs({ class: 'jmv-editor-panel-ok', 'aria-label': _('OK'), tabindex: "0" }),
+                        h('span', { class: 'mif-checkmark' }),
+                        h('span', { class: 'mif-arrow-down' })
                     );
         main.append(ok);
 
         //this.$ok = $(`<button aria-label="${_('OK')}" tabindex="0" class="jmv-editor-panel-ok"><span class="mif-checkmark"></span><span class="mif-arrow-down"></span></button>`).appendTo(this.$main);
 
-        let titleBox =   HTML.create('div', { class: 'title-box' });
+        let titleBox =   h('div', { class: 'title-box' });
         main.append(titleBox);
         this.titleBox = titleBox;
 
-        let title =   HTML.create('div', { class: 'title' });
+        let title =   h('div', { class: 'title' });
         titleBox.append(title);
         this.title = title;
 
-        let contents =   HTML.create('div', { class: 'content' });
+        let contents =   h('div', { class: 'content' });
         main.append(contents);
         this.contents = contents;
 

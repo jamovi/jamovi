@@ -1,7 +1,7 @@
 
 'use strict';
 
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 import RibbonGroup from '../ribbon/ribbongroup';
 import interactionManager from '../../common/interactionmanager';
 import Menu from '../../common/menu';
@@ -23,7 +23,6 @@ export interface ContextMenuButtonOptions {
     subItems?: any[];
 }
 import ButtonElement from '../utils/buttonelement';
-import { s6e } from '../../common/utils';
 
 export class ContextMenuButton extends ButtonElement implements RibbonItem {
     eventData: any;
@@ -189,7 +188,7 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
         if (this._menuGroup === undefined) {
             this.menu = new Menu(this, this.level + 1, { exitKeys: ['InlineArrowLeft'] });
 
-            this.append(HTML.create('div', { class: 'jmv-context-menu-arrow' }));
+            this.append(h('div', { class: 'jmv-context-menu-arrow' }));
 
             this._menuGroup = new RibbonGroup({ orientation: 'vertical' });
             this.menu.append(this._menuGroup);
@@ -214,16 +213,15 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
     }
 
     _refresh() {
-        let html = '';
-        html += '   <div class="jmv-ribbon-button-icon"></div>';
+        let children = [ h('div', { class: 'jmv-ribbon-button-icon' }) ];
         if (this.size === 'medium' || this.size === 'large') {
-            html += `   <div id="${this.labelId}" class="jmv-ribbon-button-label">${s6e(this.title)}</div>`;
+            children.push(h('div', { id: this.labelId, class: 'jmv-ribbon-button-label' }, this.title));
             if ( ! this.ariaLabel)
                 this.setAttribute('aria-labelledby', this.labelId);
         }
         else
             this.setAttribute('aria-label', this.ariaLabel || this.title);
-        this.innerHTML = html;
+        this.replaceChildren(...children);
     }
 
     hideMenu(fromMouse?: boolean) {

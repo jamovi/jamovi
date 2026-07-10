@@ -3,7 +3,7 @@
 
 import dropdown from './dropdown';
 import opsToolbar from '../editors/operatordropdown';
-import { HTMLElementCreator as HTML }  from '../../common/htmlelementcreator';
+import { h }  from '../../common/htmlelementcreator';
 
 class MissingValueListItem extends HTMLElement {
 
@@ -51,22 +51,22 @@ class MissingValueListItem extends HTMLElement {
         let _example = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))].a;
         let _sign = this._exampleFormulas[Math.floor(Math.random() * Math.floor(this._exampleFormulas.length - 1))].s + ' ';
 
-        let $fp = HTML.parse('<div class="formula-list-item"></div>');
+        let $fp = h('div', { class: 'formula-list-item' });
         this.append($fp);
 
-        let $formula = HTML.parse('<div class="formula" tabindex="0" type="text" placeholder="' + _sign + 'e.g. ' + _example + '" contenteditable="true" spellcheck="false" style="text-indent:' + indent + '">' + formula + '</div>');
+        let $formula = h('div', { class: 'formula', tabindex: '0', type: 'text', placeholder: _sign + 'e.g. ' + _example, contenteditable: 'true', spellcheck: 'false', style: 'text-indent:' + indent }, formula);
         $fp.append($formula);
 
         let indexOfDollar = prefix.indexOf('$');
-        if (indexOfDollar !== -1) {
-            prefix = prefix.slice(0, indexOfDollar) + "<span>" + prefix.slice(indexOfDollar);
-            indexOfDollar = prefix.indexOf('$');
-            prefix = prefix.slice(0, indexOfDollar+1) + "</span>" + prefix.slice(indexOfDollar+1);
-        }
+        let $equal = h('div', { class: 'equal' });
+        if (indexOfDollar !== -1)
+            $equal.append(prefix.slice(0, indexOfDollar), h('span', {}, prefix.slice(indexOfDollar, indexOfDollar + 1)), prefix.slice(indexOfDollar + 1));
+        else
+            $equal.append(prefix);
+        $fp.append($equal);
 
-        $fp.append(HTML.parse('<div class="equal">' + prefix + '</div>'));
-
-        let $rm = HTML.parse('<button class="remove-cond" data-index="0"><span class="mif-cross"></span></button>');
+        let $rm = h('button', { class: 'remove-cond', 'data-index': '0' },
+            h('span', { class: 'mif-cross' }));
         $fp.append($rm);
         $rm.addEventListener('click', (event) => {
             this.dispatchEvent(new CustomEvent('removed'));
@@ -108,7 +108,7 @@ class MissingValueListItem extends HTMLElement {
             dropdown.hide();
         });
 
-        $opEdit = HTML.parse('<div class="down-arrow">a</div>');
+        $opEdit = h('div', { class: 'down-arrow' }, 'a');
         $fp.append($opEdit);
         $opEdit.style.width = `${_sign.length}ch`;
         $opEdit.style.display = 'none';
