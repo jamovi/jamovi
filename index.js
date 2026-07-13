@@ -35,6 +35,7 @@ const ARGS = [
     { name: 'patch-version', type: Boolean },
     { name: 'skip-remotes', type: Boolean },
     { name: 'skip-deps', type: Boolean },
+    { name: 'remotes-delay', type: Number },
     { name: 'i18n', type: String },
     { name: 'i18n-repo', type: String },
     { name: 'create', type: String },
@@ -129,17 +130,13 @@ try {
             Usage: jmc --i18n path  --create code`;
         }
         else if (args.create) {
-            let code = args.create.toLowerCase();
-            if (code === 'catalog')
-                code = 'c';
+            let code = args.create;
             i18n.create(code, defDir, srcDir, args.verbose);
         }
         else if (args.update === null || args.update) {
             let code = null;
             if (args.update) {
-                code = args.update.toLowerCase();
-                if (code === 'catalog')
-                    code = 'c';
+                code = args.update;
             }
             i18n.update(code, defDir, srcDir, args.verbose);
         }
@@ -596,7 +593,7 @@ try {
             }
 
             log.debug('compiling R package');
-            compileR(srcDir, modDir, paths, packageInfo, rVersion, rArch, log, { mirror, skipRemotes, skipDeps: args['skip-deps'] });
+            compileR(srcDir, modDir, paths, packageInfo, rVersion, rArch, log, { mirror, skipRemotes, skipDeps: args['skip-deps'], remotesDelay: args['remotes-delay'] });
             log.debug('compiled');
 
             if (isBuilding) {

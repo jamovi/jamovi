@@ -183,9 +183,42 @@ const compile = function(srcDir, moduleDir, paths, packageInfo, rVersion, rArch,
         console.log('Installing remotes');
         console.log(remotes.join(', '));
 
-        for (let remote of remotes) {
+        const remotesDelay = (options.remotesDelay || 0) * 1000;
 
-            cmd = util.format('"%s" --vanilla --slave -e "remotes::install_github(\'%s\', lib=\'%s\', type=%s, INSTALL_opts=c(\'--no-data\', \'--no-help\', \'--no-demo\', \'--no-html\', \'--no-docs\', \'--no-multiarch\'), dependencies=FALSE, upgrade=FALSE)"', paths.rExe, remote, buildDir, installType);
+        for (let i = 0; i < remotes.length; i++) {
+            let remote = remotes[i];
+
+            if (i > 0 && remotesDelay > 0) {
+                log.debug(`waiting ${ options.remotesDelay }s before installing next remote`);
+                Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, remotesDelay);
+            }
+
+            // download the source tarball straight from github's codeload
+            // archive endpoint rather than going through install_github/pak.
+            // codeload is served like a git clone, so it doesn't count against
+            // the REST API rate limit, and installing a plain tarball needs no
+            // pak/rtools (only a compiler, and only if the package has compiled
+            // code — which install_github would have needed too).
+            //
+            // remote looks like 'owner/repo', 'owner/repo@ref', or with an
+            // optional 'github::' type prefix and/or '/subdir'. ref covers a
+            // branch, tag, or commit sha. an unknown default branch is fine:
+            // 'HEAD' resolves to its tip on codeload. note: '@*release'
+            // tag-globs and '#pull' pull-request refs aren't handled.
+            let spec = remote.replace(/^[a-z]+::/i, '');
+            let ref = 'HEAD';
+            const at = spec.indexOf('@');
+            if (at !== -1) {
+                ref = spec.substring(at + 1);
+                spec = spec.substring(0, at);
+            }
+            const [ owner, repo, ...subdirParts ] = spec.split('/');
+            const subdir = subdirParts.join('/');
+            const url = `https://github.com/${ owner }/${ repo }/archive/${ ref }.tar.gz`;
+
+            const subdirArg = subdir ? `subdir='${ subdir }', ` : '';
+            const rExpr = `remotes::install_url('${ url }', lib='${ buildDir }', ${ subdirArg }type=${ installType }, INSTALL_opts=c('--no-data', '--no-help', '--no-demo', '--no-html', '--no-docs', '--no-multiarch'), dependencies=FALSE, upgrade=FALSE)`;
+            cmd = `"${ paths.rExe }" --vanilla --slave -e "${ rExpr }"`;
             cmd = cmd.replace(/\\/g, '/');
             try {
                 sh(cmd, { stdio: [0, 1, 1], encoding: 'utf-8', env: env } );
@@ -204,44 +237,41 @@ const compile = function(srcDir, moduleDir, paths, packageInfo, rVersion, rArch,
 
         let installed = fs.readdirSync(buildDir);
 
-        let rv = rVersion.substring(0,3)
-        if (rArch === 'x64')
-            rv = `${ rv }-x86_64`;
-        else if (rArch === 'arm64')
-            rv = `${ rv }-arm64`;
+        // resolve the actual R.framework version directory name (e.g. '4.6'
+        // or, on older releases, '4.5-arm64'). CRAN dropped the arch suffix
+        // from the version dir in R 4.6, so we can't simply append it — read
+        // it from the R being used, falling back to the old scheme if that
+        // lookup fails.
+        let rv;
+        try {
+            // paths.rHome is .../R.framework/Versions/Current/Resources, so its
+            // parent is the 'Current' symlink pointing at the real version dir
+            rv = path.basename(fs.realpathSync(path.dirname(paths.rHome)));
+        }
+        catch (e) {
+            rv = rVersion.substring(0,3);
+            if (rArch === 'x64')
+                rv = `${ rv }-x86_64`;
+            else if (rArch === 'arm64')
+                rv = `${ rv }-arm64`;
+        }
 
-        const subs = [
-            [`/Library/Frameworks/R.framework/Versions/${ rv }/Resources/lib/libR.dylib`,
-                `@executable_path/../Frameworks/R.framework/Versions/${ rv }/Resources/lib/libR.dylib`],
-            [`/Library/Frameworks/R.framework/Versions/${ rv }/Resources/lib/libRlapack.dylib`,
-                `@executable_path/../Frameworks/R.framework/Versions/${ rv }/Resources/lib/libRlapack.dylib`],
-            [`/Library/Frameworks/R.framework/Versions/${ rv }/Resources/lib/libRblas.dylib`,
-                `@executable_path/../Frameworks/R.framework/Versions/${ rv }/Resources/lib/libRblas.dylib`],
+        const libDir = `@executable_path/../Frameworks/R.framework/Versions/${ rv }/Resources/lib`;
 
-            [`/usr/local/lib/libgfortran.5.dylib`,
-                `@executable_path/../Frameworks/R.framework/Versions/${ rv }/Resources/lib/libgfortran.5.dylib`],
-            [`/usr/local/gfortran/lib/libgfortran.5.dylib`,
-                `@executable_path/../Frameworks/R.framework/Versions/${ rv }/Resources/lib/libgfortran.5.dylib`],
-            [`/Library/Frameworks/R.framework/Versions/${ rv }/Resources/lib/libgfortran.5.dylib`,
-                `@executable_path/../Frameworks/R.framework/Versions/${ rv }/Resources/lib/libgfortran.5.dylib`],
-
-            [`/usr/local/lib/libquadmath.0.dylib`,
-                `@executable_path/../Frameworks/R.framework/Versions/${ rv }/Resources/lib/libquadmath.0.dylib`],
-            [`/usr/local/gfortran/lib/libquadmath.0.dylib`,
-                `@executable_path/../Frameworks/R.framework/Versions/${ rv }/Resources/lib/libquadmath.0.dylib`],
-            [`/Library/Frameworks/R.framework/Versions/${ rv }/Resources/lib/libquadmath.0.dylib`,
-                `@executable_path/../Frameworks/R.framework/Versions/${ rv }/Resources/lib/libquadmath.0.dylib`],
-
-            ['/opt/X11/lib/libXrender.1.dylib',
-                `@executable_path/../Frameworks/R.framework/Versions/${ rv }/Resources/lib/libXrender.1.dylib`],
-
-            [`/Library/Frameworks/R.framework/Versions/${ rv }/Resources/lib/libomp.dylib`,
-                `@executable_path/../Frameworks/R.framework/Versions/${ rv }/Resources/lib/libomp.dylib`],
-            [`/Library/Frameworks/R.framework/Versions/${ rv }/Resources/lib/libc++.1.dylib`,
-                `@executable_path/../Frameworks/R.framework/Versions/${ rv }/Resources/lib/libc++.1.dylib`],
-            [`/Library/Frameworks/R.framework/Versions/${ rv }/Resources/lib/libc++abi.1.dylib`,
-                `@executable_path/../Frameworks/R.framework/Versions/${ rv }/Resources/lib/libc++abi.1.dylib`],
-        ]
+        // basenames of the libraries that ship inside the bundled R.framework;
+        // any dependency with one of these names must be redirected to run
+        // from within the jamovi bundle, wherever it currently points
+        const relocatable = new Set([
+            'libR.dylib',
+            'libRlapack.dylib',
+            'libRblas.dylib',
+            'libgfortran.5.dylib',
+            'libquadmath.0.dylib',
+            'libXrender.1.dylib',
+            'libomp.dylib',
+            'libc++.1.dylib',
+            'libc++abi.1.dylib',
+        ]);
 
         for (let pkg of installed) {
 
@@ -265,8 +295,29 @@ const compile = function(srcDir, moduleDir, paths, packageInfo, rVersion, rArch,
 
                 log.debug('patching ' + pkgPath);
 
-                for (let sub of subs) {
-                    cmd = util.format('/usr/bin/install_name_tool -change %s %s "%s"', sub[0], sub[1], pkgPath);
+                // read the binary's actual dependencies rather than guessing
+                // their paths — the version/arch segment and install location
+                // vary across R releases, so a hard-coded 'from' path silently
+                // fails to match and install_name_tool does nothing
+                let deps = '';
+                try {
+                    deps = sh(util.format('/usr/bin/otool -L "%s"', pkgPath), { encoding: 'utf-8' });
+                }
+                catch (e) {
+                    log.debug('could not read dependencies for ' + pkgPath);
+                }
+
+                for (let line of deps.split('\n')) {
+                    const match = line.match(/^\s+(\S+)\s+\(compatibility/);
+                    if (match === null)
+                        continue;
+                    const dep = match[1];
+                    if (dep.startsWith('@'))
+                        continue;  // already relocated
+                    if ( ! relocatable.has(path.basename(dep)))
+                        continue;
+                    const to = `${ libDir }/${ path.basename(dep) }`;
+                    cmd = util.format('/usr/bin/install_name_tool -change %s %s "%s"', dep, to, pkgPath);
                     sh(cmd, { stdio: [0, 1, 1], encoding: 'utf-8', env: env } );
                 }
 
