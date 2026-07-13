@@ -92,17 +92,22 @@ class Dropdown extends HTMLElement {
         }, 0);
 
         const rect = this.$formula.getBoundingClientRect();
-        const top = rect.top + rect.height + 1 + window.scrollY;
-        const left = rect.left + window.scrollX;
+        const isBodyHosted = this.parentElement === document.body;
+        const top = rect.top + rect.height + 1 + (isBodyHosted ? window.scrollY : 0);
+        const left = rect.left + (isBodyHosted ? window.scrollX : 0);
 
-        this.style.position = 'absolute';
+        this.style.position = isBodyHosted ? 'absolute' : 'fixed';
         this.style.top = `${top}px`;
         this.style.left = `${left}px`;
         this.style.minWidth = `${this.$formula.offsetWidth}px`;
     }
 
-    public show($formula: HTMLElement, content: DropdownContent, wait: boolean = false): Promise<void> {
+    public show($formula: HTMLElement, content: DropdownContent, wait: boolean = false, host: HTMLElement = document.body): Promise<void> {
         const formulaEl = $formula;
+
+        if (this.parentElement !== host) {
+            host.append(this);
+        }
 
         if (content !== this.$content) {
             if (this.$content) {
@@ -212,7 +217,7 @@ document.body.append(dropdownInstance);
 
 export default {
     init: () => {},
-    show: (formula: HTMLElement, content: DropdownContent, wait = false) => dropdownInstance.show(formula, content, wait),
+    show: (formula: HTMLElement, content: DropdownContent, wait = false, host?: HTMLElement) => dropdownInstance.show(formula, content, wait, host),
     hide: () => dropdownInstance.hide({ data: { dropdown: dropdownInstance, check: false } }),
     updatePosition: () => dropdownInstance['_findPosition'](),
     focusedOn: () => dropdownInstance.formula,

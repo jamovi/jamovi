@@ -453,7 +453,7 @@ class TransformEditor extends HTMLElement {
                 $formula = elements.$focusedFormula === null ? elements.$formulas[0] : elements.$focusedFormula;
                 //if (this._$wasEditingFormula !== $formula) {
                     this.formulasetup.show($formula, '', true);
-                    dropdown.show(elements.$formulaGrid, this.formulasetup).then(() => {
+                    dropdown.show(elements.$formulaGrid, this.formulasetup, false, this.$contents).then(() => {
                         this._editorClicked = false;
                     });
                     //$formula.focus();
@@ -461,10 +461,19 @@ class TransformEditor extends HTMLElement {
                 //}
             }
             this._addingLevel = false;
+            event.preventDefault();
+            event.stopPropagation();
         });
 
         elements.$showEditor.addEventListener('mousedown', (event) => {
             this._$wasEditingFormula = dropdown.focusedOn() !== null ? this.formulasetup.focusedOn() : null;
+            event.preventDefault();
+            event.stopPropagation();
+        });
+
+        elements.$showEditor.addEventListener('pointerdown', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
         });
 
         document.addEventListener("selectionchange", () => {
@@ -875,7 +884,7 @@ class TransformEditor extends HTMLElement {
             $opEdit.addEventListener('click', (event) => {
                 if (this._$wasEditingOpsFormula !== $formula || dropdown.content() !== this.opsToolbar) {
                     this.opsToolbar.show($formula);
-                    dropdown.show($formula, this.opsToolbar);
+                    dropdown.show($formula, this.opsToolbar, false, this.$contents);
 
                     let sel = window.getSelection();
 
