@@ -193,13 +193,31 @@ const compile = function(srcDir, moduleDir, paths, packageInfo, rVersion, rArch,
                 Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, remotesDelay);
             }
 
-            // prefer pak when it's installed, otherwise fall back to remotes. the
-            // check runs inside R so this works regardless of whether pak has been
-            // provisioned. note pak has no INSTALL_opts equivalent, so the size
-            // flags only apply on the remotes fallback path.
-            const pakInstall = `pak::pkg_install('github::${ remote }', lib='${ buildDir }', dependencies=FALSE, upgrade=FALSE, ask=FALSE)`;
-            const remotesInstall = `remotes::install_github('${ remote }', lib='${ buildDir }', type=${ installType }, INSTALL_opts=c('--no-data', '--no-help', '--no-demo', '--no-html', '--no-docs', '--no-multiarch'), dependencies=FALSE, upgrade=FALSE)`;
-            const rExpr = `if (requireNamespace('pak', quietly=TRUE)) ${ pakInstall } else ${ remotesInstall }`;
+            // download the source tarball straight from github's codeload
+            // archive endpoint rather than going through install_github/pak.
+            // codeload is served like a git clone, so it doesn't count against
+            // the REST API rate limit, and installing a plain tarball needs no
+            // pak/rtools (only a compiler, and only if the package has compiled
+            // code — which install_github would have needed too).
+            //
+            // remote looks like 'owner/repo', 'owner/repo@ref', or with an
+            // optional 'github::' type prefix and/or '/subdir'. ref covers a
+            // branch, tag, or commit sha. an unknown default branch is fine:
+            // 'HEAD' resolves to its tip on codeload. note: '@*release'
+            // tag-globs and '#pull' pull-request refs aren't handled.
+            let spec = remote.replace(/^[a-z]+::/i, '');
+            let ref = 'HEAD';
+            const at = spec.indexOf('@');
+            if (at !== -1) {
+                ref = spec.substring(at + 1);
+                spec = spec.substring(0, at);
+            }
+            const [ owner, repo, ...subdirParts ] = spec.split('/');
+            const subdir = subdirParts.join('/');
+            const url = `https://github.com/${ owner }/${ repo }/archive/${ ref }.tar.gz`;
+
+            const subdirArg = subdir ? `subdir='${ subdir }', ` : '';
+            const rExpr = `remotes::install_url('${ url }', lib='${ buildDir }', ${ subdirArg }type=${ installType }, INSTALL_opts=c('--no-data', '--no-help', '--no-demo', '--no-html', '--no-docs', '--no-multiarch'), dependencies=FALSE, upgrade=FALSE)`;
             cmd = `"${ paths.rExe }" --vanilla --slave -e "${ rExpr }"`;
             cmd = cmd.replace(/\\/g, '/');
             try {
