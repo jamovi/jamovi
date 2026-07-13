@@ -69,7 +69,8 @@ Html <- R6::R6Class("Html",
         },
         knit=function(value) {
 
-            knitted <- knitr::knit(text=value)
+            knitted <- knitr::knit(text=value, quiet=TRUE)
+            # quiet=TRUE to suppress progress bar
 
             knitMeta <- attr(knitted, 'html_dependencies')
             if ( ! is.null(knitMeta)) {
