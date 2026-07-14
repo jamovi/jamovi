@@ -188,6 +188,14 @@ const compile = function(srcDir, moduleDir, paths, packageInfo, rVersion, rArch,
         for (let i = 0; i < remotes.length; i++) {
             let remote = remotes[i];
 
+            // skip if a package of this name was already present in buildDir at
+            // the start of the run.
+            const packageName = remotePackageNames[i];
+            if (installed.indexOf(packageName) !== -1) {
+                console.log(`${ remote }: '${ packageName }' already installed, skipping`);
+                continue;
+            }
+
             if (i > 0 && remotesDelay > 0) {
                 log.debug(`waiting ${ options.remotesDelay }s before installing next remote`);
                 Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, remotesDelay);
