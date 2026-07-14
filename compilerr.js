@@ -217,7 +217,11 @@ const compile = function(srcDir, moduleDir, paths, packageInfo, rVersion, rArch,
             const url = `https://github.com/${ owner }/${ repo }/archive/${ ref }.tar.gz`;
 
             const subdirArg = subdir ? `subdir='${ subdir }', ` : '';
-            const rExpr = `remotes::install_url('${ url }', lib='${ buildDir }', ${ subdirArg }type=${ installType }, INSTALL_opts=c('--no-data', '--no-help', '--no-demo', '--no-html', '--no-docs', '--no-multiarch'), dependencies=FALSE, upgrade=FALSE)`;
+            // dependencies=NA pulls the remote's hard deps (Depends/Imports/
+            // LinkingTo) from the CRAN mirror, not the github API, so there's no
+            // rate-limit regression; only the remote tarball comes from codeload.
+            let mirrors = mirror.split(',').map(x => `'${x}'`).join(',');
+            const rExpr = `remotes::install_url('${ url }', lib='${ buildDir }', ${ subdirArg }type=${ installType }, repos=c(${ mirrors }), INSTALL_opts=c('--no-data', '--no-help', '--no-demo', '--no-html', '--no-docs', '--no-multiarch'), dependencies=NA, upgrade=FALSE)`;
             cmd = `"${ paths.rExe }" --vanilla --slave -e "${ rExpr }"`;
             cmd = cmd.replace(/\\/g, '/');
             try {
