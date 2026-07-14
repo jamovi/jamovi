@@ -408,6 +408,11 @@ const load = function(defDir, code, create) {
         if (file.endsWith('.po') === false && file.endsWith('.pot') === false)
             continue;
 
+        if (file.endsWith('.pot') && file !== 'catalog.pot') {
+            console.log(`skipping unrecognized .pot file: ${file} (only 'catalog.pot' is used as the source catalog)`);
+            continue;
+        }
+
         if (code) {
             const fileCode = resolveLanguageCode(languageCodeFromTranslationFile(file));
             if (translationLoaded)
