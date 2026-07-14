@@ -394,7 +394,11 @@ class Engine:
                     results = AnalysisResponse()
                     results.ParseFromString(message.payload)
 
-                    self._ioloop.call_soon_threadsafe(self._results_queue.put_nowait, (results, complete))
+                    try:
+                        self._ioloop.call_soon_threadsafe(self._results_queue.put_nowait, (results, complete))
+                    except RuntimeError:
+                        # loop already closed during shutdown -- nothing to deliver
+                        break
 
                 except nanomsg.NanoMsgAPIError as e:
                     if e.errno != nanomsg.ETIMEDOUT and e.errno != nanomsg.EAGAIN:
@@ -411,8 +415,17 @@ class Engine:
             if not stopping_flag.is_set():
                 raise e
         finally:
-            self._ioloop.call_soon_threadsafe(self._on_terminated, process.returncode, stopping_flag, abandoned_flag)
-            socket.close()
+            try:
+                self._ioloop.call_soon_threadsafe(self._on_terminated, process.returncode, stopping_flag, abandoned_flag)
+            except RuntimeError:
+                # loop already closed during shutdown -- nothing to notify
+                pass
+            try:
+                socket.close()
+            except nanomsg.NanoMsgAPIError:
+                # socket may already be closed (e.g. by stop() to unblock recv,
+                # or by nn_term during shutdown) -- a double close raises here
+                pass
 
     def _on_terminated(self, return_code, stopping_flag, abandoned_flag):
         if abandoned_flag.is_set():
