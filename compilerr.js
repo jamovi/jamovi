@@ -188,6 +188,14 @@ const compile = function(srcDir, moduleDir, paths, packageInfo, rVersion, rArch,
         for (let i = 0; i < remotes.length; i++) {
             let remote = remotes[i];
 
+            // skip if a package of this name was already present in buildDir at
+            // the start of the run.
+            const packageName = remotePackageNames[i];
+            if (installed.indexOf(packageName) !== -1) {
+                console.log(`${ remote }: '${ packageName }' already installed, skipping`);
+                continue;
+            }
+
             if (i > 0 && remotesDelay > 0) {
                 log.debug(`waiting ${ options.remotesDelay }s before installing next remote`);
                 Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, remotesDelay);
@@ -217,7 +225,11 @@ const compile = function(srcDir, moduleDir, paths, packageInfo, rVersion, rArch,
             const url = `https://github.com/${ owner }/${ repo }/archive/${ ref }.tar.gz`;
 
             const subdirArg = subdir ? `subdir='${ subdir }', ` : '';
-            const rExpr = `remotes::install_url('${ url }', lib='${ buildDir }', ${ subdirArg }type=${ installType }, INSTALL_opts=c('--no-data', '--no-help', '--no-demo', '--no-html', '--no-docs', '--no-multiarch'), dependencies=FALSE, upgrade=FALSE)`;
+            // dependencies=NA pulls the remote's hard deps (Depends/Imports/
+            // LinkingTo) from the CRAN mirror, not the github API, so there's no
+            // rate-limit regression; only the remote tarball comes from codeload.
+            let mirrors = mirror.split(',').map(x => `'${x}'`).join(',');
+            const rExpr = `remotes::install_url('${ url }', lib='${ buildDir }', ${ subdirArg }type=${ installType }, repos=c(${ mirrors }), INSTALL_opts=c('--no-data', '--no-help', '--no-demo', '--no-html', '--no-docs', '--no-multiarch'), dependencies=NA, upgrade=FALSE)`;
             cmd = `"${ paths.rExe }" --vanilla --slave -e "${ rExpr }"`;
             cmd = cmd.replace(/\\/g, '/');
             try {
@@ -269,8 +281,6 @@ const compile = function(srcDir, moduleDir, paths, packageInfo, rVersion, rArch,
             'libquadmath.0.dylib',
             'libXrender.1.dylib',
             'libomp.dylib',
-            'libc++.1.dylib',
-            'libc++abi.1.dylib',
         ]);
 
         for (let pkg of installed) {
