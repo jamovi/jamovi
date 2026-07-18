@@ -6,6 +6,7 @@ from .session import NoSuchInstanceException
 
 import aiohttp
 from aiohttp import web
+from aiohttp import WSCloseCode
 
 from . import jamovi_pb2 as coms
 from .jamovi_pb2 import ComsMessage
@@ -20,6 +21,20 @@ import logging
 import socket
 
 log = logging.getLogger(__name__)
+
+
+def is_clean_close(close_code: int | None) -> bool:
+    # distinguish a deliberate close (window/tab closed) from an unclean drop
+    # (e.g. computer sleep). aiohttp reports an unclean drop as ABNORMAL_CLOSURE
+    # (1006), and leaves close_code as None if the socket dies before any code
+    # is assigned; either way we must not treat it as clean, or the instance
+    # gets garbage collected while asleep and the client hits 'no such instance'
+    # when it reconnects on wake.
+    #
+    # NB. tornado left close_code as None on an unclean drop, so the original
+    # `close_code is not None` test was correct there; aiohttp's 1006 makes that
+    # test read an unclean drop as clean, which is what this guards against.
+    return close_code is not None and close_code != WSCloseCode.ABNORMAL_CLOSURE
 
 
 class ClientConnection:
@@ -182,7 +197,6 @@ async def client_connection_handler(request: web.Request, session) -> web.WebSoc
             elif msg.type in (aiohttp.WSMsgType.ERROR, aiohttp.WSMsgType.CLOSE):
                 break
     finally:
-        # close_code is None for unclean disconnections (e.g. computer sleep)
-        conn.on_close(ws.close_code is not None)
+        conn.on_close(is_clean_close(ws.close_code))
 
     return ws
