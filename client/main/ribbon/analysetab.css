@@ -142,6 +142,10 @@
     background-image: url("../../assets/analysis-summarytables.svg");
 }
 
+.jmv-ribbon-button[data-name="metajam"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-metajam.svg");
+}
+
 .jmv-analyses-button.jmv-modules-menu-item {
     background-color: #dddddd;
 }

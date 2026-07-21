@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2000/svg" version="1.1" xml:space="preserve" height="44" width="74" enable-background="new 0 0 74 44" y="0px" x="0px" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" viewBox="0 0 74 44" overflow="hidden">
+  <metadata>
+    <rdf:RDF>
+      <cc:Work rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+        <dc:title>MetaJam module icon</dc:title>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>Nour Edin Darwish</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <cc:license rdf:resource="http://creativecommons.org/publicdomain/zero/1.0/"/>
+      </cc:Work>
+      <cc:License rdf:about="http://creativecommons.org/publicdomain/zero/1.0/">
+        <cc:permits rdf:resource="http://creativecommons.org/ns#Reproduction"/>
+        <cc:permits rdf:resource="http://creativecommons.org/ns#Distribution"/>
+        <cc:permits rdf:resource="http://creativecommons.org/ns#DerivativeWorks"/>
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+  <!-- Vertical reference line (null effect) -->
+  <path stroke="#3e6da9" stroke-width="1" stroke-dasharray="1,2.07" d="m37 0v44" fill="none"/>
+  <!-- Study 1: Blue (+6 right of null) -->
+  <g stroke="#6b9de8">
+    <path stroke-width="2" d="m28 5.5h30" fill="none"/>
+    <circle stroke-width="2" cx="43" cy="5.5" r="3" fill="#fff"/>
+    <rect x="27.4" y="3.5" width="1.17" height="4" stroke-width="1.2" fill="#b0cbf3"/>
+    <rect x="57.4" y="3.5" width="1.17" height="4" stroke-width="1.2" fill="#b0cbf3"/>
+  </g>
+  <!-- Study 2: Gold (-6 left of null) -->
+  <g stroke="#e6ac40">
+    <path stroke-width="2" d="m16 16h30" fill="none"/>
+    <circle stroke-width="2" cx="31" cy="16" r="3" fill="#fff"/>
+    <rect x="15.4" y="14" width="1.17" height="4" stroke-width="1.2" fill="#b0cbf3"/>
+    <rect x="45.4" y="14" width="1.17" height="4" stroke-width="1.2" fill="#b0cbf3"/>
+  </g>
+  <!-- Study 3: Grey (+6 right of null, aligned with Study 1) -->
+  <g stroke="#9f9f9f" fill="#fff">
+    <path stroke-width="2" d="m28 26.5h30" fill="none"/>
+    <circle stroke-width="2" cx="43" cy="26.5" r="3"/>
+    <rect x="27.4" y="24.5" width="1.17" height="4" stroke-width="1.2"/>
+    <rect x="57.4" y="24.5" width="1.17" height="4" stroke-width="1.2"/>
+  </g>
+  <!-- Summary diamond (pooled estimate, centered on null) -->
+  <polygon points="37,34.5 48,38 37,41.5 26,38" fill="#fff" stroke="#3e6da9" stroke-width="2"/>
+</svg>
