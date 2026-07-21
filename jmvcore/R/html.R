@@ -56,8 +56,6 @@ Html <- R6::R6Class("Html",
             private$.stale <- FALSE
         },
         setScripts=function(scripts) {
-            package <- self$analysis$package
-            scripts <- paste0(package, "/", scripts)
             private$.scripts <- scripts
             private$.stale <- FALSE
         },
