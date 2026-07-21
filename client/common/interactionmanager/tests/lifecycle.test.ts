@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createLifecycleContext, createLoop, FakeElement, LifecycleTestContext, setActiveElement } from './helpers';
+import { createLifecycleContext, createLoop, FakeElement, FakeSelectElement, LifecycleTestContext, setActiveElement } from './helpers';
 
 describe('FocusLoopLifecycle', () => {
     let ctx: LifecycleTestContext;
@@ -22,17 +22,24 @@ describe('FocusLoopLifecycle', () => {
     });
 
     it('deactivates a non-modal loop when focus moves outside it', () => {
-        const { element, loop } = createLoop(ctx, 'loop');
-        const child = element.append(new FakeElement('child'));
-        const outside = ctx.body.append(new FakeElement('outside'));
-        const deactivated = vi.fn();
-        loop.on('deactivate', deactivated);
+        vi.useFakeTimers();
+        try {
+            const { element, loop } = createLoop(ctx, 'loop');
+            const child = element.append(new FakeElement('child'));
+            const outside = ctx.body.append(new FakeElement('outside'));
+            const deactivated = vi.fn();
+            loop.on('deactivate', deactivated);
 
-        ctx.lifecycle.handleFocusIn(child as unknown as HTMLElement, []);
-        ctx.lifecycle.handleFocusIn(outside as unknown as HTMLElement, []);
+            ctx.lifecycle.handleFocusIn(child as unknown as HTMLElement, []);
+            vi.advanceTimersByTime(201);
+            ctx.lifecycle.handleFocusIn(outside as unknown as HTMLElement, []);
 
-        expect(loop.state).toBe('registered');
-        expect(deactivated).toHaveBeenCalledOnce();
+            expect(loop.state).toBe('registered');
+            expect(deactivated).toHaveBeenCalledOnce();
+        }
+        finally {
+            vi.useRealTimers();
+        }
     });
 
     it('does not activate a keyToEnter child loop from passive root focus', () => {
@@ -125,6 +132,143 @@ describe('FocusLoopLifecycle', () => {
         expect(modalA.loop.state).toBe('active');
         expect(modalB.loop.state).toBe('active');
         expect(ctx.lifecycle.activeModal).toBe(modalB.loop);
+    });
+
+    it('restores focus into a newly active loop when focus moves outside during stabilization', () => {
+        const { element, loop } = createLoop(ctx, 'loop');
+        const child = element.append(new FakeElement('child'));
+        const outside = ctx.body.append(new FakeElement('outside'));
+        const deactivated = vi.fn();
+        loop.on('deactivate', deactivated);
+
+        ctx.lifecycle.handleFocusIn(child as unknown as HTMLElement, []);
+        setActiveElement(outside);
+        ctx.lifecycle.handleFocusIn(outside as unknown as HTMLElement, []);
+
+        expect(loop.state).toBe('active');
+        expect(document.activeElement).toBe(child);
+        expect(deactivated).not.toHaveBeenCalled();
+    });
+
+    it('restores focus into a newly active loop when focus moves to null during stabilization', () => {
+        vi.useFakeTimers();
+        try {
+            const { element, loop } = createLoop(ctx, 'loop');
+            const child = element.append(new FakeElement('child'));
+            const deactivated = vi.fn();
+            loop.on('deactivate', deactivated);
+
+            ctx.lifecycle.handleFocusIn(child as unknown as HTMLElement, []);
+            setActiveElement(ctx.body);
+            ctx.lifecycle.handleFocusOut({ target: child, relatedTarget: null } as unknown as FocusEvent);
+
+            expect(document.activeElement).toBe(ctx.body);
+
+            vi.advanceTimersByTime(0);
+
+            expect(loop.state).toBe('active');
+            expect(document.activeElement).toBe(child);
+            expect(deactivated).not.toHaveBeenCalled();
+            expect(ctx.modes.scheduleDefaultModeReset).not.toHaveBeenCalled();
+        }
+        finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('does not restore focus during native select focus transitions', () => {
+        vi.useFakeTimers();
+        try {
+            const { element, loop } = createLoop(ctx, 'loop');
+            const select = element.append(new FakeSelectElement('select'));
+            const deactivated = vi.fn();
+            loop.on('deactivate', deactivated);
+
+            ctx.lifecycle.handleFocusIn(select as unknown as HTMLElement, []);
+            setActiveElement(ctx.body);
+            ctx.lifecycle.handleFocusOut({ target: select, relatedTarget: null } as unknown as FocusEvent);
+            vi.advanceTimersByTime(0);
+
+            expect(loop.state).toBe('active');
+            expect(document.activeElement).toBe(ctx.body);
+            expect(deactivated).not.toHaveBeenCalled();
+            expect(ctx.modes.scheduleDefaultModeReset).not.toHaveBeenCalled();
+            expect(ctx.navigator.findFocusableElement).not.toHaveBeenCalled();
+        }
+        finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('cancels deferred null focusout handling when focusin arrives', () => {
+        vi.useFakeTimers();
+        try {
+            const { element, loop } = createLoop(ctx, 'loop');
+            const child = element.append(new FakeElement('child'));
+            const outside = ctx.body.append(new FakeElement('outside'));
+            const deactivated = vi.fn();
+            loop.on('deactivate', deactivated);
+
+            ctx.lifecycle.handleFocusIn(child as unknown as HTMLElement, []);
+            vi.advanceTimersByTime(201);
+            setActiveElement(outside);
+            ctx.lifecycle.handleFocusOut({ target: child, relatedTarget: null } as unknown as FocusEvent);
+            ctx.lifecycle.handleFocusIn(outside as unknown as HTMLElement, []);
+            vi.advanceTimersByTime(0);
+
+            expect(loop.state).toBe('registered');
+            expect(deactivated).toHaveBeenCalledOnce();
+            expect(ctx.modes.scheduleDefaultModeReset).not.toHaveBeenCalled();
+        }
+        finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('uses activeElement when no focusin follows a null focusout', () => {
+        vi.useFakeTimers();
+        try {
+            const { element, loop } = createLoop(ctx, 'loop');
+            const child = element.append(new FakeElement('child'));
+            const outside = ctx.body.append(new FakeElement('outside'));
+            const deactivated = vi.fn();
+            loop.on('deactivate', deactivated);
+
+            ctx.lifecycle.handleFocusIn(child as unknown as HTMLElement, []);
+            vi.advanceTimersByTime(201);
+            setActiveElement(outside);
+            ctx.lifecycle.handleFocusOut({ target: child, relatedTarget: null } as unknown as FocusEvent);
+            vi.advanceTimersByTime(0);
+
+            expect(loop.state).toBe('registered');
+            expect(deactivated).toHaveBeenCalledOnce();
+            expect(ctx.modes.scheduleDefaultModeReset).not.toHaveBeenCalled();
+        }
+        finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('deactivates normally when focus moves outside after stabilization expires', () => {
+        vi.useFakeTimers();
+        try {
+            const { element, loop } = createLoop(ctx, 'loop');
+            const child = element.append(new FakeElement('child'));
+            const outside = ctx.body.append(new FakeElement('outside'));
+            const deactivated = vi.fn();
+            loop.on('deactivate', deactivated);
+
+            ctx.lifecycle.handleFocusIn(child as unknown as HTMLElement, []);
+            vi.advanceTimersByTime(201);
+            setActiveElement(outside);
+            ctx.lifecycle.handleFocusIn(outside as unknown as HTMLElement, []);
+
+            expect(loop.state).toBe('registered');
+            expect(deactivated).toHaveBeenCalledOnce();
+        }
+        finally {
+            vi.useRealTimers();
+        }
     });
 
     it('restores a suspended modal when the active modal deactivates', () => {
@@ -281,20 +425,27 @@ describe('FocusLoopLifecycle', () => {
     });
 
     it('deactivates a contained child loop when focus returns to its non-modal parent', () => {
-        const parent = createLoop(ctx, 'parent');
-        const child = createLoop(ctx, 'child', {}, parent.element);
-        const parentControl = parent.element.append(new FakeElement('parent-control'));
-        const childControl = child.element.append(new FakeElement('child-control'));
-        const childDeactivated = vi.fn();
-        child.loop.on('deactivate', childDeactivated);
+        vi.useFakeTimers();
+        try {
+            const parent = createLoop(ctx, 'parent');
+            const child = createLoop(ctx, 'child', {}, parent.element);
+            const parentControl = parent.element.append(new FakeElement('parent-control'));
+            const childControl = child.element.append(new FakeElement('child-control'));
+            const childDeactivated = vi.fn();
+            child.loop.on('deactivate', childDeactivated);
 
-        ctx.lifecycle.handleFocusIn(parentControl as unknown as HTMLElement, []);
-        ctx.lifecycle.handleFocusIn(childControl as unknown as HTMLElement, []);
-        ctx.lifecycle.handleFocusIn(parentControl as unknown as HTMLElement, []);
+            ctx.lifecycle.handleFocusIn(parentControl as unknown as HTMLElement, []);
+            ctx.lifecycle.handleFocusIn(childControl as unknown as HTMLElement, []);
+            vi.advanceTimersByTime(201);
+            ctx.lifecycle.handleFocusIn(parentControl as unknown as HTMLElement, []);
 
-        expect(parent.loop.state).toBe('active');
-        expect(child.loop.state).toBe('registered');
-        expect(childDeactivated).toHaveBeenCalledOnce();
+            expect(parent.loop.state).toBe('active');
+            expect(child.loop.state).toBe('registered');
+            expect(childDeactivated).toHaveBeenCalledOnce();
+        }
+        finally {
+            vi.useRealTimers();
+        }
     });
 
     it('clears focused loop state when an active loop is removed', () => {
