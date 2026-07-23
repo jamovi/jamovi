@@ -36,9 +36,9 @@ export const jmv = {
     name: 'jamovi',
     type: 'software',
     authors: { complete: 'The jamovi project' },
-    year: 2025,
+    year: 2026,
     title: 'jamovi',
-    publisher: '(Version 2.7) [Computer Software]. Retrieved from https://www.jamovi.org',
+    publisher: '(Version 28) [Computer Software]. Retrieved from https://www.jamovi.org',
     url: 'https://www.jamovi.org',
 };
 
@@ -46,11 +46,11 @@ export const R = {
     name: 'R',
     type: 'software',
     authors: { complete: 'R Core Team' },
-    year: 2025,
+    year: 2026,
     title: 'R: A Language and environment for statistical computing',
-    publisher: '(Version 4.5) [Computer software]. Retrieved from https://cran.r-project.org',
+    publisher: '(Version 4.6) [Computer software]. Retrieved from https://cran.r-project.org',
     url: 'https://cran.r-project.org',
-    extra: 'R packages retrieved from CRAN snapshot 2025-05-25'
+    extra: 'R packages retrieved from CRAN snapshot 2026-05-11'
 };
 
 export class References extends HTMLElement {
@@ -95,7 +95,7 @@ export class References extends HTMLElement {
 
         this._root.appendChild(heading);
         this._root.appendChild(this._body);
-        
+
         this.loop = interactionManager.registerLoop(this._body, { level: 1 });
     }
 
@@ -118,7 +118,7 @@ export class References extends HTMLElement {
 
         return this._numbers;
     }
-    
+
     getNumbers(ns: string) {
         const numbers = this.getAllNumbers();
 
@@ -253,7 +253,7 @@ export class References extends HTMLElement {
     }
 
     refKeyDown(event) {
-        if (event.code === 'Space') 
+        if (event.code === 'Space')
             event.target.setSelected( ! event.target.selected);
     }
 
