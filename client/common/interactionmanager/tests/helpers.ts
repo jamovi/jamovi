@@ -86,6 +86,9 @@ export class FakeElement {
     }
 }
 
+export class FakeSelectElement extends FakeElement {
+}
+
 export type LifecycleTestContext = {
     body: FakeElement;
     registry: {
@@ -118,6 +121,7 @@ export type LifecycleTestContext = {
 
 export function installFakeDom(body = new FakeElement('body')): FakeElement {
     globalThis.HTMLElement = FakeElement as unknown as typeof HTMLElement;
+    globalThis.HTMLSelectElement = FakeSelectElement as unknown as typeof HTMLSelectElement;
     globalThis.document = {
         body,
         querySelector: vi.fn(),
