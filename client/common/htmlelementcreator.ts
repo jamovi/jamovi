@@ -197,14 +197,18 @@ export function attrs(attributes: HTMLAttributes): SafeHTMLAttributes {
  * inline tags and safe text nodes.
  * Safe use: use when limited rich text is allowed inside element content.
  */
-export function rich(input: string, options: RichOptions = richBaseOptions): DocumentFragment {
+export function rich(input: string | null | undefined, options: RichOptions = richBaseOptions): DocumentFragment {
     let template = document.createElement('template');
     let fragment = document.createDocumentFragment();
     let allowedTags = new Set(options.tags ?? richBaseOptions.tags);
     let allowedAttributes = options.attributes ?? {};
 
+    // an absent value renders as nothing rather than tearing down the whole render
+    if (input === null || input === undefined)
+        return fragment;
+
     // Escape ampersands first so input entities such as &amp; remain literal text.
-    template.innerHTML = input.replace(/&/g, '&amp;');
+    template.innerHTML = String(input).replace(/&/g, '&amp;');
 
     function sanitizeAttributes(element: HTMLElement, tag: string): SafeHTMLAttributes {
         let tagAttributes = allowedAttributes[tag] ?? [];

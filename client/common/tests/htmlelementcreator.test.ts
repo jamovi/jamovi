@@ -67,6 +67,11 @@ describe('rich', () => {
         expect(container.innerHTML).toBe('a &lt; b &amp;&amp; c &gt; d');
     });
 
+    it('renders an absent value as an empty fragment', () => {
+        expect(renderFragment(rich(null))).toBe('');
+        expect(renderFragment(rich(undefined))).toBe('');
+    });
+
     it('preserves only base tags by default', () => {
         const fragment = rich('<p>Hello <strong>there</strong> <span>friend</span></p>');
         const container = document.createElement('div');

@@ -98,7 +98,7 @@ export class LabelControl extends TitledGridControl<LabelControlProperties> {
     }
     
     setLabel(value: string): void {
-        if (value === null)
+        if (value === null || value === undefined)
             value = '';
 
         value = this.translate(value);
@@ -192,7 +192,7 @@ export class OptionLabelControl extends OptionControl<OptionedLabelControlProper
     }
     
     setLabel(value: string): void {
-        if (value === null)
+        if (value === null || value === undefined)
             value = '';
 
         value = this.translate(value);
@@ -226,14 +226,22 @@ export class OptionLabelControl extends OptionControl<OptionedLabelControlProper
 
     override onOptionValueChanged(key, data) {
         super.onOptionValueChanged(key, data);
-        let format = this.getPropertyValue('format');
-        this.setLabel(format.toString(this.getValue()));
+        this.setLabel(this.valueAsLabel());
     }
 
     onI18nChanged() {
+        this.setLabel(this.valueAsLabel());
+    }
+
+    // the option value is absent (undefined) when the control is bound to a key
+    // the row data doesn't carry yet, so don't hand that to the format
+    private valueAsLabel(): string {
+        let value = this.getValue();
+        if (value === null || value === undefined)
+            return '';
+
         let format = this.getPropertyValue('format');
-        let label = format.toString(this.getValue());
-        this.setLabel(label);
+        return format.toString(value);
     }
 }
 
