@@ -487,6 +487,84 @@ describe('FocusLoopLifecycle', () => {
         expect(document.activeElement).toBe(modalB.element);
     });
 
+    it('releases an active loop whose element leaves the document', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        try {
+            const { element, loop } = createLoop(ctx, 'loop');
+            const child = element.append(new FakeElement('child'));
+            const outside = ctx.body.append(new FakeElement('outside'));
+
+            ctx.lifecycle.handleFocusIn(child as unknown as HTMLElement, []);
+            element.isConnected = false;
+            setActiveElement(outside);
+            ctx.lifecycle.handleFocusIn(outside as unknown as HTMLElement, []);
+
+            expect(loop.state).toBe('registered');
+            expect(document.activeElement).toBe(outside);
+            expect(warn).toHaveBeenCalled();
+        }
+        finally {
+            warn.mockRestore();
+        }
+    });
+
+    it('stops trapping focus when an active modal element leaves the document', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        try {
+            const { element, loop } = createLoop(ctx, 'modal', { modal: true });
+            const outside = ctx.body.append(new FakeElement('outside'));
+
+            ctx.lifecycle.activate(element as unknown as HTMLElement, { withMouse: true });
+            element.isConnected = false;
+            setActiveElement(outside);
+            ctx.lifecycle.handleFocusIn(outside as unknown as HTMLElement, []);
+
+            expect(loop.state).toBe('registered');
+            expect(ctx.lifecycle.activeModal).toBeNull();
+            expect(ctx.navigator.findFocusableElement).not.toHaveBeenCalled();
+            expect(document.activeElement).toBe(outside);
+            expect(ctx.modes.setDefault).toHaveBeenLastCalledWith('default', {});
+        }
+        finally {
+            warn.mockRestore();
+        }
+    });
+
+    it('promotes a suspended modal when the active modal element leaves the document', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        try {
+            const modalA = createLoop(ctx, 'modal-a', { modal: true });
+            const modalB = createLoop(ctx, 'modal-b', { modal: true });
+            const outside = ctx.body.append(new FakeElement('outside'));
+
+            ctx.lifecycle.activate(modalA.element as unknown as HTMLElement, { withMouse: true });
+            ctx.lifecycle.activate(modalB.element as unknown as HTMLElement, { withMouse: true });
+            modalB.element.isConnected = false;
+            setActiveElement(outside);
+            ctx.lifecycle.handleFocusIn(outside as unknown as HTMLElement, []);
+
+            expect(modalB.loop.state).toBe('registered');
+            expect(ctx.lifecycle.activeModal).toBe(modalA.loop);
+            expect(ctx.navigator.findFocusableElement.mock.calls[0][0]).toBe(modalA.element);
+        }
+        finally {
+            warn.mockRestore();
+        }
+    });
+
+    it('restores the default focus mode when an active modal is removed', () => {
+        const { element, loop } = createLoop(ctx, 'modal', { modal: true });
+
+        ctx.lifecycle.activate(element as unknown as HTMLElement, { withMouse: true });
+        expect(ctx.modes.setDefault).toHaveBeenLastCalledWith('hover', {});
+
+        ctx.lifecycle.remove(element as unknown as HTMLElement);
+
+        expect(loop.state).toBe('removed');
+        expect(ctx.lifecycle.activeModal).toBeNull();
+        expect(ctx.modes.setDefault).toHaveBeenLastCalledWith('default', {});
+    });
+
     it('does not allow mouse deactivation to be cancelled', () => {
         const { element, loop } = createLoop(ctx, 'loop');
         loop.on('deactivate', event => {
@@ -512,6 +590,114 @@ describe('FocusLoopLifecycle', () => {
         expect(modalB.loop.state).toBe('registered');
         expect(ctx.lifecycle.activeModal).toBe(modalA.loop);
         expect(document.activeElement).toBe(modalA.element);
+    });
+
+    it('deactivates every suspended modal it unwinds past', () => {
+        const modalA = createLoop(ctx, 'modal-a', { modal: true });
+        const modalB = createLoop(ctx, 'modal-b', { modal: true });
+        const modalC = createLoop(ctx, 'modal-c', { modal: true });
+        const modalD = createLoop(ctx, 'modal-d', { modal: true });
+        const plain = createLoop(ctx, 'plain');
+        const deactivated: string[] = [];
+
+        for (const modal of [modalA, modalB, modalC, modalD]) {
+            modal.loop.on('deactivate', () => deactivated.push(modal.element.name));
+            ctx.lifecycle.activate(modal.element as unknown as HTMLElement, { withMouse: true });
+        }
+
+        ctx.lifecycle.activate(plain.element as unknown as HTMLElement, { withMouse: true });
+
+        expect(modalA.loop.state).toBe('registered');
+        expect(modalB.loop.state).toBe('registered');
+        expect(modalC.loop.state).toBe('registered');
+        expect(modalD.loop.state).toBe('registered');
+        expect(deactivated.sort()).toEqual(['modal-a', 'modal-b', 'modal-c', 'modal-d']);
+        expect(plain.loop.state).toBe('active');
+        expect(ctx.lifecycle.activeModal).toBeNull();
+    });
+
+    it('keeps the active modal when a suspended modal deactivates', () => {
+        const modalA = createLoop(ctx, 'modal-a', { modal: true });
+        const modalB = createLoop(ctx, 'modal-b', { modal: true });
+
+        ctx.lifecycle.activate(modalA.element as unknown as HTMLElement, { withMouse: true });
+        ctx.lifecycle.activate(modalB.element as unknown as HTMLElement, { withMouse: true });
+        ctx.lifecycle.deactivate(modalA.element as unknown as HTMLElement, { source: 'programmatic' });
+
+        expect(modalA.loop.state).toBe('registered');
+        expect(modalB.loop.state).toBe('active');
+        expect(ctx.lifecycle.activeModal).toBe(modalB.loop);
+    });
+
+    it('does not strand a loop activated by a deactivate handler', () => {
+        vi.useFakeTimers();
+        try {
+            const first = createLoop(ctx, 'first');
+            const second = createLoop(ctx, 'second');
+            const third = createLoop(ctx, 'third');
+
+            ctx.lifecycle.activate(first.element as unknown as HTMLElement, { withMouse: true });
+            first.loop.on('deactivate', () => {
+                ctx.lifecycle.activate(third.element as unknown as HTMLElement, { withMouse: true });
+            });
+            vi.advanceTimersByTime(201);
+
+            setActiveElement(second.element);
+            ctx.lifecycle.handleFocusIn(second.element as unknown as HTMLElement, []);
+
+            expect(first.loop.state).toBe('registered');
+            expect(second.loop.state).toBe('active');
+            expect(third.loop.state).toBe('registered');
+        }
+        finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('keeps an outer activation visible while a nested activation completes', () => {
+        const parent = createLoop(ctx, 'parent');
+        const child = createLoop(ctx, 'child', { level: 2 }, parent.element);
+        const other = createLoop(ctx, 'other');
+        let activatingInsideParent: boolean | null = null;
+
+        child.loop.on('activate', () => {
+            ctx.lifecycle.activate(other.element as unknown as HTMLElement, { withMouse: true });
+            activatingInsideParent = ctx.lifecycle.hasActivatingLoopInside(parent.element as unknown as HTMLElement);
+        });
+
+        ctx.lifecycle.activate(child.element as unknown as HTMLElement, { withMouse: true });
+
+        expect(activatingInsideParent).toBe(true);
+    });
+
+    it('does not leave a pending activation behind when activated during deactivation', () => {
+        vi.useFakeTimers();
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        try {
+            const modalA = createLoop(ctx, 'modal-a', { modal: true });
+            const modalB = createLoop(ctx, 'modal-b', { modal: true });
+
+            ctx.lifecycle.activate(modalB.element as unknown as HTMLElement, { withMouse: true });
+            modalB.loop.on('deactivate', () => {
+                ctx.lifecycle.activate(modalB.element as unknown as HTMLElement, { withMouse: true });
+            });
+            ctx.lifecycle.deactivate(modalB.element as unknown as HTMLElement, { source: 'programmatic' });
+            expect(modalB.loop.state).toBe('registered');
+
+            ctx.lifecycle.activate(modalA.element as unknown as HTMLElement, { withMouse: true });
+            vi.advanceTimersByTime(201);
+
+            setActiveElement(modalB.element);
+            ctx.lifecycle.handleFocusIn(modalB.element as unknown as HTMLElement, []);
+
+            expect(modalB.loop.state).toBe('registered');
+            expect(ctx.lifecycle.activeModal).toBe(modalA.loop);
+            expect(document.activeElement).toBe(modalA.element);
+        }
+        finally {
+            warn.mockRestore();
+            vi.useRealTimers();
+        }
     });
 
     it('reports active modal key-path availability', () => {
