@@ -43,8 +43,16 @@ import type {
     IFocusLoopOptions,
 } from './interactionmanager/focustype';
 
+// transferFocus() marks the window as blurring while focus moves to another
+// window, which suspends focus-out reconciliation. Browsers can refuse a
+// programmatic window focus, and a same-page parent/iframe transfer may not
+// change window focus at all, so the expected focus or blur event never
+// arrives. This bounds how long the suspension can last.
+const blurringTimeoutMs = 1000;
+
 export class InteractionManager extends EventEmitter {
     private isBlurringValue = false;
+    private blurringTimer: ReturnType<typeof setTimeout> | null = null;
     private isBlurredValue: boolean;
     private readonly globalKeyboard: GlobalKeyboardCommandController;
     public readonly shortcuts: ShortcutRegistry;
@@ -74,7 +82,7 @@ export class InteractionManager extends EventEmitter {
 
         this.input = new FocusInputTracker();
         this.classifier = new FocusElementClassifier();
-        this.windowBridge = new WindowBridge(value => this.isBlurringValue = value);
+        this.windowBridge = new WindowBridge(value => this.setBlurring(value));
         this.messageRouter = new FocusLoopMessageRouter(this.windowBridge);
         this.shortcuts = new ShortcutRegistry({
             windowBridge: this.windowBridge,
@@ -210,10 +218,32 @@ export class InteractionManager extends EventEmitter {
         return this.lifecycle.hasActivatingLoopInside(element);
     }
 
+    /**
+     * Marks the window as handing focus to another window. This is a latch:
+     * it must be cleared by the focus or blur event that follows, or by its own
+     * timeout when that event never arrives, because focus-out reconciliation
+     * stays suspended for as long as it is set.
+     */
+    private setBlurring(value: boolean): void {
+        if (this.blurringTimer) {
+            clearTimeout(this.blurringTimer);
+            this.blurringTimer = null;
+        }
+
+        this.isBlurringValue = value;
+
+        if (value) {
+            this.blurringTimer = setTimeout(() => {
+                this.blurringTimer = null;
+                this.isBlurringValue = false;
+            }, blurringTimeoutMs);
+        }
+    }
+
     private installFocusListeners(): void {
         window.addEventListener('focus', event => {
             this.emit('focus', event);
-            this.isBlurringValue = false;
+            this.setBlurring(false);
             this.isBlurredValue = false;
 
             if (this.getMode() === 'default' && !this.windowBridge.isMainWindow) {
@@ -223,7 +253,7 @@ export class InteractionManager extends EventEmitter {
 
         window.addEventListener('blur', event => {
             this.modes.clearDefaultModeReset();
-            this.isBlurringValue = false;
+            this.setBlurring(false);
             this.isBlurredValue = true;
             this.emit('blur', event);
         });

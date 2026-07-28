@@ -498,125 +498,22 @@ FocusLoop may not receive a useful focusin event and may still treat the closed
 loop as active. Calling deactivate() first explicitly deactivates the loop
 before the DOM changes.
 
-Mouse dismissal:
+Removal is backstopped. If a loop's element leaves the document while the loop
+is still referenced as the focused loop, the active modal, or a suspended
+modal, FocusLoop releases those references, returns the loop to registered, and
+promotes the next suspended modal. Each release is reported with a
+"Released dead focus loop reference" console warning.
 
-  menu.addEventListener('mouseleave', () => {
-      loop.deactivate({ source: 'mouse' });
-  });
+This backstop is not a substitute for deactivate(). It does not run deactivate
+handlers, so component close behavior is skipped, and it only detects removal
+from the document. A loop that is hidden while staying connected, such as
+setting hidden or display:none, is still treated as active.
 
-Mouse deactivation cannot be cancelled and does not pass focus to exitSelector.
-
-
-Keyboard navigation
--------------------
-
-Keyboard navigation is active outside default focus mode. When focus is in a
-loop:
-
-  - Tab and Shift+Tab wrap through tabbable controls in the current loop.
-  - Arrow keys move through keyboard-focusable controls by geometry.
-  - [vloop="true"] scopes vertical arrow navigation.
-  - [hloop="true"] scopes horizontal arrow navigation.
-  - If focus is on the loop root, arrow navigation explicitly activates the loop
-    and chooses the first or last focusable item based on direction.
-  - Elements can block directional arrow movement with classes such as
-    block-focus-up, block-focus-down, block-focus-left, and block-focus-right.
-
-Some controls reserve specific keys for their own behavior. When the focused
-control reserves a key, FocusLoop does not use that key for loop navigation or
-shortcuts.
-
-exitKeys lets keyboard navigation deactivate a loop with source
-"programmatic".
-
-  interactionManager.registerLoop(menu, {
-      exitKeys: ['Escape', 'Alt+ArrowUp', 'InlineArrowLeft'],
-      exitSelector: openerButton,
-  });
-
-Supported forms include normal KeyboardEvent.code values such as Escape and
-ArrowUp, modifier forms such as Alt+ArrowUp and Ctrl+ArrowLeft, and inline
-arrow aliases:
-
-  InlineArrowLeft
-  InlineArrowRight
-
-Inline aliases follow text direction. In RTL, physical left/right arrows are
-mapped to the opposite inline direction.
-
-
-KeyTips
--------
-
-By default, an active modal restricts modal-specific KeyTips to that modal.
-
-Use allowKeyPaths when the modal should allow broader key-path handling:
-
-  interactionManager.registerLoop(backstage, {
-      modal: true,
-      allowKeyPaths: true,
-  });
-
-KeyTip labels and actions are searched inside the active modal when one is
-active. Without an active modal, KeyTip handling is document-wide.
-
-Register KeyTips on controls that should show a visible key label during
-KeyTip mode:
-
-  keyTips.register(button, {
-      key: 'S',
-      action: () => save(),
-      label: 'Save',
-  });
-
-Refresh KeyTips when the visible KeyTip path changes or labels need rebuilding:
-
-  keyTips.update({ keyTipPath: 'F' });
-
-Keyboard shortcuts
-------------------
-
-Keyboard shortcuts are executable command bindings such as Ctrl+S, F10, or
-Alt+ArrowLeft. They are separate from visible KeyTips:
-
-  shortcuts.register('Ctrl+KeyS', () => save(), 'Save project');
-
-Modal-specific shortcuts can be registered directly through the shortcut
-controller by passing the loop's modal id:
-
-  const loop = interactionManager.registerLoop(dialog, { modal: true });
-  shortcuts.register('Escape', () => closeDialog(), 'Close dialog', true, loop.modalId);
-
-
-Active Loop Reactivation
---------------------
-
-Calling activate() on an already active loop refreshes dynamic activation
-options and emits activate again. This is a refresh path, not the normal
-activation path.
-
-  loop.activate({
-      exitSelector: otherButton,
-      closeFocusMode: 'keyboard',
-  });
-
-Use this only when the active loop's activation options need to change.
-
-
-Implementation notes
---------------------
-
-Avoid stale active loops. If focus moves outside a normal focused loop,
-FocusLoop should deactivate it. Modal loops are the exception: passive outside
-focus is restored into the modal.
-
-Do not treat an active loop root as a normal focused control. Root focus is an
-activation/restoration signal. Once the loop is active, focus should be on a
-descendant control or in a contained active child loop.
 
 Modal close and DOM removal should normally be explicit. Call loop.deactivate() before
 hiding/removing UI when there may not be a later focusin event to reconcile
-state.
+state. Removing the element without deactivating is recovered from rather than
+handled: references are released, but deactivate handlers do not run.
 
 
 Test coverage
