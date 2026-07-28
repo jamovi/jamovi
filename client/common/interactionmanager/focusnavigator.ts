@@ -27,7 +27,7 @@ export class FocusNavigator {
         select${tabbable}:not(.menu-level[fl-level="${nextLevel}"] *):not(.not-focusable *),
         details${tabbable}:not(.menu-level[fl-level="${nextLevel}"] *):not(.not-focusable *),
         [tabindex]${tabbable}:not(.menu-level[fl-level="${nextLevel}"] *):not(.not-focusable *)`)]
-            .filter(el => (el.hasAttribute('ignore-focus-size') || (el.offsetWidth > 0 && el.offsetHeight > 0)) && !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden') && window.getComputedStyle(el).visibility !== 'hidden');
+            .filter(el => (el.hasAttribute('ignore-focus-size') || (el.offsetWidth > 0 && el.offsetHeight > 0)) && !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden') && !el.closest('[inert]') && window.getComputedStyle(el).visibility !== 'hidden');
 
         if (onlyTabbable) {
             list.sort((a, b) => {

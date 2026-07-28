@@ -158,6 +158,8 @@ export type LifecycleTestContext = {
     registry: {
         findLoop: (element: FakeElement) => FocusLoop | undefined;
         unregister: ReturnType<typeof vi.fn>;
+        blockInactiveFocus: ReturnType<typeof vi.fn>;
+        releaseInactiveFocus: ReturnType<typeof vi.fn>;
         loops: Map<FakeElement, FocusLoop>;
     };
     navigator: {
@@ -240,6 +242,14 @@ export function createLifecycleContext(options: LifecycleContextOptions = {}): L
                 throw new Error('Element does not have a registered focus loop');
             registry.loops.delete(element);
             return loop;
+        }),
+        blockInactiveFocus: vi.fn((loop: FocusLoop) => {
+            if (loop.inertWhenInactive)
+                loop.element.setAttribute('inert', '');
+        }),
+        releaseInactiveFocus: vi.fn((loop: FocusLoop) => {
+            if (loop.inertWhenInactive)
+                loop.element.removeAttribute('inert');
         }),
     };
 

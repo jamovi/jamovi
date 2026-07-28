@@ -700,6 +700,106 @@ describe('FocusLoopLifecycle', () => {
         }
     });
 
+    it('makes an inertWhenInactive loop inert whenever it is not active', () => {
+        const { element, loop } = createLoop(ctx, 'modal', { modal: true, inertWhenInactive: true });
+
+        ctx.registry.blockInactiveFocus(loop);
+        expect(element.hasAttribute('inert')).toBe(true);
+
+        ctx.lifecycle.activate(element as unknown as HTMLElement, { withMouse: true });
+        expect(loop.state).toBe('active');
+        expect(element.hasAttribute('inert')).toBe(false);
+
+        ctx.lifecycle.deactivate(element as unknown as HTMLElement, { source: 'programmatic' });
+        expect(loop.state).toBe('registered');
+        expect(element.hasAttribute('inert')).toBe(true);
+    });
+
+    it('stays focusable when activated before it can take focus, and activates when focus arrives', () => {
+        const { element, loop } = createLoop(ctx, 'modal', { modal: true, inertWhenInactive: true });
+        element.setAttribute('tabindex', '-1');
+        ctx.registry.blockInactiveFocus(loop);
+        ctx.navigator.keyboardfocusableElements.mockReturnValue([]);
+
+        // Shown, but the browser has not rendered it as visible yet, so
+        // nothing in it can take focus.
+        element.visibility = 'hidden';
+        ctx.lifecycle.activate(element as unknown as HTMLElement);
+
+        expect(loop.state).toBe('registered');
+        expect(element.hasAttribute('inert')).toBe(false);
+
+        // Now visible, and its contents focus themselves.
+        element.visibility = 'visible';
+        const search = element.append(new FakeElement('search'));
+        setActiveElement(search);
+        ctx.lifecycle.handleFocusIn(search as unknown as HTMLElement, []);
+
+        expect(loop.state).toBe('active');
+        expect(element.hasAttribute('inert')).toBe(false);
+        expect(ctx.lifecycle.activeModal).toBe(loop);
+    });
+
+    it('blocks focus again once an inertWhenInactive loop is deactivated', () => {
+        const { element, loop } = createLoop(ctx, 'modal', { modal: true, inertWhenInactive: true });
+        element.setAttribute('tabindex', '-1');
+
+        ctx.lifecycle.activate(element as unknown as HTMLElement, { withMouse: true });
+        expect(loop.state).toBe('active');
+        expect(element.hasAttribute('inert')).toBe(false);
+
+        ctx.lifecycle.deactivate(element as unknown as HTMLElement, { source: 'programmatic' });
+
+        expect(loop.state).toBe('registered');
+        expect(element.hasAttribute('inert')).toBe(true);
+    });
+
+    it('releases an active modal that has been hidden with css', () => {
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        vi.useFakeTimers();
+        try {
+            const modal = createLoop(ctx, 'modal', { modal: true });
+            const outside = ctx.body.append(new FakeElement('outside'));
+
+            ctx.lifecycle.activate(modal.element as unknown as HTMLElement, { withMouse: true });
+            vi.advanceTimersByTime(201);
+            expect(ctx.lifecycle.activeModalAllowsKeyPaths()).toBe(false);
+
+            modal.element.visibility = 'hidden';
+            setActiveElement(outside);
+            ctx.lifecycle.handleFocusIn(outside as unknown as HTMLElement, []);
+
+            expect(ctx.lifecycle.activeModal).toBeNull();
+            expect(modal.loop.state).toBe('registered');
+            expect(document.activeElement).toBe(outside);
+            expect(ctx.lifecycle.activeModalAllowsKeyPaths()).toBe(true);
+        }
+        finally {
+            vi.useRealTimers();
+            warn.mockRestore();
+        }
+    });
+
+    it('keeps trapping focus for a visible modal that has no focusable content yet', () => {
+        vi.useFakeTimers();
+        try {
+            const modal = createLoop(ctx, 'modal', { modal: true });
+            const outside = ctx.body.append(new FakeElement('outside'));
+
+            ctx.lifecycle.activate(modal.element as unknown as HTMLElement, { withMouse: true });
+            vi.advanceTimersByTime(201);
+
+            setActiveElement(outside);
+            ctx.lifecycle.handleFocusIn(outside as unknown as HTMLElement, []);
+
+            expect(ctx.lifecycle.activeModal).toBe(modal.loop);
+            expect(ctx.navigator.findFocusableElement).toHaveBeenCalled();
+        }
+        finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('reports active modal key-path availability', () => {
         const blockingModal = createLoop(ctx, 'blocking-modal', { modal: true });
         const allowingModal = createLoop(ctx, 'allowing-modal', { modal: true, allowKeyPaths: true });

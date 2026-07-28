@@ -18,6 +18,7 @@ export interface IFocusLoopOptions {
     exitKeys?: string[];
     allowKeyPaths?: boolean;
     needsDeactivate?: boolean;
+    inertWhenInactive?: boolean;
 }
 
 export type FocusLoopDeactivateCause = 'mouse' | 'programmatic' | 'focus-transfer';

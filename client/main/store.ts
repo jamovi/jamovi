@@ -29,7 +29,7 @@ class Store extends HTMLElement {
         this.classList.add('jmv-store');
         this.setAttribute('tabindex', '-1');
 
-        this.loop = interactionManager.registerLoop(this, { level: 2, modal: true, exitKeys: ['Escape'], closeFocusMode: 'default' });
+        this.loop = interactionManager.registerLoop(this, { level: 2, modal: true, exitKeys: ['Escape'], closeFocusMode: 'default', inertWhenInactive: true });
         this.loop.on('deactivate', () => {
             this._hide();
         });
@@ -184,8 +184,14 @@ class Store extends HTMLElement {
     }
 
     hide() {
+        // Hiding is done by the deactivate handler, so that the library cannot
+        // be hidden while its loop is still active and trapping focus. The
+        // guard covers deactivation not running the handler at all, which it
+        // does not when the loop never became active, so that closing the
+        // library always closes it.
         this.loop.deactivate({ source: 'programmatic' });
-        this._hide();
+        if (this.visible())
+            this._hide();
     }
 
     private _hide() {
