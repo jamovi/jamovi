@@ -43,6 +43,14 @@ Prefer focused lifecycle tests for lifecycle changes. Do not add browser test
 dependencies unless explicitly requested; real browser behavior should normally
 be checked manually by the user.
 
+`createLifecycleContext({ dispatchFocusEvents: true })` makes
+`FakeElement.focus()` deliver focusout/focusin synchronously, the way a browser
+does, so focus moves the lifecycle makes itself re-enter it. Use it for anything
+involving re-entrancy: activation moving focus, modal traps, focus passing, and
+handlers that move focus. It is off by default because most tests call
+`handleFocusIn()` directly and would otherwise see each focus change twice.
+`tests/focusevents.test.ts` holds the tests that run in this mode.
+
 ## Editing Notes
 
 - Avoid unrelated refactors while fixing lifecycle issues.
