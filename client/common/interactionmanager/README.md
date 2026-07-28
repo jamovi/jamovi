@@ -59,6 +59,10 @@ The resulting focusin event activates the loop. If focus is already inside the
 loop, the loop is activated without moving focus, except for keyToEnter root
 focus where explicit activation should move to the loop's initial focus target.
 
+An activation request that cannot place focus, because the loop has nothing
+focusable in it or has not been rendered yet, does not activate the loop. The
+loop returns to registered and activates later, when focus does reach it.
+
 Key concepts:
 
 Registered
@@ -257,6 +261,7 @@ JavaScript options:
       hoverFocus: true,
       allowKeyPaths: true,
       needsDeactivate: true,
+      inertWhenInactive: true,
       exitKeys: ['Escape'],
       exitSelector: button,
       closeFocusMode: 'keyboard',
@@ -285,15 +290,16 @@ registerLoop() override attributes.
 
 Supported attributes:
 
-  fl-level           -> level
-  fl-modal           -> modal
-  fl-keyToEnter      -> keyToEnter
-  fl-hoverFocus      -> hoverFocus
-  fl-allowKeyPaths   -> allowKeyPaths
-  fl-needsDeactivate -> needsDeactivate
-  fl-exitSelector    -> exitSelector
-  fl-closeFocusMode  -> closeFocusMode
-  fl-exitKeys        -> exitKeys
+  fl-level             -> level
+  fl-modal             -> modal
+  fl-keyToEnter        -> keyToEnter
+  fl-hoverFocus        -> hoverFocus
+  fl-allowKeyPaths     -> allowKeyPaths
+  fl-needsDeactivate   -> needsDeactivate
+  fl-inertWhenInactive -> inertWhenInactive
+  fl-exitSelector      -> exitSelector
+  fl-closeFocusMode    -> closeFocusMode
+  fl-exitKeys          -> exitKeys
 
 Boolean attributes are true when present. The values "false", "0", "no", and
 "off" are treated as false.
@@ -485,6 +491,72 @@ Close a modal:
 Passive focus outside a modal is trapped, so modal close should normally be an
 explicit deactivation request.
 
+Hide from the deactivate handler, not alongside it:
+
+  loop.on('deactivate', () => { panel.classList.remove('visible'); });
+
+  hide() {
+      loop.deactivate({ source: 'programmatic' });
+  }
+
+Programmatic deactivation can be refused, by a deactivate handler or because the
+loop is not active. Hiding separately from the deactivation means the UI can
+disappear while the loop stays active, and a hidden modal still traps focus.
+Making the hide a consequence of the deactivation keeps the two in step.
+
+inertWhenInactive:
+
+  const loop = interactionManager.registerLoop(dialog, {
+      modal: true,
+      inertWhenInactive: true,
+  });
+
+The loop root carries the inert attribute whenever the loop is not active or
+activating, so a closed dialog cannot receive focus at all. Without this, a
+modal that is only hidden with CSS stays focusable, and focus landing inside it
+re-activates the loop and re-arms its focus trap. Browsers differ on whether a
+clipped or transitioning subtree can be focused, so this also removes a class of
+browser-specific focus bugs. inert also removes the subtree from the
+accessibility tree, so no separate aria-hidden is needed.
+
+Registering the loop applies inert immediately, because registration happens
+before activation and the loop is therefore not yet active. Only opt in for a
+loop that starts closed.
+
+inert is applied when a loop closes and released when a loop is asked to open.
+It is not tied to loop state, because two different things both leave a loop
+registered: a loop that has closed, and an activation request that could not
+place focus. A loop is commonly activated in the same task that shows it,
+before the browser has rendered it as visible, and nothing in it can take focus
+until then. Such a request leaves the loop released, so it activates normally
+once its contents appear and take focus.
+
+inertWhenInactive suits a narrow shape of modal, and most do not have it. A
+modal qualifies only when all of the following hold:
+
+  - it is not keyToEnter. A keyToEnter root is deliberately focusable while
+    inactive, which is the opposite of what this option asserts.
+  - its exitSelector is outside the loop, or it has none.
+  - it is activated explicitly, not by focus landing in it.
+  - it is activated in the same step that shows it. inert blocks pointer
+    events as well as focus, so a modal that is visible before it is activated
+    would not respond to clicks in between.
+
+Loops that do not qualify are covered by the active modal focus check described
+under Implementation notes, which applies to every modal.
+
+An inertWhenInactive loop cannot be activated by focus, because it is not
+focusable while inactive. Activate it explicitly with loop.activate(). Do not
+use it for a loop that should stay interactive while another loop is active.
+
+Registration hands the inert attribute to FocusLoop for the lifetime of the
+registration. unregister() restores whatever the attribute was before, so a
+component that manages its own inert does not lose it.
+
+Do not combine inertWhenInactive with an exitSelector that points inside the
+loop. The loop becomes inert before focus is passed on deactivation, so an exit
+target inside it can no longer be focused.
+
 Hide or remove UI before focus naturally moves:
 
   if (panelIsOpen) {
@@ -505,10 +577,145 @@ promotes the next suspended modal. Each release is reported with a
 "Released dead focus loop reference" console warning.
 
 This backstop is not a substitute for deactivate(). It does not run deactivate
-handlers, so component close behavior is skipped, and it only detects removal
-from the document. A loop that is hidden while staying connected, such as
-setting hidden or display:none, is still treated as active.
+handlers, so component close behavior is skipped.
 
+An active modal is checked again before it traps focus. If its root has become
+unable to hold focus, because it is inert, not rendered, or visibility hidden,
+the modal is released instead of trapping. Without that check, a modal hidden
+with CSS keeps swallowing every focusin with no way back. The check is on the
+modal root only, so a visible modal whose contents have not rendered yet keeps
+its trap.
+
+This check is the general protection, and applies to every modal.
+inertWhenInactive is the stronger one, because it stops focus reaching a closed
+modal at all rather than recovering afterwards, but it only suits the shape of
+modal described under Options.
+
+Mouse dismissal:
+
+  menu.addEventListener('mouseleave', () => {
+      loop.deactivate({ source: 'mouse' });
+  });
+
+Mouse deactivation cannot be cancelled and does not pass focus to exitSelector.
+
+
+Keyboard navigation
+-------------------
+
+Keyboard navigation is active outside default focus mode. When focus is in a
+loop:
+
+  - Tab and Shift+Tab wrap through tabbable controls in the current loop.
+  - Arrow keys move through keyboard-focusable controls by geometry.
+  - [vloop="true"] scopes vertical arrow navigation.
+  - [hloop="true"] scopes horizontal arrow navigation.
+  - If focus is on the loop root, arrow navigation explicitly activates the loop
+    and chooses the first or last focusable item based on direction.
+  - Elements can block directional arrow movement with classes such as
+    block-focus-up, block-focus-down, block-focus-left, and block-focus-right.
+
+Some controls reserve specific keys for their own behavior. When the focused
+control reserves a key, FocusLoop does not use that key for loop navigation or
+shortcuts.
+
+exitKeys lets keyboard navigation deactivate a loop with source
+"programmatic".
+
+  interactionManager.registerLoop(menu, {
+      exitKeys: ['Escape', 'Alt+ArrowUp', 'InlineArrowLeft'],
+      exitSelector: openerButton,
+  });
+
+Supported forms include normal KeyboardEvent.code values such as Escape and
+ArrowUp, modifier forms such as Alt+ArrowUp and Ctrl+ArrowLeft, and inline
+arrow aliases:
+
+  InlineArrowLeft
+  InlineArrowRight
+
+Inline aliases follow text direction. In RTL, physical left/right arrows are
+mapped to the opposite inline direction.
+
+
+KeyTips
+-------
+
+By default, an active modal restricts modal-specific KeyTips to that modal.
+
+Use allowKeyPaths when the modal should allow broader key-path handling:
+
+  interactionManager.registerLoop(backstage, {
+      modal: true,
+      allowKeyPaths: true,
+  });
+
+KeyTip labels and actions are searched inside the active modal when one is
+active. Without an active modal, KeyTip handling is document-wide.
+
+Register KeyTips on controls that should show a visible key label during
+KeyTip mode:
+
+  keyTips.register(button, {
+      key: 'S',
+      action: () => save(),
+      label: 'Save',
+  });
+
+Refresh KeyTips when the visible KeyTip path changes or labels need rebuilding:
+
+  keyTips.update({ keyTipPath: 'F' });
+
+Keyboard shortcuts
+------------------
+
+Keyboard shortcuts are executable command bindings such as Ctrl+S, F10, or
+Alt+ArrowLeft. They are separate from visible KeyTips:
+
+  shortcuts.register('Ctrl+KeyS', () => save(), 'Save project');
+
+Modal-specific shortcuts can be registered directly through the shortcut
+controller by passing the loop's modal id:
+
+  const loop = interactionManager.registerLoop(dialog, { modal: true });
+  shortcuts.register('Escape', () => closeDialog(), 'Close dialog', true, loop.modalId);
+
+
+Active Loop Reactivation
+--------------------
+
+Calling activate() on an already active loop refreshes dynamic activation
+options and emits activate again. This is a refresh path, not the normal
+activation path.
+
+  loop.activate({
+      exitSelector: otherButton,
+      closeFocusMode: 'keyboard',
+  });
+
+Use this only when the active loop's activation options need to change.
+
+
+Implementation notes
+--------------------
+
+Avoid stale active loops. If focus moves outside a normal focused loop,
+FocusLoop should deactivate it. Modal loops are the exception: passive outside
+focus is restored into the modal.
+
+Deactivate handlers may take focus ownership. A handler is allowed to focus
+elsewhere or activate another loop, and the loop it activates is reconciled
+rather than left active with nothing referencing it. Activation requests also
+nest, so an activation started from a handler does not cancel out the
+activation that triggered it.
+
+Do not treat an active loop root as a normal focused control. Root focus is an
+activation/restoration signal. Once the loop is active, focus should be on a
+descendant control or in a contained active child loop.
+
+Do not re-activate a loop from inside its own deactivate handler. A loop is
+mid-deactivation at that point, so activate() cannot commit and does nothing.
+Activate it again after the deactivation completes instead.
 
 Modal close and DOM removal should normally be explicit. Call loop.deactivate() before
 hiding/removing UI when there may not be a later focusin event to reconcile

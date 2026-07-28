@@ -21,6 +21,7 @@ export class FocusLoop extends EventEmitter implements IFocusLoopOptions {
     private _initialFocusMode?: FocusMode;
     allowKeyPaths?: boolean;
     needsDeactivate?: boolean;
+    inertWhenInactive?: boolean;
     state: FocusLoopState = 'registered';
     private readonly controller: FocusLoopController;
 

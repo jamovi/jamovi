@@ -196,9 +196,15 @@ export class FocusLoopLifecycle {
             return;
         }
 
-        if (this.activeModalElement && !this.activeModalElement.contains(element) && !this.isPendingModalActivation(loopElement)) {
-            this.navigator.findFocusableElement(this.activeModalElement);
-            return;
+        if (this.activeModalLoop && !this.activeModalLoop.element.contains(element) && !this.isPendingModalActivation(loopElement)) {
+            if (this.modalCanHoldFocus(this.activeModalLoop)) {
+                this.navigator.findFocusableElement(this.activeModalLoop.element);
+                return;
+            }
+
+            // Trapping focus into a modal that cannot take it would swallow
+            // every focusin from here on, with no way back.
+            this.releaseUnusableModal(this.activeModalLoop);
         }
 
         if (loopElement)
@@ -380,6 +386,15 @@ export class FocusLoopLifecycle {
 
             try {
                 this.pushActivatingLoop(loop);
+
+                // Opening, so the loop must be focusable from here on. This is
+                // deliberately not undone if the activation below fails to
+                // place focus: a loop is commonly activated while it is still
+                // being shown, and cannot take focus until the browser has
+                // rendered it. Blocking it again would make the loop that the
+                // caller just opened permanently unfocusable, so it stays open
+                // to focus and activates when focus does arrive.
+                this.registry.releaseInactiveFocus(loop);
 
                 if (loop.state === 'registered')
                     this.setLoopState(loop, 'activating');
@@ -804,6 +819,10 @@ export class FocusLoopLifecycle {
         this.removeFromModalChain(loop);
 
         this.setLoopState(loop, 'registered');
+        // Closed, so block focus. Applied after the deactivate handler has run
+        // and before focus is passed on, which targets the exit selector
+        // outside the loop.
+        this.registry.blockInactiveFocus(loop);
         const focused = this.focusedLoop;
         if (focused) {
             if (focused === loop)
@@ -894,6 +913,7 @@ export class FocusLoopLifecycle {
     private discardSuspendedModal(loop: FocusLoop): void {
         this.setLoopState(loop, 'deactivating');
         this.setLoopState(loop, 'registered');
+        this.registry.blockInactiveFocus(loop);
         this.clearActiveActivationOptions(loop);
         this.clearActiveModalIf(loop);
         this.clearFocusedLoopIf(loop);
@@ -987,6 +1007,36 @@ export class FocusLoopLifecycle {
         return loop.state === 'removed' || !loop.element.isConnected;
     }
 
+    /**
+     * Whether a modal is still able to hold the focus it traps. A modal hidden
+     * with CSS stays connected, so isDeadLoop() cannot see it, but focus can no
+     * longer be placed inside it.
+     *
+     * Deliberately tests the modal root only, not whether it has focusable
+     * content: a visible modal that is still rendering its contents must keep
+     * its trap. Uses the same conditions as keyboardfocusableElements().
+     */
+    private modalCanHoldFocus(loop: FocusLoop): boolean {
+        const element = loop.element;
+        if (this.isDeadLoop(loop) || element.hasAttribute('inert'))
+            return false;
+
+        if (typeof element.getClientRects === 'function' && element.getClientRects().length === 0)
+            return false;
+
+        if (typeof globalThis.getComputedStyle === 'function' && globalThis.getComputedStyle(element).visibility === 'hidden')
+            return false;
+
+        return true;
+    }
+
+    private releaseUnusableModal(loop: FocusLoop): void {
+        console.warn('Released focus loop modal that can no longer hold focus', { state: loop.state, element: loop.element });
+        this.removeFromModalChain(loop);
+        this.releaseDeadLoopState(loop);
+        this.promoteSuspendedModal(loop);
+    }
+
     private releaseDeadLoop(name: string, loop: FocusLoop, context: string): void {
         console.warn('Released dead focus loop reference', { context, name, state: loop.state, element: loop.element });
         this.removeFromModalChain(loop);
@@ -1007,6 +1057,8 @@ export class FocusLoopLifecycle {
             this.setLoopState(loop, 'deactivating');
         if (loop.state === 'activating' || loop.state === 'deactivating')
             this.setLoopState(loop, 'registered');
+
+        this.registry.blockInactiveFocus(loop);
     }
 
     private assertLoopReference(name: string, loop: FocusLoop | null, expectedStates: FocusLoopState | FocusLoopState[], context: string): void {

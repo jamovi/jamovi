@@ -18,6 +18,7 @@ export class FocusLoopRegistry {
     private handlers: FocusLoopElementHandlers | null = null;
     private loops = new WeakMap<HTMLElement, FocusLoop>();
     private modalFocusHandlers = new WeakMap<HTMLElement, EventListener>();
+    private inertBeforeRegister = new WeakMap<HTMLElement, boolean>();
 
     constructor(deps: FocusLoopRegistryDeps) {
         this.controller = deps.controller;
@@ -65,6 +66,14 @@ export class FocusLoopRegistry {
         this.loops.set(element, loop);
         this.convertElementExitSelector(loop);
 
+        // Registration precedes activation, so the loop starts inactive and
+        // must start unfocusable. Anything else would leave the invariant
+        // unmet for exactly the window a closed loop sits waiting to be opened.
+        if (loop.inertWhenInactive) {
+            this.inertBeforeRegister.set(element, element.hasAttribute('inert'));
+            this.blockInactiveFocus(loop);
+        }
+
         element.setAttribute('fl-level', loop.level.toString());
         element.classList.add('menu-level');
         if (loop.hoverFocus)
@@ -92,6 +101,7 @@ export class FocusLoopRegistry {
         this.readBooleanOption(element, options, 'hoverFocus', 'fl-hoverFocus');
         this.readBooleanOption(element, options, 'allowKeyPaths', 'fl-allowKeyPaths');
         this.readBooleanOption(element, options, 'needsDeactivate', 'fl-needsDeactivate');
+        this.readBooleanOption(element, options, 'inertWhenInactive', 'fl-inertWhenInactive');
 
         const exitSelector = this.readString(element, 'fl-exitSelector');
         if (exitSelector !== undefined)
@@ -157,6 +167,14 @@ export class FocusLoopRegistry {
                 element.removeEventListener('mousemove', handlers.mouseMove);
         }
 
+        if (loop.inertWhenInactive) {
+            if (this.inertBeforeRegister.get(element))
+                element.setAttribute('inert', '');
+            else
+                element.removeAttribute('inert');
+            this.inertBeforeRegister.delete(element);
+        }
+
         const modalFocusHandler = this.modalFocusHandlers.get(element);
         if (modalFocusHandler) {
             element.removeEventListener('focus', modalFocusHandler);
@@ -165,6 +183,25 @@ export class FocusLoopRegistry {
 
         this.loops.delete(element);
         return loop;
+    }
+
+    /**
+     * Makes an inertWhenInactive loop unfocusable. A loop that is not active
+     * must not be able to receive focus at all, otherwise a loop hidden with
+     * css can be re-activated by a stray focus and re-arm its modal trap.
+     *
+     * Registering an inertWhenInactive loop hands the inert attribute to the
+     * registry for the lifetime of the registration. unregister() puts it back
+     * the way it was found, so a component's own inert is never lost.
+     */
+    blockInactiveFocus(loop: FocusLoop): void {
+        if (loop.inertWhenInactive)
+            loop.element.setAttribute('inert', '');
+    }
+
+    releaseInactiveFocus(loop: FocusLoop): void {
+        if (loop.inertWhenInactive)
+            loop.element.removeAttribute('inert');
     }
 
     private convertElementExitSelector(loop: FocusLoop): void {
