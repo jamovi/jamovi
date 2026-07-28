@@ -82,11 +82,11 @@ export class GlobalKeyboardCommandController {
             return;
         }
 
-        if (!this.lifecycle.activeModalAllowsKeyPaths())
-            return;
-
         if (event.altKey) {
-            if (this.modes.getMode() !== 'keyTips') {
+            // As in the browser handler, Alt is consumed even when the active
+            // modal declines key paths. Only the KeyTip handling below is
+            // conditional on that.
+            if (this.lifecycle.activeModalAllowsKeyPaths() && this.modes.getMode() !== 'keyTips') {
                 this.desktopAltKeyTipState.altDown = true;
                 if (!this.desktopAltKeyTipState.altTimer) {
                     this.keyTips.clearCurrentPath();
@@ -144,7 +144,7 @@ export class GlobalKeyboardCommandController {
 
         if (event.altKey && event.key !== 'Alt')
             this.browserAltPressStarted = false;
-        else if (event.key === 'Alt' && this.lifecycle.activeModalAllowsKeyPaths())
+        else if (event.key === 'Alt')
             this.browserAltPressStarted = true;
     }
 
@@ -154,6 +154,16 @@ export class GlobalKeyboardCommandController {
 
         this.browserAltPressStarted = false;
         if (event.key !== 'Alt')
+            return;
+
+        // Alt is always consumed, whether or not it opens KeyTips. Letting it
+        // through hands focus to the browser's own menu bar, which is never
+        // wanted here, and is not something a loop state should be able to
+        // cause.
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (!this.lifecycle.activeModalAllowsKeyPaths())
             return;
 
         if (!event.ctrlKey) {
@@ -166,8 +176,5 @@ export class GlobalKeyboardCommandController {
                 this.modes.set('keyTips');
             }
         }
-
-        event.preventDefault();
-        event.stopPropagation();
     }
 }
