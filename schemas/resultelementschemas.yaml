@@ -274,6 +274,37 @@ Html:
         content:
             type: string
 
+Svg:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            type: string
+        title:
+            type: string
+        description:
+            type: string
+        visible:
+            type:
+              - boolean
+              - string
+        clearWith:
+            type:
+              - array
+              - 'null'
+            items:
+                type: string
+        refs:
+            type:
+              - array
+              - string
+            items:
+                type: string
+        content:
+            type: string
+
 Output:
     "$schema": http://json-schema.org/draft-04/schema#
     additionalProperties: false
