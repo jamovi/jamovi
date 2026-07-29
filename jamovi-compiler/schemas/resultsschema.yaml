@@ -42,6 +42,7 @@ properties:
                         - Image
                         - Preformatted
                         - Html
+                        - Svg
                         - State
                         - Property
                         - Output
