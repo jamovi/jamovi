@@ -270,6 +270,19 @@ class Analyses:
         for listener in self._output_received_listeners:
             listener(analysis, output)
 
+    def set_svgs(self, svgs):
+        # svgs harvested from the results view, keyed by part -- the analysis
+        # id followed by the address of the element within it, as in
+        # '3/group/chart'
+        for part, content in svgs.items():
+            segments = part.split('/')
+            try:
+                analysis = self.get(int(segments[0]))
+            except ValueError:
+                analysis = None
+            if analysis is not None and analysis.has_results:
+                analysis.set_svg(segments[1:], content)
+
     def get(self, id, instance_id=None):
         for analysis in self._analyses:
             if analysis.id == id:

@@ -6,6 +6,7 @@ import { IImageElementData, Model as ImageModel, View as ImageView } from './ima
 import { Model as ArrayModel, View as ArrayView, IArrayElementData } from './array';
 import { Model as SyntaxModel, View as SyntaxView } from './syntax';
 import { HTMLElementData, Model as HtmlModel, View as HtmlView } from './html';
+import { ISvgElementData, Model as SvgModel, View as SvgView } from './svg';
 
 import { INoticeElementData, Model as NoticeModel, NoticeView } from './notice';
 import { ElementData, ElementModel, Model, View } from './element';
@@ -20,7 +21,7 @@ export enum AnalysisStatus {
 }
 
 export interface IElement {
-    type: 'table' | 'group' | 'image' | 'array' | 'preformatted' | 'html' | 'notice';
+    type: 'table' | 'group' | 'image' | 'array' | 'preformatted' | 'html' | 'svg' | 'notice';
     name: string;
     title: string;
     status: AnalysisStatus;
@@ -90,6 +91,17 @@ export interface IHtmlElement extends IElement {
 
 export const isHtml = function(obj: IElement): obj is IHtmlElement {
     return obj && obj.type === 'html';
+}
+
+
+export interface ISvgElement extends IElement {
+    type: 'svg';
+    svg: ISvgElementData;
+    stale: boolean;
+}
+
+export const isSvg = function(obj: IElement): obj is ISvgElement {
+    return obj && obj.type === 'svg';
 }
 
 
@@ -204,6 +216,11 @@ export const createItem = function(element: IElement, options, level: number, pa
         modelParams.element = element.html;
         model = new HtmlModel(modelParams);
         view = new HtmlView(model, viewParams);
+    }
+    else if (isSvg(element)) {
+        modelParams.element = element.svg;
+        model = new SvgModel(modelParams);
+        view = new SvgView(model, viewParams);
     }
     else if (isNotice(element)) {
         modelParams.element = element.notice;
@@ -342,6 +359,21 @@ const updateItem = function<V extends View<M, T>, M extends Model<T>, T extends 
         model.attributes.name = element.name;
         model.attributes.title = element.title;
         model.attributes.element = element.html;
+        model.attributes.status = element.status;
+        model.attributes.error = element.error;
+        model.attributes.stale = element.stale;
+        model.attributes.refs = element.refs;
+        model.attributes.options = options;
+        model.attributes.refTable = refTable;
+
+        view.level = level;
+        view.mode = mode;
+    }
+    else if (isSvg(element) && view instanceof SvgView) {
+        let model = view.model;
+        model.attributes.name = element.name;
+        model.attributes.title = element.title;
+        model.attributes.element = element.svg;
         model.attributes.status = element.status;
         model.attributes.error = element.error;
         model.attributes.stale = element.stale;

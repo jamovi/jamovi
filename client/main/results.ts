@@ -150,6 +150,10 @@ export class ResultsView extends HTMLElement {
     getAsLatex() {
         return this.richView.getAsLatex();
     }
+
+    getSvgs() {
+        return this.richView.getSvgs();
+    }
 }
 
 customElements.define('jmv-results', ResultsView);

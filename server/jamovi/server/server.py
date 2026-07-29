@@ -319,6 +319,20 @@ class _Handlers:
             elif isinstance(field, str):
                 options['content'] = field
 
+        # svgs harvested from the results view, keyed by the part they
+        # belong to. see Instance._assign_svgs()
+        svgs: dict = {}
+        for key, field in data.items():
+            if not key.startswith('svg:'):
+                continue
+            part = key[4:]
+            if isinstance(field, web.FileField):
+                svgs[part] = field.file.read()
+            elif isinstance(field, str):
+                svgs[part] = field.encode('utf-8')
+        if svgs:
+            options['svgs'] = svgs
+
         resp = web.StreamResponse(headers={'Content-Type': 'text/plain'})
         await resp.prepare(request)
 
