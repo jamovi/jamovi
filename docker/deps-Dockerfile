@@ -1,10 +1,11 @@
-FROM rstudio/r-base:4.5.0-noble AS r-base
+FROM jamovi/r-base:4.6.0-resolute AS r-base
 
 RUN apt-get update && apt-get upgrade -y
 
-ENV R_HOME /opt/R/4.5.0/lib/R
-ENV CRAN_MIRROR https://packagemanager.posit.co/cran/__linux__/noble/2025-05-25
-ENV JAMOVI_REPO https://repo.jamovi.org/cran/2025-05-25
+ENV R_VERSION 4.6.0
+ENV R_HOME /opt/R/4.6.0/lib/R
+ENV CRAN_MIRROR https://packagemanager.posit.co/cran/__linux__/resolute/2026-05-11
+ENV JAMOVI_REPO https://repo.jamovi.org/cran/2026-05-11
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     locales
@@ -17,7 +18,10 @@ ENV LANG en_US.UTF-8
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     libprotoc-dev \
     libglu1-mesa \
-    libgl1
+    libgl1 \
+    libuv1t64 \
+    libicu78 \
+    libwebpmux3
 
 RUN echo "options(repos=c(jr='$JAMOVI_REPO', pm='$CRAN_MIRROR'))" > $R_HOME/etc/Rprofile.site
 
@@ -25,17 +29,16 @@ RUN R -e "\
     packages <- c('R6', 'RColorBrewer', 'backports', 'base64enc', 'brio', 'cpp11', 'curl', \
         'devEMF', 'evaluate', 'farver', 'fastmap', 'fontBitstreamVera', \
         'fontLiberation', 'magrittr', 'praise', 'rappdirs', 'rprojroot', 'sys', 'utf8', \
-        'uuid', 'viridisLite', 'yaml', 'zip', 'Rcpp', 'askpass', 'cli', 'crayon', \
-        'data.table', 'digest', 'fansi', 'fontquiver', 'fs', 'generics', 'glue', \
-        'isoband', 'jsonlite', 'labeling', 'mime', 'pkgconfig', 'ps', 'remotes', \
-        'rlang', 'stargazer', 'stringi', 'withr', 'xfun', 'xtable', 'RInside', \
-        'RProtoBuf', 'cachem', 'desc', 'diffobj', 'highr', 'htmltools', 'lifecycle', \
-        'openssl', 'openxlsx', 'processx', 'tinytex', 'xml2', 'callr', 'fontawesome', \
-        'gtable', 'jquerylib', 'knitr', 'memoise', 'sass', 'scales', 'systemfonts', \
-        'vctrs', 'waldo', 'bslib', 'gdtools', 'pillar', 'pkgbuild', 'purrr', 'stringr', \
-        'textshaping', 'tidyselect', 'pkgload', 'ragg', 'rmarkdown', 'tibble', 'dplyr', \
-        'ggplot2', 'htmlwidgets', 'officer', 'testthat', 'flextable', 'rvg', \
-        'tidyr', 'broom', 'export'); \
+        'uuid', 'viridisLite', 'yaml', 'zip', 'Rcpp', 'S7', 'askpass', 'cli', 'crayon', \
+        'data.table', 'digest', 'fontquiver', 'fs', 'generics', 'glue', 'jsonlite', \
+        'labeling', 'mime', 'pkgconfig', 'ps', 'remotes', 'rlang', 'stargazer', \
+        'stringi', 'withr', 'xfun', 'xtable', 'RInside', 'RProtoBuf', 'cachem', 'desc', \
+        'diffobj', 'highr', 'htmltools', 'isoband', 'lifecycle', 'openssl', 'openxlsx', \
+        'processx', 'tinytex', 'xml2', 'callr', 'fontawesome', 'gtable', 'jquerylib', \
+        'knitr', 'memoise', 'sass', 'scales', 'systemfonts', 'vctrs', 'waldo', 'bslib', \
+        'gdtools', 'ggplot2', 'pillar', 'pkgbuild', 'purrr', 'stringr', 'textshaping', \
+        'tidyselect', 'pkgload', 'ragg', 'rmarkdown', 'tibble', 'dplyr', 'testthat', \
+        'tidyr', 'broom', 'officer', 'flextable', 'rvg', 'export'); \
     for (pkg in packages) {               \
         install.packages(                 \
             pkg,                          \
@@ -46,28 +49,34 @@ RUN R -e "\
     }"
 
 
-# deps for igraph
+# deps for igraph, and for V8 (also needed by juicyjuice and gt)
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     libglpk40 \
     libgmp10 \
-    libxml2
+    libxml2-16 \
+    libnode127
 
 RUN R -e "\
-    packages <- c('BH', 'RcppParallel', 'bitops', 'ca', 'carData', 'contfrac', 'glasso', 'jpeg', \
-        'lisrelToR', 'matrixStats', 'mnormt', 'nloptr', 'numDeriv', 'pbivnorm', 'png', \
-        'prettyunits', 'quadprog', 'qvcalc', 'rematch', 'rstudioapi', 'Deriv', \
-        'Formula', 'GPArotation', 'Matrix', 'PMCMR', 'RUnit', 'RcppEigen', 'SparseM', \
-        'TH.data', 'XML', 'abind', 'caTools', 'cellranger', 'checkmate', 'coda', \
-        'colorspace', 'corpcor', 'cowplot', 'deSolve', 'elliptic', 'estimability', \
-        'fdrtool', 'forcats', 'ggrepel', 'ggridges', 'gridExtra', 'gtools', 'here', \
-        'hms', 'lavaan', 'microbenchmark', 'minqa', 'modelr', 'mvnormtest', 'mvtnorm', \
-        'patchwork', 'pbapply', 'plyr', 'rbibutils', 'relimp', 'ssanv', 'zoo', \
-        'MatrixModels', 'Rdpack', 'StanHeaders', 'doBy', 'emmeans', 'exactci', \
-        'ggstats', 'gnm', 'gplots', 'htmlTable', 'hypergeo', 'igraph', 'kutils', \
-        'lmtest', 'progress', 'psych', 'reshape2', 'rpf', 'sandwich', 'viridis', \
-        'BayesFactor', 'GGally', 'Hmisc', 'OpenMx', 'ROCR', 'exact2x2', 'multcomp', \
-        'quantreg', 'readxl', 'reformulas', 'vcd', 'lme4', 'qgraph', 'vcdExtra', 'arm', \
-        'lmerTest', 'pbkrtest', 'rockchalk', 'car', 'mi', 'afex', 'sem', 'semPlot'); \
+    packages <- c('AsioHeaders', 'BH', 'RcppParallel', 'bigD', 'bitops', 'ca', 'carData', \
+        'commonmark', 'contfrac', 'glasso', 'jpeg', 'lisrelToR', 'matrixStats', \
+        'mnormt', 'nloptr', 'numDeriv', 'otel', 'pbivnorm', 'png', \
+        'prettyunits', 'quadprog', 'qvcalc', 'rstudioapi', 'Deriv', 'Formula', \
+        'GPArotation', 'Matrix', 'PMCMR', 'RUnit', 'RcppArmadillo', 'RcppEigen', \
+        'SparseM', 'TH.data', 'V8', 'XML', 'abind', 'bibtex', 'caTools', \
+        'checkmate', 'coda', 'colorspace', 'corpcor', 'cowplot', 'deSolve', \
+        'elliptic', 'estimability', 'fdrtool', 'forcats', 'fracdiff', 'ggrepel', \
+        'ggridges', 'gridExtra', 'gtools', 'hms', 'htmlwidgets', 'later', \
+        'lavaan', 'litedown', 'microbenchmark', 'minqa', 'modelr', 'mvnormtest', \
+        'mvtnorm', 'patchwork', 'pbapply', 'plyr', 'rbibutils', 'reactR', \
+        'relimp', 'ssanv', 'timeDate', 'urca', 'zoo', 'MatrixModels', 'Rdpack', \
+        'StanHeaders', 'emmeans', 'exactci', 'ggstats', 'gnm', 'gplots', \
+        'htmlTable', 'hypergeo', 'igraph', 'juicyjuice', 'kutils', 'lmtest', \
+        'markdown', 'progress', 'promises', 'psych', 'reactable', 'reshape2', \
+        'rpf', 'sandwich', 'websocket', 'BayesFactor', 'GGally', 'Hmisc', \
+        'OpenMx', 'ROCR', 'chromote', 'exact2x2', 'forecast', 'gt', 'multcomp', \
+        'quantreg', 'reformulas', 'vcd', 'doBy', 'lme4', 'qgraph', 'webshot2', \
+        'arm', 'lmerTest', 'pbkrtest', 'rockchalk', 'vcdExtra', 'car', 'mi', \
+        'afex', 'sem', 'semPlot'); \
     for (pkg in packages) {               \
         install.packages(                 \
             pkg,                          \

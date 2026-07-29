@@ -1,6 +1,16 @@
 services:
+  # posit publish rstudio/r-base for linux/amd64 only, so we build their
+  # (arch-agnostic) recipe ourselves to get a multi-arch base
+  r-base:
+    image: jamovi/r-base:4.6.0-resolute
+    build:
+      context: .
+      dockerfile: docker/r-base-Dockerfile
+    profiles:
+      - donotstart
+
   jamovi-deps:
-    image: jamovi/jamovi-deps:2.7.11
+    image: jamovi/jamovi-deps:28.1
     build:
       context: .
       dockerfile: docker/deps-Dockerfile
@@ -8,7 +18,7 @@ services:
       - donotstart
 
   jamovi: &base
-    image: jamovi/jamovi:2.7.6
+    image: jamovi/jamovi:28.1
     container_name: jamovi
     profiles: [main]
     build:

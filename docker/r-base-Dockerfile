@@ -1,0 +1,53 @@
+# Multi-arch equivalent of rstudio/r-base:4.6.0-resolute.
+#
+# Posit publish that image for linux/amd64 only, which blocks building
+# jamovi-deps for arm64. Their build recipe is arch-agnostic, so we build it
+# ourselves for both architectures:
+#
+#   docker buildx build --platform linux/amd64,linux/arm64 \
+#       -f docker/r-base-Dockerfile -t jamovi/r-base:4.6.0-resolute --push .
+
+FROM ubuntu:26.04
+
+RUN apt-get update -qq && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    apt-transport-https \
+    curl \
+    fontconfig \
+    libcurl4-openssl-dev \
+    locales \
+    perl \
+    sudo \
+    tzdata \
+    wget \
+    xz-utils && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN wget -qO- "https://yihui.org/tinytex/install-bin-unix.sh" | TMPDIR=/ sh && \
+    /root/.TinyTeX/bin/*/tlmgr path remove && \
+    mv /root/.TinyTeX/ /opt/TinyTeX && \
+    /opt/TinyTeX/bin/*/tlmgr option sys_bin /usr/local/bin && \
+    /opt/TinyTeX/bin/*/tlmgr path add
+
+ARG PANDOC_VERSION=3.9.0.2
+RUN wget "https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-$(dpkg --print-architecture).tar.gz" -O pandoc.tar.gz && \
+    tar -xf pandoc.tar.gz && \
+    mv "pandoc-${PANDOC_VERSION}" /opt/pandoc && \
+    ln -s /opt/pandoc/bin/pandoc /usr/local/bin/pandoc && \
+    rm pandoc.tar.gz
+
+ENV LANG=C.UTF-8
+ENV TZ=UTC
+
+ARG R_VERSION=4.6.0
+ARG OS_IDENTIFIER=ubuntu-2604
+RUN wget "https://cdn.posit.co/r/${OS_IDENTIFIER}/pkgs/r-${R_VERSION}_1_$(dpkg --print-architecture).deb" && \
+    apt-get update -qq && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -f -y "./r-${R_VERSION}_1_$(dpkg --print-architecture).deb" && \
+    ln -s "/opt/R/${R_VERSION}/bin/R" /usr/bin/R && \
+    ln -s "/opt/R/${R_VERSION}/bin/Rscript" /usr/bin/Rscript && \
+    ln -s "/opt/R/${R_VERSION}/lib/R" /usr/lib/R && \
+    rm "r-${R_VERSION}_1_$(dpkg --print-architecture).deb" && \
+    rm -rf /var/lib/apt/lists/*
+
+CMD ["R"]
