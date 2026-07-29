@@ -243,6 +243,15 @@ message ResultsHtml {
     repeated string stylesheets = 3;
 }
 
+message ResultsSvg {
+    string content = 1;
+    repeated string scripts = 2;
+    repeated string stylesheets = 3;
+    // the rendered svg is harvested from the client, and stored as a
+    // resource alongside the analysis. path is relative to the instance
+    string path = 4;
+}
+
 message ResultsNotice {
 
     enum NoticeType {
@@ -309,6 +318,7 @@ message ResultsElement {
         ResultsOutputs outputs = 13;
         ResultsNotice notice = 24;
         ResultsAction action = 25;
+        ResultsSvg svg = 26;
     }
 
     bytes state = 14;

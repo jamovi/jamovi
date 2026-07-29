@@ -15,6 +15,7 @@ jmv-results-html,
 jmv-results-image,
 jmv-results-notice,
 jmv-results-preformatted,
+jmv-results-svg,
 jmv-results-table {
     display: block;
     position: relative;
@@ -677,6 +678,14 @@ table.row-selectable tr.selected th[scope=rowgroup] {
 
 .jmv-results-html .content {
     padding-bottom: 12px ;
+}
+
+.jmv-results-svg .content {
+    padding-bottom: 12px ;
+}
+
+.jmv-results-svg .content svg {
+    max-width: 100% ;
 }
 
 body[data-mode="text"] {

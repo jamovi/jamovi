@@ -832,6 +832,55 @@ class ResultsPanel extends EventDistributor {
         return `${ doc }[--BIBTEX_FROM_HERE--]\n${ bibtex }`;
     }
 
+    // an Svg element's svg is drawn in the results view, so that's the only
+    // place it can be got from. this pulls all of them ahead of a save, so
+    // they can be stored in place of the html and scripts which produced them
+    async getSvgs() {
+
+        const svgs: { [part: string]: string } = { };
+
+        for (const analysis of this.model.analyses()) {
+
+            if ( ! analysis.results)
+                continue;
+            if ( ! (analysis.id in this.resources))
+                continue;
+
+            for (const address of this._svgAddresses(analysis.results, [ ])) {
+                const part = flatten([ analysis.id, ...address ]);
+                const content = await this._getContent([ analysis.id, ...address ], { format: 'image/svg+xml' });
+                if (content.svg)
+                    svgs[part] = content.svg;
+            }
+        }
+
+        return svgs;
+    }
+
+    _svgAddresses(pb, address: string[]) : string[][] {
+
+        // hidden elements aren't rendered, so there's nothing to pull
+        if (pb.visible === 1 || pb.visible === 3)
+            return [ ];
+
+        if (pb.svg)
+            return [ address ];
+
+        let elements = null;
+        if (pb.group)
+            elements = pb.group.elements;
+        else if (pb.array)
+            elements = pb.array.elements;
+
+        if (elements === null)
+            return [ ];
+
+        const addresses: string[][] = [ ];
+        for (const child of elements)
+            addresses.push(...this._svgAddresses(child, [ ...address, child.name ]));
+        return addresses;
+    }
+
     getAsHTML(options, part?) {
         if ( ! part) {
 
@@ -908,21 +957,28 @@ class ResultsPanel extends EventDistributor {
                 options.images = 'absolute';
             }
 
-            this._getContent(event.address, options).then((content) => {
+            let content = await this._getContent(event.address, options);
 
-                return host.copyToClipboard(content);
+            if (content.svg) {
+                // send the svg itself, rather than the html which wraps it.
+                // the raster comes along because neither clipboard can carry
+                // image/svg+xml, and not everything will take the markup
+                const { svg, image } = content;
+                content = { text: svg, html: svg };
+                if (image)
+                    content.image = image;
+            }
 
-            }).then(() => {
+            await host.copyToClipboard(content);
 
-                let note = new Notify({
-                    title: _('Copied'),
-                    message: _('The content has been copied to the clipboard'),
-                    duration: 2000,
-                    type: 'success'
-                });
-
-                this.model.trigger('notification', note);
+            let note = new Notify({
+                title: _('Copied'),
+                message: _('The content has been copied to the clipboard'),
+                duration: 2000,
+                type: 'success'
             });
+
+            this.model.trigger('notification', note);
         }
         else if (event.op === 'addNote') {
             let address = event.address.slice(); // clone
@@ -961,6 +1017,46 @@ class ResultsPanel extends EventDistributor {
                 if (result.cancelled)
                     return;
                 saveOptions.path = result.file;
+                let status = await this.model.save(saveOptions);
+                if (host.isElectron === false && status.path) {
+                    let source = path.basename(status.path);
+                    let url = `dl/${ source }?filename=${ path.basename(result.file) }`;
+                    await host.triggerDownload(url);
+                }
+            }
+            else if (event.target.type === 'Svg') {
+
+                let options = {
+                    title: _('Export image'),
+                    filters: [
+                        { name: 'SVG', description: _('SVG Image {ext}', { ext: '(.svg)' }), extensions: [ 'svg' ] },
+                        { name: 'PNG', description: _('PNG Image {ext}', { ext: '(.png)' }), extensions: [ 'png' ] },
+                    ]
+                };
+                let result = await host.showSaveDialog(options);
+                if (result.cancelled)
+                    return;
+
+                // the engine can't render this one -- the svg only exists in
+                // the results view -- so we pull it and send it as content
+                let content;
+                if (result.file.toLowerCase().endsWith('.png')) {
+                    let pulled = await this._getContent(event.address, { format: 'image/png' });
+                    content = await (await fetch(pulled.image)).arrayBuffer();
+                }
+                else {
+                    let pulled = await this._getContent(event.address, { format: 'image/svg+xml' });
+                    content = pulled.svg;
+                }
+
+                let saveOptions = {
+                    path: result.file,
+                    name: 'Image',
+                    export: true,
+                    content: content,
+                    overwrite: host.isElectron === false,
+                };
+
                 let status = await this.model.save(saveOptions);
                 if (host.isElectron === false && status.path) {
                     let source = path.basename(status.path);

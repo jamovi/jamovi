@@ -769,6 +769,8 @@ class Instance:
                 is_export = True
             else:
                 is_export = options.get('export', False)
+                if 'svgs' in options:
+                    self.analyses.set_svgs(options['svgs'])
                 stream = self._on_save_everything(path, content, is_export)
 
             async for progress in stream:

@@ -27,6 +27,8 @@ export interface ISaveOptions {
     overwrite?: boolean;
     name?: string;
     part?: string;
+    partType?: string;
+    content?: string | ArrayBuffer;
     format?: string;
     username?: string;
     filename?: string;

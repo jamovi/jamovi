@@ -284,6 +284,7 @@ const sourcifyResults = function(object, indent) {
                 object.type === 'Group' ||
                 object.type === 'Preformatted' ||
                 object.type === 'Html' ||
+                object.type === 'Svg' ||
                 object.type === 'State' ||
                 object.type === 'Output' ||
                 object.type === 'Outputs' ||

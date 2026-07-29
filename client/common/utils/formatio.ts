@@ -123,6 +123,9 @@ export function exportElem(el, format=undefined, options: { exclude?: string[], 
     else if (format === 'image/png') {
         return _imagify(el);
     }
+    else if (format === 'image/svg+xml') {
+        return _svgify(el);
+    }
     else {
 
         let html;
@@ -266,11 +269,66 @@ function _textify(el) {
     return str;
 }
 
+async function _svgify(el) {
+
+    const source = el.tagName.toLowerCase() === 'svg' ? el : el.querySelector('svg');
+    if (source === null)
+        return '';
+
+    return `<?xml version="1.0" encoding="UTF-8"?>\n${ _svgMarkup(source) }`;
+}
+
+// an svg as it appears in the results is not self-contained -- it takes its
+// namespaces, its size and its styling from the document around it. this
+// bakes those in, so the markup can stand on its own
+function _svgMarkup(source) {
+
+    const svg = source.cloneNode(true);
+
+    svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    if ( ! svg.hasAttribute('xmlns:xlink'))
+        svg.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+
+    // once the svg leaves the document it has no layout to be sized by, so
+    // it needs to carry its own dimensions
+    const rect = source.getBoundingClientRect();
+    const width = source.getAttribute('width') || `${ rect.width }`;
+    const height = source.getAttribute('height') || `${ rect.height }`;
+    if ( ! svg.hasAttribute('viewBox') && parseFloat(width) && parseFloat(height))
+        svg.setAttribute('viewBox', `0 0 ${ parseFloat(width) } ${ parseFloat(height) }`);
+    svg.setAttribute('width', width);
+    svg.setAttribute('height', height);
+
+    // text properties are inherited from the document we're leaving behind
+    const cs = getComputedStyle(source);
+    svg.style.fontFamily = cs.fontFamily;
+    svg.style.fontSize = cs.fontSize;
+    svg.style.color = cs.color;
+
+    // the module's stylesheets are in the document head, not in the svg, so
+    // they have to come along too
+    const sss = Array.from(document.querySelectorAll<HTMLStyleElement>('style.module-asset'))
+        .map(ss => ss.textContent)
+        .join('\n');
+
+    if (sss.trim() !== '') {
+        const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+        style.textContent = sss;
+        svg.insertBefore(style, svg.firstChild);
+    }
+
+    return new XMLSerializer().serializeToString(svg);
+}
+
 function _imagify(el) {
 
     // HACK!! :/
     if (el.classList.contains('jmv-results-image'))
         el = el.querySelector('.jmv-results-image-image');
+    else if (el.classList.contains('jmv-results-svg'))
+        // the .content wrapper, rather than the svg itself, because the svg
+        // has no offsetWidth/offsetHeight to size the canvas by
+        el = el.querySelector('.content');
 
     let margin = 0;
 
@@ -465,7 +523,9 @@ function _htmlify(el, options) {
             break;
         case 'svg':
             includeVerbatim = true;
-            break;
+            // el.outerHTML would give us markup which only renders correctly
+            // in the document it came from
+            return Promise.resolve(_svgMarkup(el));
         default:
             if (el.shadowRoot)
                 return _htmlify(el.shadowRoot, options);
@@ -540,10 +600,6 @@ function _htmlify(el, options) {
         if (includeChildren) {
             for (let child of el.childNodes)
                 promises.push(_htmlify(child, options));
-        }
-
-        if (includeVerbatim) {
-            html += el.outerHTML;
         }
 
         return Promise.all(promises).then(all => {

@@ -4,6 +4,10 @@ from collections import namedtuple
 from asyncio import Future
 from itertools import islice
 from copy import deepcopy
+from base64 import urlsafe_b64encode
+
+import os
+import os.path
 
 from jamovi.core import MeasureType
 from jamovi.server import jamovi_pb2 as jcoms
@@ -321,7 +325,25 @@ class Analysis:
         self.results.options.CopyFrom(self.options.as_pb())
         clone = deepcopy(self.results)
         self._change_status_to_complete(clone.results, strip_content)
+        Analysis._strip_svg_sources(clone.results)
         return clone.SerializeToString()
+
+    @staticmethod
+    def _strip_svg_sources(pb):
+        # where we have the svg an element rendered to, that's all we keep.
+        # the html and scripts which drew it are the module's business, and
+        # would be stale the moment the module changed
+        if pb.HasField('svg'):
+            if pb.svg.path != '':
+                pb.svg.content = ''
+                del pb.svg.scripts[:]
+                del pb.svg.stylesheets[:]
+        elif pb.HasField('group'):
+            for elem_pb in pb.group.elements:
+                Analysis._strip_svg_sources(elem_pb)
+        elif pb.HasField('array'):
+            for elem_pb in pb.array.elements:
+                Analysis._strip_svg_sources(elem_pb)
 
     def _change_status_to_complete(self, pb, strip_content=False):
         if (pb.status != Analysis.Status.COMPLETE.value
@@ -344,6 +366,8 @@ class Analysis:
                 del pb.table.notes[:]
             elif pb.HasField('image'):
                 pb.image.path = ''
+            elif pb.HasField('svg'):
+                pb.svg.path = ''
 
     def save(self, path, part):
         op = Analysis.Op(Analysis.Op.SAVE, self)
@@ -369,10 +393,56 @@ class Analysis:
     def resources(self):
         return Analysis._get_resources(self.results.results)
 
+    def set_svg(self, address, content):
+        # an Svg element is drawn by the client, so the client is the only
+        # place its svg can come from. storing it as a resource here lets it
+        # be saved in place of the html and scripts which produced it
+        element_pb = Analysis._lookup(self.results.results, address)
+        if element_pb is None or not element_pb.HasField('svg'):
+            return None
+
+        # the address, so that elements of the same name in different
+        # groups don't land on the same file
+        name = urlsafe_b64encode('/'.join(address).encode('utf-8'))
+        name = name.decode('ascii').rstrip('=')
+
+        rel_path = '{:02} {}/resources/{}.svg'.format(self.id, self.name, name)
+        abs_path = os.path.join(self.dataset.instance_path, rel_path)
+
+        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+        with open(abs_path, 'wb') as file:
+            file.write(content)
+
+        element_pb.svg.path = rel_path
+        return rel_path
+
+    @staticmethod
+    def _lookup(results_pb, address):
+        for name in address:
+            if results_pb.HasField('group'):
+                elements = results_pb.group.elements
+            elif results_pb.HasField('array'):
+                elements = results_pb.array.elements
+            else:
+                return None
+            for element_pb in elements:
+                if element_pb.name == name:
+                    results_pb = element_pb
+                    break
+            else:
+                return None
+        return results_pb
+
     @staticmethod
     def _get_resources(results_pb):
         if results_pb.HasField('image'):
             path = results_pb.image.path
+            if path != '':
+                return [ path ]
+            else:
+                return [ ]
+        elif results_pb.HasField('svg'):
+            path = results_pb.svg.path
             if path != '':
                 return [ path ]
             else:

@@ -579,6 +579,13 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
 
             // Generate content if necessary
             let content = null;
+            let svgs = null;
+
+            if (options.path.endsWith('.omv') && ! options.export) {
+                // an Svg element is stored as the svg it renders to, and only
+                // the results view can provide that
+                svgs = await this.attributes.resultsSupplier.getSvgs();
+            }
 
             if (options.content) {
                 content = options.content;
@@ -606,6 +613,10 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             data.append('options', JSON.stringify(options));
             if (content)
                 data.append('content', new Blob([ content ]));
+            if (svgs) {
+                for (const [ part, svg ] of Object.entries(svgs))
+                    data.append(`svg:${ part }`, new Blob([ svg as string ]));
+            }
 
             const response = await fetch('save', {
                 method: 'POST',
