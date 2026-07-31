@@ -269,9 +269,14 @@ function _textify(el) {
     return str;
 }
 
-async function _svgify(el) {
+async function _svgify(el: HTMLElement) {
 
-    const source = el.tagName.toLowerCase() === 'svg' ? el : el.querySelector('svg');
+    let source;
+    if (el.tagName.toLowerCase() === 'svg')
+        source = el;
+    else
+        source = el.querySelector('svg.jmv-results-svg-content') ?? el.querySelector('svg');
+
     if (source === null)
         return '';
 
