@@ -49,7 +49,7 @@ export class View extends Elem.View<Model> {
 
         this.promises = [ ];
 
-        const doc = this.model.attributes.element;
+        const doc = this.model.attributes.element as ISvgElementData;
 
         for (const ss of doc.stylesheets) {
             const promise = this._insertSS(`module/${ ss }`);
@@ -77,7 +77,7 @@ export class View extends Elem.View<Model> {
         return _('Image');
     }
 
-    render() {
+    render(): void {
 
         if (this.model.attributes.title) {
             setRich(this.$title, this.model.attributes.title);
@@ -88,20 +88,58 @@ export class View extends Elem.View<Model> {
             this.$title.style.display = 'none';
         }
 
-        const doc = this.model.attributes.element;
+        // the model's attributes are Partial<>, but createItem() always
+        // provides the element
+        const doc = this.model.attributes.element as ISvgElementData;
 
         if (doc.content !== '') {
-            // the analysis has provided the markup and scripts which draw the
-            // svg. wait for the js and css to have loaded before running them
-            this.ready = Promise.all(this.promises)
-                .then(() => this._setContent(doc.content))
-                .then(() => this._runScripts());
+            this.ready = this._renderContent(doc);
         }
         else if (doc.path) {
-            // no markup, so this element was restored from a file; the svg we
-            // harvested when it was saved is all that remains of it
-            this.ready = this._fetchSvg(doc.path)
-                .then((svg) => this._setContent(svg));
+            this.ready = this._renderStoredSvg();
+        }
+    }
+
+    // the analysis has provided the markup and scripts which draw the svg
+    async _renderContent(doc: ISvgElementData): Promise<void> {
+
+        try {
+            // wait for the module's js and css to have loaded
+            await Promise.all(this.promises);
+        }
+        catch (cause: unknown) {
+            // only the assets failing to load means a missing module. we
+            // deliberately don't guard the rendering below -- anything that
+            // throws there is a fault, and shouldn't be quietly papered over
+            // with the stored svg
+            await this._renderStoredSvg(cause);
+            return;
+        }
+
+        this._setContent(doc.content);
+        this._runScripts();
+    }
+
+    // the module's assets are what draw the svg, so when they can't be
+    // loaded -- the module not being installed, most likely -- we fall back
+    // to the svg we harvested when this was saved
+    async _renderStoredSvg(cause?: unknown): Promise<void> {
+
+        // the model's attributes are Partial<>, but createItem() always
+        // provides the element
+        const doc = this.model.attributes.element as ISvgElementData;
+
+        if ( ! doc.path) {
+            if (cause)
+                console.log(cause);
+            return;
+        }
+
+        try {
+            this._setContent(await this._fetchSvg(doc.path));
+        }
+        catch (e: unknown) {
+            console.log(e);
         }
     }
 

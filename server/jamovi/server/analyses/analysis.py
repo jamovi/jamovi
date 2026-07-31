@@ -325,25 +325,7 @@ class Analysis:
         self.results.options.CopyFrom(self.options.as_pb())
         clone = deepcopy(self.results)
         self._change_status_to_complete(clone.results, strip_content)
-        Analysis._strip_svg_sources(clone.results)
         return clone.SerializeToString()
-
-    @staticmethod
-    def _strip_svg_sources(pb):
-        # where we have the svg an element rendered to, that's all we keep.
-        # the html and scripts which drew it are the module's business, and
-        # would be stale the moment the module changed
-        if pb.HasField('svg'):
-            if pb.svg.path != '':
-                pb.svg.content = ''
-                del pb.svg.scripts[:]
-                del pb.svg.stylesheets[:]
-        elif pb.HasField('group'):
-            for elem_pb in pb.group.elements:
-                Analysis._strip_svg_sources(elem_pb)
-        elif pb.HasField('array'):
-            for elem_pb in pb.array.elements:
-                Analysis._strip_svg_sources(elem_pb)
 
     def _change_status_to_complete(self, pb, strip_content=False):
         if (pb.status != Analysis.Status.COMPLETE.value
