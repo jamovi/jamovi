@@ -960,13 +960,26 @@ class ResultsPanel extends EventDistributor {
             let content = await this._getContent(event.address, options);
 
             if (content.svg) {
-                // send the svg itself, rather than the html which wraps it.
-                // the raster comes along because neither clipboard can carry
-                // image/svg+xml, and not everything will take the markup
+
+                // the svg can't be the html flavour. word, powerpoint and
+                // gmail all prefer html, and strip an inline <svg> down to
+                // its text nodes -- so the chart pastes as a run of its axis
+                // labels, and the raster we attach never gets looked at
+
                 const { svg, image } = content;
-                content = { text: svg, html: svg };
-                if (image)
+                content = { text: svg };
+
+                if (image) {
                     content.image = image;
+                    if ( ! host.isElectron) {
+                        // in the browser there has to be an html flavour, or
+                        // a paste lands as the svg text instead
+                        content.html = `<img src="${ image }">`;
+                    }
+                    // on electron there must not be one, so that office falls
+                    // back to the image -- it doesn't honour the data uri we'd
+                    // have to use here (see images:'absolute' above)
+                }
             }
 
             await host.copyToClipboard(content);
