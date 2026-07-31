@@ -25,12 +25,29 @@ class FakeModules:
         pass
 
 
+class FakeOptions:
+    """stands in for the options, which serialize() only round-trips"""
+
+    def compress(self):
+        pass
+
+    def as_pb(self):
+        return jcoms.AnalysisOptions()
+
+
 @pytest.fixture
 def analysis(temp_dir: str) -> Analysis:
     analysis = Analysis(
-        FakeDataset(temp_dir), 2, 'descriptives', 'jmv', None, None, enabled=True)
+        FakeDataset(temp_dir), 2, 'descriptives', 'jmv', FakeOptions(), None, enabled=True)
     analysis.results = jcoms.AnalysisResponse()
     return analysis
+
+
+def serialize(analysis: Analysis, strip_content=False):
+    """serialize an analysis, and read the first of its elements back"""
+    saved_pb = jcoms.AnalysisResponse()
+    saved_pb.ParseFromString(analysis.serialize(strip_content))
+    return saved_pb.results.group.elements[0]
 
 
 def add_svg(parent_pb, name: str):
@@ -101,38 +118,41 @@ def test_set_svg_ignores_addresses_which_arent_svgs(analysis):
     assert analysis.resources == []
 
 
-def test_serialize_keeps_only_the_svg(analysis):
-    """the html and scripts which drew the svg don't belong in the file"""
-
-    element_pb = add_svg(analysis.results.results, 'chart')
-    rel_path = analysis.set_svg(['chart'], b'<svg/>')
-
-    saved_pb = jcoms.AnalysisResponse()
-    saved_pb.CopyFrom(analysis.results)
-    Analysis._strip_svg_sources(saved_pb.results)
-    saved_svg_pb = saved_pb.results.group.elements[0].svg
-
-    assert saved_svg_pb.path == rel_path
-    assert saved_svg_pb.content == ''
-    assert list(saved_svg_pb.scripts) == []
-    assert list(saved_svg_pb.stylesheets) == []
-
-    # the live results are left as they were, apart from the path
-    assert element_pb.svg.content == '<div id="chart"></div>'
-
-
-def test_serialize_keeps_the_html_when_no_svg_was_harvested(analysis):
-    """without a harvested svg the html is all we have, so it has to stay"""
+def test_serialize_keeps_the_html_alongside_the_svg(analysis):
+    """the html draws the chart when reopened; the svg is only the fallback
+    for when the module which drew it isn't installed"""
 
     add_svg(analysis.results.results, 'chart')
+    rel_path = analysis.set_svg(['chart'], b'<svg/>')
 
-    saved_pb = jcoms.AnalysisResponse()
-    saved_pb.CopyFrom(analysis.results)
-    Analysis._strip_svg_sources(saved_pb.results)
-    saved_svg_pb = saved_pb.results.group.elements[0].svg
+    saved_svg_pb = serialize(analysis).svg
 
     assert saved_svg_pb.content == '<div id="chart"></div>'
     assert list(saved_svg_pb.scripts) == ['chart.js']
+    assert list(saved_svg_pb.stylesheets) == ['chart.css']
+    assert saved_svg_pb.path == rel_path
+
+
+def test_serialize_keeps_the_html_when_no_svg_was_harvested(analysis):
+    """without a harvested svg the html is all we have"""
+
+    add_svg(analysis.results.results, 'chart')
+
+    saved_svg_pb = serialize(analysis).svg
+
+    assert saved_svg_pb.content == '<div id="chart"></div>'
+    assert saved_svg_pb.path == ''
+
+
+def test_templates_drop_the_svg(analysis):
+    """as for images, a template keeps no rendered output"""
+
+    add_svg(analysis.results.results, 'chart')
+    analysis.set_svg(['chart'], b'<svg/>')
+
+    saved_svg_pb = serialize(analysis, strip_content=True).svg
+
+    assert saved_svg_pb.path == ''
 
 
 def test_set_svgs_routes_each_part_to_its_analysis(temp_dir):
