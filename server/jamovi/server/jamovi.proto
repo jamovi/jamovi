@@ -62,6 +62,7 @@ message AnalysisRequest {
     string i18n = 19;
     bool arbitraryCode = 20;
     bool enabled = 21;
+    int32 maxDurationSeconds = 22;
 }
 
 enum AnalysisStatus {

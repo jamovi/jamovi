@@ -9,6 +9,7 @@ from .analyses import Analysis
 from .jamovi_pb2 import AnalysisRequest
 from .jamovi_pb2 import AnalysisStatus
 from .pool import Pool
+from .utils import conf
 from .utils import req_str
 from .i18n import _
 
@@ -182,6 +183,10 @@ class Scheduler:
         request_pb.name = analysis.name
         request_pb.ns = analysis.ns
         request_pb.arbitraryCode = analysis.arbitrary_code
+
+        limit = conf.get('limit_analyses_duration')
+        if limit:
+            request_pb.maxDurationSeconds = int(limit)
 
         for addon in analysis.addons:
             addon_pb = request_pb.addons.add()
