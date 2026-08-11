@@ -159,6 +159,7 @@ FROM jmvcore AS compiler
 COPY --from=node-bin /node /usr/local
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    ca-certificates \
     git
 
 RUN mkdir -p /usr/lib/jamovi
@@ -191,6 +192,13 @@ RUN jmc --install . --to /usr/lib/jamovi/modules --rhome $R_HOME --rlibs /usr/li
 COPY $JAMOVI_ROOT/plots/ /tmp/source/plots
 WORKDIR /tmp/source/plots
 RUN jmc --install . --to /usr/lib/jamovi/modules --rhome $R_HOME --rlibs /usr/lib/jamovi/modules/base/R --patch-version --skip-deps
+
+RUN git init /tmp/source/pandion && \
+    cd /tmp/source/pandion && \
+    git fetch --depth 1 https://github.com/torryscott/pandion.git 89a36fc6cdb3b9af0001168cfcc8143eb187337b && \
+    git checkout FETCH_HEAD
+WORKDIR /tmp/source/pandion
+RUN jmc --install . --to /usr/lib/jamovi/modules --rhome $R_HOME --rlibs /usr/lib/jamovi/modules/base/R
 
 
 ##### I18N #####
