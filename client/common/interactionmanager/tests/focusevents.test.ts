@@ -110,6 +110,40 @@ describe('FocusLoopLifecycle with browser focus events', () => {
         expect(document.activeElement).toBe(opener);
     });
 
+    it('enters keyboard mode when focus passes back to the opener after a keyboard-driven close', () => {
+        const ctx = createLifecycleContext({ dispatchFocusEvents: true });
+        const opener = ctx.body.append(new FakeElement('opener'));
+        opener.setAttribute('tabindex', '0');
+        const { element } = createLoop(ctx, 'loop', { exitSelector: opener as unknown as HTMLElement });
+        const child = element.append(new FakeElement('child'));
+
+        ctx.input.lastInputWasPointer.mockReturnValue(true);
+        child.focus();
+
+        // Mirrors handleKeyPress marking keyboard input before Escape closes the loop.
+        ctx.input.lastInputWasPointer.mockReturnValue(false);
+        ctx.lifecycle.deactivate(element as unknown as HTMLElement, { source: 'programmatic' });
+
+        expect(document.activeElement).toBe(opener);
+        expect(ctx.modes.getMode()).toBe('keyboard');
+    });
+
+    it('stays out of keyboard mode when focus passes back to the opener after a mouse-driven close', () => {
+        const ctx = createLifecycleContext({ dispatchFocusEvents: true });
+        const opener = ctx.body.append(new FakeElement('opener'));
+        opener.setAttribute('tabindex', '0');
+        const { element } = createLoop(ctx, 'loop', { exitSelector: opener as unknown as HTMLElement });
+        const child = element.append(new FakeElement('child'));
+
+        ctx.input.lastInputWasPointer.mockReturnValue(true);
+        child.focus();
+
+        ctx.lifecycle.deactivate(element as unknown as HTMLElement, { source: 'programmatic' });
+
+        expect(document.activeElement).toBe(opener);
+        expect(ctx.modes.getMode()).toBe('hover');
+    });
+
     it('restores a stabilizing loop when focus goes nowhere and the document has focus', () => {
         vi.useFakeTimers();
         try {

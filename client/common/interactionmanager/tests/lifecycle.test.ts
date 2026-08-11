@@ -200,6 +200,95 @@ describe('FocusLoopLifecycle', () => {
         }
     });
 
+    it('restores default focus once a later pointerdown proves a native select transition really closed', () => {
+        vi.useFakeTimers();
+        try {
+            const { element, loop } = createLoop(ctx, 'loop');
+            const select = element.append(new FakeSelectElement('select'));
+            const outside = ctx.body.append(new FakeElement('outside'));
+            const deactivated = vi.fn();
+            loop.on('deactivate', deactivated);
+
+            ctx.lifecycle.handleFocusIn(select as unknown as HTMLElement, []);
+            vi.advanceTimersByTime(201);
+            setActiveElement(ctx.body);
+            ctx.lifecycle.handleFocusOut({ target: select, relatedTarget: null } as unknown as FocusEvent);
+            vi.advanceTimersByTime(0);
+
+            // Still nothing focused yet: a real popup could still be open,
+            // so nothing should have been restored.
+            expect(ctx.modes.scheduleDefaultModeReset).not.toHaveBeenCalled();
+
+            // A click landing on the page (not inside a native popup, which
+            // would never reach this listener) proves the popup is gone.
+            ctx.lifecycle.reconcilePointerDown(outside as unknown as Element);
+            vi.runAllTimers();
+
+            expect(ctx.modes.scheduleDefaultModeReset).toHaveBeenCalledOnce();
+        }
+        finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('restores default focus when the same click both dismisses the popup and reaches the page', () => {
+        // pointerdown fires before the mousedown that blurs the select, so
+        // reconcilePointerDown() runs before deferUnknownFocusOut() has even
+        // scheduled its own resolver - the flag isn't set yet when this is
+        // called, only shortly after. This is the actual click-away sequence
+        // from a live click, unlike the tests above which use an
+        // already-settled flag from a prior, separate interaction.
+        vi.useFakeTimers();
+        try {
+            const { element, loop } = createLoop(ctx, 'loop');
+            const select = element.append(new FakeSelectElement('select'));
+            const outside = ctx.body.append(new FakeElement('outside'));
+            loop.on('deactivate', vi.fn());
+
+            ctx.lifecycle.handleFocusIn(select as unknown as HTMLElement, []);
+            vi.advanceTimersByTime(201);
+
+            // pointerdown, still while the select has focus.
+            ctx.lifecycle.reconcilePointerDown(outside as unknown as Element);
+
+            // mousedown's default action blurs the select immediately after.
+            setActiveElement(ctx.body);
+            ctx.lifecycle.handleFocusOut({ target: select, relatedTarget: null } as unknown as FocusEvent);
+
+            vi.runAllTimers();
+
+            expect(ctx.modes.scheduleDefaultModeReset).toHaveBeenCalledOnce();
+        }
+        finally {
+            vi.useRealTimers();
+        }
+    });
+
+    it('does not restore default focus on a later pointerdown if something already took focus', () => {
+        vi.useFakeTimers();
+        try {
+            const { element, loop } = createLoop(ctx, 'loop');
+            const select = element.append(new FakeSelectElement('select'));
+            const outside = ctx.body.append(new FakeElement('outside'));
+            loop.on('deactivate', vi.fn());
+
+            ctx.lifecycle.handleFocusIn(select as unknown as HTMLElement, []);
+            vi.advanceTimersByTime(201);
+            setActiveElement(ctx.body);
+            ctx.lifecycle.handleFocusOut({ target: select, relatedTarget: null } as unknown as FocusEvent);
+            vi.advanceTimersByTime(0);
+
+            ctx.lifecycle.reconcilePointerDown(outside as unknown as Element);
+            setActiveElement(outside);
+            vi.runAllTimers();
+
+            expect(ctx.modes.scheduleDefaultModeReset).not.toHaveBeenCalled();
+        }
+        finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('cancels deferred null focusout handling when focusin arrives', () => {
         vi.useFakeTimers();
         try {

@@ -133,7 +133,11 @@ class Dropdown extends HTMLElement {
         }
 
         setTimeout(() => {
-            this.loop.activate({ withMouse: false, exitSelector: formulaEl });
+            // The dropdown may already have been closed again by the time this
+            // fires (e.g. a quick open-then-pick) - activating a closed loop
+            // would trap focus in a hidden container.
+            if (this._shown && this.$formula === formulaEl)
+                this.loop.activate({ withMouse: false, exitSelector: formulaEl });
         }, 200);
 
         if (this._shown && formulaEl === this.$formula) {
@@ -179,6 +183,17 @@ class Dropdown extends HTMLElement {
                 this._resolve();
                 this._resolve = null;
             }
+
+            // hide() can be triggered without the loop deactivating itself first
+            // (selecting an item, clicking outside, scrolling away) as well as
+            // after it (Escape, focus moving outside). Deactivating here only
+            // when still active keeps the interactionManager's bookkeeping in
+            // sync in the first case, and is a no-op (guarded by loop state) in
+            // the second, avoiding recursion through the 'deactivate' listener
+            // below. 'programmatic' also lets focus pass back to the exit
+            // selector (the control that opened the dropdown).
+            if (self.loop.state === 'active')
+                self.loop.deactivate({ source: 'programmatic' });
         }
 
         self._inTools = false;

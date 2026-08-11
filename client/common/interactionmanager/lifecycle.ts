@@ -51,6 +51,14 @@ export class FocusLoopLifecycle {
     private activationStabilizers = new WeakMap<FocusLoop, ReturnType<typeof setTimeout>>();
     private pendingUnknownFocusOut: PendingUnknownFocusOut | null = null;
     private pendingUnknownFocusOutTimer: ReturnType<typeof setTimeout> | null = null;
+    // A native <select> can blur with relatedTarget null while its own popup
+    // is still legitimately open (see resolvePendingUnknownFocusOut), so that
+    // case is deliberately left unresolved rather than restoring default
+    // focus. If the popup instead closed because the user clicked elsewhere,
+    // that click's pointerdown reaches this page-level listener - which is
+    // only possible once the popup is no longer capturing input - so it is
+    // used as the signal to finish the deferred recovery.
+    private awaitingNativeSelectFocusOut = false;
     private focusedElements = new WeakMap<FocusLoop, HTMLElement>();
     private focusPass = new FocusPassController();
     private pausedFocusControl: HTMLElement | null = null;
@@ -149,9 +157,15 @@ export class FocusLoopLifecycle {
             return;
         }
 
-        if (pending.fromNativeSelect)
+        if (pending.fromNativeSelect) {
+            this.awaitingNativeSelectFocusOut = true;
             return;
+        }
 
+        this.finishUnknownFocusOutRecovery();
+    }
+
+    private finishUnknownFocusOutRecovery(): void {
         if (this.restoreStabilizingFocusedLoop())
             return;
 
@@ -179,6 +193,7 @@ export class FocusLoopLifecycle {
 
     handleFocusIn(element: HTMLElement, composedPath: EventTarget[], relatedTarget: HTMLElement | null = null): void {
         this.clearPendingUnknownFocusOut();
+        this.awaitingNativeSelectFocusOut = false;
 
         const pausedFocusControl = this.getPausedFocusControl();
         if (pausedFocusControl) {
@@ -218,17 +233,19 @@ export class FocusLoopLifecycle {
         else if (element !== null && !element.classList.contains('temp-focus-cell')) {
             if (this.focusPass.isTarget(element)) {
                 this.focusPass.clear();
+                // Focus landing here is a loop handing focus back to its
+                // opener (e.g. Escape closing a dropdown), not a fresh user
+                // focus target, but it should still reflect how that opener
+                // was reached: classifying it below picks 'keyboard' mode
+                // when the close itself came from the keyboard (fromPointer
+                // is false by then) and 'hover' when it came from the mouse,
+                // instead of silently keeping whatever mode was active
+                // before the loop opened.
+                if (!this.modes.inAccessibilityMode())
+                    this.classifyFocusMode(element, composedPath);
             }
             else if (!this.modes.inAccessibilityMode()) {
-                const details = this.classifier.elementFocusDetails(element);
-                const fromPointer = this.input.lastInputWasPointer();
-                if (details.usesKeyboard || this.classifier.containsFocusableMenuLevel(composedPath) || (this.modes.inKeyboardMode() && !fromPointer)) {
-                    const keyboardMode = !element.classList.contains('menu-level') && !fromPointer ? 'keyboard' : 'hover';
-                    this.modes.set(keyboardMode);
-                }
-                else {
-                    this.modes.set('default');
-                }
+                this.classifyFocusMode(element, composedPath);
             }
             else if (this.modes.getMode() === 'keyTips') {
                 const details = this.classifier.elementFocusDetails(element);
@@ -243,7 +260,43 @@ export class FocusLoopLifecycle {
         this.input.markKeyboardInput();
     }
 
+    private classifyFocusMode(element: HTMLElement, composedPath: EventTarget[]): void {
+        const details = this.classifier.elementFocusDetails(element);
+        const fromPointer = this.input.lastInputWasPointer();
+        if (details.usesKeyboard || this.classifier.containsFocusableMenuLevel(composedPath) || (this.modes.inKeyboardMode() && !fromPointer)) {
+            const keyboardMode = !element.classList.contains('menu-level') && !fromPointer ? 'keyboard' : 'hover';
+            this.modes.set(keyboardMode);
+        }
+        else {
+            this.modes.set('default');
+        }
+    }
+
     reconcilePointerDown(element: Element): void {
+        // pointerdown fires before the mousedown it accompanies, and it is
+        // that mousedown's default focus-shift which blurs a native <select>
+        // and schedules deferUnknownFocusOut()'s own setTimeout(0). So on the
+        // very click that dismisses the popup, awaitingNativeSelectFocusOut
+        // is not set yet at this point - checking it here would race that
+        // resolver and lose every time. Deferring twice reliably lands after
+        // it: the first tick runs after this task ends, once the blur's
+        // resolver has already been queued (even if not yet run); the second
+        // then runs after that resolver, which was queued first and so fires
+        // first.
+        setTimeout(() => {
+            setTimeout(() => {
+                if (!this.awaitingNativeSelectFocusOut)
+                    return;
+                this.awaitingNativeSelectFocusOut = false;
+                if (typeof document.hasFocus === 'function' && !document.hasFocus())
+                    return;
+                const activeElement = document.activeElement;
+                if (activeElement instanceof HTMLElement && activeElement !== document.body)
+                    return;
+                this.finishUnknownFocusOutRecovery();
+            }, 0);
+        }, 0);
+
         if (this.modes.inAccessibilityMode()) {
             setTimeout(() => {
                 const info = this.classifier.elementFocusDetails(element);

@@ -380,6 +380,15 @@ class DataVarWidget extends HTMLElement {
 
         this.$measureList.addEventListener('keydown', event => {
             if (event.key === 'Enter' || event.key === ' ') {
+                // This dropdown is opened/closed by hand rather than through
+                // a focus-loop exit key, so it never moves DOM focus off
+                // $measureList (it already has it, from the mouse click that
+                // opened it) and the interactionManager never sees a focus
+                // transition to react to. Without this, a key handled here
+                // leaves focus mode stuck on whatever it was before, so no
+                // focus ring ever appears.
+                interactionManager.setMode('keyboard', { noTransfer: true, silent: false });
+
                 if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList) {
                     dropdown.hide();
                     this.$measureList.setAttribute('aria-expanded', 'false');
@@ -397,8 +406,33 @@ class DataVarWidget extends HTMLElement {
             else if (event.key === 'Escape') {
                 event.preventDefault();
                 event.stopPropagation();
-                dropdown.hide();
-                this.$measureList.focus();
+
+                const wasOpen = dropdown.isVisible() === true && dropdown.focusedOn() === this.$measureList;
+                if (wasOpen) {
+                    dropdown.hide();
+                    this.$measureList.setAttribute('aria-expanded', 'false');
+                }
+
+                if (interactionManager.getMode() === 'keyboard') {
+                    // Already visibly keyboard-driven: while the dropdown is
+                    // open, Escape only closes it - closing is the whole
+                    // action. Only once it's already closed does a further
+                    // Escape cancel all the way out to the spreadsheet, same
+                    // as dismissing any other transient control. Setting the
+                    // mode itself moves DOM focus to the default focus
+                    // control, so that case must not be followed by
+                    // refocusing $measureList.
+                    if (!wasOpen)
+                        interactionManager.setMode('default');
+                }
+                else {
+                    // Opened via mouse, so mode never became visible in the
+                    // first place - make the now-focused control visible
+                    // rather than jumping straight past it to the
+                    // spreadsheet.
+                    interactionManager.setMode('keyboard', { noTransfer: true, silent: false });
+                    this.$measureList.focus();
+                }
             }
         });
     }

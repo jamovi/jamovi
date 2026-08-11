@@ -9,6 +9,7 @@ import Notify from '../notification';
 import VariableModel from './variablemodel';
 import { h }  from '../../common/htmlelementcreator';
 import { Column, Transform } from '../dataset';
+import interactionManager from '../../common/interactionmanager';
 
 let instanceID = 0;
 
@@ -87,6 +88,15 @@ class RecodedVarWidget extends HTMLElement {
 
         this.$variableList.addEventListener('keydown', event => {
             if (event.key === 'Enter' || event.key === ' ') {
+                // This dropdown is opened/closed by hand rather than through
+                // a focus-loop exit key, so it never moves DOM focus off
+                // $variableList (it already has it, from the mouse click
+                // that opened it) and the interactionManager never sees a
+                // focus transition to react to. Without this, a key handled
+                // here leaves focus mode stuck on whatever it was before, so
+                // no focus ring ever appears.
+                interactionManager.setMode('keyboard', { noTransfer: true, silent: false });
+
                 if (dropdown.isVisible() === true && dropdown.focusedOn() === this.$variableList)
                     dropdown.hide();
                 else
@@ -101,8 +111,31 @@ class RecodedVarWidget extends HTMLElement {
             else if (event.key === 'Escape') {
                 event.preventDefault();
                 event.stopPropagation();
-                dropdown.hide();
-                this.$variableList.focus();
+
+                const wasOpen = dropdown.isVisible() === true && dropdown.focusedOn() === this.$variableList;
+                if (wasOpen)
+                    dropdown.hide();
+
+                if (interactionManager.getMode() === 'keyboard') {
+                    // Already visibly keyboard-driven: while the dropdown is
+                    // open, Escape only closes it - closing is the whole
+                    // action. Only once it's already closed does a further
+                    // Escape cancel all the way out to the spreadsheet, same
+                    // as dismissing any other transient control. Setting the
+                    // mode itself moves DOM focus to the default focus
+                    // control, so that case must not be followed by
+                    // refocusing $variableList.
+                    if (!wasOpen)
+                        interactionManager.setMode('default');
+                }
+                else {
+                    // Opened via mouse, so mode never became visible in the
+                    // first place - make the now-focused control visible
+                    // rather than jumping straight past it to the
+                    // spreadsheet.
+                    interactionManager.setMode('keyboard', { noTransfer: true, silent: false });
+                    this.$variableList.focus();
+                }
             }
         });
 
