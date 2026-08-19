@@ -405,6 +405,39 @@ class _Handlers:
         return web.Response(body=body, content_type='application/json',
             headers={'Cache-Control': 'private, no-store, must-revalidate, max-age=0'})
 
+    async def module_doc(self, request: web.Request) -> web.StreamResponse:
+        module_name = request.match_info['module_name']
+        path = request.match_info['path'] or 'index.md'
+        try:
+            module_path = self._session.modules.get(module_name).path
+        except KeyError as e:
+            return web.Response(status=404, content_type='text/html', text=f'<h1>404</h1>{e}')
+
+        docs_path = os.path.realpath(os.path.join(module_path, 'docs'))
+        doc_path = os.path.realpath(os.path.join(docs_path, path))
+
+        # docs contain relative links, so the paths which arrive here can
+        # contain .. -- resolve them, and require the result to still be
+        # inside the docs dir
+        if not doc_path.startswith(docs_path + os.sep):
+            return web.Response(status=403, content_type='text/html',
+                text='<h1>403</h1>verboten')
+
+        content_type, enc = mimetypes.guess_type(doc_path)
+        if content_type is None:
+            content_type = 'text/plain'
+        if content_type.startswith('text/'):
+            content_type += '; charset=utf-8'
+
+        headers = {'Content-Type': content_type,
+                   'Cache-Control': 'private, no-cache, must-revalidate, max-age=0'}
+        if enc:
+            headers['Content-Encoding'] = enc
+
+        # FileResponse performs the stat() and the reads in a thread, and
+        # 404s for us if the doc isn't there
+        return web.FileResponse(doc_path, headers=headers)
+
     async def module_descriptor(self, request: web.Request) -> web.Response:
         module_name = request.match_info['module_name']
         try:
@@ -508,6 +541,9 @@ class _Handlers:
         router.add_get(
             r'/modules/{module_name:[0-9a-zA-Z]+}/i18n/{code:.+}',
             self.module_i18n)
+        router.add_get(
+            r'/modules/{module_name:[0-9a-zA-Z]+}/docs/{path:.*}',
+            self.module_doc)
         router.add_get(
             r'/analyses/{module_name:[0-9a-zA-Z]+}/{analysis_name:[0-9a-zA-Z]+}/{part:[.0-9a-zA-Z]+}',
             self.analysis_descriptor)
