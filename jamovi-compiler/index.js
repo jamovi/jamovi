@@ -547,6 +547,16 @@ try {
             }
         }
 
+        let docsDir = path.join(defDir, 'docs');
+
+        if (utils.exists(docsDir)) {
+            let docsOutDir = path.join(modDir, 'docs');
+            fs.emptyDirSync(docsOutDir);
+            fs.copySync(docsDir, docsOutDir);
+            for (let relPath of walkSync(docsDir, { directories: false }))
+                console.log('copied: ' + path.join('docs', relPath).replace(/\\/g, '/'));
+        }
+
         let indexPath = path.join(defDir, '0000.yaml');
 
         if (packageInfo.date instanceof Date)
