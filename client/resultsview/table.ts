@@ -324,6 +324,40 @@ export class View extends Elem.View<Model> {
         return _('Table');
     }
 
+    renderFooter(table: ITableElementData | undefined, footnotes: string[], nPhysCols: number) {
+
+        if (table === undefined)
+            return;
+
+        let footerRows: HTMLTableRowElement[] = [];
+        for (let i = 0; i < table.notes.length; i++) {
+            let noteCell = h('td', { class: 'table-note', colspan: nPhysCols.toString() });
+            let paragraphs = richParagraphs(table.notes[i].note);
+            if (paragraphs.length === 0)
+                paragraphs.push(h('p'));
+            paragraphs[0].prepend(h('i', {}, `${ _('Note') }.`), ' ');
+            noteCell.append(...paragraphs);
+            footerRows.push(h('tr', {}, noteCell));
+        }
+
+        for (let i = 0; i < footnotes.length; i++) {
+            let footnoteCell = h('td', { colspan: nPhysCols.toString() });
+            footnoteCell.append(SUPSCRIPTS[i] + ' ', rich(footnotes[i]));
+            footerRows.push(h('tr', {}, footnoteCell));
+        }
+
+        this.$tableFooter.replaceChildren(...footerRows);
+
+        if (this.refs.hasVisibleContent()) {
+            let $refsRow = h('tr', { class: 'jmvrefs' }, h('td', { colspan: nPhysCols.toString() }));
+            // class="jmvrefs" excludes this from some exports/copy
+            $refsRow.childNodes[0].appendChild(this.refs);
+            this.$tableFooter.append($refsRow);
+        }
+        else
+            this.refs.remove();
+    }
+
     render() {
 
         super.render();
@@ -704,6 +738,7 @@ export class View extends Elem.View<Model> {
         if (cells.header.length === 0) {
             this.$titleCell.setAttribute('colspan', '1');
             this.$titleCell.setAttribute('scope', 'col');
+            this.renderFooter(table, footnotes, 1);
             return;
         }
 
@@ -717,6 +752,7 @@ export class View extends Elem.View<Model> {
                 this.$titleCell.setAttribute('scope', 'col');
 
             this.$tableBody.replaceChildren(h('tr', {}, h('td', { colspan: nPhysCols.toString() }, '\u00a0')));
+            this.renderFooter(table, footnotes, nPhysCols);
             return;
         }
 
@@ -804,33 +840,7 @@ export class View extends Elem.View<Model> {
 
         this.$tableBody.replaceChildren(...bodyRows);
 
-        let footerRows: HTMLTableRowElement[] = [];
-        for (let i = 0; i < table.notes.length; i++) {
-            let noteCell = h('td', { class: 'table-note', colspan: nPhysCols.toString() });
-            let paragraphs = richParagraphs(table.notes[i].note);
-            if (paragraphs.length === 0)
-                paragraphs.push(h('p'));
-            paragraphs[0].prepend(h('i', {}, `${ _('Note') }.`), ' ');
-            noteCell.append(...paragraphs);
-            footerRows.push(h('tr', {}, noteCell));
-        }
-
-        for (let i = 0; i < footnotes.length; i++) {
-            let footnoteCell = h('td', { colspan: nPhysCols.toString() });
-            footnoteCell.append(SUPSCRIPTS[i] + ' ', rich(footnotes[i]));
-            footerRows.push(h('tr', {}, footnoteCell));
-        }
-
-        this.$tableFooter.replaceChildren(...footerRows);
-
-        if (this.refs.hasVisibleContent()) {
-            let $refsRow = h('tr', { class: 'jmvrefs' }, h('td', { colspan: nPhysCols.toString() }));
-            // class="jmvrefs" excludes this from some exports/copy
-            $refsRow.childNodes[0].appendChild(this.refs);
-            this.$tableFooter.append($refsRow);
-        }
-        else
-            this.refs.remove();
+        this.renderFooter(table, footnotes, nPhysCols);
 
         this._ascButtons = this.$tableHeader.querySelectorAll('button.sort-asc');
         this._descButtons = this.$tableHeader.querySelectorAll('button.sort-desc');
