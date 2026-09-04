@@ -347,7 +347,7 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
                     row += 1;
                 }
                 
-                let $filler = h('div', { style: 'white-space: nowrap;', class: 'list-item-ctrl' });
+                let $filler = h('div', { style: 'white-space: nowrap; width: min-content; background-color: white;', class: 'list-item-ctrl' });
                 let fillerInUse = false;
                 let fillerZindex = '111';
                 if (i === 0) {
@@ -378,11 +378,11 @@ export class OptionListControl<P extends OptionListControlProperties<U>, TGrid e
                         infoText = '';
                         this.infoTextBox.style.display = 'none';
                     }
-                    this.infoTextLabel = h('div', { class: 'list-info-label' }, infoText);
+                    this.infoTextLabel = h('div', { class: 'list-info-label', style: 'white-space: pre-wrap;' }, infoText);
                     this.infoTextBox.append(this.infoTextLabel);
                     $filler.append(this.infoTextBox);
                     fillerInUse = true;
-                    fillerZindex = '10';
+                    fillerZindex = '2000';
                     
                 }
 
