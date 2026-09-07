@@ -23,6 +23,7 @@ testthat::test_that('validateSafeFormula accepts safe formulas', {
     testthat::expect_silent(validateSafeFormula("cbind(y1, y2) ~ x + z"))
     testthat::expect_silent(validateSafeFormula("rbind(y1, y2) ~ x"))
     testthat::expect_silent(validateSafeFormula("c(y1, y2) ~ x"))
+    testthat::expect_silent(validateSafeFormula("rep(0, k) ~ x"))
     testthat::expect_silent(validateSafeFormula("~ x"))
 
     # Mathematical functions

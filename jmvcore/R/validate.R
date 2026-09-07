@@ -35,7 +35,7 @@ validateSafeFormula <- function(fmla, additional_allowed_functions = NULL) {
     "mean", "sd", "var", "median", "min", "max", "sum", "length",
     "rank",
     # Transformation functions
-    "scale", "poly", "ns", "bs", "I", "cbind", "rbind", "c",
+    "scale", "poly", "ns", "bs", "I", "cbind", "rbind", "c", "rep",
     # Type coercions (common inline in formulas)
     "as.numeric", "as.integer", "as.factor", "as.character",
     # Categorical helpers
