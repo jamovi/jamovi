@@ -7,19 +7,19 @@ Come visit us at [jamovi.org](https://www.jamovi.org).
 
 ## running
 
-the easiest way to build and work on jamovi, is to build it as a docker container. clone this repo (and submodules), and then build it with:
+the easiest way to build and work on jamovi, is to build it as a docker container, using [just](https://github.com/casey/just). clone this repo (and submodules), and then build it with:
 
 ```bash
 git clone https://github.com/jamovi/jamovi.git
 cd jamovi
 git submodule update --init --recursive
-docker compose --profile main build
+just build
 ```
 
 once built, it can be run with:
 
 ```bash
-docker compose --profile main up
+just run
 ```
 
 this launches an embedded web-server, and jamovi can be accessed with a web-browser at the url http://127.0.0.1:41337
@@ -29,5 +29,5 @@ this launches an embedded web-server, and jamovi can be accessed with a web-brow
 jamovi can be run with a vite dev server serving the client files as follows:
 
 ```bash
-docker compose --profile dev up
+just dev
 ```
