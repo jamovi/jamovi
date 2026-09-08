@@ -228,6 +228,9 @@ RUN node /tmp/source/i18n/index.js --build src --dest /usr/lib/jamovi/i18n/json
 
 FROM r-base AS jamovi
 
+# nodejs comes in behind libnode anyway, but name it explicitly -- 'jmc --home
+# docker:' builds modules in a container off this image, and runs the compiler
+# with it
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     python3-minimal \
     python3-pkg-resources \
@@ -246,7 +249,8 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-ins
     libharfbuzz0b \
     libfribidi0 \
     libtiff6 \
-    libreadline8t64
+    libreadline8t64 \
+    nodejs
 
 COPY --from=jmv     /usr/lib/jamovi/ /usr/lib/jamovi/
 COPY --from=client  /usr/lib/jamovi/client/ /usr/lib/jamovi/client/
