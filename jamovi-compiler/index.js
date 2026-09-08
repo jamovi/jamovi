@@ -55,6 +55,7 @@ import compileR from './compilerr.js';
 import parseR from './parser.js';
 import utils from './utils.js';
 import installer from './installer.js';
+import docker from './docker.js';
 import sourcify from './sourcify.js';
 import i18n from './i18n.js';
 import log from 'log';
@@ -70,7 +71,7 @@ try {
     let usage = 'Usage:\n';
     usage += '    jmc --build path\n';
     usage += '    jmc --prepare path\n';
-    usage += '    jmc --install path     [--home path]\n';
+    usage += '    jmc --install path     [--home path|docker:container]\n';
     usage += '    jmc --check            [--home path]\n';
     usage += '\n';
     usage += '    jmc --i18n path  --create code     [--verbose]\n';
@@ -148,6 +149,26 @@ try {
     }
     else {
         console.log(usage);
+        process.exit(0);
+    }
+
+    // '--home docker:container' builds the module in a container off that
+    // container's image, then hands the result to the jamovi running in it.
+    // none of the rest of this runs on the host in that case
+    const container = docker.parse(args.home);
+    if (container !== null) {
+
+        if (args.to)
+            throw '--to cannot be combined with --home docker:';
+
+        srcDir = path.resolve(srcDir);
+        if ( ! utils.exists(srcDir))
+            throw "path '%s' does not exist\n".replace('%s', srcDir);
+
+        const jmoPath = docker.build(srcDir, __dirname, container);
+        if (isInstalling)
+            docker.install(jmoPath, container);
+
         process.exit(0);
     }
 
