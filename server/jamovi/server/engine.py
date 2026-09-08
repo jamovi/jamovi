@@ -27,6 +27,7 @@ from asyncio import TimeoutError
 from asyncio import sleep
 from asyncio import create_subprocess_exec
 from asyncio import Event
+from asyncio import Lock
 from asyncio import FIRST_COMPLETED
 from asyncio import current_task
 
@@ -84,6 +85,12 @@ class Engine:
         self._stopped = Event()
         self._stopped.set()
 
+        # start() and stop() both leave the engine half-built partway through
+        # (_conn_path is claimed before the process is spawned, but not bound
+        # until after), so they mustn't overlap -- two starts racing would bind
+        # the same conn path twice, leaving an engine process nothing can reach
+        self._lifecycle = Lock()
+
         self._current_analysis = None
 
         self._ioloop = get_event_loop()
@@ -96,6 +103,10 @@ class Engine:
         self._analysis_duration_limit = dur_limit
 
     async def start(self):
+        async with self._lifecycle:
+            await self._start()
+
+    async def _start(self):
 
         self._at_startup = True
         self._process_stopping = threading.Event()
@@ -201,6 +212,10 @@ class Engine:
             })
 
     async def stop(self):
+        async with self._lifecycle:
+            await self._stop()
+
+    async def _stop(self):
 
         log.debug('Stopping engine (2)')
 
@@ -369,11 +384,14 @@ class Engine:
                 timeout.cancel()
 
     async def restart(self):
-        if self._running.is_set():
-            log.info('Stopping engine')
-            await self.stop()
-        log.info('Restarting engine')
-        await self.start()
+        async with self._lifecycle:
+            # any start already in flight has finished by now, so _running
+            # reflects whether there's actually an engine to stop
+            if self._running.is_set():
+                log.info('Stopping engine')
+                await self._stop()
+            log.info('Restarting engine')
+            await self._start()
 
     def _notify_process_ended(self):
         self._running.clear()
