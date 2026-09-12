@@ -45,7 +45,7 @@ export class FocusModeController extends EventEmitter {
     setDefaultFocusControl(defaultFocusControl: HTMLElement): void {
         this.defaultFocusControl = defaultFocusControl;
         if (this.defaultFocusControl && this.usingDefaultMode)
-            this.defaultFocusControl.focus();
+            this.defaultFocusControl.focus({ preventScroll: true });
     }
 
     getDefaultFocusControl(): HTMLElement | null {
@@ -58,7 +58,7 @@ export class FocusModeController extends EventEmitter {
 
     restoreDefaultFocusControl(): void {
         if (this.defaultFocusControl)
-            this.defaultFocusControl.focus();
+            this.defaultFocusControl.focus({ preventScroll: true });
     }
 
     clearDefaultModeReset(): void {
@@ -166,7 +166,7 @@ export class FocusModeController extends EventEmitter {
 
     private focusDefaultControlIfNeeded(mode: FocusMode): void {
         if (this.defaultFocusControl && mode === 'default')
-            this.defaultFocusControl.focus();
+            this.defaultFocusControl.focus({ preventScroll: true });
     }
 
     private shouldBroadcastModeChange(fromBroadcast: boolean): boolean {
