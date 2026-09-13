@@ -785,6 +785,7 @@ class Instance:
 
         path = options['path']
         trigger_download = False
+        staging_path = None  # temp file when saving through a file sync
 
         try:
 
@@ -799,6 +800,7 @@ class Instance:
             if file_sync:
                 with NamedTemporaryFile(suffix='.omv', delete=False) as file:
                     path = file.name
+                staging_path = path
                 file_exists = False
             else:
                 if path.startswith('{{Temp}}'):
@@ -900,6 +902,13 @@ class Instance:
 
             return_stream.set_exception(UserException(message, cause))
 
+        finally:
+            if staging_path is not None:
+                try:
+                    os.remove(staging_path)
+                except OSError as e:
+                    log.warning("unable to remove '%s': %s", staging_path, e)
+
     async def _on_save_content(self, path, content):
 
         yield 0
@@ -978,7 +987,9 @@ class Instance:
         else:
             raise Exception(_('Unable to access analysis'))
 
-    def open(self, path, title=None, is_temp=False, ext=None, options=None):
+    def open(self, path, title=None, is_temp=False, ext=None, options=None, remove_after=False):
+        # remove_after: the file at path is ours (i.e. an upload written to a
+        # temp file) and should be removed once it's been read
 
         if options is None:
             options = { }
@@ -987,6 +998,8 @@ class Instance:
         is_session_temp = path.startswith('{{SessionTemp}}')
         if is_example or is_session_temp:
             is_temp = True  # don't add to recents, etc.
+        if is_session_temp:
+            remove_after = True  # one-shot file produced by an analysis 'action'
 
         if path == '':
             pass
@@ -1024,8 +1037,10 @@ class Instance:
 
             nonlocal title
             nonlocal ext
+            nonlocal remove_after
 
             file_sync: HttpSync | None = None
+            norm_path = None
 
             try:
                 url = None
@@ -1042,7 +1057,9 @@ class Instance:
 
                     file_info = await read_stream
 
+                    # the sync downloads into a temp file, which we own
                     norm_path = file_info.url
+                    remove_after = True
                     title, __ = os.path.splitext(file_info.filename)
                     ext = file_info.ext
 
@@ -1117,6 +1134,14 @@ class Instance:
                 # success
                 if path != '' and not is_temp:
                     self._add_to_recents(path, self._project.title)
+            finally:
+                if remove_after and norm_path is not None:
+                    # whether the open succeeded or not, the file isn't
+                    # needed any more
+                    try:
+                        os.remove(norm_path)
+                    except OSError as e:
+                        log.warning("unable to remove '%s': %s", norm_path, e)
 
         create_task(read_file(path, is_temp, stream))
         return stream

@@ -10,7 +10,7 @@ import threading
 import asyncio
 from asyncio import create_task
 from urllib.parse import urlparse
-from tempfile import NamedTemporaryFile, TemporaryDirectory
+from tempfile import NamedTemporaryFile, TemporaryDirectory, gettempdir
 from shutil import rmtree
 
 from aiohttp import web
@@ -34,6 +34,11 @@ if access_key is None:
     access_key = uuid.uuid4().hex
     access_key_generated = True
     conf.set('access_key', access_key)
+
+# where uploads are written to, and (in cloud mode) the only place local
+# paths may be opened from -- so a directory of its own, not the temp root
+if conf.get('upload_path', None) is None:
+    conf.set('upload_path', os.path.join(gettempdir(), 'jamovi-uploads'))
 
 
 # Generic static-file helpers (no session dependency)
@@ -248,16 +253,21 @@ class _Handlers:
         file_title = None
         file_ext = None
         is_temp = False
+        remove_after = False
 
         if 'file' in data:
             ff = data['file']
             if not isinstance(ff, web.FileField):
                 return web.Response(status=400, text='400: Bad Request')
             file_title, dot_ext = os.path.splitext(ff.filename)
-            with NamedTemporaryFile(suffix=dot_ext, delete=False) as tmp:
+            # in cloud mode, local paths must be inside upload_path
+            upload_path = conf.get('upload_path')
+            os.makedirs(upload_path, exist_ok=True)
+            with NamedTemporaryFile(suffix=dot_ext, delete=False, dir=upload_path) as tmp:
                 tmp.write(ff.file.read())
             file_path = tmp.name
             is_temp = True
+            remove_after = True  # it's our temp file
         elif 'path' in options:
             file_path = options['path']
             is_temp = options.get('temp', False) is not False
@@ -283,7 +293,7 @@ class _Handlers:
             instance = await self._session.create()
             async for progress in instance.open(
                 file_path, title=file_title, is_temp=is_temp,
-                ext=file_ext, options=options,
+                ext=file_ext, options=options, remove_after=remove_after,
             ):
                 p, n = progress
                 await resp.write(f'{{"status":"in-progress","p":{p},"n":{n}}}\n'.encode())
