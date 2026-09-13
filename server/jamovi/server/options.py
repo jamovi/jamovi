@@ -129,6 +129,8 @@ class Option:
             return [ ]
         elif self.type == 'Output':
             return { 'value': False, 'vars': [ ], 'synced': [ ] }
+        elif self.type == 'File':
+            return [ ]
         else:
             return None
 
@@ -208,6 +210,25 @@ class OptionPairs(OptionTerms):
         self.set_value(valuess)
 
 
+class OptionFile(Option):
+    # a list of { path, filename } (always a list, even when not multiple --
+    # only jmvcore's OptionFile collapses a single file to a singleton).
+    # files don't outlive the session, so the path is dropped when the
+    # analysis is written to (or read from) an .omv; the filename is kept so
+    # the user can see what needs re-selecting
+
+    @staticmethod
+    def strip_paths(pb: AnalysisOption):
+        if not pb.HasField('c'):
+            return
+        for file_pb in pb.c.options:
+            if not file_pb.HasField('c') or not file_pb.c.hasNames:
+                continue
+            for i, name in enumerate(file_pb.c.names):
+                if name == 'path':
+                    file_pb.c.options[i].o = NONE
+
+
 class OptionArray(Option):
     def __iter__(self):
         template = self.defn['template']
@@ -246,6 +267,7 @@ OptionTypes = {
     'Pairs': OptionPairs,
     'Array': OptionArray,
     'Group': OptionGroup,
+    'File': OptionFile,
 }
 
 
@@ -394,6 +416,16 @@ class Options:
             pb = self._pb.options[i]
             option.attach(pb)
             option.rename_using(changes)
+
+    def strip_file_paths(self, pb: AnalysisOptions | None = None):
+        # see OptionFile. pb defaults to our own, but can be a copy about to
+        # be written out, so the live options keep their paths
+        if pb is None:
+            pb = self._pb
+        for i, name in enumerate(pb.names):
+            option = self._options.get(name, None)
+            if option is not None and option.type == 'File':
+                OptionFile.strip_paths(pb.options[i])
 
     def clear_actions(self):
         for i, name in enumerate(self._pb.names):

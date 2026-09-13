@@ -281,6 +281,14 @@ export const showOpenDialog = etron.showOpenDialog || (async function(options) {
         showOpenDialog.browser.removeAttribute('accept');
     }
 
+    if (options.multiple)
+        showOpenDialog.browser.setAttribute('multiple', '');
+    else
+        showOpenDialog.browser.removeAttribute('multiple');
+
+    // otherwise choosing the same file again doesn't fire 'change'
+    showOpenDialog.browser.value = '';
+
     let result = await new Promise((resolve, reject) => {
         showOpenDialog.browser.click();
         showOpenDialog.cancelPrevious = () => resolve({ cancelled: true });

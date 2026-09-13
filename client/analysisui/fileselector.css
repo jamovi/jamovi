@@ -1,0 +1,71 @@
+.jmv-file-selector {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    max-width: 350px;
+}
+
+.jmv-file-selector-button {
+    padding: 3px 12px;
+    width: max-content;
+}
+
+.jmv-file-selector-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 100%;
+}
+
+.jmv-file-selector-list:empty {
+    display: none;
+}
+
+.jmv-file-selector-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+}
+
+.jmv-file-selector-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    direction: rtl;  /* keep the end of a long name visible */
+    text-align: left;
+}
+
+.jmv-file-selector-item.unavailable .jmv-file-selector-name {
+    color: #888888;
+    font-style: italic;
+}
+
+.jmv-file-selector-remove {
+    flex: none;
+    border: none;
+    background: none;
+    padding: 0px 4px;
+    line-height: 1;
+    font-size: 14px;
+    color: #666666;
+    cursor: pointer;
+}
+
+.jmv-file-selector-remove:hover:not(:disabled) {
+    color: #000000;
+}
+
+.jmv-file-selector-remove:disabled {
+    color: #c5c5c5;
+    cursor: default;
+}
+
+/* waiting on the file dialog, or an upload (progress is shown in the main
+   window's notification area) */
+.jmv-file-selector.busy .jmv-file-selector-button {
+    background: linear-gradient(-90deg, #bebebe4a, #bebebe4a, #bebebe4a, #ffffff59, #bebebe4a, #bebebe4a, #bebebe4a);
+    background-size: 400% 400%;
+    animation: gradient 1.5s linear infinite;
+}

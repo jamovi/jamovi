@@ -329,6 +329,7 @@ class Analysis:
         self.options.compress()
         self.results.options.CopyFrom(self.options.as_pb())
         clone = deepcopy(self.results)
+        self.options.strip_file_paths(clone.options)  # files don't outlive the session
         self._change_status_to_complete(clone.results, strip_content)
         return clone.SerializeToString()
 

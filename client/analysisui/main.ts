@@ -96,7 +96,7 @@ let requestData = function(requestType: 'columns' | 'column', requestData, getRe
         return parentFrame.send("requestData", data);
 };
 
-let requestAction = function(requestType: 'createColumn', requestData) {
+let requestAction = function(requestType: 'createColumn' | 'selectFiles', requestData) {
     let data = { requestType: requestType, requestData: requestData };
     return parentFrame.send("requestAction", data);
 };

@@ -77,6 +77,14 @@ export interface IInstanceOpenProgress {
 
 export type InstanceOpenStream = ProgressStream<IInstanceOpenProgress, IInstanceOpenResult>;
 
+// a file uploaded into the session (for a 'File' analysis option). the
+// upload is written to a random name under the session's temp dir, so
+// filename is the only place the name the user chose survives
+export interface IFileEntry {
+    path: string,
+    filename: string,
+}
+
 export interface IModuleInteractions {
     installModule: (name: string) => QQ.Promise<void>,
     uninstallModule: (name: string) => QQ.Promise<void>,
@@ -276,6 +284,52 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             progress.set('progress', prog);
             this.trigger('notification', progress);
             return prog;
+        });
+    }
+
+    // uploads files into the session's temp dir (for a 'File' analysis
+    // option), where the engine can read them. progress is reported the
+    // same way as open(), so it can be shown in the notification area
+    uploadFiles(files: FileList | File[], signal?: AbortSignal): ProgressStream<IInstanceOpenProgress, IFileEntry[]> {
+
+        return new ProgressStream(async (setProgress): Promise<IFileEntry[]> => {
+
+            // fetch doesn't support upload progress, so we need to use xhr
+            let xhr = new XMLHttpRequest();
+            xhr.responseType = 'json';
+
+            const cancel = () => xhr.abort();
+            if (signal)
+                signal.addEventListener('abort', cancel, { once: true });
+
+            setProgress({ title: _('Uploading'), p: 0, n: 0, cancel });
+
+            xhr.upload.addEventListener('progress', (event) => {
+                if (event.lengthComputable)
+                    setProgress({ title: _('Uploading'), p: event.loaded, n: event.total, cancel });
+            });
+
+            const data = new FormData();
+            for (const file of files)
+                data.append('file', file, file.name);
+
+            xhr.open('POST', 'upload', true);
+            xhr.send(data);
+
+            await new Promise<void>((resolve) => {
+                xhr.addEventListener('loadend', () => resolve(), { once: true });
+            });
+
+            if (xhr.status === 0) // aborted
+                throw new CancelledError();
+
+            if (xhr.status === 413)
+                throw new UserFacingError(_('Upload failed'), { cause: _('File size exceeds session limits') });
+
+            if (xhr.status !== 200)
+                throw new UserFacingError(_('Upload failed'), { cause: xhr.statusText });
+
+            return xhr.response as IFileEntry[];
         });
     }
 
