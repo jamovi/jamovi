@@ -428,8 +428,14 @@ ready(async() => {
         event.preventDefault();
     };
     document.ondrop = (event: DragEvent) => {
-        for (let file of event.dataTransfer.files)
-            backstageModel.requestOpen({ path: file.path, title: file.name });
+        for (let file of event.dataTransfer.files) {
+            // file.path is electron-only; in a browser we upload the file
+            const path = (file as File & { path?: string }).path;
+            if (path)
+                backstageModel.requestOpen({ path, title: file.name });
+            else
+                backstageModel.requestOpen({ file });
+        }
         event.preventDefault();
     };
 
