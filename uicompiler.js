@@ -852,6 +852,23 @@ const constructors = {
         }
     },
 
+    File: {
+        create: function(item, isTemplate) {
+            let ctrl = { };
+            ctrl.type = 'FileSelector';
+            CheckTemplateState(item, ctrl, isTemplate);
+            return ctrl
+        },
+        toRaw: function(obj, key) {
+            // always an array of files, even when not multiple -- only the
+            // R side collapses a single file to a singleton
+            if (key === undefined || key.length === 0)
+                return { type: 'array', template: { type: 'group', elements: [ { name: 'path', type: 'string' }, { name: 'filename', type: 'string' } ] } };
+
+            return null;
+        }
+    },
+
     Output: {
         create: function(item, isTemplate) {
             let ctrl = { };
@@ -1384,6 +1401,21 @@ const uiOptionControl = {
         },
         toRaw: function(ctrl) {
             return { type: 'group', elements: [ { name: 'value', type: 'boolean' }, { name: 'vars', type: 'array', template: 'string' } ] };;
+        }
+    },
+
+    FileSelector: {
+        usesSingleCell: function(ctrl) {
+            return ctrl.useSingleCell === true;
+        },
+        isContainerControl: function(ctrl) {
+            return false;
+        },
+        isOptionControl: function(ctrl) {
+            return ctrl.isVirtual !== true;
+        },
+        toRaw: function(ctrl) {
+            return { type: 'array', template: { type: 'group', elements: [ { name: 'path', type: 'string' }, { name: 'filename', type: 'string' } ] } };
         }
     },
 

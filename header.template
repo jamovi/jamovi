@@ -194,6 +194,8 @@ if (results.items) {
     if (_.isUndefined(option['default'])) {
         if (option['type'] === 'Action')
             return '\n    ' + option.name + ' = FALSE';
+        else if (option['type'] === 'File')
+            return '\n    ' + option.name + ' = NULL';
         else
             return '\n    ' + option.name;
     }
