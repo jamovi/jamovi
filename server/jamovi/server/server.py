@@ -11,7 +11,7 @@ import asyncio
 from asyncio import create_task
 from urllib.parse import urlparse
 from tempfile import NamedTemporaryFile, TemporaryDirectory, gettempdir
-from shutil import rmtree
+from shutil import rmtree, move
 
 from aiohttp import web
 
@@ -21,7 +21,9 @@ from .utils import conf
 from .appinfo import app_info
 from jamovi.core import Dirs
 from .i18n import _
-from .webhandlers import forward_handler
+from .webhandlers import make_single_file_handler, make_static_dir_handler
+from .webhandlers import make_forward, make_host_dispatch_middleware
+from .uploads import read_upload_form, safe_ext
 from .exceptions import FileExistsException, UserException
 
 log = logging.getLogger(__name__)
@@ -39,66 +41,6 @@ if access_key is None:
 # paths may be opened from -- so a directory of its own, not the temp root
 if conf.get('upload_path', None) is None:
     conf.set('upload_path', os.path.join(gettempdir(), 'jamovi-uploads'))
-
-
-# Generic static-file helpers (no session dependency)
-
-def _make_single_file_handler(path: str, mime_type: str | None = None,
-                               extra_headers: dict | None = None):
-    async def handler(_: web.Request) -> web.Response:
-        ct = mime_type or mimetypes.guess_type(path)[0] or 'application/octet-stream'
-        with open(path, 'rb') as f:
-            body = f.read()
-        return web.Response(body=body, content_type=ct,
-                            headers=dict(extra_headers) if extra_headers else {})
-    return handler
-
-
-def _make_static_dir_handler(directory: str, extra_headers: dict | None = None,
-                              default_filename: str | None = None):
-    _real = os.path.realpath(directory)
-
-    async def handler(request: web.Request) -> web.Response:
-        rel = request.match_info.get('path', '')
-        if not rel:
-            if default_filename:
-                rel = default_filename
-            else:
-                raise web.HTTPNotFound()
-        filepath = os.path.realpath(os.path.join(_real, rel))
-        if not filepath.startswith(_real):
-            raise web.HTTPForbidden()
-        if not os.path.isfile(filepath):
-            raise web.HTTPNotFound()
-        ct, enc = mimetypes.guess_type(filepath)
-        headers = dict(extra_headers) if extra_headers else {}
-        if enc:
-            headers['Content-Encoding'] = enc
-        with open(filepath, 'rb') as f:
-            body = f.read()
-        return web.Response(body=body, content_type=ct or 'application/octet-stream',
-                            headers=headers)
-    return handler
-
-
-def _make_forward(base_url: str, default_filename: str = 'index.html'):
-    async def handler(request: web.Request) -> web.StreamResponse:
-        return await forward_handler(request, base_url=base_url,
-                                     default_filename=default_filename)
-    return handler
-
-
-def _make_host_dispatch_middleware(apps_by_host: dict):
-    @web.middleware
-    async def dispatch(request: web.Request, handler):
-        host = request.headers.get('Host', '').split(':')[0]
-        target = apps_by_host.get(host)
-        if target is not None:
-            match_info = await target.router.resolve(request)
-            request._match_info = match_info
-            return await match_info.handler(request)
-        return await handler(request)
-    return dispatch
 
 
 # Route handler class
@@ -238,16 +180,21 @@ class _Handlers:
         if err is not None:
             return err
 
+        # in cloud mode, local paths must be inside upload_path
+        upload_path = conf.get('upload_path')
+        os.makedirs(upload_path, exist_ok=True)
+        try:
+            fields, files = await read_upload_form(request, upload_path)
+        except ValueError:
+            return web.Response(status=400, text='400: Bad Request')
+
         options: dict = {}
-        data = await request.post()
-        options_raw = data.get('options', '{}')
-        if isinstance(options_raw, str):
-            try:
-                options_dict = json.loads(options_raw)
-                if isinstance(options_dict, dict):
-                    options = options_dict
-            except ValueError:
-                pass
+        try:
+            options_dict = json.loads(fields.get('options', '{}'))
+            if isinstance(options_dict, dict):
+                options = options_dict
+        except ValueError:
+            pass
 
         file_path: str
         file_title = None
@@ -255,33 +202,18 @@ class _Handlers:
         is_temp = False
         remove_after = False
 
-        if 'file' in data:
-            ff = data['file']
-            if not isinstance(ff, web.FileField):
-                return web.Response(status=400, text='400: Bad Request')
-            file_title, dot_ext = os.path.splitext(ff.filename)
-            # in cloud mode, local paths must be inside upload_path
-            upload_path = conf.get('upload_path')
-            os.makedirs(upload_path, exist_ok=True)
-            with NamedTemporaryFile(suffix=dot_ext, delete=False, dir=upload_path) as tmp:
-                tmp.write(ff.file.read())
-            file_path = tmp.name
+        if files:
+            uploaded = files[0]
+            file_path = uploaded.path
+            file_title, dot_ext = os.path.splitext(uploaded.filename)
+            file_ext = dot_ext[1:] if dot_ext else None
             is_temp = True
-            remove_after = True  # it's our temp file
+            remove_after = uploaded.ours  # it's our temp file
         elif 'path' in options:
             file_path = options['path']
             is_temp = options.get('temp', False) is not False
             file_title = options.get('title')
             file_ext = options.get('ext')
-        elif 'file.path' in data:
-            raw_path = data['file.path']
-            raw_name = data['file.name']
-            if not isinstance(raw_path, str) or not isinstance(raw_name, str):
-                return web.Response(status=400, text='400: Bad Request')
-            file_path = raw_path
-            file_title, dot_ext = os.path.splitext(raw_name)
-            file_ext = dot_ext[1:] if dot_ext else None
-            is_temp = True
         else:
             return web.Response(status=400, text='400: Bad Request')
 
@@ -363,6 +295,44 @@ class _Handlers:
         await resp.write(json.dumps(result).encode())
         await resp.write_eof()
         return resp
+
+    async def upload(self, request: web.Request) -> web.Response:
+        # files chosen for a 'File' analysis option (in a browser -- under
+        # electron the engine reads the user's file directly). they go into
+        # the session temp dir, which the engine can also read, under a
+        # random name, and the client gets back {{SessionTemp}}/... paths
+        # (resolved by jmvcore's OptionFile) alongside the original names
+        instance_id = request.match_info['instance_id']
+        instance = self._session.get(instance_id)
+        if instance is None:
+            return web.Response(status=404, text='404: Not Found')
+
+        session_temp = self._session.session_temp
+        os.makedirs(session_temp, exist_ok=True)
+
+        try:
+            _unused, uploaded = await read_upload_form(request, session_temp)
+        except ValueError:
+            return web.Response(status=400, text='400: Bad Request')
+
+        upload_path = os.path.realpath(conf.get('upload_path'))
+        files: list[dict] = []
+        for f in uploaded:
+            path = f.path
+            if not f.ours:
+                # written by an upload accelerator, into upload_path (on the
+                # same volume as the session temp dir, so this is a rename)
+                real = os.path.realpath(path)
+                if os.path.commonpath([upload_path, real]) != upload_path:
+                    return web.Response(status=400, text='400: Bad Request')
+                path = NamedTemporaryFile(suffix=safe_ext(f.filename), delete=False, dir=session_temp).name
+                move(real, path)
+            files.append({
+                'path': '{{SessionTemp}}/' + os.path.basename(path),
+                'filename': f.filename,
+            })
+
+        return web.json_response(files)
 
     # -- resources / modules --------------------------------------------------
 
@@ -527,6 +497,7 @@ class _Handlers:
         router.add_get(r'/{instance_id:[a-f0-9-]+}/open', self.open_get)
         router.add_post(r'/{instance_id:[a-f0-9-]+}/open', self.open_post)
         router.add_post(r'/{instance_id:[a-f0-9-]+}/save', self.save)
+        router.add_post(r'/{instance_id:[a-f0-9-]+}/upload', self.upload)
         router.add_get(r'/{instance_id:[a-f0-9-]+}/coms', self.websocket)
         router.add_get(r'/{path:[a-f0-9-]+/dl/.+}', self.download)
         router.add_get(r'/modules/{module_name:[0-9a-zA-Z]+}', self.module_descriptor)
@@ -542,16 +513,16 @@ class _Handlers:
         router.add_post('/utils/to-pdf', self.pdf)
         router.add_get('/api/datasets', self.datasets)
         router.add_get('/i18n/', self.i18n_manifest)
-        router.add_get(r'/i18n/{path:.+}', _make_static_dir_handler(self._i18n_path))
+        router.add_get(r'/i18n/{path:.+}', make_static_dir_handler(self._i18n_path))
 
         if ds:
-            router.add_get(r'/{instance_id:[a-f0-9-]+}/{path:.*}', _make_forward(ds))
-            router.add_get(r'/{path:.*}', _make_forward(ds))
+            router.add_get(r'/{instance_id:[a-f0-9-]+}/{path:.*}', make_forward(ds))
+            router.add_get(r'/{path:.*}', make_forward(ds))
         else:
-            router.add_get(r'/assets/{path:.+}', _make_static_dir_handler(ap, ch))
+            router.add_get(r'/assets/{path:.+}', make_static_dir_handler(ap, ch))
             router.add_get(r'/{instance_id:[a-f0-9-]+}/',
-                _make_single_file_handler(os.path.join(cp, 'index.html'), 'text/html', ch))
-            router.add_get(r'/{path:[-0-9a-z.]*}', _make_static_dir_handler(cp, ch))
+                make_single_file_handler(os.path.join(cp, 'index.html'), 'text/html', ch))
+            router.add_get(r'/{path:[-0-9a-z.]*}', make_static_dir_handler(cp, ch))
 
     def add_analysisui_routes(self, router: web.UrlDispatcher):
         ch = self._cache_headers
@@ -562,14 +533,14 @@ class _Handlers:
         if ds:
             router.add_get('/', self.version)
             router.add_get(r'/{instance_id:[a-f0-9-]+}/{path:.*}',
-                _make_forward(ds, 'analysisui.html'))
-            router.add_get(r'/{path:.*}', _make_forward(ds))
+                make_forward(ds, 'analysisui.html'))
+            router.add_get(r'/{path:.*}', make_forward(ds))
         else:
             analysisui_path = os.path.join(cp, 'analysisui.html')
             router.add_get(r'/{instance_id:[-0-9a-f]+}/',
-                _make_single_file_handler(analysisui_path, 'text/html', ch))
-            router.add_get(r'/assets/{path:.+}', _make_static_dir_handler(ap, ch))
-            router.add_get(r'/{path:[-.0-9a-zA-Z]+}', _make_static_dir_handler(cp, ch))
+                make_single_file_handler(analysisui_path, 'text/html', ch))
+            router.add_get(r'/assets/{path:.+}', make_static_dir_handler(ap, ch))
+            router.add_get(r'/{path:[-.0-9a-zA-Z]+}', make_static_dir_handler(cp, ch))
 
     def add_resultsview_routes(self, router: web.UrlDispatcher):
         ch = self._cache_headers
@@ -586,14 +557,14 @@ class _Handlers:
                 r'/{instance_id:[-0-9a-z]+}/{analysis_id:[0-9]+}/module/{path:.+}',
                 self.module_asset)
             router.add_get(r'/{instance_id:[a-f0-9-]+}/{analysis_id:[0-9]+}/{path:.*}',
-                _make_forward(ds, 'resultsview.html'))
-            router.add_get(r'/{path:.*}', _make_forward(ds))
+                make_forward(ds, 'resultsview.html'))
+            router.add_get(r'/{path:.*}', make_forward(ds))
         else:
             resultsview_path = os.path.join(cp, 'resultsview.html')
             router.add_get(r'/{instance_id:[-0-9a-z]+}/{analysis_id:[0-9]+}/',
-                _make_single_file_handler(resultsview_path, 'text/html', ch))
-            router.add_get(r'/assets/{path:.+}', _make_static_dir_handler(ap, ch))
-            router.add_get(r'/{path:[-.0-9a-zA-Z]+}', _make_static_dir_handler(cp, ch))
+                make_single_file_handler(resultsview_path, 'text/html', ch))
+            router.add_get(r'/assets/{path:.+}', make_static_dir_handler(ap, ch))
+            router.add_get(r'/{path:[-.0-9a-zA-Z]+}', make_static_dir_handler(cp, ch))
             router.add_get(
                 r'/{instance_id:[-0-9a-z]+}/{analysis_id:[0-9]+}/res/{resource_id:.+}',
                 self.resource)
@@ -816,7 +787,7 @@ class Server:
 
         else:  # separate_by == 'host'
             dispatch_app = web.Application(middlewares=[
-                _make_host_dispatch_middleware({
+                make_host_dispatch_middleware({
                     host_a: main_app,
                     host_b: analysisui_app,
                     host_c: resultsview_app,

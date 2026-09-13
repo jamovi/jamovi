@@ -133,6 +133,11 @@ class Analyses:
 
         analysis = self._construct_from_pb(analysis_pb, status=Analysis.Status.COMPLETE)
 
+        # files don't outlive the session, so any paths in the file are from
+        # a previous one (a file written before this was enforced, say)
+        analysis.options.strip_file_paths()
+        analysis.results.options.CopyFrom(analysis.options.as_pb())
+
         self._analyses.append(analysis)
 
         return analysis

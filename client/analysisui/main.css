@@ -26,6 +26,7 @@
 @import "multicontainer.css";
 @import "contentselector.css";
 @import "gridactionbutton.css";
+@import "fileselector.css";
 
 * {
     user-select: none ;

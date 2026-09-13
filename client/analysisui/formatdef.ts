@@ -482,6 +482,56 @@ export class OutputFormat extends Format<OutputType> {
     }
 }
 
+// a file selected by a File option. filename is the name the user chose;
+// path is where it actually is, and is null once restored from a saved file
+// (paths don't persist)
+export type FileEntry = { path: string | null, filename: string };
+export class FileFormat extends Format<FileEntry[]> {
+
+    static name: 'file'
+
+    static default: null
+
+    override toString(raw: FileEntry[]) {
+        if (raw === null)
+            return '';
+
+        return raw.map(file => file.filename).join(', ');
+    }
+
+    override isValid(raw: any) {
+        if (raw === null)
+            return true;
+        if ( ! Array.isArray(raw))
+            return false;
+        for (let file of raw) {
+            if (typeof(file) !== 'object' || file === null)
+                return false;
+            if (typeof(file.filename) !== 'string')
+                return false;
+            if (file.path !== null && typeof(file.path) !== 'string')
+                return false;
+        }
+        return true;
+    }
+
+    override isEmpty(raw: FileEntry[]) {
+        return raw === null || raw.length === 0;
+    }
+
+    override isEqual(raw1: FileEntry[], raw2: FileEntry[]) {
+        if (raw1 === null || raw2 === null)
+            return raw1 === raw2;
+        if (raw1.length !== raw2.length)
+            return false;
+        for (let i = 0; i < raw1.length; i++) {
+            if (raw1[i].path !== raw2[i].path || raw1[i].filename !== raw2[i].filename)
+                return false;
+        }
+        return true;
+    }
+}
+
 export const FormatDef = {
     variables: new VariablesFormat(),
 
@@ -495,7 +545,9 @@ export const FormatDef = {
 
     string: new StringFormat(),
 
-    output: new OutputFormat()
+    output: new OutputFormat(),
+
+    file: new FileFormat()
 }
 
 export function inferFormat(raw: any) : Format<any> {

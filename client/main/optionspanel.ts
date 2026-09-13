@@ -5,8 +5,12 @@ let Framesg = _Framesg;
 if ('default' in Framesg) // this import is handled differently between browserify and vite
     Framesg = Framesg.default;
 
+import path from 'path';
+
 import host from './host';
 import I18ns, { I18nData } from '../common/i18n';
+import Notify from './notification';
+import { CancelledError, UserFacingError } from './errors';
 
 import interactionManager from '../common/interactionmanager';
 import { h } from '../common/htmlelementcreator';
@@ -14,7 +18,7 @@ import { EventEmitter } from 'tsee';
 import DataSetViewModel from './dataset';
 import { Analysis } from './analyses';
 import Settings from './settings';
-import Instance from './instance';
+import Instance, { IFileEntry } from './instance';
 import Store from './store';
 
 interface IFrameCommsApi {
@@ -44,11 +48,15 @@ class AnalysisResources extends EventEmitter {
     notifyDocumentReady: () => void;
     notifyAborted: (reason?: any) => void;
     jamoviVersion: string;
+    uploads: Set<AbortController>;
 
-    constructor(analysis: Analysis, target: HTMLElement, iframeUrl: string, instanceId: string, public settings: Settings, public store: Store) {
+    constructor(analysis: Analysis, target: HTMLElement, iframeUrl: string, public instance: Instance, public settings: Settings, public store: Store) {
         super();
 
+        const instanceId = instance.instanceId();
+
         this.analysis = analysis;
+        this.uploads = new Set();
         this.name = analysis.name;
         this.options = null;
         this.def = null;
@@ -123,6 +131,9 @@ class AnalysisResources extends EventEmitter {
                 if (data.requestType === "createColumn") {
                     let column = this.dataSetModel.getFirstEmptyColumn();
                     return this.dataSetModel.changeColumn(column.id, data.requestData ).then(() => { return column.name; });
+                }
+                else if (data.requestType === "selectFiles") {
+                    return this.selectFiles(data.requestData);
                 }
             },
 
@@ -221,6 +232,7 @@ class AnalysisResources extends EventEmitter {
     }
 
     destroy() {
+        this.abortUploads();
         this.frame.remove();
         //this.frameComms.disconnect(); //This function doesn't yet exist which is a problem and a slight memory leak, i have submitted an issue to the project.
         //Temp work around, kind of.
@@ -257,6 +269,67 @@ class AnalysisResources extends EventEmitter {
 
     abort() {
         this.notifyAborted("Aborted");
+        this.abortUploads();
+    }
+
+    abortUploads() {
+        for (let controller of this.uploads)
+            controller.abort();
+    }
+
+    // for a 'File' option: shows the file dialog, and in a browser, uploads
+    // what was chosen into the session. resolves to the files as
+    // { path, filename } entries, or undefined if cancelled (or if the user
+    // moved on to a different analysis in the meantime)
+    async selectFiles(options: { multiple?: boolean, extensions?: string[] }): Promise<IFileEntry[] | undefined> {
+
+        let filters = undefined;
+        if (options.extensions && options.extensions.length > 0)
+            filters = [ { name: options.extensions.map(ext => ext.toUpperCase()).join(', '), extensions: options.extensions } ];
+
+        let result = await host.showOpenDialog({ multiple: options.multiple === true, filters });
+        if (result.cancelled)
+            return undefined;
+
+        if (result.paths)  // electron
+            return result.paths.map(p => ({ path: p, filename: path.basename(p) }));
+
+        // the iframe is shared between analyses of the same type, so the
+        // control that asked may be showing a different analysis by the
+        // time the upload completes
+        const analysisId = this.analysis.id;
+        const controller = new AbortController();
+        this.uploads.add(controller);
+
+        let progNotif = new Notify({ title: _('Uploading'), duration: 0 });
+        try {
+            let stream = this.instance.uploadFiles(result.files, controller.signal);
+            for await (let progress of stream) {
+                progNotif.set({
+                    title: progress.title,
+                    progress: [ progress.p, progress.n ],
+                    cancel: progress.cancel,
+                });
+                this.instance.trigger('notification', progNotif);
+            }
+            let files = await stream;
+            if (this.analysis.id !== analysisId)
+                return undefined;
+            return files;
+        }
+        catch (e) {
+            if (e instanceof CancelledError)
+                {} // do nothing
+            else if (e instanceof UserFacingError)
+                this.instance._notify(e);
+            else
+                this.instance._notify({ message: _('Upload failed'), cause: e.message, type: 'error' });
+            return undefined;
+        }
+        finally {
+            progNotif.dismiss();
+            this.uploads.delete(controller);
+        }
     }
 }
 
@@ -335,7 +408,7 @@ class OptionsPanel {
         let createdNew = false;
 
         if (resources === undefined) {
-            resources = new AnalysisResources(analysis, this.el, this.iframeUrl, this.model.instanceId(), this.model.settings(), this.store);
+            resources = new AnalysisResources(analysis, this.el, this.iframeUrl, this.model, this.model.settings(), this.store);
             resources.setDataModel(this.dataSetModel);
             this._analysesResources[analysesKey] = resources;
             createdNew = true;
@@ -348,6 +421,12 @@ class OptionsPanel {
             this._currentResources.frame.style.height = '0px';
             this._currentResources = null;
         }
+
+        // resources (and the iframe) are shared between analyses of the same
+        // type, so this is also a switch of analysis, just without a
+        // switch of iframe
+        if (resources.analysis !== analysis)
+            resources.abortUploads();
 
         resources.analysis = analysis;
         resources.initializeView();
@@ -450,6 +529,8 @@ class OptionsPanel {
     hideOptions(clearSelected?: boolean) {
         if (clearSelected === undefined)
             clearSelected = true;
+        if (this._currentResources !== null)
+            this._currentResources.abortUploads();
         if (clearSelected) {
             let selectedAnalysis = this.model.attributes.selectedAnalysis;
             if (selectedAnalysis !== null && typeof(selectedAnalysis) !== 'string')

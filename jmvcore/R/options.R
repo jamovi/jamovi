@@ -913,6 +913,112 @@ OptionLevel <- R6::R6Class(
 
 #' @rdname Options
 #' @export
+OptionFile <- R6::R6Class(
+    "OptionFile",
+    inherit=Option,
+    private=list(
+        .multiple=FALSE,
+        .extensions=NULL,
+        # a file is list(path=, filename=). path is NULL when the analysis has
+        # been loaded from an .omv (paths don't persist), or {{SessionTemp}}/...
+        # when the file was uploaded to the session (cloud), or an absolute
+        # path (electron, or plain R usage). filename is the name the user
+        # chose, which on cloud isn't the name at path
+        .normalise=function(file) {
+            if (is.null(file))
+                return(NULL)
+            if (is.character(file))
+                file <- list(path=file, filename=basename(file))
+            if ( ! is.list(file))
+                reject("Argument '{a}' must be a file path, or a list with 'path' and 'filename'",
+                       code="a_must_be_a_file",
+                       a=self$name)
+            if (is.null(file$filename))
+                file$filename <- if (is.null(file$path)) '' else basename(file$path)
+            list(path=file$path, filename=file$filename)
+        },
+        .resolve=function(file) {
+            path <- file$path
+            if ( ! is.null(path) && startsWith(path, '{{SessionTemp}}')) {
+                parent <- private$.parent
+                analysis <- if (is.null(parent)) NULL else parent$analysis
+                if ( ! is.null(analysis)) {
+                    sessionTemp <- analysis$.getSessionTemp()
+                    file$path <- sub('{{SessionTemp}}', sessionTemp, path, fixed=TRUE)
+                }
+            }
+            file
+        },
+        .check=function(data, checkValues, checkVars, checkData) {
+            if ( ! checkValues)
+                return()
+            files <- self$value
+            if ( ! private$.multiple)
+                files <- list(files)
+            for (file in files) {
+                if (is.null(file))
+                    next()
+                if (is.null(file$path) || ! file.exists(file$path))
+                    reject("The file '{filename}' needs to be re-selected",
+                           code="file_needs_reselecting",
+                           filename=file$filename)
+            }
+        }),
+    public=list(
+        initialize=function(name, value=NULL, multiple=FALSE, extensions=NULL, ...) {
+            private$.multiple <- multiple
+            private$.extensions <- extensions
+            super$initialize(name, value, ...)
+        }),
+    active=list(
+        multiple=function() private$.multiple,
+        extensions=function() private$.extensions,
+        value=function(value) {
+            if (missing(value)) {
+                raw <- private$.value
+                if (private$.multiple) {
+                    if (is.null(raw))
+                        return(list())
+                    return(lapply(raw, private$.resolve))
+                }
+                if (is.null(raw))
+                    return(NULL)
+                return(private$.resolve(raw))
+            }
+            # over the wire the value is always an (unnamed) list of files,
+            # each a named list(path=, title=), regardless of multiple. from
+            # R we also accept a path (or paths), or a single named list.
+            if (is.null(value))
+                files <- list()
+            else if (is.character(value))
+                files <- lapply(value, private$.normalise)
+            else if (is.list(value) && ! is.null(names(value)))
+                files <- list(private$.normalise(value))
+            else
+                files <- lapply(value, private$.normalise)
+
+            if (private$.multiple) {
+                private$.value <- files
+            } else {
+                if (length(files) > 1)
+                    reject("Argument '{a}' must be a single file",
+                           code="a_must_be_a_single_file",
+                           a=self$name)
+                private$.value <- if (length(files) == 0) NULL else files[[1]]
+            }
+        },
+        valueAsSource=function() {
+            files <- self$value
+            if ( ! private$.multiple)
+                files <- list(files)
+            paths <- unlist(lapply(files, function(file) file$path))
+            if (is.null(paths))
+                return('NULL')
+            sourcify(paths, '    ')
+        }))
+
+#' @rdname Options
+#' @export
 OptionGroup <- R6::R6Class(
     "OptionGroup",
     inherit=Option,
