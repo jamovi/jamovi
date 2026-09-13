@@ -142,12 +142,13 @@ class _Handlers:
         rows = [
             {
                 'id': id,
-                'title': inst._data.title,
+                'title': inst.project.title,
                 'buffer': inst._buffer_path,
-                'rowCount': inst._data.row_count,
-                'columnCount': inst._data.column_count,
+                'rowCount': inst.project.get_dataset().row_count,
+                'columnCount': inst.project.get_dataset().column_count,
             }
             for id, inst in self._session.items()
+            if inst.project.has_datasets
         ]
         return web.Response(text=json.dumps(rows), content_type='application/json',
             headers={'Cache-Control': 'private, no-store, must-revalidate, max-age=0'})
@@ -197,7 +198,7 @@ class _Handlers:
                 return web.Response(content_type='text/plain',
                     text=f'{{"status":"terminated",'
                          f'"message":{json.dumps(_("This data set is no longer available"))}}}')
-            if url == '' and instance._data.has_dataset:
+            if url == '' and instance.project.has_datasets:
                 return web.Response(status=204)
 
         title = request.rel_url.query.get('title')

@@ -17,7 +17,6 @@ from jamovi.core import ColumnType
 from jamovi.core import DataType
 from jamovi.core import MeasureType
 from jamovi.server.appinfo import app_info
-from jamovi.server.instancemodel import InstanceModel
 
 from ..i18n import _
 
@@ -28,7 +27,9 @@ from logging import getLogger
 log = getLogger(__name__)
 
 
-def write(data: InstanceModel, path, prog_cb, html=None, is_template=False):
+def write(project, path, prog_cb, html=None, is_template=False):
+
+    data = project.get_dataset()
 
     with ZipFile(path, 'w', zipfile.ZIP_DEFLATED) as zip:
 
@@ -119,7 +120,7 @@ def write(data: InstanceModel, path, prog_cb, html=None, is_template=False):
         metadata = { }
 
         document = { }
-        document['resultsLanguage'] = data.results_language
+        document['resultsLanguage'] = project.results_language
         metadata['document'] = document
 
         meta_dataset = { }
@@ -215,7 +216,7 @@ def write(data: InstanceModel, path, prog_cb, html=None, is_template=False):
 
         resources = [ ]
 
-        for analysis in data.analyses:
+        for analysis in project.analyses:
             if analysis.has_results is False:
                 continue
             analysis_dir = '{:02} {}/analysis'.format(analysis.id, analysis.name)
@@ -224,7 +225,7 @@ def write(data: InstanceModel, path, prog_cb, html=None, is_template=False):
 
         for rel_path in resources:
             try:
-                abs_path = os.path.join(data.instance_path, rel_path)
+                abs_path = os.path.join(project.instance_path, rel_path)
                 zip.write(abs_path, rel_path)
             except FileNotFoundError:
                 log.error(f"Unable to include resource '{ rel_path }'")
@@ -292,7 +293,7 @@ def replace_single_equals(formula):
     return formula
 
 
-def read(data, path, prog_cb, **kwargs):
+def read(project, path, prog_cb, **kwargs):
 
     with ZipFile(path, 'r') as zip:
 
@@ -320,6 +321,8 @@ def read(data, path, prog_cb, **kwargs):
         metadata = json.loads(meta_content)
         meta_document = metadata.get('document', {'resultsLanguage': 'en'})
         meta_dataset = metadata['dataSet']
+
+        data = project.add_dataset()
 
         # if 'importPath' in meta_dataset:
         #     try:
@@ -420,7 +423,7 @@ def read(data, path, prog_cb, **kwargs):
         data.set_row_count(row_count)
         data.set_weights_by_name(meta_dataset.get('weights'))
 
-        data.results_language = meta_document.get('resultsLanguage', 'en')
+        project.results_language = meta_document.get('resultsLanguage', 'en')
 
         columns_w_bad_levels = [ ]  # do some repair work
 
@@ -549,8 +552,8 @@ def read(data, path, prog_cb, **kwargs):
 
         for entry in zip.infolist():
             if is_analysis.match(entry.filename):
-                zip.extract(entry, data.instance_path)
+                zip.extract(entry, project.instance_path)
                 serial = zip.read(entry.filename)
-                data.analyses.create_from_serial(serial)
+                project.analyses.create_from_serial(serial)
             elif is_resource.match(entry.filename):
-                zip.extract(entry, data.instance_path)
+                zip.extract(entry, project.instance_path)

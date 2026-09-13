@@ -9,7 +9,7 @@ from jamovi.server.dataset import DataType
 from jamovi.server.dataset import MeasureType
 from jamovi.server.dataset import Column
 from jamovi.server.dataset import CellValue
-from jamovi.server.instancemodel import InstanceModel
+from jamovi.server.datasetmodel import DataSetModel
 from jamovi.server.formatio.readstat import read
 
 
@@ -139,7 +139,7 @@ def assert_column_equals(
         ),
     ),
 )
-def test_read_sav(instance_model: InstanceModel,
+def test_read_sav(dataset_model: DataSetModel,
                   column_name: str,
                   data_type: DataType,
                   measure_type: MeasureType,
@@ -148,13 +148,13 @@ def test_read_sav(instance_model: InstanceModel,
                   expected_gen: typing.Callable[[int], CellValue]):
     """test read_sav()"""
 
-    # GIVEN an empty instance model
+    # GIVEN an empty data set model
     # WHEN reading in a .sav file
     data_path = resolve_path("multi.sav")
-    read(instance_model, data_path, lambda x: None, format="sav")
+    read(dataset_model, data_path, lambda x: None, format="sav")
 
     # THEN the columns, etc. come through correctly
-    column = instance_model[column_name]
+    column = dataset_model[column_name]
     expected_values = map(expected_gen, itertools.count())
     assert_column_equals(column,
                          data_type=data_type,

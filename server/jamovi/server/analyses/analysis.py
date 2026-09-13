@@ -45,7 +45,7 @@ class Analysis:
             self.future.set_exception(exception)
 
     def __init__(self,
-                 dataset,
+                 project,
                  id,
                  name,
                  ns,
@@ -57,7 +57,7 @@ class Analysis:
                  load_error=False,
                  arbitrary_code=False):
 
-        self.dataset = dataset
+        self.project = project
         self.id = id
         self.name = name
         self.ns = ns
@@ -87,7 +87,12 @@ class Analysis:
 
     @property
     def instance(self):
-        return self.dataset.instance
+        return self.project.instance
+
+    @property
+    def dataset(self):
+        """The data set this analysis operates on."""
+        return self.project.get_dataset()
 
     def reset_options(self, revision):
         self.revision = revision

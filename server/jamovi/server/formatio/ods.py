@@ -4,7 +4,7 @@ from itertools import islice
 from ezodf import opendoc, newdoc, Table
 
 from jamovi.core import DataType
-from jamovi.server.instancemodel import InstanceModel
+from jamovi.server.datasetmodel import DataSetModel
 
 from .reader import Reader
 
@@ -23,7 +23,7 @@ def read(data, path, prog_cb, *, settings, **kwargs):
     reader.read_into(data, path, prog_cb)
 
 
-def write(data: InstanceModel, path, prog_cb):
+def write(data: DataSetModel, path, prog_cb):
 
     spreadsheet = newdoc(doctype = "ods", filename = path)
 

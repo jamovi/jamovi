@@ -19,13 +19,13 @@ class Weights(Analysis):
 
     _results: AnalysisResponse
 
-    def __init__(self, dataset, id, name, ns, options, parent, enabled, **kwargs):
+    def __init__(self, project, id, name, ns, options, parent, enabled, **kwargs):
 
         options = Options.create([
             { 'name': 'weights', 'type': 'Variable' },
         ])
 
-        super().__init__(dataset, id, name, ns, options, parent, enabled, **kwargs)
+        super().__init__(project, id, name, ns, options, parent, enabled, **kwargs)
         self._status = Analysis.Status.COMPLETE
 
         self.results = AnalysisResponse()

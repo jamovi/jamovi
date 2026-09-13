@@ -45,12 +45,13 @@ for plugin in plugins:
         writers.update(module_writers)
 
 
-def read(dataset, path, prog_cb, settings, *, is_temp=False, title=None, ext=None):
+def read(project, path, prog_cb, settings, *, is_temp=False, title=None, ext=None):
+    """Read a file into a project, creating the data set(s) it contains."""
 
     if title:
-        dataset.title = title
+        project.title = title
     else:
-        dataset.title, _ = os.path.splitext(os.path.basename(path))
+        project.title, _ = os.path.splitext(os.path.basename(path))
 
     if ext is None:
         ext = os.path.splitext(path)[1].lower()
@@ -60,21 +61,46 @@ def read(dataset, path, prog_cb, settings, *, is_temp=False, title=None, ext=Non
     prog_cb(0)
 
     if path == '':
-        blank.read(dataset)
+        blank.read(project)
     elif not os.path.exists(path):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), None if is_temp else path)
     elif ext == 'omv':
-        omv.read(dataset, path, prog_cb)
+        omv.read(project, path, prog_cb)
         if not is_temp:
-            dataset.path = path
-            dataset.save_format = 'jamovi'
+            project.path = path
+            project.save_format = 'jamovi'
     elif ext == 'omt':
-        omv.read(dataset, path, prog_cb)
+        omv.read(project, path, prog_cb)
     else:
+        dataset = project.add_dataset()
         _import(dataset, path, prog_cb, settings, ext)
+        if dataset.has_weights:
+            # single-table formats (i.e. .sav) can specify a weights
+            # variable, which is represented in jamovi by a weights analysis
+            weights_analysis = project.analyses.create(id=0, name='weights', ns='jmv')
+            weights_analysis.set_weights(dataset.weights_name)
+
+    for dataset in project.datasets:
+        fix_column_names(dataset)
+        dataset.setup()
+
+
+def read_dataset(dataset, path, prog_cb, settings, *, ext=None):
+    """Read a single-table file into a stand-alone data set (i.e. for import)."""
+
+    if ext is None:
+        ext = os.path.splitext(path)[1].lower()
+        if ext != '':
+            ext = ext[1:]
+
+    prog_cb(0)
+
+    if not os.path.exists(path):
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
+
+    _import(dataset, path, prog_cb, settings, ext)
 
     fix_column_names(dataset)
-
     dataset.setup()
 
 
@@ -88,30 +114,17 @@ def _import(data, path, prog_cb, settings, ext):
     else:
         raise RuntimeError('Unrecognised file format')
 
-    # if not is_temp:
-    #     data.import_path = path
-    #
-    # if _should_embed(path):
-    #     try:
-    #         embedded_name = os.path.basename(path)
-    #         embedded_path = 'orig' + os.path.splitext(embedded_name)[1].lower()
-    #         embedded_abs_path = os.path.join(data.instance_path, embedded_path)
-    #         shutil.copy(path, embedded_abs_path)
-    #         data.embedded_path = embedded_path
-    #         data.embedded_name = embedded_name
-    #     except OSError as e:
-    #         print(e)
-    #         pass
 
-
-def write(dataset, path, prog_cb, content=None):
+def write(project, path, prog_cb, content=None):
+    """Write a project to a file. Single-table formats write the first
+    data set."""
     try:
         temp_path = path + '.tmp'
         ext = os.path.splitext(path)[1].lower()[1:]
         if ext == 'omv' or ext == 'omt':
-            omv.write(dataset, temp_path, prog_cb, content, is_template=(ext == 'omt'))
+            omv.write(project, temp_path, prog_cb, content, is_template=(ext == 'omt'))
         elif ext in writers:
-            writers[ext][1](dataset, temp_path, prog_cb)
+            writers[ext][1](project.get_dataset(), temp_path, prog_cb)
         else:
             raise RuntimeError('Unrecognised file format')
         os.replace(temp_path, path)

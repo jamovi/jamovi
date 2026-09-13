@@ -19,8 +19,8 @@ class Analyses:
 
     weights_changed: EventHook
 
-    def __init__(self, dataset, modules):
-        self._dataset = dataset
+    def __init__(self, project, modules):
+        self._project = project
         self._modules = modules
         self._modules.add_listener(self._module_event)
 
@@ -46,13 +46,17 @@ class Analyses:
             for id in ids:
                 self.recreate(id).rerun()
 
+    @property
+    def project(self):
+        return self._project
+
     def _construct(self, id, name, ns, options_pb=None, enabled=None):
 
         if name == 'empty' and ns == 'jmv':
-            return Analysis(self._dataset, id, name, ns, Options.create({}), self, enabled=False)
+            return Analysis(self._project, id, name, ns, Options.create({}), self, enabled=False)
 
         if name == 'weights' and ns == 'jmv':
-            return Weights(self._dataset, id, name, ns, None, self, enabled=False)
+            return Weights(self._project, id, name, ns, None, self, enabled=False)
 
         try:
             module_meta = self._modules.get(ns)
@@ -80,12 +84,12 @@ class Analyses:
             else:
                 Ctor = Analysis
 
-            return Ctor(self._dataset, id, analysis_name, ns, options, self,
+            return Ctor(self._project, id, analysis_name, ns, options, self,
                         enabled, addons=addons, arbitrary_code=arbitrary_code)
 
         except Exception as e:
             log.exception(e)
-            return Analysis(self._dataset, id, name, ns, Options.create({}), self, enabled=False, load_error=True)
+            return Analysis(self._project, id, name, ns, Options.create({}), self, enabled=False, load_error=True)
 
     def _construct_from_pb(self, analysis_pb, new_id=False, status=Analysis.Status.NONE):
         for ref_pb in analysis_pb.references:

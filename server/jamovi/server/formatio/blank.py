@@ -1,9 +1,11 @@
 
 from ..i18n import _
 
-def read(dataset):
+def read(project):
     n_cols = 3
     n_rows = 0
+
+    dataset = project.add_dataset()
 
     for i in range(n_cols):
         name = chr(65 + i)
@@ -12,5 +14,5 @@ def read(dataset):
         column.auto_measure = True
 
     dataset.dataset.set_row_count(n_rows)
-    dataset.title = _('Untitled')
-    dataset.is_blank = True
+    project.title = _('Untitled')
+    project.is_blank = True

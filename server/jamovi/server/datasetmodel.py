@@ -11,21 +11,20 @@ from jamovi.core import ColumnType
 from jamovi.core import DataType
 from jamovi.core import MeasureType
 
+from jamovi.server.dataset import Store
 from jamovi.server.dataset import ColumnRef
 from jamovi.server.dataset import CellValueArea
 
 from .transform import Transform
 from .rowtracker import RowTracker
 from .column import Column
-from .analyses import Analyses
 from .utils import NullLog
 from .permissions import Permissions
 
 from .i18n import _
 
 if typing.TYPE_CHECKING:
-    from .instance import Instance
-    from .syncs import HttpSync
+    from .project import Project
 
 
 class _RWLock:
@@ -58,22 +57,25 @@ class _RWLock:
             self._condition.notify_all()
 
 
-class InstanceModel:
+class DataSetModel:
+    """A single data set (one table) within a project.
+
+    Wraps a core DataSet with column/transform bookkeeping, filters, weights
+    and row/cell edit tracking. Document-level state (title, path, analyses)
+    lives on the owning Project.
+    """
 
     N_VIRTUAL_COLS = 5
     N_VIRTUAL_ROWS = 50
 
-    _instance: Instance
+    _project: Project | None
     _dataset: DataSet | None
-    _analyses: Analyses
-    _path: str
-    _save_format: str
-    _title: str
+    _store: Store | None
+    _id: int
+    _name: str
     _reuseable_virtual_ids: deque
     _filters_visible: bool
-    _results_language: str =  ''
     _is_edited: bool = False
-    _is_blank: bool = False
     _perms: Permissions
     _columns: list
     _transforms: list
@@ -81,15 +83,13 @@ class InstanceModel:
     _transform_next_id: int
     _log: object
     _row_tracker: RowTracker
-    file_sync: HttpSync | None
 
-    def __init__(self, instance):
-        self._instance = instance
+    def __init__(self, project: Project | None = None):
+        self._project = project
         self._dataset = None
-        self._analyses = Analyses(self, instance.session.modules)
-        self._path = ''
-        self._save_format = ''
-        self._title = ''
+        self._store = None
+        self._id = 0
+        self._name = ''
         self._reuseable_virtual_ids = deque([])
         self._filters_visible = True
 
@@ -105,8 +105,6 @@ class InstanceModel:
         self._log = NullLog()
         self._row_tracker = RowTracker()
         self._rwlock = _RWLock()
-
-        self.file_sync = None
 
     @asynccontextmanager
     async def attach(self, read_only: bool = False):
@@ -124,17 +122,38 @@ class InstanceModel:
                 await self._rwlock.release_write()
 
     @property
-    def results_language(self):
-        if self._results_language == '':
-            self._results_language = self._instance.session.get_language()
-            if self._results_language == None:
-                self._results_language = ''
+    def id(self) -> int:
+        return self._id
 
-        return self._results_language
+    @id.setter
+    def id(self, id: int):
+        self._id = id
 
-    @results_language.setter
-    def results_language(self, language):
-        self._results_language = language
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, name: str):
+        self._name = name
+
+    @property
+    def project(self) -> Project | None:
+        return self._project
+
+    @property
+    def store(self) -> Store | None:
+        return self._store
+
+    @store.setter
+    def store(self, store: Store | None):
+        self._store = store
+
+    def close(self):
+        self._dataset = None
+        if self._store is not None:
+            self._store.close()
+            self._store = None
 
     @property
     def filters_visible(self):
@@ -156,14 +175,6 @@ class InstanceModel:
                 break
             count += column.cell_tracker.total_edited_count
         return count
-
-    @property
-    def instance(self):
-        return self._instance
-
-    @property
-    def instance_path(self):
-        return self._instance.instance_path
 
     @property
     def ex_filtered(self):
@@ -637,18 +648,6 @@ class InstanceModel:
         return self._transforms
 
     @property
-    def title(self):
-        return self._title
-
-    @title.setter
-    def title(self, title):
-        self._title = title
-
-    @property
-    def analyses(self):
-        return self._analyses
-
-    @property
     def has_dataset(self):
         return self._dataset is not None
 
@@ -690,7 +689,7 @@ class InstanceModel:
 
     def _add_virtual_columns(self):
         n_virtual = self.total_column_count - self.column_count
-        for i in range(n_virtual, InstanceModel.N_VIRTUAL_COLS):
+        for i in range(n_virtual, DataSetModel.N_VIRTUAL_COLS):
             index = self.total_column_count
             column = Column(self)
             id = self._next_id
@@ -701,22 +700,6 @@ class InstanceModel:
             column.id = id
             column.index = index
             self._columns.append(column)
-
-    @property
-    def path(self):
-        return self._path
-
-    @path.setter
-    def path(self, path):
-        self._path = path
-
-    @property
-    def save_format(self):
-        return self._save_format
-
-    @save_format.setter
-    def save_format(self, format):
-        self._save_format = format
 
     def get_column(self, index, base=0, is_display_index=False):
         column = None
@@ -768,7 +751,7 @@ class InstanceModel:
         if self.ex_filtered:
             return self._dataset.row_count_ex_filtered
         else:
-            return self._dataset.row_count + InstanceModel.N_VIRTUAL_ROWS
+            return self._dataset.row_count + DataSetModel.N_VIRTUAL_ROWS
 
     @property
     def virtual_column_count(self):
@@ -826,14 +809,6 @@ class InstanceModel:
     @is_edited.setter
     def is_edited(self, edited: bool):
         self._is_edited = edited
-
-    @property
-    def is_blank(self):
-        return self._is_blank
-
-    @is_blank.setter
-    def is_blank(self, blank):
-        self._is_blank = blank
 
     @property
     def has_weights(self):
@@ -903,7 +878,7 @@ class InstanceModel:
 
         self._dataset.delete_columns(index, self.column_count - 1)
 
-        deleted_columns = [None] * ((self.total_column_count - self.column_count) - InstanceModel.N_VIRTUAL_COLS)
+        deleted_columns = [None] * ((self.total_column_count - self.column_count) - DataSetModel.N_VIRTUAL_COLS)
         for i in range(len(deleted_columns)):
             deleted_columns[i] = self._columns[-1 - i]
             self._reuseable_virtual_ids.appendleft(deleted_columns[i].id)

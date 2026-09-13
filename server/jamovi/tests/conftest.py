@@ -15,7 +15,7 @@ from jamovi.server.dataset import Store
 from jamovi.server.dataset import DataSet
 from jamovi.server.dataset import Column
 
-from jamovi.server.instancemodel import InstanceModel
+from jamovi.server.datasetmodel import DataSetModel
 from jamovi.server.instance import Instance
 from jamovi.server.session import Session
 
@@ -86,8 +86,9 @@ def simple_dataset(empty_dataset: DataSet) -> DataSet:
     return ds
 
 
-@pytest.fixture(scope='module')
-def session(temp_dir: str) -> Session:
+@pytest_asyncio.fixture
+async def session(temp_dir: str) -> Session:
+    # constructed inside the event loop, as the engine manager requires one
     return Session(temp_dir, str(uuid4()))
 
 
@@ -97,8 +98,8 @@ async def instance(session: Session) -> Instance:
 
 
 @pytest.fixture
-def instance_model(instance: Instance, empty_dataset) -> InstanceModel:
-    im = InstanceModel(instance)
-    im._dataset = empty_dataset
-    return im
+def dataset_model(empty_dataset) -> DataSetModel:
+    model = DataSetModel()
+    model.dataset = empty_dataset
+    return model
 

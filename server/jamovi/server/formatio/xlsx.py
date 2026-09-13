@@ -6,7 +6,7 @@ from openpyxl import load_workbook
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 
-from jamovi.server.instancemodel import InstanceModel
+from jamovi.server.datasetmodel import DataSetModel
 
 from .reader import Reader
 from .exceptions import FileCorruptError
@@ -26,7 +26,7 @@ def read(data, path, prog_cb, *, settings, **_):
     reader.read_into(data, path, prog_cb)
 
 
-def write(data: InstanceModel, path, prog_cb):
+def write(data: DataSetModel, path, prog_cb):
 
     wb = Workbook()
     ws = wb.active
