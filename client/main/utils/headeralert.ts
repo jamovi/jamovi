@@ -2,7 +2,7 @@
 'use strict';
 
 import { TimedOut } from '../errors';
-import { WindowOpenFailEvent } from '../host';
+import host, { WindowOpenFailEvent } from '../host';
 import { Future } from './common';
 
 
@@ -39,13 +39,15 @@ export class HeaderAlert extends HTMLElement {
         _text.id = 'text';
         _text.innerText = _('Your web browser prevented jamovi from opening a new tab');
 
-        const _explain = document.createElement('div');
-        _explain.id = 'explanation';
-        _explain.innerText = _('(This is a quirk of Safari and iPads)');
-
         _content.appendChild(_text);
         _content.appendChild(_button);
-        _content.appendChild(_explain);
+
+        if (host.os === 'ios') {
+            const _explain = document.createElement('div');
+            _explain.id = 'explanation';
+            _explain.innerText = _('(This is a quirk of Safari and iPads)');
+            _content.appendChild(_explain);
+        }
     }
 
     notify(event: WindowOpenFailEvent) {
@@ -59,7 +61,9 @@ export class HeaderAlert extends HTMLElement {
 
     open() {
         const win = window.open(this._url, '_blank');
-        this._future.resolve(win);
+        // openWindow() doesn't supply a future, only open() does
+        if (this._future)
+            this._future.resolve(win);
         this._future = null;
         this.hide();
         if (this._timeoutId) {

@@ -602,13 +602,14 @@ ready(async() => {
         });
     });
 
-    if (host.os === 'ios') {
-        let headerAlert = document.createElement('jmv-headeralert') as HeaderAlert;
-        document.body.prepend(headerAlert);
-        host.on('window-open-failed', (event: WindowOpenFailEvent) => {
-            headerAlert.notify(event);
-        });
-    }
+    // browsers block window.open() when it isn't in response to a user
+    // gesture (i.e. an analysis 'action' opening a data set in a new tab,
+    // or safari generally), so we fall back to a header with a button
+    let headerAlert = document.createElement('jmv-headeralert') as HeaderAlert;
+    document.body.prepend(headerAlert);
+    host.on('window-open-failed', (event: WindowOpenFailEvent) => {
+        headerAlert.notify(event);
+    });
 
     instance.on('moduleInstalled', (event) => {
         optionspanel.reloadAnalyses(event.name);

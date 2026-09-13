@@ -164,7 +164,12 @@ class Instance:
             os.makedirs(temp_path, exist_ok=True)
             nor_path = mktemp(suffix=ext, dir=temp_path)
         elif path.startswith('{{SessionTemp}}'):
-            nor_path = path.replace('{{SessionTemp}}', self._session.session_temp, 1)
+            # these are written by the engine (i.e. 'action' results) and
+            # opened by the client, so guard against directory traversal
+            session_temp = os.path.normpath(self._session.session_temp)
+            nor_path = os.path.normpath(path.replace('{{SessionTemp}}', session_temp, 1))
+            if os.path.commonpath([session_temp, nor_path]) != session_temp:
+                raise PermissionError()
         elif path.startswith('{{Documents}}'):
             nor_path = path.replace('{{Documents}}', Dirs.documents_dir())
         elif path.startswith('{{Downloads}}'):
@@ -979,7 +984,8 @@ class Instance:
             options = { }
 
         is_example = path.startswith('{{Examples}}')
-        if is_example:
+        is_session_temp = path.startswith('{{SessionTemp}}')
+        if is_example or is_session_temp:
             is_temp = True  # don't add to recents, etc.
 
         if path == '':
@@ -987,6 +993,10 @@ class Instance:
         elif is_example:
             if self._perms.open.examples is False:
                 raise PermissionError()
+        elif is_session_temp:
+            # a data set produced by an analysis (an 'action' result);
+            # it lives in the session temp, not the upload sandbox
+            pass
         elif is_url(path):
             if self._perms.open.remote is False:
                 raise PermissionError()
