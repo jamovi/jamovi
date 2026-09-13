@@ -32,6 +32,7 @@ else
 const electron = require('electron');
 const shell = electron.shell;
 const contextBridge = electron.contextBridge;
+const webUtils = electron.webUtils;
 
 const ipc = electron.ipcRenderer;
 
@@ -167,6 +168,10 @@ function setDialogProvider(provider) {
     dialogProvider = provider;
 }
 
+function getPathForFile(file) {
+    return webUtils.getPathForFile(file);
+}
+
 async function showSaveDialog(options) {
     return await dialogProvider.showDialog('export', options);
 }
@@ -232,6 +237,7 @@ contextBridge.exposeInMainWorld(
         showSaveDialog,
         showSaveDialogExternal,
         showOpenDialog,
+        getPathForFile,
         os,
         openUrl,
         setDialogProvider

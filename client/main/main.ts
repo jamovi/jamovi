@@ -429,8 +429,9 @@ ready(async() => {
     };
     document.ondrop = (event: DragEvent) => {
         for (let file of event.dataTransfer.files) {
-            // file.path is electron-only; in a browser we upload the file
-            const path = (file as File & { path?: string }).path;
+            // in Electron, host.getPathForFile() resolves the real path;
+            // in a browser there's no path, so we upload the file instead
+            const path = host.getPathForFile(file);
             if (path)
                 backstageModel.requestOpen({ path, title: file.name });
             else

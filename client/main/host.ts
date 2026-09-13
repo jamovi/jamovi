@@ -281,6 +281,12 @@ export const showOpenDialog = etron.showOpenDialog || (async function(options) {
 
 export const showSaveDialogExternal = etron.showSaveDialogExternal || (() => {});
 
+// in Electron, File objects obtained from a drop event don't carry a usable
+// path directly (Electron removed the non-standard file.path in v32); this
+// goes through the main process instead. in a browser there's no path, so
+// callers must fall back to uploading the file
+export const getPathForFile = etron.getPathForFile || (() => undefined);
+
 export async function triggerDownload(url) {
     if ( ! triggerDownload.iframe) {
         triggerDownload.iframe = document.createElement('iframe');
@@ -338,6 +344,7 @@ export default {
     showOpenDialog,
     showSaveDialog,
     showSaveDialogExternal,
+    getPathForFile,
     setLanguage,
     showMessageBox,
     os,
