@@ -145,31 +145,64 @@ async function blobify(dataURI: string): Promise<Blob> {
     return blob;
 }
 
-export const copyToClipboard = etron.copyToClipboard || (async function(data) {
+// whether the clipboard can take an svg as a vector flavour proper
+// (image/svg+xml). chromium 124+ can; firefox and safari can't, and nor can
+// older electrons (25 is chromium 114) -- for which this must answer false
+// rather than throw, so they fall through to the established route
+function supportsSvgFlavour(): boolean {
+    if (typeof ClipboardItem === 'undefined')
+        return false;
+    return (ClipboardItem as any).supports?.('image/svg+xml') === true;
+}
 
-    if (navigator.clipboard) {
+// writes through the web clipboard api. resolves false if the browser
+// wouldn't allow it (or doesn't have it), in which case the caller falls
+// back to something else
+async function writeClipboardItem(data): Promise<boolean> {
 
-        const clipboardData = {};
+    if ( ! navigator.clipboard?.write)
+        return false;
 
-        if (data.text)
-            clipboardData['text/plain'] = data.text;
-        if (data.html)
-            clipboardData['text/html'] = data.html;
-        if (data.image)
-            clipboardData['image/png'] = blobify(data.image);
+    const clipboardData = {};
 
-        try {
-            const clipboardItem = new ClipboardItem(clipboardData);
-            await navigator.clipboard.write([ clipboardItem ]);
-            // success!
-            return;
-        }
-        catch (e: unknown) {
-            // clipboard access not allowed
-            if ( ! (e instanceof DOMException))
-                console.log(e);
-        }
+    if (data.text)
+        clipboardData['text/plain'] = data.text;
+    if (data.html)
+        clipboardData['text/html'] = data.html;
+    if (data.image)
+        clipboardData['image/png'] = blobify(data.image);
+    if (data.svg && supportsSvgFlavour())
+        clipboardData['image/svg+xml'] = new Blob([ data.svg ], { type: 'image/svg+xml' });
+
+    try {
+        const clipboardItem = new ClipboardItem(clipboardData);
+        await navigator.clipboard.write([ clipboardItem ]);
+        return true;
     }
+    catch (e: unknown) {
+        // clipboard access not allowed
+        if ( ! (e instanceof DOMException))
+            console.log(e);
+        return false;
+    }
+}
+
+export const copyToClipboard = async function(data) {
+
+    if (etron.copyToClipboard) {
+        // electron's clipboard.write() can't carry a vector flavour, so when
+        // there's one to send it goes through the web api instead (which
+        // electron's chromium supports as of 31). everything else still goes
+        // the established route
+        if (data.svg && supportsSvgFlavour() && await writeClipboardItem(data))
+            return;
+        const { svg, ...rest } = data;
+        await etron.copyToClipboard(rest);
+        return;
+    }
+
+    if (await writeClipboardItem(data))
+        return;
 
     let hasFocus = document.activeElement;
     if ( ! clipboardPromptBox) {
@@ -190,7 +223,7 @@ export const copyToClipboard = etron.copyToClipboard || (async function(data) {
         if (hasFocus)
             hasFocus.focus();
     }
-});
+};
 
 export const setLanguage = etron.setLanguage || (() => {});
 

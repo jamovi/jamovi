@@ -966,8 +966,14 @@ class ResultsPanel extends EventDistributor {
                 // its text nodes -- so the chart pastes as a run of its axis
                 // labels, and the raster we attach never gets looked at
 
-                const { svg, image } = content;
+                const { svg, image, vector } = content;
                 content = { text: svg };
+
+                if (vector) {
+                    // ...and, where the clipboard can take one, as a vector
+                    // flavour proper (see host.copyToClipboard)
+                    content.svg = svg;
+                }
 
                 if (image) {
                     content.image = image;

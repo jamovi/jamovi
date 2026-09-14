@@ -5,7 +5,7 @@ import ERDM from "element-resize-detector";
 import RefTable from './refs';
 
 import { createItem } from './create';
-import { exportElem } from '../common/utils/formatio';
+import { exportElem, isVectorImage } from '../common/utils/formatio';
 import b64 from '../common/utils/b64';
 import Annotations, { AnnotationAction } from './annotations';
 import Tracker from './itemtracker';
@@ -400,7 +400,17 @@ class Main {  // this is constructed at the bottom
             if (node.classList.contains('jmv-results-image')) {
                 incText = false;
                 incImage = true;
+                // a vector image is copied as its svg, like an Svg element,
+                // with the raster as a fallback
+                if (isVectorImage(node))
+                    incSvg = true;
             }
+
+            // a vector Image is a complete svg file, so it can be offered as
+            // an image/svg+xml clipboard flavour too. an Svg element isn't
+            // (yet): its markup leans on module css, and hasn't been
+            // paste-tested that way
+            const vector = incSvg && node.classList.contains('jmv-results-image');
 
             if (node.classList.contains('jmv-results-svg')) {
                 incText = false;
@@ -420,7 +430,9 @@ class Main {  // this is constructed at the bottom
 
             (async () => {
 
-                const content: { text?: string, image?: string, svg?: string, html?: string } = { };
+                const content: { text?: string, image?: string, svg?: string, html?: string, vector?: boolean } = { };
+                if (vector)
+                    content.vector = true;
 
                 if (incText)
                     content.text = await exportElem(node, 'text/plain', options);

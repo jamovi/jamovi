@@ -269,7 +269,34 @@ function _textify(el) {
     return str;
 }
 
+// the url of an Image element's picture, or null if it has none
+function imageSrc(el: HTMLElement): string | null {
+    const bgiu = getComputedStyle(el).backgroundImage;
+    if (bgiu === 'none')
+        return null;
+    return /(?:\(['"]?)(.*?)(?:['"]?\))/.exec(bgiu)![1];
+}
+
+// whether an Image element is showing a vector (svg) rather than a raster
+export function isVectorImage(el: HTMLElement): boolean {
+    const image = el.querySelector<HTMLElement>('.jmv-results-image-image');
+    const src = image ? imageSrc(image) : null;
+    return src !== null && /\.svg(\?|$)/i.test(src);
+}
+
 async function _svgify(el: HTMLElement) {
+
+    // a vector Image element's svg is a file on the server, not markup in
+    // the document, so it's fetched rather than harvested
+    if (el.classList.contains('jmv-results-image')) {
+        if ( ! isVectorImage(el))
+            return '';
+        const src = imageSrc(el.querySelector('.jmv-results-image-image'))!;
+        const response = await fetch(src);
+        if ( ! response.ok)
+            throw new Error(`Unable to load image ${ src }`);
+        return await response.text();
+    }
 
     let source;
     if (el.tagName.toLowerCase() === 'svg')
@@ -329,7 +356,7 @@ function _imagify(el) {
 
     // HACK!! :/
     if (el.classList.contains('jmv-results-image'))
-        el = el.querySelector('.jmv-results-image-image');
+        return _imagifyImage(el.querySelector('.jmv-results-image-image'));
     else if (el.classList.contains('jmv-results-svg'))
         // the .content wrapper, rather than the svg itself, because the svg
         // has no offsetWidth/offsetHeight to size the canvas by
@@ -378,6 +405,37 @@ function _imagify(el) {
             let url = `data:image/svg+xml,${encoded}`;
             image.src = url;
         });
+    });
+}
+
+// an Image element is just a picture, so it can be drawn straight onto the
+// canvas -- there's no need for the html -> <foreignObject> detour above.
+// and for a vector (svg) image there mustn't be: firefox won't render an svg
+// nested inside another svg-as-image, so it would come out blank
+function _imagifyImage(el: HTMLElement): Promise<string> {
+
+    const src = imageSrc(el);
+    if (src === null)
+        return Promise.resolve('');
+
+    const sourceWidth = el.offsetWidth;
+    const sourceHeight = el.offsetHeight;
+    const scale = window.devicePixelRatio || 1;
+
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = sourceWidth * scale;
+            canvas.height = sourceHeight * scale;
+            const context = canvas.getContext('2d')!;
+            context.fillStyle = 'white';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL());
+        };
+        image.onerror = () => reject(new Error(`Unable to load image ${ src }`));
+        image.src = src;
     });
 }
 
