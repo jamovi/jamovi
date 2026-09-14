@@ -432,8 +432,12 @@ Analysis <- R6::R6Class('Analysis',
 
             if (is.function(private$.resourcesPathSource)) {
 
+                # image objects from older jmvcore versions have no $mode
+                vector <- identical(image[['mode']], 'vector')
+                suffix <- if (vector) 'svg' else 'png'
+
                 name <- base64enc::base64encode(base::charToRaw(image$name))
-                paths <- private$.resourcesPathSource(name, 'png')
+                paths <- private$.resourcesPathSource(name, suffix)
                 fullPath <- paste0(paths$rootPath, '/', paths$relPath)
 
                 decSymbol <- self$options$decSymbol
@@ -473,7 +477,13 @@ Analysis <- R6::R6Class('Analysis',
                         height <- 32
                 }
 
-                if (requireNamespace('ragg', quietly=TRUE)) {
+                if (vector) {
+                    grDevices::svg(
+                        filename=fullPath,
+                        width=width/ppi,
+                        height=height/ppi,
+                        bg='transparent')
+                } else if (requireNamespace('ragg', quietly=TRUE)) {
                     ragg::agg_png(
                         filename=fullPath,
                         width=width,

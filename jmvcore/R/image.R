@@ -10,6 +10,7 @@ Image <- R6::R6Class("Image",
         .renderInitFun=NA,
         .renderFun=NA,
         .requiresData=FALSE,
+        .mode='raster',
         .plot=NA,
         .widthM=400,
         .widthB=0,
@@ -20,6 +21,7 @@ Image <- R6::R6Class("Image",
         height=function() private$.height,
         filePath=function() private$.filePath,
         requiresData=function() private$.requiresData,
+        mode=function() private$.mode,
         plot=function() {
             if (is.null(private$.plot))
                 private$.plot <- self$analysis$.createPlotObject(funName=private$.renderFun, image=self)
@@ -72,6 +74,7 @@ Image <- R6::R6Class("Image",
             renderFun=NULL,
             renderInitFun=NULL,
             requiresData=FALSE,
+            mode='raster',
             name=NULL,
             title='',
             visible=TRUE,
@@ -92,6 +95,7 @@ Image <- R6::R6Class("Image",
             private$.renderFun <- renderFun
             private$.renderInitFun <- renderInitFun
             private$.requiresData <- requiresData
+            self$setMode(mode)
 
             private$.filePath <- NULL
             private$.plot <- NULL
@@ -100,6 +104,10 @@ Image <- R6::R6Class("Image",
             private$.widthB <- 0
             private$.heightM <- height
             private$.heightB <- 0
+        },
+        setMode=function(mode) {
+            mode <- match.arg(mode, c('raster', 'vector'))
+            private$.mode <- mode
         },
         setSize=function(width, height) {
             private$.width <- width
