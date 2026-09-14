@@ -110,6 +110,11 @@ Image:
             type: string
         requiresData:
             type: boolean
+        mode:
+            type: string
+            enum:
+              - raster
+              - vector
         visible:
             type:
               - boolean
