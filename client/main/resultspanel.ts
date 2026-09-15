@@ -948,45 +948,35 @@ class ResultsPanel extends EventDistributor {
                 margin: '24',
                 docType: true,
                 exclude: [ '.jmvrefs', 'jmv-reference-numbers' ],
+                // a Svg element embedded in a copied group/analysis has no
+                // other route to the clipboard's html flavour -- and word,
+                // powerpoint and gmail all strip an inline <svg> down to its
+                // text nodes, so left alone it would simply vanish from a
+                // group copy. rasterised, it survives (see formatio's
+                // _svgToImgHtml)
+                svgAsImage: true,
             };
 
-            if (host.isElectron) {
-                // this is necessary for compatibility with Office 2010
-                // and possibly for other versions, but we haven't explored
-                // exhaustively.
-                options.images = 'absolute';
-            }
+            // images go onto the clipboard as data uris throughout (see
+            // formatio's _htmlifyDiv) -- tested to paste fine in word and
+            // powerpoint (365), as well as browsers. this used to be an
+            // absolute, fetchable localhost url on electron instead ('for
+            // compatibility with office 2010', never confirmed necessary),
+            // but that stopped working with office 365 -- word and
+            // powerpoint on the mac won't fetch it, so the image was simply
+            // missing from the paste
 
             let content = await this._getContent(event.address, options);
 
-            if (content.svg) {
-
-                // the svg can't be the html flavour. word, powerpoint and
-                // gmail all prefer html, and strip an inline <svg> down to
-                // its text nodes -- so the chart pastes as a run of its axis
-                // labels, and the raster we attach never gets looked at
-
-                const { svg, image, vector } = content;
-                content = { text: svg };
-
-                if (vector) {
-                    // ...and, where the clipboard can take one, as a vector
-                    // flavour proper (see host.copyToClipboard)
-                    content.svg = svg;
-                }
-
-                if (image) {
-                    content.image = image;
-                    if ( ! host.isElectron) {
-                        // in the browser there has to be an html flavour, or
-                        // a paste lands as the svg text instead
-                        content.html = `<img src="${ image }">`;
-                    }
-                    // on electron there must not be one, so that office falls
-                    // back to the image -- it doesn't honour the data uri we'd
-                    // have to use here (see images:'absolute' above)
-                }
-            }
+            // the svg flavour proper (see host.copyToClipboard) is only
+            // offered for a vector Image -- an Svg element's markup leans
+            // on module css and hasn't been paste-tested as a standalone
+            // svg flavour. the html and image flavours already carry the
+            // chart correctly either way (see formatio's svgAsImage /
+            // flattenImage), so there's nothing else to do here
+            if ( ! content.vector)
+                delete content.svg;
+            delete content.vector;
 
             await host.copyToClipboard(content);
 
