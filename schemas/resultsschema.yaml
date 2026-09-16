@@ -41,6 +41,7 @@ properties:
                         - Array
                         - Image
                         - Preformatted
+                        - Text
                         - Html
                         - Svg
                         - State

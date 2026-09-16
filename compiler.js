@@ -283,6 +283,7 @@ const sourcifyResults = function(object, indent) {
                 object.type === 'Array' ||
                 object.type === 'Group' ||
                 object.type === 'Preformatted' ||
+                object.type === 'Text' ||
                 object.type === 'Html' ||
                 object.type === 'Svg' ||
                 object.type === 'State' ||
