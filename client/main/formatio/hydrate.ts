@@ -476,7 +476,9 @@ function html2Chunks(content: string, title?: string, msgType?: number): IText {
 }
 
 function hydrateHTML(htmlPB: any): IText {
-    return html2Chunks(htmlPB.html.content, htmlPB.title);
+    // title isn't rendered as a heading in the live results view, so it's
+    // left out of the exported/copied content too
+    return html2Chunks(htmlPB.html.content);
 }
 
 function hydrateNotice(noticePB: any): IText {
