@@ -320,6 +320,7 @@ message ResultsElement {
         ResultsNotice notice = 24;
         ResultsAction action = 25;
         ResultsSvg svg = 26;
+        string text = 27;
     }
 
     bytes state = 14;

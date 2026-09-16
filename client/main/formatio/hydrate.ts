@@ -273,6 +273,10 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         element = hydratePreformatted(pb);
         elements.push(element);
     }
+    else if (pb.text) {
+        element = hydrateTextElement(pb);
+        elements.push(element);
+    }
     else if (pb.html) {
         element = hydrateHTML(pb);
         elements.push(element);
@@ -359,6 +363,10 @@ function hydratePreformatted(preformattedPB: any): IPreformatted {
         content: preformattedPB.preformatted,
         syntax: preformattedPB.name == 'syntax',
     };
+}
+
+function hydrateTextElement(textPB: any): IText {
+    return html2Chunks(textPB.text);
 }
 
 function html2Chunks(content: string, title?: string, msgType?: number): IText {

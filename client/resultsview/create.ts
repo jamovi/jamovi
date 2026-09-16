@@ -5,6 +5,7 @@ import { GroupElementData, Model as GroupModel, View as GroupView, IGroupElement
 import { IImageElementData, Model as ImageModel, View as ImageView } from './image';
 import { Model as ArrayModel, View as ArrayView, IArrayElementData } from './array';
 import { Model as SyntaxModel, View as SyntaxView } from './syntax';
+import { Model as TextModel, View as TextView } from './text';
 import { HTMLElementData, Model as HtmlModel, View as HtmlView } from './html';
 import { ISvgElementData, Model as SvgModel, View as SvgView } from './svg';
 
@@ -21,7 +22,7 @@ export enum AnalysisStatus {
 }
 
 export interface IElement {
-    type: 'table' | 'group' | 'image' | 'array' | 'preformatted' | 'html' | 'svg' | 'notice';
+    type: 'table' | 'group' | 'image' | 'array' | 'preformatted' | 'text' | 'html' | 'svg' | 'notice';
     name: string;
     title: string;
     status: AnalysisStatus;
@@ -80,6 +81,17 @@ export interface IPreformattedElement extends IElement {
 
 export const isPreformatted = function(obj: IElement): obj is IPreformattedElement {
     return obj && obj.type === 'preformatted';
+}
+
+
+export interface ITextElement extends IElement {
+    type: 'text';
+    text: string;
+    stale: boolean;
+}
+
+export const isText = function(obj: IElement): obj is ITextElement {
+    return obj && obj.type === 'text';
 }
 
 
@@ -211,6 +223,11 @@ export const createItem = function(element: IElement, options, level: number, pa
         modelParams.element = element.preformatted;
         model = new SyntaxModel(modelParams);
         view = new SyntaxView(model, viewParams);
+    }
+    else if (isText(element)) {
+        modelParams.element = element.text;
+        model = new TextModel(modelParams);
+        view = new TextView(model, viewParams);
     }
     else if (isHtml(element)) {
         modelParams.element = element.html;
@@ -344,6 +361,21 @@ const updateItem = function<V extends View<M, T>, M extends Model<T>, T extends 
         model.attributes.name = element.name;
         model.attributes.title = element.title;
         model.attributes.element = element.preformatted;
+        model.attributes.status = element.status;
+        model.attributes.error = element.error;
+        model.attributes.stale = element.stale;
+        model.attributes.refs = element.refs;
+        model.attributes.options = options;
+        model.attributes.refTable = refTable;
+
+        view.level = level;
+        view.mode = mode;
+    }
+    else if (isText(element) && view instanceof TextView) {
+        let model = view.model;
+        model.attributes.name = element.name;
+        model.attributes.title = element.title;
+        model.attributes.element = element.text;
         model.attributes.status = element.status;
         model.attributes.error = element.error;
         model.attributes.stale = element.stale;
