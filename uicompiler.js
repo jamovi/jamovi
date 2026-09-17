@@ -863,7 +863,7 @@ const constructors = {
             // always an array of files, even when not multiple -- only the
             // R side collapses a single file to a singleton
             if (key === undefined || key.length === 0)
-                return { type: 'array', template: { type: 'group', elements: [ { name: 'path', type: 'string' }, { name: 'filename', type: 'string' } ] } };
+                return { type: 'array', template: { type: 'group', elements: [ { name: 'id', type: 'string' }, { name: 'filename', type: 'string' } ] } };
 
             return null;
         }
@@ -1415,7 +1415,7 @@ const uiOptionControl = {
             return ctrl.isVirtual !== true;
         },
         toRaw: function(ctrl) {
-            return { type: 'array', template: { type: 'group', elements: [ { name: 'path', type: 'string' }, { name: 'filename', type: 'string' } ] } };
+            return { type: 'array', template: { type: 'group', elements: [ { name: 'id', type: 'string' }, { name: 'filename', type: 'string' } ] } };
         }
     },
 
