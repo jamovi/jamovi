@@ -681,7 +681,7 @@ cdef class Column:
         else:
             type = 1
             new_value = float(new_value)
-            if new_value.is_integer() and is_int32(new_value):
+            if self.data_type == DataType.INTEGER and new_value.is_integer() and is_int32(new_value):
                 type = 2
                 new_value = int(new_value)
 
