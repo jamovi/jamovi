@@ -3,36 +3,38 @@
 
 import os
 import re
+import hashlib
+from dataclasses import dataclass
 from tempfile import NamedTemporaryFile
 
 from aiohttp import web
 
+from .sessionfiles import safe_ext
 
+
+class UploadTooLargeError(Exception):
+    pass
+
+
+@dataclass(slots=True)
 class UploadedFile:
     # a file received by read_upload_form(). path is where it is now;
     # filename is the name the user chose. ours is whether we wrote it (and
     # so are responsible for it), as opposed to an nginx upload accelerator
-    # having written it before handing the request to us
-    __slots__ = ('path', 'filename', 'ours')
-
-    def __init__(self, path: str, filename: str, ours: bool):
-        self.path = path
-        self.filename = filename
-        self.ours = ours
-
-
-def safe_ext(filename: str) -> str:
-    # the extension of an uploaded file, as a suffix for the temp file we
-    # write it to: it's the only part of the user's name that reaches the
-    # filesystem, so keep it to characters we trust
-    _unused, dot_ext = os.path.splitext(filename)
-    return re.sub(r'[^A-Za-z0-9.]', '', dot_ext)[:16]
+    # having written it before handing the request to us. sha256 is the hex
+    # digest of the content when ours (it's hashed as it lands), else None
+    path: str
+    filename: str
+    ours: bool
+    sha256: str | None = None
 
 
-async def read_upload_form(request: web.Request, dest_dir: str) -> tuple[dict[str, str], list[UploadedFile]]:
+async def read_upload_form(request: web.Request, dest_dir: str, max_bytes: float | None = None) -> tuple[dict[str, str], list[UploadedFile]]:
     """Reads a form with files in it, streaming the files to disk.
 
-    Returns the text fields, and the files. A file arrives one of two ways:
+    Returns the text fields, and the files. If the files streamed in total
+    more than max_bytes, they're removed and UploadTooLargeError is raised.
+    A file arrives one of two ways:
 
     - as a 'file' part with a body, which is streamed chunk by chunk into a
       random name under dest_dir (keeping the extension), so it's never
@@ -49,6 +51,16 @@ async def read_upload_form(request: web.Request, dest_dir: str) -> tuple[dict[st
     files: list[UploadedFile] = []
     acc_paths: list[str] = []
     acc_names: list[str] = []
+    received = 0
+
+    def too_large():
+        for f in files:
+            if f.ours:
+                try:
+                    os.remove(f.path)
+                except OSError:
+                    pass
+        return UploadTooLargeError()
 
     if request.content_type == 'multipart/form-data':
         reader = await request.multipart()
@@ -57,13 +69,20 @@ async def read_upload_form(request: web.Request, dest_dir: str) -> tuple[dict[st
                 continue
             if part.filename:
                 filename = os.path.basename(part.filename)
+                digest = hashlib.sha256()
                 with NamedTemporaryFile(suffix=safe_ext(filename), delete=False, dir=dest_dir) as tmp:
                     while True:
                         chunk = await part.read_chunk()
                         if not chunk:
                             break
+                        received += len(chunk)
+                        if max_bytes is not None and received > max_bytes:
+                            tmp.close()
+                            os.remove(tmp.name)
+                            raise too_large()
+                        digest.update(chunk)
                         tmp.write(chunk)
-                files.append(UploadedFile(tmp.name, filename, ours=True))
+                files.append(UploadedFile(tmp.name, filename, ours=True, sha256=digest.hexdigest()))
             else:
                 value = await part.text()
                 if part.name == 'file.path':
@@ -77,9 +96,13 @@ async def read_upload_form(request: web.Request, dest_dir: str) -> tuple[dict[st
         for name, value in data.items():
             if isinstance(value, web.FileField):
                 filename = os.path.basename(value.filename)
+                content = value.file.read()
+                received += len(content)
+                if max_bytes is not None and received > max_bytes:
+                    raise too_large()
                 with NamedTemporaryFile(suffix=safe_ext(filename), delete=False, dir=dest_dir) as tmp:
-                    tmp.write(value.file.read())
-                files.append(UploadedFile(tmp.name, filename, ours=True))
+                    tmp.write(content)
+                files.append(UploadedFile(tmp.name, filename, ours=True, sha256=hashlib.sha256(content).hexdigest()))
             elif name == 'file.path':
                 acc_paths.append(str(value))
             elif name == 'file.name':

@@ -483,9 +483,11 @@ export class OutputFormat extends Format<OutputType> {
 }
 
 // a file selected by a File option. filename is the name the user chose;
-// path is where it actually is, and is null once restored from a saved file
-// (paths don't persist)
-export type FileEntry = { path: string | null, filename: string };
+// id names the file in the session (it's derived from the content, so the
+// same file is the same id wherever it's selected), and is null when the
+// file isn't available -- restored from a saved file that didn't carry it,
+// say -- until it's browsed for again
+export type FileEntry = { id: string | null, filename: string };
 export class FileFormat extends Format<FileEntry[]> {
 
     static name: 'file'
@@ -509,7 +511,7 @@ export class FileFormat extends Format<FileEntry[]> {
                 return false;
             if (typeof(file.filename) !== 'string')
                 return false;
-            if (file.path !== null && typeof(file.path) !== 'string')
+            if (file.id !== null && typeof(file.id) !== 'string')
                 return false;
         }
         return true;
@@ -525,7 +527,7 @@ export class FileFormat extends Format<FileEntry[]> {
         if (raw1.length !== raw2.length)
             return false;
         for (let i = 0; i < raw1.length; i++) {
-            if (raw1[i].path !== raw2[i].path || raw1[i].filename !== raw2[i].filename)
+            if (raw1[i].id !== raw2[i].id || raw1[i].filename !== raw2[i].filename)
                 return false;
         }
         return true;

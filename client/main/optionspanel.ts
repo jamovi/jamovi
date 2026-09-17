@@ -5,7 +5,6 @@ let Framesg = _Framesg;
 if ('default' in Framesg) // this import is handled differently between browserify and vite
     Framesg = Framesg.default;
 
-import path from 'path';
 
 import host from './host';
 import I18ns, { I18nData } from '../common/i18n';
@@ -277,10 +276,11 @@ class AnalysisResources extends EventEmitter {
             controller.abort();
     }
 
-    // for a 'File' option: shows the file dialog, and in a browser, uploads
-    // what was chosen into the session. resolves to the files as
-    // { path, filename } entries, or undefined if cancelled (or if the user
-    // moved on to a different analysis in the meantime)
+    // for a 'File' option: shows the file dialog, and copies what was chosen
+    // into the session -- by uploading it (a browser), or by handing the
+    // server the path (electron). resolves to the files as { id, filename }
+    // entries, or undefined if cancelled (or if the user moved on to a
+    // different analysis in the meantime)
     async selectFiles(options: { multiple?: boolean, extensions?: string[] }): Promise<IFileEntry[] | undefined> {
 
         let filters = undefined;
@@ -291,8 +291,7 @@ class AnalysisResources extends EventEmitter {
         if (result.cancelled)
             return undefined;
 
-        if (result.paths)  // electron
-            return result.paths.map(p => ({ path: p, filename: path.basename(p) }));
+        let chosen: File[] | FileList | string[] = result.paths ? result.paths : result.files;  // paths under electron
 
         // the iframe is shared between analyses of the same type, so the
         // control that asked may be showing a different analysis by the
@@ -303,7 +302,7 @@ class AnalysisResources extends EventEmitter {
 
         let progNotif = new Notify({ title: _('Uploading'), duration: 0 });
         try {
-            let stream = this.instance.uploadFiles(result.files, controller.signal);
+            let stream = this.instance.uploadFiles(chosen, controller.signal);
             for await (let progress of stream) {
                 progNotif.set({
                     title: progress.title,

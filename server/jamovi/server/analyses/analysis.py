@@ -325,11 +325,14 @@ class Analysis:
         self.clear_state = True
         self.parent._notify_options_changed(self)
 
-    def serialize(self, strip_content=False):
+    def serialize(self, strip_content=False, files=()):
+        # files is the set of file ids (see OptionFile) that have been
+        # written alongside; any other id is dropped from the copy written
+        # out, so a saved analysis never refers to a file that isn't there
         self.options.compress()
         self.results.options.CopyFrom(self.options.as_pb())
         clone = deepcopy(self.results)
-        self.options.strip_file_paths(clone.options)  # files don't outlive the session
+        self.options.keep_file_ids(files, clone.options)
         self._change_status_to_complete(clone.results, strip_content)
         return clone.SerializeToString()
 
@@ -380,6 +383,11 @@ class Analysis:
     @property
     def resources(self):
         return Analysis._get_resources(self.results.results)
+
+    @property
+    def files(self) -> set[str]:
+        # the ids of the files the options refer to (see OptionFile)
+        return set(self.options.file_ids())
 
     def set_svg(self, address, content):
         # an Svg element is drawn by the client, so the client is the only

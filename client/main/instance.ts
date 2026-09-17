@@ -77,11 +77,10 @@ export interface IInstanceOpenProgress {
 
 export type InstanceOpenStream = ProgressStream<IInstanceOpenProgress, IInstanceOpenResult>;
 
-// a file uploaded into the session (for a 'File' analysis option). the
-// upload is written to a random name under the session's temp dir, so
-// filename is the only place the name the user chose survives
+// a file copied into the session (for a 'File' analysis option). id is its
+// name there, derived from its content; filename is the name the user chose
 export interface IFileEntry {
-    path: string,
+    id: string,
     filename: string,
 }
 
@@ -287,10 +286,12 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         });
     }
 
-    // uploads files into the session's temp dir (for a 'File' analysis
-    // option), where the engine can read them. progress is reported the
-    // same way as open(), so it can be shown in the notification area
-    uploadFiles(files: FileList | File[], signal?: AbortSignal): ProgressStream<IInstanceOpenProgress, IFileEntry[]> {
+    // copies files into the session (for a 'File' analysis option), where
+    // the engine can read them. files are either File objects (a browser:
+    // the bytes are uploaded) or paths (electron: the server, which is on
+    // the same machine, does the copy). progress is reported the same way
+    // as open(), so it can be shown in the notification area
+    uploadFiles(files: FileList | File[] | string[], signal?: AbortSignal): ProgressStream<IInstanceOpenProgress, IFileEntry[]> {
 
         return new ProgressStream(async (setProgress): Promise<IFileEntry[]> => {
 
@@ -310,8 +311,16 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             });
 
             const data = new FormData();
-            for (const file of files)
-                data.append('file', file, file.name);
+            for (const file of files) {
+                if (typeof file === 'string') {
+                    // the same shape an upload accelerator hands the server
+                    data.append('file.path', file);
+                    data.append('file.name', path.basename(file));
+                }
+                else {
+                    data.append('file', file, file.name);
+                }
+            }
 
             xhr.open('POST', 'upload', true);
             xhr.send(data);
@@ -323,8 +332,11 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             if (xhr.status === 0) // aborted
                 throw new CancelledError();
 
-            if (xhr.status === 413)
-                throw new UserFacingError(_('Upload failed'), { cause: _('File size exceeds session limits') });
+            if (xhr.status === 413) {
+                // the session's file storage is capped; the server says by how much
+                let message = xhr.response?.message || _('File size exceeds session limits');
+                throw new UserFacingError(_('Upload failed'), { cause: message });
+            }
 
             if (xhr.status !== 200)
                 throw new UserFacingError(_('Upload failed'), { cause: xhr.statusText });

@@ -126,16 +126,18 @@ class Analyses:
 
         return analysis
 
-    def create_from_serial(self, serial):
+    def create_from_serial(self, serial, files=()):
 
         analysis_pb = jcoms.AnalysisResponse()
         analysis_pb.ParseFromString(serial)
 
         analysis = self._construct_from_pb(analysis_pb, status=Analysis.Status.COMPLETE)
 
-        # files don't outlive the session, so any paths in the file are from
-        # a previous one (a file written before this was enforced, say)
-        analysis.options.strip_file_paths()
+        # files is the set of file ids (see OptionFile) that came with the
+        # analysis and are now in the session; anything else the options
+        # refer to isn't available, and is dropped so the user is shown it
+        # needs re-selecting
+        analysis.options.keep_file_ids(files)
         analysis.results.options.CopyFrom(analysis.options.as_pb())
 
         self._analyses.append(analysis)

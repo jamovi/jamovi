@@ -11,7 +11,7 @@ import asyncio
 from asyncio import create_task
 from urllib.parse import urlparse
 from tempfile import NamedTemporaryFile, TemporaryDirectory, gettempdir
-from shutil import rmtree, move
+from shutil import rmtree
 
 from aiohttp import web
 
@@ -23,7 +23,8 @@ from jamovi.core import Dirs
 from .i18n import _
 from .webhandlers import make_single_file_handler, make_static_dir_handler
 from .webhandlers import make_forward, make_host_dispatch_middleware
-from .uploads import read_upload_form, safe_ext
+from .uploads import read_upload_form, UploadTooLargeError
+from .sessionfiles import TooLargeError
 from .exceptions import FileExistsException, UserException
 
 log = logging.getLogger(__name__)
@@ -297,40 +298,52 @@ class _Handlers:
         return resp
 
     async def upload(self, request: web.Request) -> web.Response:
-        # files chosen for a 'File' analysis option (in a browser -- under
-        # electron the engine reads the user's file directly). they go into
-        # the session temp dir, which the engine can also read, under a
-        # random name, and the client gets back {{SessionTemp}}/... paths
-        # (resolved by jmvcore's OptionFile) alongside the original names
+        # files chosen for a 'File' analysis option. they go into the
+        # session temp dir, which the engine can also read, named by their
+        # content (see sessionfiles.py); the client gets back { id, filename }
+        # for each. a file arrives either as a body (a browser), or as a
+        # file.path/file.name pair: from an upload accelerator that has
+        # already written it into upload_path, or, under electron, the path
+        # the user chose in the native dialog -- which is only honoured where
+        # opening local files is allowed
         instance_id = request.match_info['instance_id']
         instance = self._session.get(instance_id)
         if instance is None:
             return web.Response(status=404, text='404: Not Found')
 
-        session_temp = self._session.session_temp
-        os.makedirs(session_temp, exist_ok=True)
+        session_files = instance.session_files
+
+        def too_large():
+            return web.json_response({ 'message': instance.file_storage_message() }, status=413)
 
         try:
-            _unused, uploaded = await read_upload_form(request, session_temp)
+            _unused, uploaded = await read_upload_form(request, session_files.dir, max_bytes=instance.file_storage_headroom())
+        except UploadTooLargeError:
+            return too_large()
         except ValueError:
             return web.Response(status=400, text='400: Bad Request')
 
         upload_path = os.path.realpath(conf.get('upload_path'))
         files: list[dict] = []
-        for f in uploaded:
-            path = f.path
-            if not f.ours:
-                # written by an upload accelerator, into upload_path (on the
-                # same volume as the session temp dir, so this is a rename)
-                real = os.path.realpath(path)
-                if os.path.commonpath([upload_path, real]) != upload_path:
-                    return web.Response(status=400, text='400: Bad Request')
-                path = NamedTemporaryFile(suffix=safe_ext(f.filename), delete=False, dir=session_temp).name
-                move(real, path)
-            files.append({
-                'path': '{{SessionTemp}}/' + os.path.basename(path),
-                'filename': f.filename,
-            })
+        try:
+            for f in uploaded:
+                if f.ours:
+                    file_id = session_files.adopt(f.path, f.sha256, f.filename)
+                else:
+                    real = os.path.realpath(f.path)
+                    if os.path.commonpath([upload_path, real]) == upload_path:
+                        move_source = True  # the accelerator's copy, no longer needed
+                    elif instance.perms.open.local:
+                        move_source = False  # the user's own file
+                    else:
+                        return web.Response(status=403, text='403: Forbidden')
+                    try:
+                        file_id = session_files.add_path(real, f.filename, max_bytes=instance.file_storage_headroom(), move=move_source)
+                    except FileNotFoundError:
+                        return web.Response(status=404, text='404: Not Found')
+                files.append({ 'id': file_id, 'filename': f.filename })
+        except TooLargeError:
+            return too_large()
 
         return web.json_response(files)
 

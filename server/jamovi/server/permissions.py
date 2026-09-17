@@ -51,6 +51,12 @@ class Permissions:
             self.dataset.maxRows = int(conf.get('permissions_max_rows', '10000'))
             self.dataset.maxColumns = int(conf.get('permissions_max_columns', '100'))
 
+        # files for 'File' analysis options (and everything else in the
+        # session temp dir): in MB, 100 on cloud, unlimited on the desktop
+        # unless configured
+        default = '100' if app_mode == 'cloud' else 'inf'
+        self.files.maxStorage = float(conf.get('permissions_max_file_storage', default)) * 1024 * 1024
+
     def __init__(self):
         self.library = AttrDict({
             'browseable': False,
@@ -77,4 +83,8 @@ class Permissions:
         self.dataset = AttrDict({
             'maxRows': float('inf'),
             'maxColumns': float('inf'),
+        })
+
+        self.files = AttrDict({
+            'maxStorage': float('inf'),
         })

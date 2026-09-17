@@ -20,6 +20,7 @@ from .datasetcontroller import ForbiddenOp
 from .project import Project
 from . import formatio
 from .permissions import Permissions
+from .sessionfiles import SessionFiles
 
 from .exceptions import FileExistsException
 from .exceptions import UserException
@@ -204,6 +205,34 @@ class Instance:
 
     def temp_path(self):
         return posixpath.join(self._instance_path, 'dl')
+
+    @property
+    def perms(self):
+        return self._perms
+
+    @property
+    def session_files(self) -> SessionFiles:
+        # files for 'File' analysis options, in the session temp dir
+        return SessionFiles(self._session.session_temp)
+
+    def file_storage_headroom(self) -> float | None:
+        # how many more bytes the session temp dir may take, or None if
+        # it isn't capped
+        limit = self._perms.files.maxStorage
+        if limit == float('inf'):
+            return None
+        return max(0, limit - self.session_files.usage())
+
+    def check_file_storage(self, extra: int):
+        # raises if adding extra bytes to the session temp dir would take it
+        # over the cap (c.f. DataSetModel._check_perms)
+        headroom = self.file_storage_headroom()
+        if headroom is not None and extra > headroom:
+            raise PermissionError(self.file_storage_message())
+
+    def file_storage_message(self) -> str:
+        limit = self._perms.files.maxStorage
+        return _('This session is limited to {} MB of files').format(int(limit // (1024 * 1024)))
 
     def _virtualise_path(self, path):
 

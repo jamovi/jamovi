@@ -55,6 +55,10 @@ class Project:
         return self._instance.instance_path
 
     @property
+    def session_temp(self) -> str:
+        return self._instance.session.session_temp
+
+    @property
     def analyses(self) -> Analyses:
         return self._analyses
 

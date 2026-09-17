@@ -15,10 +15,10 @@ export type FileSelectorProperties = GridOptionControlProperties<FileEntry[]> & 
 }
 
 // a browse button and the file(s) selected with it. the value is always an
-// array of { path, filename } (even when not multiple) -- see OptionFile in
-// jmvcore for the R side. the file dialog (and any upload) is handled by the
-// main window, so this just asks for files and shows a busy state until they
-// arrive
+// array of { id, filename } (even when not multiple) -- see OptionFile in
+// jmvcore for the R side. the file dialog and the upload into the session are
+// handled by the main window, so this just asks for files and shows a busy
+// state until they arrive
 export class FileSelector extends OptionControl<FileSelectorProperties> {
 
     label: HTMLElement = null;
@@ -115,9 +115,10 @@ export class FileSelector extends OptionControl<FileSelectorProperties> {
             return;  // cancelled
 
         if (multiple) {
+            // the id is derived from the content, so this is by content too
             let current = this.getValue() || [];
-            let paths = new Set(current.map(f => f.path));
-            files = current.concat(files.filter(f => ! paths.has(f.path)));
+            let ids = new Set(current.map(f => f.id));
+            files = current.concat(files.filter(f => f.id === null || ! ids.has(f.id)));
         }
 
         this.setValue(files);
@@ -163,9 +164,10 @@ export class FileSelector extends OptionControl<FileSelectorProperties> {
             let remove = h('button', { class: 'jmv-file-selector-remove', 'aria-label': s_('Remove {name}', { name }), title: s_('Remove') }, '×');
             remove.addEventListener('click', () => this.remove(index));
             let item = h('div', { class: 'jmv-file-selector-item' }, h('span', { class: 'jmv-file-selector-name' }, name), remove);
-            // a file with no path was restored from a saved file, and can't
-            // be used until it's browsed for again
-            if ( ! file.path) {
+            // a file with no id isn't in the session (it was restored from
+            // a saved file without it), and can't be used until it's browsed
+            // for again
+            if ( ! file.id) {
                 item.classList.add('unavailable');
                 item.title = s_('This file needs to be re-selected');
             }

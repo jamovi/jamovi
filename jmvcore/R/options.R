@@ -919,35 +919,46 @@ OptionFile <- R6::R6Class(
     private=list(
         .multiple=FALSE,
         .extensions=NULL,
-        # a file is list(path=, filename=). path is NULL when the analysis has
-        # been loaded from an .omv (paths don't persist), or {{SessionTemp}}/...
-        # when the file was uploaded to the session (cloud), or an absolute
-        # path (electron, or plain R usage). filename is the name the user
-        # chose, which on cloud isn't the name at path
+        # the raw value of a file is list(id=, filename=) as it arrives over
+        # the wire -- id names the file in the session temp dir, and is NULL
+        # if the file isn't available (restored from an .omv that didn't
+        # carry it, say) -- or list(path=, filename=) when given a path from
+        # plain R. either way, what module code sees is list(path=, filename=)
         .normalise=function(file) {
             if (is.null(file))
                 return(NULL)
             if (is.character(file))
-                file <- list(path=file, filename=basename(file))
+                return(list(path=file, filename=basename(file)))
             if ( ! is.list(file))
                 reject("Argument '{a}' must be a file path, or a list with 'path' and 'filename'",
                        code="a_must_be_a_file",
                        a=self$name)
-            if (is.null(file$filename))
-                file$filename <- if (is.null(file$path)) '' else basename(file$path)
-            list(path=file$path, filename=file$filename)
+            filename <- file$filename
+            if (is.null(filename))
+                filename <- if (is.null(file$path)) '' else basename(file$path)
+            if ( ! is.null(file$path))
+                return(list(path=file$path, filename=filename))
+            id <- file$id
+            if ( ! private$.isId(id))
+                id <- NULL
+            list(id=id, filename=filename)
+        },
+        # an id is the hex sha-256 of the content plus an extension. it comes
+        # from the client, so it's only ever joined to the session temp dir
+        # once it's been checked to look like one
+        .isId=function(id) {
+            is.character(id) && length(id) == 1 && ! is.na(id) &&
+                grepl('^[0-9a-f]{64}(\\.[A-Za-z0-9]{1,16})?$', id)
         },
         .resolve=function(file) {
             path <- file$path
-            if ( ! is.null(path) && startsWith(path, '{{SessionTemp}}')) {
+            if (is.null(path) && ! is.null(file$id)) {
                 parent <- private$.parent
                 analysis <- if (is.null(parent)) NULL else parent$analysis
-                if ( ! is.null(analysis)) {
-                    sessionTemp <- analysis$.getSessionTemp()
-                    file$path <- sub('{{SessionTemp}}', sessionTemp, path, fixed=TRUE)
-                }
+                if ( ! is.null(analysis))
+                    path <- file.path(analysis$.getSessionTemp(), file$id)
             }
-            file
+            list(path=path, filename=file$filename)
         },
         .check=function(data, checkValues, checkVars, checkData) {
             if ( ! checkValues)
@@ -986,7 +997,7 @@ OptionFile <- R6::R6Class(
                 return(private$.resolve(raw))
             }
             # over the wire the value is always an (unnamed) list of files,
-            # each a named list(path=, title=), regardless of multiple. from
+            # each a named list(id=, filename=), regardless of multiple. from
             # R we also accept a path (or paths), or a single named list.
             if (is.null(value))
                 files <- list()
@@ -1008,13 +1019,16 @@ OptionFile <- R6::R6Class(
             }
         },
         valueAsSource=function() {
+            # the filenames, not where the files are -- a session temp path
+            # means nothing outside the session, but a name is something the
+            # user can satisfy by putting the file in the working directory
             files <- self$value
             if ( ! private$.multiple)
                 files <- list(files)
-            paths <- unlist(lapply(files, function(file) file$path))
-            if (is.null(paths))
+            filenames <- unlist(lapply(files, function(file) file$filename))
+            if (is.null(filenames))
                 return('NULL')
-            sourcify(paths, '    ')
+            sourcify(filenames, '    ')
         }))
 
 #' @rdname Options
