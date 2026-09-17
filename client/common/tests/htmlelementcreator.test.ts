@@ -341,6 +341,20 @@ describe('richMarkdown', () => {
         expect(renderNodes(richMarkdown('**bold**', richMarkdownOptions)))
             .toBe(renderNodes(richMarkdown('**bold**')));
     });
+
+    it('renders HTML entity references literally instead of decoding them', () => {
+        expect(renderNodes(richMarkdown('a &mdash; dash'))).toBe('<p>a &amp;mdash; dash</p>');
+        expect(renderNodes(richMarkdown('&nbsp;'))).toBe('<p>&amp;nbsp;</p>');
+        expect(renderNodes(richMarkdown('&#8212;'))).toBe('<p>&amp;#8212;</p>');
+        expect(renderNodes(richMarkdown('&#x2014;'))).toBe('<p>&amp;#x2014;</p>');
+    });
+
+    it('still allows the handful of entities markdown needs for <, >, &, \' and "', () => {
+        expect(renderNodes(richMarkdown('a & b < c > d'))).toBe('<p>a &amp; b &lt; c &gt; d</p>');
+        expect(renderNodes(richMarkdown("it's \"quoted\""))).toBe('<p>it\'s "quoted"</p>');
+        expect(renderNodes(richMarkdown('[docs](https://example.com?a=1&b=2)', richDescriptionOptions)))
+            .toBe('<p><a href="https://example.com?a=1&amp;b=2">docs</a></p>');
+    });
 });
 
 describe('attrs', () => {

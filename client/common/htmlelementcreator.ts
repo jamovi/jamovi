@@ -311,6 +311,13 @@ export function richMarkdown(input: string | null | undefined, options: RichOpti
     // exactly as it would for any other untrusted HTML.
     let html = marked.parse(String(input), { gfm: true, breaks: false, async: false }) as string;
 
+    // marked leaves HTML entity references (e.g. &mdash;, &nbsp;, &#8212;) as-is
+    // in text, trusting the browser to decode them -- but markdown content isn't
+    // meant to double as an HTML-entity escape hatch, so anything other than the
+    // handful of entities marked itself relies on to escape a literal <, >, &, "
+    // or ' is re-escaped, so it renders as plain text instead of being decoded
+    html = html.replace(/&(?!amp;|lt;|gt;|quot;|#39;)([a-zA-Z][a-zA-Z0-9]*|#\d+|#x[0-9a-fA-F]+);/g, '&amp;$1;');
+
     // marked pretty-prints its own block tags onto separate lines; that
     // formatting whitespace isn't part of the content, so drop it before it
     // can turn into stray text nodes once those tags are stripped or kept
