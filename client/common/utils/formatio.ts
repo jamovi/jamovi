@@ -591,9 +591,11 @@ function _htmlify(el, options) {
         case 'tr':
             include = (el.childElementCount > 0);
             break;
+        case 'br':
+            return Promise.resolve('<br>');
         case 'span':
             include = true;
-            styles = [ 'font-weight' ];
+            styles = [ 'font-weight', 'font-style' ];
             break;
         case 'p':
             include = true;
@@ -640,7 +642,8 @@ function _htmlify(el, options) {
                 'padding',
                 'border',
                 'vertical-align',
-                'font-weight'
+                'font-weight',
+                'font-style'
             ];
             break;
         case 'style':
