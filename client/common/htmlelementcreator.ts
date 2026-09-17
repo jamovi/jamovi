@@ -1,3 +1,5 @@
+import { marked } from 'marked';
+
 const urlAttributes = new Set([
     'background',
     'cite',
@@ -34,6 +36,13 @@ export const richBaseOptions: RichOptions = {
 
 export const richBoldOptions: RichOptions = {
     tags: [ 'b', 'em', 'i', 'strong', 'sub', 'sup']
+};
+
+export const richMarkdownOptions: RichOptions = {
+    tags: [ 'b', 'strong', 'em', 'i', 's', 'strike', 'del', 'sub', 'sup', 'a', 'ol', 'ul', 'li'],
+    attributes: {
+        a: ['href', 'title'],
+    },
 };
 
 function asSafeHTMLAttributes(attributes: HTMLAttributes): SafeHTMLAttributes {
@@ -193,22 +202,15 @@ export function attrs(attributes: HTMLAttributes): SafeHTMLAttributes {
 }
 
 /**
- * Sanitizes untrusted text into a DocumentFragment containing only the allowed
- * inline tags and safe text nodes.
- * Safe use: use when limited rich text is allowed inside element content.
+ * Builds a node sanitizer bound to a given whitelist.
+ * A tag in `blockTags` that isn't itself allowed is collapsed onto a plain
+ * <p>, rather than being flattened inline like any other disallowed tag --
+ * used to keep markdown's block structure (paragraphs, headings, list items)
+ * legible once their own semantics have been stripped.
  */
-export function rich(input: string | null | undefined, options: RichOptions = richBaseOptions): DocumentFragment {
-    let template = document.createElement('template');
-    let fragment = document.createDocumentFragment();
+function createSanitizer(options: RichOptions, blockTags: ReadonlySet<string> = new Set()) {
     let allowedTags = new Set(options.tags ?? richBaseOptions.tags);
     let allowedAttributes = options.attributes ?? {};
-
-    // an absent value renders as nothing rather than tearing down the whole render
-    if (input === null || input === undefined)
-        return fragment;
-
-    // Escape ampersands first so input entities such as &amp; remain literal text.
-    template.innerHTML = String(input).replace(/&/g, '&amp;');
 
     function sanitizeAttributes(element: HTMLElement, tag: string): SafeHTMLAttributes {
         let tagAttributes = allowedAttributes[tag] ?? [];
@@ -255,11 +257,75 @@ export function rich(input: string | null | undefined, options: RichOptions = ri
             return [cleanElement];
         }
 
+        if (blockTags.has(tag)) {
+            let p = document.createElement('p');
+            p.append(...sanitizedChildren);
+            return [p];
+        }
+
         return sanitizedChildren;
     }
 
+    return sanitizeNode;
+}
+
+/**
+ * Sanitizes untrusted text into a DocumentFragment containing only the allowed
+ * inline tags and safe text nodes.
+ * Safe use: use when limited rich text is allowed inside element content.
+ */
+export function rich(input: string | null | undefined, options: RichOptions = richBaseOptions): DocumentFragment {
+    let template = document.createElement('template');
+    let fragment = document.createDocumentFragment();
+
+    // an absent value renders as nothing rather than tearing down the whole render
+    if (input === null || input === undefined)
+        return fragment;
+
+    // Escape ampersands first so input entities such as &amp; remain literal text.
+    template.innerHTML = String(input).replace(/&/g, '&amp;');
+
+    let sanitizeNode = createSanitizer(options);
     fragment.append(...Array.from(template.content.childNodes).flatMap(node => sanitizeNode(node)));
     return fragment;
+}
+
+// block-level tags markdown source can produce, that get collapsed onto a
+// plain <p> (rather than flattened inline) when not themselves whitelisted
+const markdownBlockTags = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'blockquote']);
+
+/**
+ * Renders untrusted markdown into a sequence of sanitized nodes, one per
+ * top-level block. Only inline/list/link markup allowed by `options` keeps
+ * its semantics; anything else (headings, blockquotes, ...) is stripped down
+ * to plain text the same way a disallowed literal HTML tag is by `rich()`,
+ * but still lands on its own line rather than running into its neighbours.
+ * Safe use: use for untrusted markdown text, such as content authored from R.
+ */
+export function richMarkdown(input: string | null | undefined, options: RichOptions = richMarkdownOptions): Node[] {
+    if (input === null || input === undefined)
+        return [];
+
+    // marked may pass raw inline/block HTML in the source straight through;
+    // that's fine, since the sanitizer below strips it down to `options`
+    // exactly as it would for any other untrusted HTML.
+    let html = marked.parse(String(input), { gfm: true, breaks: false, async: false }) as string;
+
+    // marked pretty-prints its own block tags onto separate lines; that
+    // formatting whitespace isn't part of the content, so drop it before it
+    // can turn into stray text nodes once those tags are stripped or kept
+    html = html.replace(/>[ \t]*\n[ \t]*</g, '><');
+
+    let template = document.createElement('template');
+    template.innerHTML = html;
+
+    let sanitizeNode = createSanitizer(options, markdownBlockTags);
+
+    return Array.from(template.content.childNodes)
+        .flatMap(node => sanitizeNode(node))
+        // drop the (now only meaningful) blank text nodes between top-level
+        // blocks -- paragraph separation is carried by the <p> wrapping above
+        .filter(node => node.nodeType !== Node.TEXT_NODE || (node.textContent ?? '').trim() !== '');
 }
 
 /**

@@ -3,6 +3,7 @@
 import I18ns from '../../common/i18n';
 import { determFormat } from '../../common/formatting';
 import { format } from '../../common/formatting';
+import { richMarkdown } from '../../common/htmlelementcreator';
 
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
 
@@ -366,10 +367,14 @@ function hydratePreformatted(preformattedPB: any): IPreformatted {
 }
 
 function hydrateTextElement(textPB: any): IText {
-    return html2Chunks(textPB.text);
+    // content is markdown, so it's run through the same markdown-to-sanitized-html
+    // pass text.ts uses to render it live, before being chunked for copy/export --
+    // otherwise the two would drift out of sync (e.g. a stripped heading showing
+    // as plain text on screen, but surviving as a real heading in a LaTeX export)
+    return html2Chunks(richMarkdown(textPB.text));
 }
 
-function html2Chunks(content: string, title?: string, msgType?: number): IText {
+function html2Chunks(content: string | Node[], title?: string, msgType?: number): IText {
     const parser = new DOMParser();
     let chunks: Array<ITextChunk> = [];
     if (title) {
@@ -454,7 +459,23 @@ function html2Chunks(content: string, title?: string, msgType?: number): IText {
         }
     }
 
-    chunkify(parser.parseFromString(content, 'text/html').body, ((msgType) ? { box: msgType} : {}));
+    const initAttr = (msgType) ? { box: msgType } : {};
+
+    if (typeof content === 'string') {
+        chunkify(parser.parseFromString(content, 'text/html').body, initAttr);
+    }
+    else {
+        // each entry is an independent top-level block (e.g. a markdown
+        // paragraph/heading/list-item, already sanitized by richMarkdown());
+        // chunkify them individually and fold in the break between them,
+        // the same way a lone '\n' is folded into the previous chunk below
+        content.forEach((block, i) => {
+            const before = chunks.length;
+            chunkify(block, initAttr);
+            if (i < content.length - 1 && chunks.length > before)
+                chunks[chunks.length - 1].content += '\n';
+        });
+    }
 
     // combine CR with previous text
     for (let i = 0; i < chunks.length; ++i) {

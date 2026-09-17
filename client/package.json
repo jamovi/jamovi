@@ -25,6 +25,7 @@
     "keyboardjs": "2.7.0",
     "less": "^4.5.1",
     "mark.js": "8.11.1",
+    "marked": "^18.0.13",
     "onchange": "^7.1.0",
     "path": "^0.12.7",
     "protobufjs": "5.0.3",

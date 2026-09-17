@@ -3,7 +3,7 @@
 
 import { AnalysisStatus } from './create';
 import Elem, { ElementData, ElementModel } from './element';
-import { h, richParagraphs }  from '../common/htmlelementcreator';
+import { h, richMarkdown }  from '../common/htmlelementcreator';
 
 export class Model extends Elem.Model<ElementModel<string>> {
     constructor(data?: ElementModel<string>) {
@@ -43,7 +43,7 @@ export class View extends Elem.View<Model> {
     render() {
 
         let content = this.model.attributes.element;
-        this.$content.replaceChildren(...richParagraphs(content));
+        this.$content.replaceChildren(...richMarkdown(content));
 
         if (this.model.attributes.stale)
             this.$content.classList.add('stale');

@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from 'vitest';
 
-import { attrs, h, htmlTrusted, rich, richBoldOptions, richDescriptionOptions, richParagraphs, setAttrsSafely, setSafeAttrs, setRich, setText, text, url } from '../htmlelementcreator';
+import { attrs, h, htmlTrusted, rich, richBaseOptions, richBoldOptions, richDescriptionOptions, richMarkdown, richMarkdownOptions, richParagraphs, setAttrsSafely, setSafeAttrs, setRich, setText, text, url } from '../htmlelementcreator';
 
 function renderFragment(fragment: DocumentFragment): string {
     const container = document.createElement('div');
@@ -277,6 +277,69 @@ describe('richParagraphs', () => {
         const paragraphs = richParagraphs('See <a href="https://example.com">docs</a>', richDescriptionOptions);
 
         expect(renderNodes(paragraphs)).toBe('<p>See <a href="https://example.com">docs</a></p>');
+    });
+});
+
+describe('richMarkdown', () => {
+    it('renders an absent value as no nodes', () => {
+        expect(richMarkdown(null)).toEqual([]);
+        expect(richMarkdown(undefined)).toEqual([]);
+    });
+
+    it('converts inline markdown to the tags allowed by the given options', () => {
+        expect(renderNodes(richMarkdown('**bold** and *italic*', richBoldOptions)))
+            .toBe('<p><strong>bold</strong> and <em>italic</em></p>');
+    });
+
+    it('strips markdown syntax not covered by the whitelist, keeping the text', () => {
+        expect(renderNodes(richMarkdown('**bold** and *italic*', richBaseOptions)))
+            .toBe('<p>bold and <em>italic</em></p>');
+    });
+
+    it('puts each blank-line-separated block on its own paragraph', () => {
+        expect(renderNodes(richMarkdown('First para\n\nSecond para', richBaseOptions)))
+            .toBe('<p>First para</p><p>Second para</p>');
+    });
+
+    it('strips headings down to plain text, on their own line', () => {
+        expect(renderNodes(richMarkdown('# Heading\n\nBody text', richBaseOptions)))
+            .toBe('<p>Heading</p><p>Body text</p>');
+    });
+
+    it('strips list markup down to plain text by default, one item per line', () => {
+        expect(renderNodes(richMarkdown('- one\n- two', richBaseOptions)))
+            .toBe('<p>one</p><p>two</p>');
+    });
+
+    it('keeps real list markup when the options allow it', () => {
+        expect(renderNodes(richMarkdown('- one\n- two', richDescriptionOptions)))
+            .toBe('<ul><li>one</li><li>two</li></ul>');
+    });
+
+    it('sanitizes links the same way as rich(), including unsafe hrefs', () => {
+        expect(renderNodes(richMarkdown('[docs](https://example.com)', richDescriptionOptions)))
+            .toBe('<p><a href="https://example.com">docs</a></p>');
+        expect(renderNodes(richMarkdown('[click](javascript:alert(1))', richDescriptionOptions)))
+            .toBe('<p>click</p>');
+    });
+
+    it('drops raw script/style tags embedded in the markdown source', () => {
+        expect(renderNodes(richMarkdown('safe<script>alert(1)</script><style>p{color:red;}</style>text', richBaseOptions)))
+            .toBe('<p>safetext</p>');
+    });
+
+    it('defaults to allowing bold, italic, strikethrough and links, but still strips headings and code', () => {
+        expect(renderNodes(richMarkdown('**bold** *italic* ~~strike~~ `code` [docs](https://example.com)')))
+            .toBe('<p><strong>bold</strong> <em>italic</em> <del>strike</del> code <a href="https://example.com">docs</a></p>');
+        expect(renderNodes(richMarkdown('- one\n- two')))
+            .toBe('<ul><li>one</li><li>two</li></ul>');
+        expect(renderNodes(richMarkdown('# Heading\n\nBody text')))
+            .toBe('<p>Heading</p><p>Body text</p>');
+    });
+
+    it('exposes its default preset as richMarkdownOptions', () => {
+        expect(renderNodes(richMarkdown('**bold**', richMarkdownOptions)))
+            .toBe(renderNodes(richMarkdown('**bold**')));
     });
 });
 
