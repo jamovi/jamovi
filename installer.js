@@ -128,10 +128,33 @@ const check = function(jamovi_home) {
 const install = function(pth, jamovi_home) {
 
     let cmd;
-    if (jamovi_home === 'flatpak')
+    if (jamovi_home === 'flatpak') {
         cmd = util.format('/usr/bin/flatpak run org.jamovi.jamovi --install "%s"', pth);
-    else
-        cmd = util.format('"%s" --install "%s"', find(jamovi_home), pth);
+    }
+    else {
+        const exe = find(jamovi_home);
+
+        // in a container there's no electron for the jamovi script to exec, so
+        // hand the module to the running server over its stdin instead -- the
+        // server reads 'install:' lines from there (when run --stdin-slave),
+        // and restarts the engines before installing, which is what purges the
+        // previous version of the module from the R processes.
+        //
+        // every process in the container shares the one stdin, so pid 1's is
+        // the server's, whether or not the shell exec'd it. writing to it and
+        // closing doesn't EOF the server, because docker holds the write end
+        // open for as long as the container has stdin_open
+        if (process.platform === 'linux'
+                && ! fs.existsSync(path.join(path.dirname(exe), 'electron'))
+                && fs.existsSync('/proc/1/fd/0')) {
+            console.log('Installing ' + pth);
+            fs.writeFileSync('/proc/1/fd/0', util.format('install: %s\n', pth), { flag: 'a' });
+            console.log('Module handed to the running jamovi');
+            return;
+        }
+
+        cmd = util.format('"%s" --install "%s"', exe, pth);
+    }
 
     console.log('Installing ' + pth);
 
