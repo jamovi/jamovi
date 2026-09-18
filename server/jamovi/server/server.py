@@ -341,6 +341,10 @@ class _Handlers:
                         file_id = session_files.add_path(real, f.filename, max_bytes=instance.file_storage_headroom(), move=move_source)
                     except FileNotFoundError:
                         return web.Response(status=404, text='404: Not Found')
+                    except TooLargeError:
+                        if move_source:
+                            os.remove(real)  # the accelerator's copy isn't needed either way
+                        raise
                 files.append({ 'id': file_id, 'filename': f.filename })
         except TooLargeError:
             return too_large()
