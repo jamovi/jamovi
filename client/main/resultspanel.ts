@@ -30,6 +30,7 @@ import { htmlify } from './formatio/htmlify';
 import { latexify } from './formatio/latexify';
 import { createDoc } from './formatio/latexify';
 import { createBibTex } from './formatio/latexify';
+import type { IDocItem, IFigure } from './formatio/docxify';
 
 interface AnalysisResource {
     id: number,
@@ -800,36 +801,80 @@ class ResultsPanel extends EventDistributor {
         ContextMenu.showResultsMenu(entries, data.pos.left, data.pos.top);
     }
 
-    getAsLatex() {
-        const analyses = [ ...this.model.analyses() ];
-        const fragments: Array<string> = [];
-        let references: Array<IReference> = [ R, jmv ];
-        let first = true;
+    // hydrates every analysis (or just the part addressed), and gathers the
+    // references they cite. the first analysis of a whole document carries
+    // the document heading (see hydrateGroup()), everything else sits
+    // beneath it
+    private _hydrateAll(part?: string): { items: Array<IDocItem>, references: Array<IReference> } {
+        const items: Array<IDocItem> = [];
+        let references: Array<IReference> = [];
 
-        for (let analysis of analyses) {
-            const results = analysis.results;
-            const values = analysis.options.getValues();
-            const hydrated = hydrate(results, [], values, first, analysis.id);
-            first = false;
-            if (hydrated === null)
-                continue;
-            const latex = latexify(hydrated);
-            if (latex !== null && latex !== '')
-                fragments.push(latex);
-            // get references from results
+        if (part) {
+            const address = unflatten(part);
+            const analysisId = parseInt(address.shift());
+            const analysis = this.model.analyses().get(analysisId);
+            if (analysis === null)
+                throw new Error('Unable to access analysis');
+            const element = hydrate(analysis.results, address, analysis.options.getValues(), false, analysis.id);
+            if (element !== null)
+                items.push({ element, level: 1 });
             references.push(...analysis.references);
+        }
+        else {
+            references.push(R, jmv);
+            let first = true;
+            for (const analysis of this.model.analyses()) {
+                const element = hydrate(analysis.results, [], analysis.options.getValues(), first, analysis.id);
+                const level = first ? 1 : 2;
+                first = false;
+                if (element === null)
+                    continue;
+                items.push({ element, level });
+                references.push(...analysis.references);
+            }
         }
 
         // remove duplicate references
-        const nameRefPairs = references.map(ref => [ref.name, ref]);
-        const refsByName = Object.fromEntries(nameRefPairs);
-        references = Object.values(refsByName);
-        const refNames = Object.keys(refsByName);
+        references = Object.values(Object.fromEntries(references.map(ref => [ref.name, ref])));
+
+        return { items, references };
+    }
+
+    getAsLatex() {
+        const { items, references } = this._hydrateAll();
+        const fragments = items
+            .map(({ element }) => latexify(element))
+            .filter(latex => latex !== null && latex !== '');
+        const refNames = references.map(ref => ref.name);
 
         const doc = createDoc(fragments, refNames);
         const bibtex = createBibTex(references);
 
         return `${ doc }[--BIBTEX_FROM_HERE--]\n${ bibtex }`;
+    }
+
+    // the whole document (like getAsLatex()), or a single analysis/element
+    // when a part is given. the document is built in its entirety here; the
+    // server just writes the bytes out
+    async getAsDocx(part?: string): Promise<ArrayBuffer> {
+        // the docx library is sizeable, so it's loaded when first needed
+        const { createDoc } = await import('./formatio/docxify');
+
+        const { items, references } = this._hydrateAll(part);
+
+        // figures come from the results view, as it renders them: a png, and
+        // the svg too for a vector plot
+        const figures = async (address: string): Promise<IFigure | null> => {
+            const content = await this._getContent(unflatten(address), { });
+            if ( ! content || ! content.image)
+                return null;
+            const png = await (await fetch(content.image)).arrayBuffer();
+            return { png, svg: content.vector ? content.svg : undefined };
+        };
+
+        const showRefs = this.model.settings().getSetting('refsMode', 'bottom') !== 'hidden';
+
+        return createDoc(items, { references, figures, showRefs });
     }
 
     // an Svg element's svg is drawn in the results view, so that's the only
@@ -1091,6 +1136,7 @@ class ResultsPanel extends EventDistributor {
                     ]
                 };
 
+                options.filters.push({ name: 'Word', description: _('Word Document {ext}', { ext: '(.docx)' }), extensions: [ 'docx' ] });
                 if (part === '')
                     options.filters.push({ name: 'LaTeX', description: _('LaTeX bundle {ext}', { ext: '(.zip)' }), extensions:  [ 'zip' ] });
 

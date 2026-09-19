@@ -53,6 +53,47 @@ export const R = {
     extra: 'R packages retrieved from CRAN snapshot 2026-05-11'
 };
 
+// an APA style reference, as html (<em> and <a href>)
+export function referenceAsHTML(ref: IReference): string {
+
+    let pub = ref.publisher;
+    if (pub.endsWith(ref.url)) {
+        let noUrl = pub.substring(0, pub.length - ref.url.length);
+        pub = `${ noUrl }<a href="${ ref.url }" target="_blank">${ ref.url }</a>`;
+    }
+    else if (ref.url) {
+        pub = `${ pub }. <a href="${ ref.url }" target="_blank">link</a>`;
+    }
+
+    let text;
+
+    let year = ref.year2;
+    if ( ! year)
+        year = ref.year.toString();
+
+    if (ref.type === 'article') {
+        let volume = '';
+        let pages = '';
+        let issue = '';
+        if (ref.volume)
+            volume = `, ${ ref.volume }`;
+        if (ref.issue)
+            issue = `(${ ref.issue })`;
+        if (ref.pages)
+            pages = `, ${ ref.pages }`;
+
+        text = `${ ref.authors.complete } (${ year }). ${ ref.title }. <em>${ pub }${ volume }</em>${ issue }${ pages }.`;
+    }
+    else {
+        text = `${ ref.authors.complete } (${ year }). <em>${ ref.title }</em>. ${ pub }.`;
+    }
+
+    if (ref.extra)
+        text += ` (${ ref.extra }).`;
+
+    return text;
+}
+
 export class References extends HTMLElement {
     _root: ShadowRoot;
     _body: HTMLDivElement;
@@ -267,44 +308,9 @@ export class References extends HTMLElement {
                 url: ref.url,
             };
 
-        let pub = ref.publisher;
-        if (pub.endsWith(ref.url)) {
-            let noUrl = pub.substring(0, pub.length - ref.url.length);
-            pub = `${ noUrl }<a href="${ ref.url }" target="_blank">${ ref.url }</a>`;
-        }
-        else if (ref.url) {
-            pub = `${ pub }. <a href="${ ref.url }" target="_blank">link</a>`;
-        }
-
-        let text;
-
-        let year = ref.year2;
-        if ( ! year)
-            year = ref.year.toString();
-
-        if (ref.type === 'article') {
-            let volume = '';
-            let pages = '';
-            let issue = '';
-            if (ref.volume)
-                volume = `, ${ ref.volume }`;
-            if (ref.issue)
-                issue = `(${ ref.issue })`;
-            if (ref.pages)
-                pages = `, ${ ref.pages }`;
-
-            text = `${ ref.authors.complete } (${ year }). ${ ref.title }. <em>${ pub }${ volume }</em>${ issue }${ pages }.`;
-        }
-        else {
-            text = `${ ref.authors.complete } (${ year }). <em>${ ref.title }</em>. ${ pub }.`;
-        }
-
-        if (ref.extra)
-            text += ` (${ ref.extra }).`;
-
         return {
             addresses: [ { module: moduleName, name: ref.name } ],
-            text: text,
+            text: referenceAsHTML(ref),
             url: ref.url,
         };
     }

@@ -210,6 +210,7 @@ export class BackstageModel extends EventMap<IBackstageModel> {
         this._pcExportListModel.fileExtensions = [
             { extensions: ['pdf'], description: _('PDF Document {ext}', { ext: '(.pdf)' }) },
             { extensions: ['html', 'htm'], description: _('Web Page {ext}', { ext: '(.html, .htm)' }) },
+            { extensions: ['docx'], description: _('Word Document {ext}', { ext: '(.docx)' }) },
             { extensions: ['omt'], description: _('jamovi template {ext}', { ext: '(.omt)' }) },
             { extensions: ['csv'], description: _('CSV (Comma delimited) {ext}', { ext: '(.csv)' }) },
             { extensions: ['ods'], description: _('Open Document (LibreOffice) {ext}', { ext: '(.ods)' }) },
@@ -234,6 +235,7 @@ export class BackstageModel extends EventMap<IBackstageModel> {
         this._deviceExportListModel.fileExtensions = [
             { extensions: ['pdf'], description: _('PDF Document {ext}', { ext: '(.pdf)' }) },
             { extensions: ['html', 'htm'], description: _('Web Page {ext}', { ext: '(.html, .htm)' }) },
+            { extensions: ['docx'], description: _('Word Document {ext}', { ext: '(.docx)' }) },
             { extensions: ['omt'], description: _('jamovi template {ext}', { ext: '(.omt)' }) },
             { extensions: ['csv'], description: _('CSV (Comma delimited) {ext}', { ext: '(.csv)' }) },
             { extensions: ['zip'], description: _('LaTeX bundle {ext}', { ext: '(.zip)' }) },

@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "clipboard-js": "^0.3.6",
+    "docx": "^9.7.1",
     "element-resize-detector": "^1.2.4",
     "eventemitter3": "^5.0.4",
     "framesg": "^0.1.3",

@@ -669,6 +669,10 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             else if (options.path.endsWith('.zip')) {
                 content = await this.attributes.resultsSupplier.getAsLatex();
             }
+            else if (options.path.endsWith('.docx')) {
+                // the complete document; the server writes it as-is
+                content = await this.attributes.resultsSupplier.getAsDocx(options.part);
+            }
             else if (options.path.endsWith('.pdf')) {
                 let images = host.isElectron ? 'absolute' : 'inline';
                 const html = await this.attributes.resultsSupplier.getAsHTML({images:images, generator:app}, options.part);

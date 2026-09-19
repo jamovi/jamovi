@@ -151,6 +151,10 @@ export class ResultsView extends HTMLElement {
         return this.richView.getAsLatex();
     }
 
+    getAsDocx(part?: string) {
+        return this.richView.getAsDocx(part);
+    }
+
     getSvgs() {
         return this.richView.getSvgs();
     }
