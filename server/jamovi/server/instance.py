@@ -953,6 +953,7 @@ class Instance:
                 id = int(id)
 
                 fd, temp_file_path = mkstemp(suffix=ext)
+                os.close(fd)
                 temp_file_path = temp_file_path.replace('\\', '/')
 
                 analysis = self.analyses.get(id)

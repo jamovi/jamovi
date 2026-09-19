@@ -43,12 +43,17 @@ function _populate(item: IElement, parent: HTMLElement, level: number): void {
 
             tr = document.createElement('tr');
             for (let cell of row.cells) {
+                // a cell covered by a span (0) has no element of its own
+                if (cell && (cell.colSpan === 0 || cell.rowSpan === 0))
+                    continue;
                 const elem = document.createElement(cellType);
                 if (cell) {
                     elem.textContent = cell.content;
                     // TODO add superscripts
-                    if (cell.span)
-                        elem.colSpan = cell.span;
+                    if (cell.colSpan && cell.colSpan > 1)
+                        elem.colSpan = cell.colSpan;
+                    if (cell.rowSpan && cell.rowSpan > 1)
+                        elem.rowSpan = cell.rowSpan;
                     if (cell.align)
                         elem.setAttribute("style",
                                           "text-align:" + _alignWord(cell.align) + ";");

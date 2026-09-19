@@ -1,7 +1,6 @@
 {
   "type": "table",
   "title": "Correlation Matrix",
-  "nCols": 4,
   "rows": [
     {
       "type": "title",
@@ -10,10 +9,20 @@
         null,
         {
           "content": "len",
+          "chunks": [
+            {
+              "content": "len"
+            }
+          ],
           "align": "c"
         },
         {
           "content": "dose",
+          "chunks": [
+            {
+              "content": "dose"
+            }
+          ],
           "align": "c"
         }
       ]
@@ -23,15 +32,30 @@
       "cells": [
         {
           "content": "len",
+          "chunks": [
+            {
+              "content": "len"
+            }
+          ],
           "align": "l",
           "rowSpan": 3
         },
         {
           "content": "Pearson's r",
+          "chunks": [
+            {
+              "content": "Pearson's r"
+            }
+          ],
           "align": "l"
         },
         {
           "content": "—",
+          "chunks": [
+            {
+              "content": "—"
+            }
+          ],
           "align": "r"
         },
         null
@@ -42,14 +66,30 @@
       "cells": [
         {
           "content": "len",
-          "align": "l"
+          "chunks": [
+            {
+              "content": "len"
+            }
+          ],
+          "align": "l",
+          "rowSpan": 0
         },
         {
           "content": "df",
+          "chunks": [
+            {
+              "content": "df"
+            }
+          ],
           "align": "l"
         },
         {
           "content": "—",
+          "chunks": [
+            {
+              "content": "—"
+            }
+          ],
           "align": "r"
         },
         null
@@ -60,14 +100,30 @@
       "cells": [
         {
           "content": "len",
-          "align": "l"
+          "chunks": [
+            {
+              "content": "len"
+            }
+          ],
+          "align": "l",
+          "rowSpan": 0
         },
         {
           "content": "p-value",
+          "chunks": [
+            {
+              "content": "p-value"
+            }
+          ],
           "align": "l"
         },
         {
           "content": "—",
+          "chunks": [
+            {
+              "content": "—"
+            }
+          ],
           "align": "r"
         },
         null
@@ -78,19 +134,39 @@
       "cells": [
         {
           "content": "dose",
+          "chunks": [
+            {
+              "content": "dose"
+            }
+          ],
           "align": "l",
           "rowSpan": 3
         },
         {
           "content": "Pearson's r",
+          "chunks": [
+            {
+              "content": "Pearson's r"
+            }
+          ],
           "align": "l"
         },
         {
           "content": "0.803",
+          "chunks": [
+            {
+              "content": "0.803"
+            }
+          ],
           "align": "r"
         },
         {
           "content": "—",
+          "chunks": [
+            {
+              "content": "—"
+            }
+          ],
           "align": "r"
         }
       ]
@@ -100,18 +176,39 @@
       "cells": [
         {
           "content": "dose",
-          "align": "l"
+          "chunks": [
+            {
+              "content": "dose"
+            }
+          ],
+          "align": "l",
+          "rowSpan": 0
         },
         {
           "content": "df",
+          "chunks": [
+            {
+              "content": "df"
+            }
+          ],
           "align": "l"
         },
         {
           "content": "58",
+          "chunks": [
+            {
+              "content": "58"
+            }
+          ],
           "align": "r"
         },
         {
           "content": "—",
+          "chunks": [
+            {
+              "content": "—"
+            }
+          ],
           "align": "r"
         }
       ]
@@ -121,21 +218,43 @@
       "cells": [
         {
           "content": "dose",
-          "align": "l"
+          "chunks": [
+            {
+              "content": "dose"
+            }
+          ],
+          "align": "l",
+          "rowSpan": 0
         },
         {
           "content": "p-value",
+          "chunks": [
+            {
+              "content": "p-value"
+            }
+          ],
           "align": "l"
         },
         {
           "content": "< .001",
+          "chunks": [
+            {
+              "content": "< .001"
+            }
+          ],
           "align": "r"
         },
         {
           "content": "—",
+          "chunks": [
+            {
+              "content": "—"
+            }
+          ],
           "align": "r"
         }
       ]
     }
-  ]
+  ],
+  "nCols": 4
 }

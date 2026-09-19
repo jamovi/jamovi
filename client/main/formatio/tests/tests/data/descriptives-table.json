@@ -1,7 +1,6 @@
 {
   "type": "table",
   "title": "Descriptives",
-  "nCols": 4,
   "rows": [
     {
       "type": "title",
@@ -9,14 +8,29 @@
         null,
         {
           "content": "len",
+          "chunks": [
+            {
+              "content": "len"
+            }
+          ],
           "align": "c"
         },
         {
           "content": "dose",
+          "chunks": [
+            {
+              "content": "dose"
+            }
+          ],
           "align": "c"
         },
         {
           "content": "supp",
+          "chunks": [
+            {
+              "content": "supp"
+            }
+          ],
           "align": "c"
         }
       ]
@@ -26,18 +40,38 @@
       "cells": [
         {
           "content": "N",
+          "chunks": [
+            {
+              "content": "N"
+            }
+          ],
           "align": "l"
         },
         {
           "content": "60.00",
+          "chunks": [
+            {
+              "content": "60.00"
+            }
+          ],
           "align": "r"
         },
         {
           "content": "60.00",
+          "chunks": [
+            {
+              "content": "60.00"
+            }
+          ],
           "align": "r"
         },
         {
           "content": "60.00",
+          "chunks": [
+            {
+              "content": "60.00"
+            }
+          ],
           "align": "r"
         }
       ]
@@ -47,18 +81,38 @@
       "cells": [
         {
           "content": "Missing",
+          "chunks": [
+            {
+              "content": "Missing"
+            }
+          ],
           "align": "l"
         },
         {
           "content": "0.00",
+          "chunks": [
+            {
+              "content": "0.00"
+            }
+          ],
           "align": "r"
         },
         {
           "content": "0.00",
+          "chunks": [
+            {
+              "content": "0.00"
+            }
+          ],
           "align": "r"
         },
         {
           "content": "0.00",
+          "chunks": [
+            {
+              "content": "0.00"
+            }
+          ],
           "align": "r"
         }
       ]
@@ -68,14 +122,29 @@
       "cells": [
         {
           "content": "Mean",
+          "chunks": [
+            {
+              "content": "Mean"
+            }
+          ],
           "align": "l"
         },
         {
           "content": "18.81",
+          "chunks": [
+            {
+              "content": "18.81"
+            }
+          ],
           "align": "r"
         },
         {
           "content": "1.17",
+          "chunks": [
+            {
+              "content": "1.17"
+            }
+          ],
           "align": "r"
         },
         null
@@ -86,14 +155,29 @@
       "cells": [
         {
           "content": "Median",
+          "chunks": [
+            {
+              "content": "Median"
+            }
+          ],
           "align": "l"
         },
         {
           "content": "19.25",
+          "chunks": [
+            {
+              "content": "19.25"
+            }
+          ],
           "align": "r"
         },
         {
           "content": "1.00",
+          "chunks": [
+            {
+              "content": "1.00"
+            }
+          ],
           "align": "r"
         },
         null
@@ -104,18 +188,33 @@
       "cells": [
         {
           "content": "Mode",
+          "chunks": [
+            {
+              "content": "Mode"
+            }
+          ],
           "align": "l"
         },
         {
           "content": "26.40",
+          "chunks": [
+            {
+              "content": "26.40"
+            }
+          ],
           "align": "r"
         },
         {
           "content": "0.50",
+          "chunks": [
+            {
+              "content": "0.50"
+            }
+          ],
+          "align": "r",
           "sups": [
             "a"
-          ],
-          "align": "r"
+          ]
         },
         null
       ]
@@ -125,14 +224,29 @@
       "cells": [
         {
           "content": "Standard deviation",
+          "chunks": [
+            {
+              "content": "Standard deviation"
+            }
+          ],
           "align": "l"
         },
         {
           "content": "7.65",
+          "chunks": [
+            {
+              "content": "7.65"
+            }
+          ],
           "align": "r"
         },
         {
           "content": "0.63",
+          "chunks": [
+            {
+              "content": "0.63"
+            }
+          ],
           "align": "r"
         },
         null
@@ -143,14 +257,29 @@
       "cells": [
         {
           "content": "Minimum",
+          "chunks": [
+            {
+              "content": "Minimum"
+            }
+          ],
           "align": "l"
         },
         {
           "content": "4.20",
+          "chunks": [
+            {
+              "content": "4.20"
+            }
+          ],
           "align": "r"
         },
         {
           "content": "0.50",
+          "chunks": [
+            {
+              "content": "0.50"
+            }
+          ],
           "align": "r"
         },
         null
@@ -161,14 +290,29 @@
       "cells": [
         {
           "content": "Maximum",
+          "chunks": [
+            {
+              "content": "Maximum"
+            }
+          ],
           "align": "l"
         },
         {
           "content": "33.90",
+          "chunks": [
+            {
+              "content": "33.90"
+            }
+          ],
           "align": "r"
         },
         {
           "content": "2.00",
+          "chunks": [
+            {
+              "content": "2.00"
+            }
+          ],
           "align": "r"
         },
         null
@@ -179,13 +323,19 @@
       "cells": [
         {
           "content": "More than one mode exists, only the first is reported",
+          "chunks": [
+            {
+              "content": "More than one mode exists, only the first is reported"
+            }
+          ],
+          "align": "l",
           "colSpan": 4,
           "sups": [
             "a"
-          ],
-          "align": "l"
+          ]
         }
       ]
     }
-  ]
+  ],
+  "nCols": 4
 }

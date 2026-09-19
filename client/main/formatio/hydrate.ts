@@ -21,9 +21,15 @@ interface IRawColumn {
 }
 
 export interface ICell {
-    content: string;
+    content: string;              // plain text
+    chunks: Array<ITextChunk>;    // the same, with inline formatting (e.g. p<sub>tukey</sub>)
     align: 'l' | 'c' | 'r';
     format?: number;
+    // a cell spanning several columns/rows carries the count, and the cells
+    // it covers carry 0. covered cells keep their content (repeated from the
+    // spanning cell), so a consumer that doesn't merge cells, or a screen
+    // reader, still sees a complete table. every row has one entry per
+    // column, and null means there's nothing there
     colSpan?: number;
     rowSpan?: number;
     sups?: Array<string>;
@@ -65,14 +71,45 @@ export interface IPreformatted {
     refs?: Array<string>;
 }
 
+export interface IChunkAttributes {
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    strike?: boolean;
+    script?: 'super' | 'sub';
+    code?: boolean;
+    link?: string;
+    formula?: boolean;
+    color?: string;       // '#rrggbb'
+    background?: string;  // '#rrggbb'
+}
+
+// a run of text with its inline formatting
 export interface ITextChunk {
     content: string;
-    attributes?: { [name: string]: any };
+    attributes?: IChunkAttributes;
+}
+
+export interface IParagraphAttributes {
+    header?: number;              // a heading, 1 = directly beneath the containing element
+    list?: 'ordered' | 'bullet';
+    indent?: number;              // levels (nesting, for list items)
+    align?: 'center' | 'right' | 'justify';  // absent: start
+    codeBlock?: boolean;
+}
+
+export interface IParagraph {
+    chunks: Array<ITextChunk>;    // empty for a blank line
+    attributes?: IParagraphAttributes;
 }
 
 export interface IText {
     type: 'text';
-    chunks: Array<ITextChunk>;
+    paragraphs: Array<IParagraph>;
+    // a notice is text in a box, with a title
+    // box: 1 warning-1, 2 warning-2, 3 info, 4 error (cf. resultsview/notice.ts)
+    title?: string;
+    box?: number;
     refs?: Array<string>;
 }
 
@@ -87,8 +124,8 @@ export type IElement = IGroup | ITable | IImage | IText | IPreformatted;
 type IOptionValues = { [ name: string ]: any };
 type IAddress = Array<string>;
 
-export function hasAttr(chunk: ITextChunk, attr: string): boolean {
-    return ('attributes' in chunk && attr in chunk.attributes);
+export function hasAttr(item: ITextChunk | IParagraph, attr: string): boolean {
+    return (item.attributes !== undefined && attr in item.attributes);
 }
 
 export function hydrate(pb: any, address: IAddress = [], values: IOptionValues = {}, top: boolean = false, analysisId?: number): IElement {
@@ -101,98 +138,102 @@ export function hydrate(pb: any, address: IAddress = [], values: IOptionValues =
     return elements[0];
 }
 
-function isPara(attr: Object) {
-    if (attr) {
-        return ['align', 'indent', 'list'].some(n => Object.keys(attr).includes(n));
-    }
-    else {
-        return false;
-    }
-}
-
 function hydrateText(top: boolean, values: IOptionValues, cursor: IAddress): IText | null {
     const name = `results/${ cursor.join('/') }/${ top ? 'topText' : 'bottomText' }`;
     const value = values[name];
 
-    if (value) {
-        const { ops } = value;
-        const chunks = [];
-        let prevCR = -1;
-        let addCR = 0;
-
-        for (let x of ops) {
-            let content = x.insert;
-            if (content.formula) {
-                chunks.push(createChunk(content.formula, { ...x.attributes, ...{ formula: true } }));
-                continue
-            }
-            // if the content of a chunk starts with '\n', we create a new chunk with '\n' and no attributes
-            // afterwards, the original content is either shortened (i.e., the leading '\n' is removed) or
-            // if the chunk consisted only of '\n', the next chunk is processed
-            if (content.includes('\n') && content !== '\n') {
-                const splContent = content.split('\n');
-                // remove trailing CRs and store their number in addCR
-                while (splContent[splContent.length - 1] === '') {
-                    splContent.pop();
-                    ++addCR;
-                }
-                for (let i = 0; i < splContent.length; i++) {
-                    if (splContent[i] === '') {
-                        chunks.push(createChunk('\n'));
-                    }
-                    else if (i < splContent.length - 1) {
-                        chunks.push(createChunk(splContent[i] + '\n'));
-                    }
-                    else {
-                        content = splContent[i];
-                        if (addCR > 0) {
-                            content = content + '\n';
-                            --addCR;
-                        }
-                    }
-                }
-            }
-            // quill does some unusual things where it attaches formatting information
-            // to a subsequent chunk; we are looking for the previous '\n' and attach
-            // all paragraph attributes to the chunks in between
-            prevCR = chunks.map(c => c.content.includes('\n')).lastIndexOf(true);
-            if (isPara(x.attributes) && prevCR > -1) {
-                let copyObj = {};
-                for (let key of Object.keys(x.attributes)) {
-                    if (['align', 'indent', 'list'].includes(key)) {
-                        copyObj[key] = x.attributes[key];
-                    }
-                }
-                for (let i = prevCR + 1; i < chunks.length; i++) {
-                    chunks[i].attributes = { ...chunks[i].attributes, ...copyObj };
-                }
-            }
-            if (content !== '\n') {
-                chunks.push(createChunk(content, x.attributes));
-            }
-            else {
-                chunks[chunks.length - 1].content += '\n';
-            }
-            while (addCR > 0) {
-                chunks.push(createChunk('\n'));
-                --addCR;
-            }
-        }
-
-        return { type: 'text', chunks: chunks };
-    }
-    else {
+    if (value)
+        return { type: 'text', paragraphs: delta2Paragraphs(value.ops) };
+    else
         return null;
-    }
 }
 
-function createChunk(content: string, attr?: Object): ITextChunk {
-    if (attr && Object.keys(attr).length > 0) {
-        return { content, attributes: attr };
+// the paragraph formats quill applies to the '\n' ending a line (the rest
+// are inline formats, on the text itself)
+const DELTA_PARAGRAPH_ATTRS = new Set(['align', 'indent', 'list', 'header', 'code-block', 'direction']);
+
+// converts a quill delta into paragraphs. in a delta, inline formatting sits
+// on the text it applies to, and paragraph formatting sits on the '\n' which
+// ends the paragraph
+function delta2Paragraphs(ops: Array<any>): Array<IParagraph> {
+    const paragraphs: Array<IParagraph> = [];
+    let chunks: Array<ITextChunk> = [];
+
+    for (const op of ops) {
+        if (typeof op.insert !== 'string') {
+            if (op.insert && op.insert.formula)
+                chunks.push(createChunk(op.insert.formula, { ...deltaInlineAttrs(op.attributes), formula: true }));
+            continue;
+        }
+        const lines: Array<string> = op.insert.split('\n');
+        lines.forEach((line, i) => {
+            if (line.length > 0)
+                chunks.push(createChunk(line, deltaInlineAttrs(op.attributes)));
+            if (i < lines.length - 1) {
+                paragraphs.push(createParagraph(chunks, deltaParagraphAttrs(op.attributes)));
+                chunks = [];
+            }
+        });
     }
-    else {
+
+    // a delta always ends with a '\n', but just in case
+    if (chunks.length > 0)
+        paragraphs.push(createParagraph(chunks));
+
+    return paragraphs;
+}
+
+function deltaInlineAttrs(attributes?: { [name: string]: any }): IChunkAttributes {
+    const attrs: { [name: string]: any } = {};
+    if ( ! attributes)
+        return attrs;
+    for (const [ name, value ] of Object.entries(attributes)) {
+        if ( ! DELTA_PARAGRAPH_ATTRS.has(name))
+            attrs[name] = value;
+    }
+    return attrs as IChunkAttributes;
+}
+
+function deltaParagraphAttrs(attributes?: { [name: string]: any }): IParagraphAttributes {
+    const attrs: IParagraphAttributes = {};
+    if ( ! attributes)
+        return attrs;
+    if (attributes.header)
+        // the annotation editor's headings begin at h2 (h1 being the analysis)
+        attrs.header = Math.max(attributes.header - 1, 1);
+    if (attributes.list)
+        attrs.list = attributes.list;
+    if (attributes.indent)
+        attrs.indent = attributes.indent;
+    if (attributes['code-block'])
+        attrs.codeBlock = true;
+    const align = normaliseAlign(attributes.align);
+    if (align)
+        attrs.align = align;
+    return attrs;
+}
+
+// 'start'/'left' is the default, and so isn't recorded
+function normaliseAlign(align?: string): IParagraphAttributes['align'] | undefined {
+    if (align === 'center' || align === 'right' || align === 'justify')
+        return align;
+    if (align === 'end')
+        return 'right';
+    return undefined;
+}
+
+function createChunk(content: string, attributes?: IChunkAttributes): ITextChunk {
+    if (attributes && Object.keys(attributes).length > 0)
+        return { content, attributes };
+    else
         return { content };
-    }
+}
+
+function createParagraph(chunks: Array<ITextChunk>, attributes?: IParagraphAttributes): IParagraph {
+    if (attributes && Object.keys(attributes).length > 0)
+        return { chunks, attributes };
+    else
+        return { chunks };
 }
 
 function hydrateRefs(currPB: any): Array<string> {
@@ -368,147 +409,159 @@ function hydratePreformatted(preformattedPB: any): IPreformatted {
 
 function hydrateTextElement(textPB: any): IText {
     // content is markdown, so it's run through the same markdown-to-sanitized-html
-    // pass text.ts uses to render it live, before being chunked for copy/export --
+    // pass text.ts uses to render it live, before being converted for copy/export --
     // otherwise the two would drift out of sync (e.g. a stripped heading showing
     // as plain text on screen, but surviving as a real heading in a LaTeX export)
-    return html2Chunks(richMarkdown(textPB.text));
-}
-
-function html2Chunks(content: string | Node[], title?: string, msgType?: number): IText {
-    const parser = new DOMParser();
-    let chunks: Array<ITextChunk> = [];
-    if (title) {
-        chunks.push({ content: title, attributes: { header: 1 } });
-    }
-
-    function chunkify(node: Node, prevAttr: { [key: string]: any }) {
-        let currAttr: { [key: string]: any } = { ...prevAttr };
-
-        if (node.nodeType === Node.ELEMENT_NODE) {
-            const element = node as Element;
-
-            if (['B', 'STRONG'].includes(element.tagName)) {
-                currAttr['bold'] = true;
-            }
-            if (['I', 'EM'].includes(element.tagName)) {
-                currAttr['italic'] = true;
-            }
-            if (['U'].includes(element.tagName)) {
-                currAttr['underline'] = true;
-            }
-            if (['S', 'STRIKE', 'DEL'].includes(element.tagName)) {
-                currAttr['strike'] = true;
-            }
-            if (['CODE', 'PRE'].includes(element.tagName)) {
-                currAttr['code-block'] = true;
-            }
-            if (['SUP', 'SUB'].includes(element.tagName)) {
-                currAttr['script'] = element.tagName.replace('SUP', 'super').replace('SUB', 'sub');
-            }
-            if (['A'].includes(element.tagName)) {
-                currAttr['link'] = element.attributes['href'].value;
-            }
-            if (/H[1-6]/.test(element.tagName)) {
-                currAttr['header'] = parseInt(element.tagName.charAt(1));
-            }
-            if (['UL', 'OL'].includes(element.tagName)) {
-                currAttr['list'] = element.tagName.replace('OL', 'ordered').replace('UL', 'bullet');
-            }
-            if (element.attributes['style']) {
-                const attrValues = element.attributes['style'].value.split(';').map(s => s.trim()).filter(s => s.length);
-                for (let attrValue of attrValues) {
-                    const attrPair = attrValue.split(':');
-                    if (attrPair[0] === 'text-align' && attrPair[1] !== 'left') {
-                        currAttr['align'] = attrPair[1];
-                    }
-                    else if (attrPair[0] === 'padding') {
-                        const indent = Math.floor(parseInt(attrPair[1].replaceAll('px', '').split(' ')[3]) / 36);
-                        if (indent > 0) {
-                            currAttr['indent'] = indent;
-                        }
-                    }
-                    else if (attrPair[0] === 'color') {
-                        currAttr['color'] = rgb2Hex(attrPair[1]);
-                    }
-                    else if (attrPair[0] === 'background-color') {
-                        currAttr['background'] = rgb2Hex(attrPair[1]);
-                    }
-                    else {
-                        console.log(attrValue);
-                    }
-                }
-            }
-        }
-
-        // process child nodes
-        if (node.childNodes) {
-            for (let child of node.childNodes) {
-                if (child.nodeType === Node.TEXT_NODE) {
-                    if (child.textContent) {
-                        if (Object.keys(currAttr).length > 0) {
-                            chunks.push({ content: child.textContent, attributes: currAttr });
-                        }
-                        else {
-                            chunks.push({ content: child.textContent});
-                        }
-                    }
-                } else {
-                    chunkify(child, currAttr);
-                }
-            }
-        }
-    }
-
-    const initAttr = (msgType) ? { box: msgType } : {};
-
-    if (typeof content === 'string') {
-        chunkify(parser.parseFromString(content, 'text/html').body, initAttr);
-    }
-    else {
-        // each entry is an independent top-level block (e.g. a markdown
-        // paragraph/heading/list-item, already sanitized by richMarkdown());
-        // chunkify them individually and fold in the break between them,
-        // the same way a lone '\n' is folded into the previous chunk below
-        content.forEach((block, i) => {
-            const before = chunks.length;
-            chunkify(block, initAttr);
-            if (i < content.length - 1 && chunks.length > before)
-                chunks[chunks.length - 1].content += '\n';
-        });
-    }
-
-    // combine CR with previous text
-    for (let i = 0; i < chunks.length; ++i) {
-        if (i > 0 && chunks[i].content === '\n' &&
-              ((Object.keys(chunks[i - 1]).length === 0 && Object.keys(chunks[i]).length === 0) ||
-               (JSON.stringify(chunks[i - 1].attributes) === JSON.stringify(chunks[i].attributes)) ||
-               (Object.keys(chunks[i - 1].attributes).filter(k => k !== 'align').length === 0) ||
-               (Object.keys(chunks[i - 1].attributes).filter(k => k !== 'indent').length === 0))) {
-            chunks[i - 1].content = chunks[i - 1].content + '\n';
-            chunks[i - 0].content = '';
-        }
-    }
-    chunks = chunks.filter(c => c.content.length > 0);
-
-    return {
-        type: 'text',
-        chunks: chunks,
-    };
+    return { type: 'text', paragraphs: html2Paragraphs(richMarkdown(textPB.text)) };
 }
 
 function hydrateHTML(htmlPB: any): IText {
     // title isn't rendered as a heading in the live results view, so it's
     // left out of the exported/copied content too
-    return html2Chunks(htmlPB.html.content);
+    return { type: 'text', paragraphs: html2Paragraphs(htmlPB.html.content) };
 }
 
 function hydrateNotice(noticePB: any): IText {
     const html = I18ns.get('app').__(noticePB.notice.content, { prefix: '<strong>', postfix: '</strong>' });
-    return html2Chunks(html, noticePB.title, noticePB.notice.type);
+    return {
+        type: 'text',
+        paragraphs: html2Paragraphs(html),
+        title: noticePB.title,
+        box: noticePB.notice.type,
+    };
+}
+
+// converts a string of inline html (p<sub>tukey</sub>, <i>Note.</i>, ...)
+// into chunks. anything that isn't markup is text, so 'p < .001' is safe
+export function html2Chunks(html: string): Array<ITextChunk> {
+    // most table text is plain, and needn't be parsed
+    if ( ! html.includes('<') && ! html.includes('&'))
+        return html.length > 0 ? [ { content: html } ] : [];
+    const chunks: Array<ITextChunk> = [];
+    for (const paragraph of html2Paragraphs(html))
+        chunks.push(...paragraph.chunks);
+    return chunks;
+}
+
+// the elements which start a new paragraph
+const BLOCK_TAGS = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'PRE', 'BLOCKQUOTE',
+                            'UL', 'OL', 'TABLE', 'TR', 'TD', 'TH', 'BR', 'HR']);
+
+// converts html (a string, or a list of top-level nodes as richMarkdown()
+// produces) into paragraphs. block elements begin paragraphs and contribute
+// paragraph attributes, inline elements contribute chunk attributes
+function html2Paragraphs(content: string | Node[]): Array<IParagraph> {
+    const paragraphs: Array<IParagraph> = [];
+    let current: IParagraph | null = null;
+
+    function walk(node: Node, inline: IChunkAttributes, block: IParagraphAttributes) {
+
+        if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent;
+            if ( ! text)
+                return;
+            if (current === null) {
+                // whitespace between blocks isn't content
+                if (text.trim() === '')
+                    return;
+                current = createParagraph([], block);
+                paragraphs.push(current);
+            }
+            current.chunks.push(createChunk(text, inline));
+            return;
+        }
+
+        if (node.nodeType !== Node.ELEMENT_NODE)
+            return;
+
+        const element = node as Element;
+        const tag = element.tagName;
+        inline = { ...inline };
+        block = { ...block };
+
+        if (['B', 'STRONG'].includes(tag))
+            inline.bold = true;
+        if (['I', 'EM'].includes(tag))
+            inline.italic = true;
+        if (tag === 'U')
+            inline.underline = true;
+        if (['S', 'STRIKE', 'DEL'].includes(tag))
+            inline.strike = true;
+        if (tag === 'CODE')
+            inline.code = true;
+        if (tag === 'SUP')
+            inline.script = 'super';
+        if (tag === 'SUB')
+            inline.script = 'sub';
+        const href = element.getAttribute('href');
+        if (tag === 'A' && href)
+            inline.link = href;
+        if (/^H[1-6]$/.test(tag))
+            block.header = parseInt(tag.charAt(1));
+        if (tag === 'PRE')
+            block.codeBlock = true;
+        if (tag === 'UL')
+            block.list = 'bullet';
+        if (tag === 'OL')
+            block.list = 'ordered';
+
+        const style = element.getAttribute('style');
+        if (style) {
+            for (const declaration of style.split(';')) {
+                const [ property, value ] = declaration.split(':').map(s => s.trim());
+                if (property === 'text-align') {
+                    const align = normaliseAlign(value);
+                    if (align)
+                        block.align = align;
+                }
+                else if (property === 'padding') {
+                    // quill's indentation, as its html converter writes it
+                    const indent = Math.floor(parseInt(value.replaceAll('px', '').split(' ')[3]) / 36);
+                    if (indent > 0)
+                        block.indent = indent;
+                }
+                else if (property === 'color') {
+                    inline.color = rgb2Hex(value);
+                }
+                else if (property === 'background-color') {
+                    inline.background = rgb2Hex(value);
+                }
+            }
+        }
+
+        const isBlock = BLOCK_TAGS.has(tag);
+        if (isBlock)
+            current = null;
+        for (const child of Array.from(element.childNodes))
+            walk(child, inline, block);
+        if (isBlock)
+            current = null;
+    }
+
+    if (typeof content === 'string') {
+        const doc = new DOMParser().parseFromString(content, 'text/html');
+        walk(doc.body, {}, {});
+    }
+    else {
+        for (const node of content)
+            walk(node, {}, {});
+    }
+
+    return paragraphs;
 }
 
 function rgb2Hex(rgb: string): string {
-    return '#' + Array.from(rgb.match(/[0-9]+/g)).map(c => parseInt(c).toString(16).padStart(2, '0')).join('');
+    if (rgb.startsWith('#'))
+        return rgb;
+    return '#' + Array.from(rgb.match(/[0-9]+/g) || []).map(c => parseInt(c).toString(16).padStart(2, '0')).join('');
+}
+
+// table text (titles, values, notes) can carry inline html; it's parsed once
+// here, into chunks, with the plain text alongside
+function createCell(html: string, align: 'l' | 'c' | 'r'): ICell {
+    const chunks = html2Chunks(html);
+    const content = chunks.map(chunk => chunk.content).join('');
+    return { content, chunks, align };
 }
 
 function transpose(columns: Array<Array<ICell>>): Array<Array<ICell>> {
@@ -564,10 +617,7 @@ function transmogrify(rawCols: Array<IRawColumn>, formats: Array<any>): [ Array<
                 indices.push(index);
             }
             const finalSups = [...cell.symbols, ...indices.map(i => ALPHABET[i])];
-            const finalCell: ICell = {
-                content: (typeof cell.value === 'string') ? cell.value : format(cell.value, fmt),
-                align: cell.align,
-            };
+            const finalCell = createCell((typeof cell.value === 'string') ? cell.value : format(cell.value, fmt), cell.align);
             if (finalSups.length > 0)
                 finalCell.sups = finalSups;
             if (cell.format)
@@ -597,6 +647,27 @@ function foldTitles(row: Array<ICell>, columnNames: Array<string>): Array<ICell>
     }
 
     return columnTitles;
+}
+
+// recounts the column spans of a row, from its covered (colSpan 0) cells.
+// folding can remove columns from the middle of a span, so spans are counted
+// after it rather than before
+function recountColSpans(row: Array<ICell | null>): void {
+    let owner: ICell | null = null;
+    for (const cell of row) {
+        if (cell !== null && cell.colSpan === 0 && owner !== null) {
+            owner.colSpan = (owner.colSpan || 1) + 1;
+        }
+        else if (cell !== null && cell.colSpan !== undefined) {
+            // the start of a span (or a covered cell whose spanning cell was
+            // folded away, which now stands for the span itself)
+            cell.colSpan = 1;
+            owner = cell;
+        }
+        else {
+            owner = null;
+        }
+    }
 }
 
 function fold(columns: Array<IColumn>, columnNames: Array<string>): Array<Array<ICell | null>> {
@@ -676,6 +747,8 @@ function fold(columns: Array<IColumn>, columnNames: Array<string>): Array<Array<
                 }
             }
             else {
+                // covered by the cell above (or one further up)
+                cell.rowSpan = 0;
                 rowSpan += 1;
             }
         }
@@ -714,20 +787,19 @@ function hydrateTable(tablePB: any): ITable {
     const columnNames = columnsPB.map((columnPB) => columnPB.name);
     const nCols = columnsPB.length;
 
+    // one entry per column: the first column under a super title spans the
+    // run of columns sharing it, and the rest are covered (colSpan 0)
     let superTitles: Array<ICell | null> = new Array(nCols).fill(null);
     let hasSuperTitles = false;
-    let lastSuperTitle: ICell | null = null;
+    let lastSuperTitle: string | null = null;
 
     for (let i = 0; i < nCols; i++) {
         const column = columnsPB[i];
         if (column.superTitle) {
-            if (i == 0 || lastSuperTitle === null || lastSuperTitle.content !== column.superTitle) {
-                lastSuperTitle = superTitles[i] = { content: column.superTitle, colSpan: 1, align: 'c' };
-                hasSuperTitles = true;
-            }
-            else {
-                lastSuperTitle.colSpan += 1;
-            }
+            const covered = (lastSuperTitle === column.superTitle);
+            superTitles[i] = { ...createCell(column.superTitle, 'c'), colSpan: covered ? 0 : 1 };
+            lastSuperTitle = column.superTitle;
+            hasSuperTitles = true;
         }
         else {
             lastSuperTitle = null;
@@ -735,6 +807,7 @@ function hydrateTable(tablePB: any): ITable {
     }
 
     superTitles = foldTitles(superTitles, columnNames);
+    recountColSpans(superTitles);
 
     const rows: Array<IRow> = [];
 
@@ -747,7 +820,7 @@ function hydrateTable(tablePB: any): ITable {
     }
 
     let titles: Array<ICell | null> = columnsPB.map((columnPB) => {
-        return columnPB.title ? { content: columnPB.title, align: 'c' } : null
+        return columnPB.title ? createCell(columnPB.title, 'c') : null
     });
     titles = foldTitles(titles, columnNames);
 
@@ -771,7 +844,7 @@ function hydrateTable(tablePB: any): ITable {
         const note = tablePB.table.notes[i].note;
         rows.push({
             type: 'footnote',
-            cells: [ { content: note, colSpan: folded.length, sups: ['note'], align: 'l' } ]
+            cells: [ { ...createCell(note, 'l'), colSpan: folded.length, sups: ['note'] } ]
         });
     }
 
@@ -780,7 +853,7 @@ function hydrateTable(tablePB: any): ITable {
         const sup = ALPHABET[i];
         rows.push({
             type: 'footnote',
-            cells: [ { content: fn, colSpan: folded.length, sups: [sup], align: 'l' } ]
+            cells: [ { ...createCell(fn, 'l'), colSpan: folded.length, sups: [sup] } ]
         });
     }
 
