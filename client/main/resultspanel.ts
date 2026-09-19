@@ -1037,41 +1037,54 @@ class ResultsPanel extends EventDistributor {
 
         if (event.op === 'copy') {
 
-            let options = {
-                margin: '24',
-                docType: true,
-                exclude: [ '.jmvrefs', 'jmv-reference-numbers' ],
-                // a Svg element embedded in a copied group/analysis has no
-                // other route to the clipboard's html flavour -- and word,
-                // powerpoint and gmail all strip an inline <svg> down to its
-                // text nodes, so left alone it would simply vanish from a
-                // group copy. rasterised, it survives (see formatio's
-                // _svgToImgHtml)
-                svgAsImage: true,
-            };
+            // images go onto the clipboard as data uris (see _fillImages())
+            // -- tested to paste fine in word and powerpoint (365), as well
+            // as browsers. an Svg element is hydrated as an image too (see
+            // hydrate.ts's hydrateSvg()), so it's rasterised the same way,
+            // and survives a copy the same as a plain Image would
 
-            // images go onto the clipboard as data uris throughout (see
-            // formatio's _htmlifyDiv) -- tested to paste fine in word and
-            // powerpoint (365), as well as browsers. this used to be an
-            // absolute, fetchable localhost url on electron instead ('for
-            // compatibility with office 2010', never confirmed necessary),
-            // but that stopped working with office 365 -- word and
-            // powerpoint on the mac won't fetch it, so the image was simply
-            // missing from the paste
+            const address = event.address.slice();
+            let html: string;
+            let svg: string | undefined;
 
-            let content = await this._getContent(event.address, options);
+            if (address.length === 0) {
+                // the whole document
+                const { items, references } = this._hydrateAll();
+                for (const item of items)
+                    await this._fillImages(item.element);
+                const showRefs = this.model.settings().getSetting('refsMode', 'bottom') !== 'hidden';
+                html = createHtmlDoc(items, { references, showRefs });
+            }
+            else {
+                // a single analysis, or an element/group within one
+                const analysisId = parseInt(address.shift());
+                const analysis = this.model.analyses().get(analysisId);
+                if (analysis === null)
+                    throw new Error('Unable to access analysis');
+                const hydrated = hydrate(analysis.results, address, analysis.options.getValues(), false, analysis.id);
 
-            // the svg flavour proper (see host.copyToClipboard) is only
-            // offered for a vector Image -- an Svg element's markup leans
-            // on module css and hasn't been paste-tested as a standalone
-            // svg flavour. the html and image flavours already carry the
-            // chart correctly either way (see formatio's svgAsImage /
-            // flattenImage), so there's nothing else to do here
-            if ( ! content.vector)
-                delete content.svg;
-            delete content.vector;
+                if (hydrated.type === 'image') {
+                    // when the whole of what's being copied is a single
+                    // vector Image, it's also offered as a real image/svg+xml
+                    // clipboard flavour (see host.copyToClipboard) -- the
+                    // results view tells us whether it's actually vector
+                    // (`vector`); an Svg element's markup leans on module css
+                    // and hasn't been paste-tested as a standalone flavour,
+                    // so it's rasterised only, same as a raster Image
+                    const content = await this._getContent(unflatten(hydrated.address), { });
+                    if (content && content.image)
+                        hydrated.path = content.image;
+                    if (content && content.vector)
+                        svg = content.svg;
+                }
+                else {
+                    await this._fillImages(hydrated);
+                }
 
-            await host.copyToClipboard(content);
+                html = htmlify(hydrated);
+            }
+
+            await host.copyToClipboard({ html, text: html, svg });
 
             let note = new Notify({
                 title: _('Copied'),
@@ -1236,28 +1249,16 @@ class ResultsPanel extends EventDistributor {
         else if (event.op === 'refsClearSelection') {
             this._refsTable.clearSelection();
         }
-        else if (['copy2', 'copyLatex'].includes(event.op)) {
-            const address = event.address;
+        else if (event.op === 'copyLatex') {
+            const address = event.address.slice();
             const analysisId = parseInt(address.shift());
             const analysis = this.model.analyses().get(analysisId);
-            const results = analysis.results;
-            const values = analysis.options.getValues();
-            const hydrated = hydrate(results, address, values, false, analysis.id);
+            if (analysis === null)
+                throw new Error('Unable to access analysis');
+            const hydrated = hydrate(analysis.results, address, analysis.options.getValues(), false, analysis.id);
+            const text = latexify(hydrated);
 
-            let content;
-            if (event.op === 'copy2') {
-                // so the figures travel with the html, rather than as empty
-                // <img>s (see htmlify())
-                await this._fillImages(hydrated);
-                const html = htmlify(hydrated);
-                content = { html, text: html };
-            }
-            else {
-                const text = latexify(hydrated);
-                content = { text };
-            }
-
-            await host.copyToClipboard(content);
+            await host.copyToClipboard({ text });
 
             const note = new Notify({
                 title: _('Copied'),
