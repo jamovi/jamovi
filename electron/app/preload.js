@@ -81,6 +81,10 @@ function openUrl(url) {
     ipc.send('request', { type: 'openUrl', data: { url } });
 }
 
+function openFile(url, filename) {
+    ipc.send('request', { type: 'openFile', data: { url, filename } });
+}
+
 const zoomLevels = [ 30, 50, 67, 80, 90, 100, 110, 120, 133, 150, 170, 200, 240, 300 ];
 let zoomLevel = 5;
 
@@ -240,5 +244,6 @@ contextBridge.exposeInMainWorld(
         getPathForFile,
         os,
         openUrl,
+        openFile,
         setDialogProvider
     });

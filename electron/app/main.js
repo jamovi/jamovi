@@ -597,7 +597,103 @@ ipc.on('request', (event, arg) => {
             if (url.startsWith('http://') || url.startsWith('https://'))
                 shell.openExternal(url);
             break;
+        case 'openFile':
+            openFile(webContents, eventData.url, eventData.filename);
+            break;
     }
+});
+
+// opening a file an analysis produced (an 'openExternal' action) with
+// whatever the OS associates with its extension. the file is served by our
+// own server, so we download it to a temp dir under the name the analysis
+// gave it (that's the name word, etc. will show) and hand it to the shell.
+// downloads are matched to their request by url in the session-wide
+// 'will-download' handler below; anything not ours is left to electron's
+// default (a save dialog)
+const pendingOpens = new Map();
+
+// only these are handed to the OS to open; anything else is revealed in
+// the file manager instead. an allowlist, because "opens" and "runs" is a
+// platform-by-platform judgement we'd rather not make by exclusion (see
+// the blocklist below for what that looks like)
+const OPENABLE_EXTS = new Set([
+    // documents
+    'pdf', 'docx', 'doc', 'odt', 'rtf', 'txt', 'md',
+    // spreadsheets, data
+    'xlsx', 'xls', 'ods', 'csv', 'tsv', 'json', 'xml', 'sav', 'omv',
+    // presentations
+    'pptx', 'ppt', 'odp',
+    // images
+    'png', 'jpg', 'jpeg', 'gif', 'svg', 'tif', 'tiff', 'bmp', 'webp',
+    // archives
+    'zip',
+]);
+
+// the extensions the OS would *run* rather than open, on one platform or
+// another -- kept in case we go back to a blocklist
+// const EXECUTABLE_EXTS = new Set([
+//     // windows
+//     'exe', 'com', 'bat', 'cmd', 'ps1', 'psm1', 'vbs', 'vbe', 'js', 'jse',
+//     'wsf', 'wsh', 'msi', 'msp', 'scr', 'pif', 'hta', 'cpl', 'lnk', 'url',
+//     'reg', 'inf', 'scf',
+//     // macos
+//     'sh', 'bash', 'zsh', 'command', 'tool', 'app', 'action', 'workflow',
+//     'scpt', 'applescript', 'pkg', 'dmg', 'terminal',
+//     // linux
+//     'desktop', 'run',
+//     // interpreters that register as the opener on some systems
+//     'py', 'pyw', 'pl', 'rb', 'jar',
+// ]);
+
+function safeFilename(filename) {
+    filename = path.basename(filename || '')
+        .replace(/[\\/:*?"<>|]/g, '_')
+        .replace(/[\u0000-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g, '')  // controls, bidi overrides
+        .replace(/[. ]+$/, '');
+    if ( ! filename || /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i.test(filename))
+        filename = 'untitled';
+    return filename;
+}
+
+function openFile(webContents, url, filename) {
+    if ( ! url.startsWith(rootUrl))
+        return;
+    pendingOpens.set(url, safeFilename(filename));
+    webContents.downloadURL(url);
+}
+
+ready.then(() => {
+    session.defaultSession.on('will-download', (event, item) => {
+        const filename = pendingOpens.get(item.getURL());
+        if (filename === undefined)
+            return;
+        pendingOpens.delete(item.getURL());
+
+        // a directory of its own, so the file keeps its name without
+        // clobbering an earlier one
+        const dir = fs.mkdtempSync(path.join(app.getPath('temp'), 'jamovi-'));
+        const savePath = path.join(dir, filename);
+        item.setSavePath(savePath);
+
+        item.once('done', async (event, state) => {
+            if (state !== 'completed') {
+                console.log(`download of '${ filename }' ${ state }`);
+                return;
+            }
+            const ext = path.extname(filename).slice(1).toLowerCase();
+            if ( ! OPENABLE_EXTS.has(ext)) {
+                shell.showItemInFolder(savePath);
+                return;
+            }
+            const error = await shell.openPath(savePath);
+            if (error) {
+                // nothing associated with the extension, most likely: let
+                // the user find it, at least
+                console.log(`unable to open '${ savePath }': ${ error }`);
+                shell.showItemInFolder(savePath);
+            }
+        });
+    });
 });
 
 const handleCommand = function(cmd) {

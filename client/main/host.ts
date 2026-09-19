@@ -349,6 +349,18 @@ export const openUrl = etron.openUrl || ((url) => {
     window.open(url, '_blank');
 });
 
+// hands a file the server is serving (i.e. an analysis 'openExternal'
+// action's output) to the host: in electron the main process fetches it
+// and opens it with whatever the OS associates with its extension, in a
+// browser it's a download. either way the user sees it as filename
+export const openFile = async function(url: string, filename: string) {
+    url = new URL(url, window.location.href).href;
+    if (etron.openFile)
+        etron.openFile(url, filename);
+    else
+        await triggerDownload(url);
+};
+
 export const showMessageBox = etron.showMessageBox; // || (async () => { });
 
 export const setEdited = etron.setEdited || (() => {});
@@ -390,6 +402,7 @@ export default {
     showMessageBox,
     os,
     openUrl,
+    openFile,
     triggerDownload,
     setDialogProvider,
     toggleDevTools,

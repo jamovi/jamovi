@@ -439,7 +439,48 @@ OptionAction <- R6::R6Class(
     inherit=OptionBool,
     private=list(
         .action=NA,
-        .params=NA
+        .params=NA,
+        # 'openExternal' hands a file the analysis produced to the host: the
+        # desktop app opens it with whatever the OS associates with its
+        # extension (i.e. a .docx in word), the browser downloads it. the
+        # result must carry a filename; the file itself is either at
+        # params$fullPath, or wherever res$path says the analysis wrote it,
+        # and gets moved into the 'external' subdir of session temp under
+        # the filename's extension (so the OS can tell what it is). the
+        # subdir is what the server serves from, so nothing else in session
+        # temp (i.e. File option uploads) is reachable that way
+        .normaliseExternal=function(res, params) {
+            filename <- res$filename
+            if ( ! is.character(filename) || length(filename) != 1 || filename == '')
+                stop('module developer fail: an openExternal action result requires a filename')
+            filename <- basename(filename)
+            ext <- tools::file_ext(filename)
+            ext <- if (ext == '') '' else paste0('.', ext)
+
+            src <- res$path
+            if (is.null(src))
+                src <- params$fullPath
+            if ( ! file.exists(src))
+                stop(sprintf("the action produced no file at '%s'", src))
+
+            dir <- file.path(dirname(params$fullPath), 'external')
+            dir.create(dir, showWarnings=FALSE)
+            dest <- file.path(dir, paste0(basename(params$fullPath), ext))
+            if (normalizePath(src) != normalizePath(dest, mustWork=FALSE)) {
+                if ( ! file.rename(src, dest)) {
+                    # i.e. across file systems
+                    if ( ! file.copy(src, dest, overwrite=TRUE))
+                        stop(sprintf("unable to move '%s' into the session temp", src))
+                    file.remove(src)
+                }
+            }
+
+            res$path <- paste0('{{SessionTemp}}/external/', basename(dest))
+            res$filename <- filename
+            if (is.null(res$title))
+                res$title <- filename
+            res
+        }
     ),
     public=list(
         initialize=function(name, value, action='open', ...) {
@@ -496,6 +537,20 @@ OptionAction <- R6::R6Class(
                 ))
             } else if (is.list(res)) {
 
+                if (private$.action == 'openExternal') {
+                    res <- try(private$.normaliseExternal(res, params))
+                    if (inherits(res, 'try-error')) {
+                        err <- as.character(attr(res, 'condition'))
+                        action$.setResult(list(
+                            status='error',
+                            message=err
+                        ))
+                        return()
+                    }
+                    action$.setResult(res)
+                    return()
+                }
+
                 data <- res$data
                 if ( ! is.null(data)) {
                     res2 <- try(
@@ -506,7 +561,7 @@ OptionAction <- R6::R6Class(
                             vldExt=FALSE)
                     )
                     if (inherits(res2, 'try-error')) {
-                        err <- as.character(attr(res, 'condition'))
+                        err <- as.character(attr(res2, 'condition'))
                         action$.setResult(list(
                             status='error',
                             message=err

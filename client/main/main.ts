@@ -629,20 +629,30 @@ ready(async() => {
 
     instance.on('resultsAction', (event: CustomEvent) => {
         const data = event.detail;
-        if (data.action === 'open') {
-            if (data.result.status !== 'error') {
-                const options = Object.assign({}, data.result, { temp: true });
-                backstageModel.requestOpen(options);
-            }
-            else {
-                const notif = {
-                    title: _('Unable to open'),
-                    message: data.result.message,
-                    type: 'error',
-                    duration: 3000,
-                };
-                notifications.notify(new Notify(notif));
-            }
+        const failed = (message: string) => {
+            const notif = {
+                title: _('Unable to open'),
+                message,
+                type: 'error',
+                duration: 3000,
+            };
+            notifications.notify(new Notify(notif));
+        };
+
+        if (data.result.status === 'error') {
+            failed(data.result.message);
+        }
+        else if (data.action === 'open') {
+            const options = Object.assign({}, data.result, { temp: true });
+            backstageModel.requestOpen(options);
+        }
+        else if (data.action === 'openExternal') {
+            // the file is in the session temp, served (once) by the
+            // instance's temp/ route, c.f. dl/ for browser saves
+            const name = data.result.path.split('/').pop();
+            const filename = data.result.filename || name;
+            const url = `temp/${ encodeURIComponent(name) }?filename=${ encodeURIComponent(filename) }`;
+            host.openFile(url, filename).catch((e) => failed(e.message || String(e)));
         }
     });
 

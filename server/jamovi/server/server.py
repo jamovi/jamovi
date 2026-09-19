@@ -9,7 +9,7 @@ import logging
 import threading
 import asyncio
 from asyncio import create_task
-from urllib.parse import urlparse
+from urllib.parse import urlparse, quote
 from tempfile import NamedTemporaryFile, TemporaryDirectory, gettempdir
 from shutil import rmtree
 
@@ -45,6 +45,16 @@ if conf.get('upload_path', None) is None:
 
 
 # Route handler class
+
+def content_disposition(filename: str) -> str:
+    # an attachment header for a name we don't control: no header-breaking
+    # or quote-breaking characters in the plain filename (an ascii fallback),
+    # with the real name percent-encoded per rfc 5987 for browsers that read it
+    filename = filename.replace('\r', '').replace('\n', '')
+    fallback = filename.encode('ascii', 'replace').decode('ascii').replace('"', '').replace('\\', '')
+    encoded = quote(filename, safe='')
+    return f'attachment; filename="{ fallback }"; filename*=UTF-8\'\'{ encoded }'
+
 
 class _Handlers:
     """All aiohttp route handlers, grouped by the session and config they share."""
@@ -482,14 +492,58 @@ class _Handlers:
         if not os.path.isfile(filepath):
             raise web.HTTPNotFound()
         ct, enc = mimetypes.guess_type(filepath)
-        headers = {}
-        filename_param = request.rel_url.query.get('filename')
-        if filename_param:
-            headers['Content-Disposition'] = f'attachment; filename="{filename_param}"'
+        filename = request.rel_url.query.get('filename') or os.path.basename(filepath)
+        # always an attachment: this is served on the app's origin, and an
+        # .html export rendered inline there would run as the app
+        headers = {
+            'Content-Disposition': content_disposition(filename),
+            'X-Content-Type-Options': 'nosniff',
+        }
         if enc:
             headers['Content-Encoding'] = enc
         with open(filepath, 'rb') as f:
             body = f.read()
+        return web.Response(body=body, content_type=ct or 'application/octet-stream',
+                            headers=headers)
+
+    async def download_temp(self, request: web.Request) -> web.Response:
+        # a file produced by an analysis 'openExternal' action. it lives in
+        # the 'external' subdir of session temp (where jmvcore puts it; the
+        # rest of session temp, i.e. File option uploads, isn't reachable
+        # here) and is one-shot: the client fetches it once, to download or
+        # to hand to the OS, and it's removed once served so it doesn't
+        # count against the session's file storage cap
+        instance_id = request.match_info['instance_id']
+        instance = self._session.get(instance_id)
+        if instance is None:
+            raise web.HTTPNotFound()
+        if instance.perms.save.download is False:
+            raise web.HTTPForbidden()
+
+        external_real_path = os.path.realpath(os.path.join(self._session.session_temp, 'external'))
+        filepath = os.path.realpath(os.path.join(external_real_path, request.match_info['filename']))
+        if os.path.dirname(filepath) != external_real_path:
+            raise web.HTTPForbidden()
+        if not os.path.isfile(filepath):
+            raise web.HTTPNotFound()
+
+        filename = request.rel_url.query.get('filename') or os.path.basename(filepath)
+        ct, enc = mimetypes.guess_type(filename)
+        headers = {
+            # 'attachment' is load-bearing: the browser client fetches this
+            # in a hidden iframe, and this is what stops, say, an .html from
+            # being rendered same-origin with the app. nosniff likewise
+            'Content-Disposition': content_disposition(filename),
+            'X-Content-Type-Options': 'nosniff',
+        }
+        if enc:
+            headers['Content-Encoding'] = enc
+        with open(filepath, 'rb') as f:
+            body = f.read()
+        try:
+            os.remove(filepath)
+        except OSError:
+            pass
         return web.Response(body=body, content_type=ct or 'application/octet-stream',
                             headers=headers)
 
@@ -517,6 +571,7 @@ class _Handlers:
         router.add_post(r'/{instance_id:[a-f0-9-]+}/upload', self.upload)
         router.add_get(r'/{instance_id:[a-f0-9-]+}/coms', self.websocket)
         router.add_get(r'/{path:[a-f0-9-]+/dl/.+}', self.download)
+        router.add_get(r'/{instance_id:[a-f0-9-]+}/temp/{filename:[^/]+}', self.download_temp)
         router.add_get(r'/modules/{module_name:[0-9a-zA-Z]+}', self.module_descriptor)
         router.add_get(
             r'/modules/{module_name:[0-9a-zA-Z]+}/i18n/{code:.+}',

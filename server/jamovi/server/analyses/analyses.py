@@ -138,6 +138,11 @@ class Analyses:
         # refer to isn't available, and is dropped so the user is shown it
         # needs re-selecting
         analysis.options.keep_file_ids(files)
+        # an action option (a button) is only ever true while its run is in
+        # flight, and is cleared after. it can't come from a file: a crafted
+        # .omv would otherwise trigger the action (opening a data set, or
+        # handing a file to the OS) on open, without anyone clicking
+        analysis.options.clear_actions()
         analysis.results.options.CopyFrom(analysis.options.as_pb())
 
         self._analyses.append(analysis)
