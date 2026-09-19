@@ -5,7 +5,7 @@ import interactionManager from '../common/interactionmanager';
 
 import Elem, { ElementModel } from './element';
 import { AnalysisStatus } from './create';
-import { h, htmlTrusted, rich, richParagraphs, setRich } from '../common/htmlelementcreator';
+import { h, htmlTrusted, rich, richParagraphs, setRich, RichOptions } from '../common/htmlelementcreator';
 
 const SUPSCRIPTS = ["\u1D43", "\u1D47", "\u1D48", "\u1D49", "\u1DA0", "\u1D4D", "\u02B0", "\u2071",
                 "\u02B2", "\u1D4F", "\u02E1", "\u1D50", "\u207F", "\u1D52", "\u1D56", "\u02B3", "\u02E2",
@@ -247,6 +247,10 @@ const trustedContent = function(html: string): ChildNode[] {
     const wrapper = htmlTrusted<HTMLDivElement>(`<div>${html}</div>`);
     return Array.from(wrapper.childNodes);
 };
+
+// cell symbols are unicode superscripts by convention, but jmv falls back to
+// markup where none exists (e.g. '<sup>μ</sup>' for the mean)
+const supOptions: RichOptions = { tags: [ 'sub', 'sup' ] };
 
 const appendTableRichContent = function(element: Element, content: string) {
     if (content === '')
@@ -821,7 +825,7 @@ export class View extends Elem.View<Model> {
                             tableCell.append(...trustedContent(String(content)));
                         else
                             tableCell.append(String(content));
-                        tableCell.append(h('span', { class: 'jmv-results-table-sup' }, cell.sups));
+                        tableCell.append(h('span', { class: 'jmv-results-table-sup' }, rich(cell.sups, supOptions)));
                         rowCells.push(tableCell);
                     }
                     else if (colNo >= rowHeadingCount) { // don't add blank cells into heading area.
@@ -924,10 +928,10 @@ export class View extends Elem.View<Model> {
 
                 lastCellValue = cellValue;
                 let newHeading = rowHeadings[rowNo]  + ' ' + cellValue;
-                //if the calculated heading already exists then it means the next column must be used to differentiate. 
-                //Except when the next column has a column heading, then the assumption is that the column must have sub headings in it 
+                //if the calculated heading already exists then it means the next column must be used to differentiate.
+                //Except when the next column has a column heading, then the assumption is that the column must have sub headings in it
                 // and so the headings end at this column. This is not a perfect assumption be good enough until otherwise determined.
-                if (rowHeadings.includes(newHeading) && colNo + 1 < cells.header.length  && cells.header[colNo+1].value.trim() === '') 
+                if (rowHeadings.includes(newHeading) && colNo + 1 < cells.header.length  && cells.header[colNo+1].value.trim() === '')
                     includeNext = true;
                 rowHeadings[rowNo] = newHeading;
             }
