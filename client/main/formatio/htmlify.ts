@@ -1,87 +1,405 @@
 
-import { IElement } from "./hydrate";
+// converts hydrated results into html, for the clipboard. everything is
+// styled inline, as that's all which survives a paste into word, gmail, etc.
+// the structure mirrors docxify.ts, so the two agree on what's produced
 
-function _alignWord(abbr: string): string {
-    return abbr.replace('l', 'left').replace('r', 'end').replace('c', 'center')
+import { IElement, ITable, IRow, ICell, IImage, IPreformatted, IText, ITextChunk } from './hydrate';
+import { html2Chunks } from './hydrate';
+
+export interface IHtmlifyOptions {
+    level?: number;         // the heading level of the outermost element (default 1)
+    showSyntax?: boolean;   // whether syntax elements are included (default false)
 }
 
-function _populate(item: IElement, parent: HTMLElement, level: number): void {
-    let align = 'left';
+// cell.format bits (cf. resultsview/table.ts)
+const FORMAT_BEGIN_GROUP = 1;
+const FORMAT_END_GROUP = 2;
+const FORMAT_INDENTED = 8;
 
-    if (item.type === 'group') {
-        if (item.title) {
-            const h = document.createElement(`h${ level }`);
-            h.textContent = item.title;
-            parent.appendChild(h);
-        }
-        for (let child of item.items)
-            _populate(child, parent, level+1);
-    }
-    else if (item.type === 'image') {
-        const image = document.createElement('img');
-        image.width = item.width;
-        image.height = item.height;
-        if (item.path)
-            image.src = item.path;
-        parent.appendChild(image);
-    }
-    else if (item.type === 'table') {
+const RULE = '1px solid #333333';
+const MONO = "Consolas, Menlo, monospace";
 
-        let tr, td, th: HTMLTableCellElement;
+// notices: warning-1, warning-2, info, error (cf. resultsview/notice.ts)
+const BOX_COLORS = [ '#a6a6a6', '#f5a623', '#3e6da9', '#dd0000' ];
+const BOX_FILLS  = [ '#f2f2f2', '#fdf3e4', '#e8eef8', '#fbe9e9' ];
 
-        const table = document.createElement('table');
-        const thead = document.createElement('thead');
-        const tbody = document.createElement('tbody');
-
-        tr = document.createElement('tr');
-        th = document.createElement('th');
-        th.textContent = item.title;
-        th.colSpan = item.nCols;
-        tr.appendChild(th);
-        thead.appendChild(tr);
-
-        for (let row of item.rows) {
-            const cellType = ['superTitle', 'title'].includes(row.type) ? 'th' : 'td';
-
-            tr = document.createElement('tr');
-            for (let cell of row.cells) {
-                // a cell covered by a span (0) has no element of its own
-                if (cell && (cell.colSpan === 0 || cell.rowSpan === 0))
-                    continue;
-                const elem = document.createElement(cellType);
-                if (cell) {
-                    elem.textContent = cell.content;
-                    // TODO add superscripts
-                    if (cell.colSpan && cell.colSpan > 1)
-                        elem.colSpan = cell.colSpan;
-                    if (cell.rowSpan && cell.rowSpan > 1)
-                        elem.rowSpan = cell.rowSpan;
-                    if (cell.align)
-                        elem.setAttribute("style",
-                                          "text-align:" + _alignWord(cell.align) + ";");
-                }
-                tr.appendChild(elem);
-            }
-
-            if (cellType === 'th')
-                thead.appendChild(tr);
-            else
-                tbody.appendChild(tr);
-        }
-
-        table.appendChild(thead);
-        table.appendChild(tbody);
-
-        parent.appendChild(table);
-    }
-}
-
-export function htmlify(item: IElement) {
+export function htmlify(item: IElement, options: IHtmlifyOptions = {}): string {
+    const level = options.level ?? 1;
+    const showSyntax = options.showSyntax ?? false;
 
     const doc = document.implementation.createHTMLDocument('Results');
-    const body = doc.body;
-
-    _populate(item, body, 1);
+    populate(item, doc.body, level, showSyntax);
 
     return '<!doctype html>\n' + doc.documentElement.outerHTML;
+}
+
+function populate(item: IElement, parent: HTMLElement, level: number, showSyntax: boolean): void {
+    if (item.type === 'group') {
+        let childLevel = level;
+        if (item.title) {
+            parent.appendChild(heading(item.title, level));
+            childLevel = level + 1;
+        }
+        for (const child of item.items)
+            populate(child, parent, childLevel, showSyntax);
+    }
+    else if (item.type === 'image') {
+        generateImage(item, parent);
+    }
+    else if (item.type === 'table') {
+        generateTable(item, parent);
+    }
+    else if (item.type === 'preformatted') {
+        generatePreformatted(item, parent, level, showSyntax);
+    }
+    else if (item.type === 'text') {
+        generateText(item, parent, level);
+    }
+}
+
+function heading(title: string, level: number): HTMLElement {
+    level = Math.min(Math.max(level, 1), 6);
+    const h = document.createElement(`h${ level }`);
+    h.append(...chunkNodes(html2Chunks(title)));
+    return h;
+}
+
+// a figure's title, above it, as in the results view
+function caption(title: string): HTMLElement {
+    const p = document.createElement('p');
+    p.style.fontWeight = 'bold';
+    p.append(...chunkNodes(html2Chunks(title)));
+    return p;
+}
+
+// word merges adjacent tables, so they're followed by an empty paragraph
+function spacer(): HTMLElement {
+    return document.createElement('p');
+}
+
+function generateImage(image: IImage, parent: HTMLElement): void {
+    if (image.title)
+        parent.appendChild(caption(image.title));
+    const img = document.createElement('img');
+    img.width = image.width;
+    img.height = image.height;
+    // the path is filled in by the caller, where it can be (see
+    // ResultsPanel._fillImages()); otherwise it's left empty
+    if (image.path)
+        img.src = image.path;
+    if (image.title)
+        img.alt = image.title;
+    parent.appendChild(img);
+    parent.appendChild(spacer());
+}
+
+function generateTable(table: ITable, parent: HTMLElement): void {
+    const nCols = Math.max(table.nCols, 1);
+
+    const el = document.createElement('table');
+    el.style.borderCollapse = 'collapse';
+    const thead = document.createElement('thead');
+    const tbody = document.createElement('tbody');
+
+    // APA: a rule above, below the column titles, and below the body; no
+    // vertical rules. the title sits above the first rule, as on screen
+    if (table.title) {
+        const th = tableCell('th', chunkNodes(html2Chunks(table.title)), { align: 'l', span: nCols, bottomRule: true, flush: true });
+        thead.appendChild(row([ th ]));
+    }
+    else {
+        el.style.borderTop = RULE;
+    }
+
+    const lastBody = table.rows.map((r) => r.type).lastIndexOf('body');
+
+    table.rows.forEach((r, i) => {
+        if (r.type === 'superTitle')
+            thead.appendChild(formatSuperTitle(r));
+        else if (r.type === 'title')
+            thead.appendChild(formatTitleRow(r));
+        else if (r.type === 'body')
+            tbody.appendChild(formatBodyRow(r, i === lastBody));
+        else if (r.type === 'footnote')
+            tbody.appendChild(formatNoteRow(r, nCols));
+    });
+
+    el.appendChild(thead);
+    el.appendChild(tbody);
+    parent.appendChild(el);
+    parent.appendChild(spacer());
+}
+
+function row(cells: Array<HTMLTableCellElement>): HTMLTableRowElement {
+    const tr = document.createElement('tr');
+    tr.append(...cells);
+    return tr;
+}
+
+function formatSuperTitle(r: IRow): HTMLTableRowElement {
+    const cells: Array<HTMLTableCellElement> = [];
+    for (const cell of r.cells) {
+        if (cell && cell.colSpan === 0)  // covered by the span before it
+            continue;
+        if (cell && cell.content)
+            cells.push(tableCell('th', cellNodes(cell), { align: 'c', span: cell.colSpan, bottomRule: true, vAlign: 'bottom' }));
+        else
+            cells.push(tableCell('th', [], {}));
+    }
+    return row(cells);
+}
+
+function formatTitleRow(r: IRow): HTMLTableRowElement {
+    const cells = r.cells.map((cell) => {
+        return tableCell('th', cell ? cellNodes(cell) : [], { align: 'c', bottomRule: true, vAlign: 'bottom' });
+    });
+    return row(cells);
+}
+
+function formatBodyRow(r: IRow, last: boolean): HTMLTableRowElement {
+    const cells: Array<HTMLTableCellElement> = [];
+    for (const cell of r.cells) {
+        const props: ICellProps = { bottomRule: last };
+        if ( ! cell) {
+            cells.push(tableCell('td', [], props));
+            continue;
+        }
+        if (cell.rowSpan === 0)  // covered by the cell above
+            continue;
+        props.align = cell.align;
+        if (cell.rowSpan && cell.rowSpan > 1) {
+            props.rowSpan = cell.rowSpan;
+            props.vAlign = 'top';
+        }
+        const format = cell.format || 0;
+        if (format & FORMAT_INDENTED)
+            props.indent = true;
+        if (format & FORMAT_BEGIN_GROUP)
+            props.before = true;
+        if (format & FORMAT_END_GROUP)
+            props.after = true;
+        cells.push(tableCell('td', cellNodes(cell), props));
+    }
+    return row(cells);
+}
+
+function formatNoteRow(r: IRow, nCols: number): HTMLTableRowElement {
+    const nodes: Array<Node> = [];
+    for (const cell of r.cells) {
+        if ( ! cell || ! cell.content)
+            continue;
+        if (cell.sups && cell.sups[0] === 'note') {
+            const note = document.createElement('em');
+            note.textContent = 'Note. ';
+            nodes.push(note);
+        }
+        else if (cell.sups && cell.sups.length > 0) {
+            const sup = document.createElement('sup');
+            sup.textContent = cell.sups.join(',');
+            nodes.push(sup, document.createTextNode(' '));
+        }
+        nodes.push(...chunkNodes(cell.chunks));
+    }
+    return row([ tableCell('td', nodes, { align: 'l', span: nCols, small: true }) ]);
+}
+
+interface ICellProps {
+    align?: string;
+    span?: number;
+    rowSpan?: number;
+    bottomRule?: boolean;
+    vAlign?: 'top' | 'bottom';
+    indent?: boolean;   // an indented row (a level beneath the one above)
+    before?: boolean;   // the first row of a group, set apart from the one above
+    after?: boolean;    // the last row of a group
+    small?: boolean;    // a table note
+    flush?: boolean;    // with the table's left edge (the title)
+}
+
+function tableCell(tag: 'th' | 'td', nodes: Array<Node>, props: ICellProps): HTMLTableCellElement {
+    const cell = document.createElement(tag);
+    cell.append(...nodes);
+
+    const padding = props.small ? [ 2, 8, 2, 8 ] : [ 4, 8, 4, 8 ];
+    if (props.flush)
+        padding[3] = 0;
+    if (props.before)
+        padding[0] += 4;
+    if (props.after)
+        padding[2] += 4;
+    if (props.indent)
+        padding[3] += 16;
+    cell.style.padding = padding.map((px) => `${ px }px`).join(' ');
+
+    if (props.align)
+        cell.style.textAlign = alignment(props.align);
+    if (props.vAlign)
+        cell.style.verticalAlign = props.vAlign;
+    if (props.span && props.span > 1)
+        cell.colSpan = props.span;
+    if (props.rowSpan && props.rowSpan > 1)
+        cell.rowSpan = props.rowSpan;
+    if (props.bottomRule)
+        cell.style.borderBottom = RULE;
+    if (props.small)
+        cell.style.fontSize = 'smaller';
+
+    return cell;
+}
+
+// a cell's content, with its footnote superscripts
+function cellNodes(cell: ICell): Array<Node> {
+    const nodes = chunkNodes(cell.chunks);
+    // symbols may themselves contain markup (e.g. jmv's '<sup>μ</sup>')
+    if (cell.sups && cell.sups.length > 0) {
+        const sup = document.createElement('sup');
+        sup.append(...chunkNodes(html2Chunks(cell.sups.join(','))));
+        nodes.push(sup);
+    }
+    return nodes;
+}
+
+function generatePreformatted(preformatted: IPreformatted, parent: HTMLElement, level: number, showSyntax: boolean): void {
+    if (preformatted.syntax && ! showSyntax)
+        return;
+    if (preformatted.title)
+        parent.appendChild(heading(preformatted.title, level));
+    const pre = document.createElement('pre');
+    pre.style.fontFamily = MONO;
+    pre.textContent = preformatted.content || '';
+    parent.appendChild(pre);
+}
+
+// formatted text (annotations, notices, html/text elements)
+function generateText(text: IText, parent: HTMLElement, level: number): void {
+
+    // a notice sits in a box, with its title
+    let container = parent;
+    if (text.box) {
+        const box = document.createElement('div');
+        box.style.borderLeft = `4px solid ${ BOX_COLORS[text.box - 1] || BOX_COLORS[0] }`;
+        box.style.backgroundColor = BOX_FILLS[text.box - 1] || BOX_FILLS[0];
+        box.style.padding = '8px 12px';
+        parent.appendChild(box);
+        container = box;
+    }
+    if (text.title) {
+        const p = document.createElement('p');
+        p.style.fontWeight = 'bold';
+        p.textContent = text.title;
+        container.appendChild(p);
+    }
+
+    // the lists currently open, outermost first; a list item's indent is
+    // its nesting depth, so a deeper item opens a list inside the last item
+    const lists: Array<HTMLElement> = [];
+
+    for (const paragraph of text.paragraphs) {
+        const attrs = paragraph.attributes || {};
+
+        if (attrs.list) {
+            const depth = (attrs.indent || 0) + 1;
+            const tag = attrs.list === 'ordered' ? 'OL' : 'UL';
+            lists.splice(depth);
+            // a change of list type at the same depth begins a new list
+            if (lists.length === depth && lists[depth - 1].tagName !== tag)
+                lists.pop();
+            while (lists.length < depth) {
+                const list = document.createElement(tag);
+                const outer = lists[lists.length - 1];
+                const host = outer ? (outer.lastElementChild || outer) : container;
+                host.appendChild(list);
+                lists.push(list);
+            }
+            const li = document.createElement('li');
+            li.append(...chunkNodes(paragraph.chunks));
+            if (attrs.align)
+                li.style.textAlign = attrs.align;
+            lists[lists.length - 1].appendChild(li);
+            continue;
+        }
+
+        // a paragraph outside the list ends it
+        lists.splice(0);
+
+        let el: HTMLElement;
+        if (attrs.header) {
+            // 1 is directly beneath the containing element
+            el = heading('', level + attrs.header - 1);
+        }
+        else if (attrs.codeBlock) {
+            el = document.createElement('pre');
+            el.style.fontFamily = MONO;
+        }
+        else {
+            el = document.createElement('p');
+        }
+
+        if (paragraph.chunks.length > 0)
+            el.append(...chunkNodes(paragraph.chunks));
+        else
+            el.appendChild(document.createElement('br'));  // a blank line
+        if (attrs.align)
+            el.style.textAlign = attrs.align;
+        if (attrs.indent)
+            el.style.marginLeft = `${ attrs.indent * 36 }px`;
+
+        container.appendChild(el);
+    }
+}
+
+function alignment(align: string): string {
+    switch (align) {
+        case 'l': return 'left';
+        case 'c': return 'center';
+        case 'r': return 'right';
+    }
+    return align;
+}
+
+// chunks as nodes, each wrapped in the elements for its formatting
+function chunkNodes(chunks: Array<ITextChunk>): Array<Node> {
+    return chunks.map((chunk) => {
+        const attrs = chunk.attributes || {};
+        let node: Node = document.createTextNode(chunk.content);
+
+        // wraps the node so far; innermost first
+        const wrap = (tag: string, style?: (el: HTMLElement) => void) => {
+            const el = document.createElement(tag);
+            if (style)
+                style(el);
+            el.appendChild(node);
+            node = el;
+        };
+
+        if (attrs.code)
+            wrap('code', (el) => el.style.fontFamily = MONO);
+        else if (attrs.formula)
+            wrap('i', (el) => el.style.fontFamily = "'Cambria Math', serif");
+        if (attrs.script === 'super')
+            wrap('sup');
+        else if (attrs.script === 'sub')
+            wrap('sub');
+        if (attrs.strike)
+            wrap('s');
+        if (attrs.underline)
+            wrap('u');
+        if (attrs.italic)
+            wrap('em');
+        if (attrs.bold)
+            wrap('strong');
+        if (attrs.color || attrs.background) {
+            wrap('span', (el) => {
+                if (attrs.color)
+                    el.style.color = attrs.color;
+                if (attrs.background)
+                    el.style.backgroundColor = attrs.background;
+            });
+        }
+        const link = attrs.link;
+        if (link)
+            wrap('a', (el) => (el as HTMLAnchorElement).href = link);
+
+        return node;
+    });
 }
