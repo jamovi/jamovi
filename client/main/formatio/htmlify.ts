@@ -1,14 +1,36 @@
 
-// converts hydrated results into html, for the clipboard. everything is
-// styled inline, as that's all which survives a paste into word, gmail, etc.
-// the structure mirrors docxify.ts, so the two agree on what's produced
+// converts hydrated results into html: a single element for the clipboard
+// (htmlify()), or a complete document for export (createDoc()). everything
+// is styled inline, as that's all which survives a paste into word, gmail,
+// etc. the structure mirrors docxify.ts, so the two agree on what's produced
 
 import { IElement, ITable, IRow, ICell, IImage, IPreformatted, IText, ITextChunk } from './hydrate';
 import { html2Chunks } from './hydrate';
+import { IReference } from '../references';
+import { referenceAsHTML } from '../references';
 
 export interface IHtmlifyOptions {
     level?: number;         // the heading level of the outermost element (default 1)
     showSyntax?: boolean;   // whether syntax elements are included (default false)
+}
+
+export interface IDocItem {
+    element: IElement;
+    level?: number;  // heading level of the element (1-6), default 1
+}
+
+export interface IDocOptions {
+    references?: Array<IReference>;
+    showSyntax?: boolean;
+    showRefs?: boolean;   // citations and the reference list, default true
+    generator?: string;   // for the <meta name="generator">
+}
+
+// what's carried through the document as it's built
+interface IContext {
+    showSyntax: boolean;
+    showRefs: boolean;
+    refNames: Array<string>;
 }
 
 // cell.format bits (cf. resultsview/table.ts)
@@ -23,17 +45,82 @@ const MONO = "Consolas, Menlo, monospace";
 const BOX_COLORS = [ '#a6a6a6', '#f5a623', '#3e6da9', '#dd0000' ];
 const BOX_FILLS  = [ '#f2f2f2', '#fdf3e4', '#e8eef8', '#fbe9e9' ];
 
+// a single element, as for the clipboard: no references
 export function htmlify(item: IElement, options: IHtmlifyOptions = {}): string {
-    const level = options.level ?? 1;
-    const showSyntax = options.showSyntax ?? false;
+    const context: IContext = {
+        showSyntax: options.showSyntax ?? false,
+        showRefs: false,
+        refNames: [],
+    };
 
     const doc = document.implementation.createHTMLDocument('Results');
-    populate(item, doc.body, level, showSyntax);
+    populate(item, doc.body, options.level ?? 1, context);
 
     return '<!doctype html>\n' + doc.documentElement.outerHTML;
 }
 
-function populate(item: IElement, parent: HTMLElement, level: number, showSyntax: boolean): void {
+// a complete, self-contained document: the elements, with their reference
+// numbers, and the reference list beneath (like docxify's createDoc())
+export function createDoc(items: Array<IDocItem>, options: IDocOptions = {}): string {
+    const showRefs = options.showRefs ?? true;
+    // when the references are hidden in the results view, they're left out
+    // of the document too (the list, and the citations)
+    const references = showRefs ? (options.references || []) : [];
+
+    const context: IContext = {
+        showSyntax: options.showSyntax ?? false,
+        showRefs,
+        refNames: references.map((ref) => ref.name),
+    };
+
+    const doc = document.implementation.createHTMLDocument('Results');
+    doc.head.appendChild(doc.createElement('meta')).setAttribute('charset', 'utf-8');
+    if (options.generator) {
+        const meta = doc.head.appendChild(doc.createElement('meta'));
+        meta.setAttribute('name', 'generator');
+        meta.setAttribute('content', options.generator);
+    }
+    doc.head.appendChild(doc.createElement('style')).textContent = STYLESHEET;
+
+    for (const item of items)
+        populate(item.element, doc.body, item.level ?? 1, context);
+
+    if (references.length > 0) {
+        doc.body.appendChild(heading('References', 1));
+        references.forEach((ref, i) => {
+            const p = document.createElement('p');
+            p.style.paddingLeft = '2em';
+            p.style.textIndent = '-2em';
+            p.append(`[${ i + 1 }] `, ...chunkNodes(html2Chunks(referenceAsHTML(ref))));
+            doc.body.appendChild(p);
+        });
+    }
+
+    return '<!doctype html>\n' + doc.documentElement.outerHTML;
+}
+
+// the look of the results view (cf. the stylesheet in common/utils/formatio).
+// this is page-level only; everything on an element is styled inline, so it
+// survives the clipboard. the document is also what's printed to pdf, so
+// tables and figures are kept together, and headings with what follows
+const STYLESHEET = `
+    body {
+        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+        color: #333333;
+        font-size: 12px;
+        margin: 24px;
+    }
+    h1 { font-size: 160%; color: #3E6DA9; margin-bottom: 12px; }
+    h2 { font-size: 130%; color: #3E6DA9; margin-bottom: 12px; }
+    h3, h4, h5, h6 { font-size: 110%; margin-bottom: 12px; }
+    h1, h2, h3, h4, h5, h6 { break-after: avoid; page-break-after: avoid; }
+    table, img, pre { break-inside: avoid; page-break-inside: avoid; }
+    img { max-width: 100%; height: auto; }
+    th { font-weight: normal; }
+    a { color: #3E6DA9; }
+`;
+
+function populate(item: IElement, parent: HTMLElement, level: number, context: IContext): void {
     if (item.type === 'group') {
         let childLevel = level;
         if (item.title) {
@@ -41,20 +128,37 @@ function populate(item: IElement, parent: HTMLElement, level: number, showSyntax
             childLevel = level + 1;
         }
         for (const child of item.items)
-            populate(child, parent, childLevel, showSyntax);
+            populate(child, parent, childLevel, context);
     }
     else if (item.type === 'image') {
-        generateImage(item, parent);
+        generateImage(item, parent, context);
     }
     else if (item.type === 'table') {
-        generateTable(item, parent);
+        generateTable(item, parent, context);
     }
     else if (item.type === 'preformatted') {
-        generatePreformatted(item, parent, level, showSyntax);
+        generatePreformatted(item, parent, level, context);
     }
     else if (item.type === 'text') {
-        generateText(item, parent, level);
+        generateText(item, parent, level, context);
     }
+}
+
+// the "[1] [2]" reference numbers beneath an element, as the results view
+// shows them: the modules/packages it was created with, numbered as in the
+// reference list
+function refNumbers(refs: Array<string> | undefined, context: IContext): Array<HTMLElement> {
+    if ( ! context.showRefs || ! refs || refs.length === 0)
+        return [];
+    const numbers = refs.map((name) => {
+        const index = context.refNames.indexOf(name);
+        return (index === -1) ? name : String(index + 1);
+    });
+    const p = document.createElement('p');
+    p.style.fontSize = 'smaller';
+    p.style.color = '#808080';
+    p.textContent = numbers.map((n) => `[${ n }]`).join(' ');
+    return [ p ];
 }
 
 function heading(title: string, level: number): HTMLElement {
@@ -77,12 +181,15 @@ function spacer(): HTMLElement {
     return document.createElement('p');
 }
 
-function generateImage(image: IImage, parent: HTMLElement): void {
+function generateImage(image: IImage, parent: HTMLElement, context: IContext): void {
     if (image.title)
         parent.appendChild(caption(image.title));
     const img = document.createElement('img');
-    img.width = image.width;
-    img.height = image.height;
+    // (an svg element's size isn't known; the image's own is used)
+    if (image.width && image.height) {
+        img.width = image.width;
+        img.height = image.height;
+    }
     // the path is filled in by the caller, where it can be (see
     // ResultsPanel._fillImages()); otherwise it's left empty
     if (image.path)
@@ -90,10 +197,11 @@ function generateImage(image: IImage, parent: HTMLElement): void {
     if (image.title)
         img.alt = image.title;
     parent.appendChild(img);
-    parent.appendChild(spacer());
+    const refs = refNumbers(image.refs, context);
+    parent.append(...(refs.length > 0 ? refs : [ spacer() ]));
 }
 
-function generateTable(table: ITable, parent: HTMLElement): void {
+function generateTable(table: ITable, parent: HTMLElement, context: IContext): void {
     const nCols = Math.max(table.nCols, 1);
 
     const el = document.createElement('table');
@@ -119,7 +227,7 @@ function generateTable(table: ITable, parent: HTMLElement): void {
         else if (r.type === 'title')
             thead.appendChild(formatTitleRow(r));
         else if (r.type === 'body')
-            tbody.appendChild(formatBodyRow(r, i === lastBody));
+            tbody.appendChild(formatBodyRow(r, i, lastBody));
         else if (r.type === 'footnote')
             tbody.appendChild(formatNoteRow(r, nCols));
     });
@@ -127,7 +235,8 @@ function generateTable(table: ITable, parent: HTMLElement): void {
     el.appendChild(thead);
     el.appendChild(tbody);
     parent.appendChild(el);
-    parent.appendChild(spacer());
+    const refs = refNumbers(table.refs, context);
+    parent.append(...(refs.length > 0 ? refs : [ spacer() ]));
 }
 
 function row(cells: Array<HTMLTableCellElement>): HTMLTableRowElement {
@@ -156,10 +265,13 @@ function formatTitleRow(r: IRow): HTMLTableRowElement {
     return row(cells);
 }
 
-function formatBodyRow(r: IRow, last: boolean): HTMLTableRowElement {
+// i is the row's index, and lastBody that of the last body row: the rule
+// beneath the body goes on the cells in that row, and on any cell spanning
+// down into it
+function formatBodyRow(r: IRow, i: number, lastBody: number): HTMLTableRowElement {
     const cells: Array<HTMLTableCellElement> = [];
     for (const cell of r.cells) {
-        const props: ICellProps = { bottomRule: last };
+        const props: ICellProps = { bottomRule: i === lastBody };
         if ( ! cell) {
             cells.push(tableCell('td', [], props));
             continue;
@@ -170,6 +282,7 @@ function formatBodyRow(r: IRow, last: boolean): HTMLTableRowElement {
         if (cell.rowSpan && cell.rowSpan > 1) {
             props.rowSpan = cell.rowSpan;
             props.vAlign = 'top';
+            props.bottomRule = (i + cell.rowSpan - 1 >= lastBody);
         }
         const format = cell.format || 0;
         if (format & FORMAT_INDENTED)
@@ -259,8 +372,8 @@ function cellNodes(cell: ICell): Array<Node> {
     return nodes;
 }
 
-function generatePreformatted(preformatted: IPreformatted, parent: HTMLElement, level: number, showSyntax: boolean): void {
-    if (preformatted.syntax && ! showSyntax)
+function generatePreformatted(preformatted: IPreformatted, parent: HTMLElement, level: number, context: IContext): void {
+    if (preformatted.syntax && ! context.showSyntax)
         return;
     if (preformatted.title)
         parent.appendChild(heading(preformatted.title, level));
@@ -268,10 +381,11 @@ function generatePreformatted(preformatted: IPreformatted, parent: HTMLElement, 
     pre.style.fontFamily = MONO;
     pre.textContent = preformatted.content || '';
     parent.appendChild(pre);
+    parent.append(...refNumbers(preformatted.refs, context));
 }
 
 // formatted text (annotations, notices, html/text elements)
-function generateText(text: IText, parent: HTMLElement, level: number): void {
+function generateText(text: IText, parent: HTMLElement, level: number, context: IContext): void {
 
     // a notice sits in a box, with its title
     let container = parent;
@@ -346,6 +460,8 @@ function generateText(text: IText, parent: HTMLElement, level: number): void {
 
         container.appendChild(el);
     }
+
+    parent.append(...refNumbers(text.refs, context));
 }
 
 function alignment(align: string): string {

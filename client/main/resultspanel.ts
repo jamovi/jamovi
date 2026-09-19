@@ -26,7 +26,16 @@ import { R } from './references';
 import { jmv } from './references';
 
 import { hydrate, IElement } from './formatio/hydrate';
-import { htmlify } from './formatio/htmlify';
+
+// how an exported document refers to its figures (see _fillImages())
+type ImageMode = 'inline' | 'resources';
+
+interface IHtmlDocOptions {
+    images?: ImageMode;   // default 'inline'
+    generator?: string;   // for the <meta name="generator">
+    showRefs?: boolean;
+}
+import { htmlify, createDoc as createHtmlDoc } from './formatio/htmlify';
 import { latexify } from './formatio/latexify';
 import { createDoc } from './formatio/latexify';
 import { createBibTex } from './formatio/latexify';
@@ -841,19 +850,26 @@ class ResultsPanel extends EventDistributor {
     }
 
     // hydration leaves an image's path empty (it doesn't have access to the
-    // rendered figure); this fills them in, from the results view, as png
-    // data urls
-    private async _fillImages(element: IElement): Promise<void> {
+    // rendered figure); this fills them in. 'inline' is the figure from the
+    // results view, as a png data url; 'resources' is the path of the
+    // rendered image relative to the instance, as the .omv stores it
+    private async _fillImages(element: IElement, images: ImageMode = 'inline'): Promise<void> {
         if (element === null)
             return;
         if (element.type === 'group') {
             for (const item of element.items)
-                await this._fillImages(item);
+                await this._fillImages(item, images);
         }
         else if (element.type === 'image') {
-            const content = await this._getContent(unflatten(element.address), { });
-            if (content && content.image)
-                element.path = content.image;
+            if (images === 'resources') {
+                // a url: the paths have spaces in them ('3 anova/resources/…')
+                element.path = element.resource ? encodeURI(element.resource) : null;
+            }
+            else {
+                const content = await this._getContent(unflatten(element.address), { });
+                if (content && content.image)
+                    element.path = content.image;
+            }
         }
     }
 
@@ -892,6 +908,21 @@ class ResultsPanel extends EventDistributor {
         const showRefs = this.model.settings().getSetting('refsMode', 'bottom') !== 'hidden';
 
         return createDoc(items, { references, figures, showRefs });
+    }
+
+    // the results as an html document (like getAsDocx()): self-contained,
+    // with the figures inline, for the html and pdf exports; or with the
+    // figures referenced as resources, for the .omv. getAsHTML() below is
+    // the results view as rendered
+    async getAsHtml2(options: IHtmlDocOptions, part?: string): Promise<string> {
+        const { items, references } = this._hydrateAll(part);
+
+        for (const item of items)
+            await this._fillImages(item.element, options.images || 'inline');
+
+        const showRefs = options.showRefs ?? (this.model.settings().getSetting('refsMode', 'bottom') !== 'hidden');
+
+        return createHtmlDoc(items, { references, showRefs, generator: options.generator });
     }
 
     // an Svg element's svg is drawn in the results view, so that's the only

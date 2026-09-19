@@ -660,11 +660,16 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             else if (options.partType === 'image') {
                 // images are handled specially below
             }
-            else if (options.path.endsWith('.omv') || options.format === 'abs-html') {
+            else if (options.path.endsWith('.omv')) {
                 content = await this.attributes.resultsSupplier.getAsHTML({images:'relative', generator:app});
+                // content = await this.attributes.resultsSupplier.getAsHtml2({images:'resources', generator:app, showRefs: false});
+                // to follow, once the html export has had more use: the
+                // stored results as the same document, with the figures
+                // referenced as the resources alongside the analyses
             }
             else if (options.path.endsWith('.html') || options.path.endsWith('.htm')) {
-                content = await this.attributes.resultsSupplier.getAsHTML({images:'inline', generator:app}, options.part);
+                // the complete document; the server writes it as-is
+                content = await this.attributes.resultsSupplier.getAsHtml2({images:'inline', generator:app}, options.part);
             }
             else if (options.path.endsWith('.zip')) {
                 content = await this.attributes.resultsSupplier.getAsLatex();
@@ -674,8 +679,8 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                 content = await this.attributes.resultsSupplier.getAsDocx(options.part);
             }
             else if (options.path.endsWith('.pdf')) {
-                let images = host.isElectron ? 'absolute' : 'inline';
-                const html = await this.attributes.resultsSupplier.getAsHTML({images:images, generator:app}, options.part);
+                // the html document, printed
+                const html = await this.attributes.resultsSupplier.getAsHtml2({images:'inline', generator:app}, options.part);
                 content = await this._requestPDF(html);
             }
 

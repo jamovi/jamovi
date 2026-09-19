@@ -5,7 +5,8 @@ import fs from 'fs';
 
 import { describe, it, expect } from 'vitest';
 
-import { htmlify } from '../../htmlify';
+import { htmlify, createDoc } from '../../htmlify';
+import { jmv, R } from '../../../references';
 import { IElement, IText, IImage, ITable, ICell, html2Chunks } from '../../hydrate';
 
 
@@ -93,6 +94,9 @@ describe('htmlify tables', () => {
         expect((body[0].children[0] as HTMLTableCellElement).rowSpan).toBe(2);
         expect(body[1].children.length).toBe(2);
         expect(body[1].textContent).toBe('34');
+        // the rule beneath the body runs under the spanning cell too
+        const last = Array.from(doc.querySelectorAll('tbody td')) as Array<HTMLTableCellElement>;
+        expect(last.map((c) => c.style.borderBottom !== '')).toEqual([ true, false, false, true, true ]);
     });
 
     it('rules above the body and below it, and sets groups apart', () => {
@@ -132,6 +136,14 @@ describe('htmlify figures', () => {
     it('leaves the src off, rather than "null", when it has none', () => {
         const doc = build(figure(null));
         expect(doc.querySelector('img')!.hasAttribute('src')).toBe(false);
+    });
+
+    it('leaves the size to the image when it is not known (an svg element)', () => {
+        const doc = build({ ...figure('plot.svg'), width: 0, height: 0 });
+        const img = doc.querySelector('img')!;
+        expect(img.hasAttribute('width')).toBe(false);
+        expect(img.hasAttribute('height')).toBe(false);
+        expect(img.getAttribute('src')).toBe('plot.svg');
     });
 });
 
@@ -219,5 +231,54 @@ describe('htmlify groups and syntax', () => {
         doc = build(group, { showSyntax: true });
         expect(doc.querySelectorAll('pre').length).toBe(2);
         expect(doc.body.textContent).toContain('x <- 1');
+    });
+});
+
+describe('createDoc', () => {
+
+    const table = (): ITable => ({
+        type: 'table', title: 'T', nCols: 1, refs: [ 'jamovi' ],
+        rows: [ { type: 'body', cells: [ cell('1', 'r') ] } ],
+    });
+
+    it('is a self-contained page, with the elements at their levels', () => {
+        const items = [
+            { element: { type: 'group', title: 'Results', items: [] } as IElement, level: 1 },
+            { element: { type: 'group', title: 'Analysis', items: [ table() ] } as IElement, level: 2 },
+        ];
+        const html = createDoc(items, { generator: 'jamovi 2.7' });
+        expect(html.startsWith('<!doctype html>')).toBe(true);
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        expect(doc.querySelector('meta[charset]')).not.toBeNull();
+        expect(doc.querySelector('meta[name="generator"]')!.getAttribute('content')).toBe('jamovi 2.7');
+        expect(doc.querySelector('style')!.textContent).toContain('font-family');
+        expect(doc.querySelector('h1')!.textContent).toBe('Results');
+        expect(doc.querySelector('h2')!.textContent).toBe('Analysis');
+        expect(doc.querySelectorAll('table').length).toBe(1);
+    });
+
+    it('numbers the references, and lists them at the end', () => {
+        const doc = new DOMParser().parseFromString(createDoc([ { element: table() } ], { references: [ R, jmv ] }), 'text/html');
+        // jamovi is the second reference, so the table is cited [2]
+        expect(doc.querySelector('table + p')!.textContent).toBe('[2]');
+        const headings = Array.from(doc.querySelectorAll('h1')).map((h) => h.textContent);
+        expect(headings).toEqual([ 'References' ]);
+        const refs = Array.from(doc.querySelectorAll('h1 ~ p')).map((p) => p.textContent);
+        expect(refs.length).toBe(2);
+        expect(refs[0]!.startsWith('[1] ')).toBe(true);
+        expect(refs[1]!.startsWith('[2] ')).toBe(true);
+        expect(refs[1]).toContain('jamovi');
+        expect(doc.querySelector('h1 ~ p a')).not.toBeNull();  // the urls are links
+    });
+
+    it('leaves the references out when they are hidden', () => {
+        const doc = new DOMParser().parseFromString(createDoc([ { element: table() } ], { references: [ R, jmv ], showRefs: false }), 'text/html');
+        expect(doc.body.textContent).not.toContain('References');
+        expect(doc.body.textContent).not.toContain('[2]');
+    });
+
+    it('cites by name when the reference is not in the list', () => {
+        const doc = new DOMParser().parseFromString(createDoc([ { element: table() } ], { references: [ R ] }), 'text/html');
+        expect(doc.querySelector('table + p')!.textContent).toBe('[jamovi]');
     });
 });

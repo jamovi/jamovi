@@ -56,8 +56,13 @@ export interface ITable {
 export interface IImage {
     type: 'image';
     title?: string;
+    // where the image is to be had from, as the consumer needs it (a data
+    // url, say). hydration leaves it empty; the exporter fills it in
     path: string | null;
-    width: number;
+    // the rendered image as the results view has it, relative to the
+    // instance (and the .omv, which stores it alongside the analysis)
+    resource?: string;
+    width: number;   // 0 when unknown (an svg element)
     height: number;
     address: string;
     refs?: Array<string>;
@@ -311,6 +316,10 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         element = hydrateImage(pb, target, cursor, analysisId);
         elements.push(element);
     }
+    else if (pb.svg) {
+        element = hydrateSvg(pb, target, cursor, analysisId);
+        elements.push(element);
+    }
     else if (pb.preformatted) {
         element = hydratePreformatted(pb);
         elements.push(element);
@@ -388,7 +397,7 @@ function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOpti
 }
 
 function hydrateImage(imagePB: any, target: IAddress, cursor: IAddress, analysisId: number): IImage {
-    return {
+    const image: IImage = {
         type: 'image',
         title: imagePB.title,
         path: null,
@@ -396,6 +405,26 @@ function hydrateImage(imagePB: any, target: IAddress, cursor: IAddress, analysis
         height: imagePB.image.height,
         address: [ analysisId.toString(), ...cursor, ...target].join('/'),
     };
+    if (imagePB.image.path)
+        image.resource = imagePB.image.path;
+    return image;
+}
+
+// an svg element draws itself in the results view, so it's exported as the
+// image the view renders it to (see ResultsPanel._fillImages()); its size
+// isn't known here
+function hydrateSvg(svgPB: any, target: IAddress, cursor: IAddress, analysisId: number): IImage {
+    const image: IImage = {
+        type: 'image',
+        title: svgPB.title,
+        path: null,
+        width: 0,
+        height: 0,
+        address: [ analysisId.toString(), ...cursor, ...target].join('/'),
+    };
+    if (svgPB.svg.path)
+        image.resource = svgPB.svg.path;
+    return image;
 }
 
 function hydratePreformatted(preformattedPB: any): IPreformatted {

@@ -147,6 +147,10 @@ export class ResultsView extends HTMLElement {
         return this.richView.getAsHTML(options, part);
     }
 
+    getAsHtml2(options, part?: string) {
+        return this.richView.getAsHtml2(options, part);
+    }
+
     getAsLatex() {
         return this.richView.getAsLatex();
     }

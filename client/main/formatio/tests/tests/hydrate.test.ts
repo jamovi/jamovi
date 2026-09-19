@@ -136,3 +136,29 @@ describe('hydration of super titles', function () {
         ]);
     });
 });
+
+describe('hydration of figures', function () {
+
+    it('carries the resource path of an image', function () {
+        const pb = { name: 'plot', title: 'A plot', image: { width: 500, height: 400, path: '3 anova/resources/plot.png' } };
+        const image: any = hydrate(pb, [], {}, false, 3);
+        expect(image).to.deep.equal({
+            type: 'image', title: 'A plot', path: null, width: 500, height: 400,
+            address: '3', resource: '3 anova/resources/plot.png',
+        });
+    });
+
+    it('hydrates an svg element as an image of unknown size', function () {
+        const pb = { name: 'plot', title: 'An svg', svg: { content: '<svg/>', scripts: [], stylesheets: [], path: '3 anova/resources/plot.svg' } };
+        const image: any = hydrate(pb, [], {}, false, 3);
+        expect(image).to.deep.equal({
+            type: 'image', title: 'An svg', path: null, width: 0, height: 0,
+            address: '3', resource: '3 anova/resources/plot.svg',
+        });
+    });
+
+    it('leaves the resource off when the figure has not been rendered', function () {
+        const image: any = hydrate({ name: 'plot', svg: { content: '', scripts: [], stylesheets: [], path: '' } });
+        expect(image).to.not.have.property('resource');
+    });
+});
