@@ -343,7 +343,7 @@ function formatNoteRow(row: IRow, nCols: number): TableRow {
         if (cell.sups && cell.sups[0] === 'note')
             runs.push(new TextRun({ text: 'Note. ', italics: true, ...small }));
         else if (cell.sups && cell.sups.length > 0)
-            runs.push(new TextRun({ text: cell.sups.join(','), superScript: true, ...small }), new TextRun({ text: ' ', ...small }));
+            runs.push(...chunkRuns(html2Chunks(cell.sups.join('')), small), new TextRun({ text: ' ', ...small }));
         runs.push(...chunkRuns(cell.chunks, small));
     }
     return new TableRow({ children: [ tableCell(runs, { align: 'l', span: nCols, style: 'TableNote' }) ] });
@@ -378,12 +378,15 @@ function tableCell(runs: Array<ParagraphChild>, props: ICellProps): TableCell {
     });
 }
 
-// a cell's content, with its footnote superscripts
+// a cell's content, with its footnote markers and symbols. both are used
+// exactly as hydrate.ts gives them -- a footnote's already '<sup>a</sup>',
+// and a symbol's already whatever it needs to be, plain ('*') or its own
+// markup ('<sup>μ</sup>') -- so there's nothing to add here (cf.
+// resultsview/table.ts, which likewise appends cell.sups as given)
 function cellRuns(cell: ICell): Array<ParagraphChild> {
     const runs = chunkRuns(cell.chunks);
-    // symbols may themselves contain markup (e.g. jmv's '<sup>μ</sup>')
     if (cell.sups && cell.sups.length > 0)
-        runs.push(...chunkRuns(html2Chunks(cell.sups.join(',')), { superScript: true }));
+        runs.push(...chunkRuns(html2Chunks(cell.sups.join(''))));
     return runs;
 }
 

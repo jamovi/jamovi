@@ -483,9 +483,14 @@ function cleanTable(table: ITable): ITable {
             else {
                 cell.content = cell.chunks.map(formatAttr).join('');
             }
-            // handle superscripts for footnotes (= specific notes)
+            // a footnote marker or symbol beside the cell's value. both are
+            // used exactly as hydrate.ts gives them -- a footnote's already
+            // '<sup>a</sup>', and a symbol's already whatever it needs to
+            // be, plain ('*') or its own markup ('<sup>μ</sup>') -- so
+            // formatHTML() renders each correctly on its own, with nothing
+            // forced (cf. htmlify.ts's cellNodes(), resultsview/table.ts)
             if (row.type != 'footnote' && cell.sups && cell.sups.length > 0) {
-                cell.content = rmDblDollar(cell.content + '$^{' + replace4LaTeX(cell.sups.join(',')) + '}$');
+                cell.content = rmDblDollar(cell.content + formatHTML(cell.sups.join('')));
             }
         }
     }
@@ -611,7 +616,7 @@ function formatNote(row: IRow): Array<string> {
             }
             else {
                 // Specific notes
-                output.push(rmDblDollar('$^{' + row.cells[i].sups.join(',') + '}$~' + row.cells[i].content.trim() + ' \\\\'));
+                output.push(rmDblDollar(formatHTML(row.cells[i].sups.join('')) + '~' + row.cells[i].content.trim() + ' \\\\'));
             }
         }
     }

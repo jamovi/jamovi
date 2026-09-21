@@ -61,13 +61,15 @@ describe('docxify tables', () => {
     }
 
     it('treats a bare < in a cell as text, and <sup> as a superscript', async () => {
+        // hydrate.ts marks a footnote letter up itself ('<sup>b</sup>'), as
+        // it's the one piece of cell.sups with no markup of its own
         const table: ITable = {
             type: 'table',
             title: 'A table',
             nCols: 2,
             rows: [
                 { type: 'title', cells: [ cell('p', 'c'), cell('η²<sup>a</sup>', 'c') ] },
-                { type: 'body', cells: [ cell('< .001', 'r', { sups: ['b'] }), cell('0.5', 'r') ] },
+                { type: 'body', cells: [ cell('< .001', 'r', { sups: ['<sup>b</sup>'] }), cell('0.5', 'r') ] },
                 { type: 'footnote', cells: [ cell('a note & more', 'l', { colSpan: 2, sups: ['note'] }) ] },
             ],
         };
@@ -77,6 +79,28 @@ describe('docxify tables', () => {
         expect(pkg.xml).toContain('<w:vertAlign w:val="superscript"/></w:rPr><w:t xml:space="preserve">a</w:t>');
         expect(pkg.xml).toContain('<w:vertAlign w:val="superscript"/></w:rPr><w:t xml:space="preserve">b</w:t>');
         expect(pkg.text).toContain('Note. ');
+    });
+
+    it('renders a symbol exactly as given, without superscripting it again', async () => {
+        // jmv symbols are usually plain text (e.g. significance stars, or a
+        // unicode superscript like '⁻'), already whatever they need to
+        // be; some (e.g. linreg's estimated marginal means) carry markup of
+        // their own instead ('<sup>μ</sup>') -- neither should be
+        // wrapped in another superscript run, unlike a footnote letter
+        const table: ITable = {
+            type: 'table',
+            title: 'A table',
+            nCols: 1,
+            rows: [
+                { type: 'title', cells: [ cell('x', 'c') ] },
+                { type: 'body', cells: [ cell('1.23', 'r', { sups: [ '*', '<sup>μ</sup>' ] }) ] },
+            ],
+        };
+        const pkg = await build([ table ]);
+        expect(pkg.text).toBe('A tablex1.23*μ');  // no comma between sups
+        expect(pkg.xml).not.toContain('<w:vertAlign w:val="superscript"/></w:rPr><w:t xml:space="preserve">*</w:t>');
+        expect(pkg.xml).toContain('<w:vertAlign w:val="superscript"/></w:rPr><w:t xml:space="preserve">μ</w:t>');
+        expect(pkg.xml).not.toContain('w:val="subscript"');
     });
 
     it('merges combined rows and spans super titles', async () => {

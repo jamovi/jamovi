@@ -7,6 +7,19 @@ import { richMarkdown } from '../../common/htmlelementcreator';
 
 const ALPHABET = 'abcdefghijklmnopqrstuvwxyz';
 
+// a footnote reference: unlike a symbol (cell.symbols, straight from the
+// engine, already whatever it needs to be -- a plain '*', or its own markup
+// like '<sup>μ</sup>'), a footnote letter carries no markup of its own,
+// so it's marked up here, once, rather than by every consumer of cell.sups
+// (cf. resultsview/table.ts, which instead uses a dedicated unicode
+// superscript alphabet for the same purpose)
+function footnoteMark(index: number): string {
+    return `<sup>${ ALPHABET[index] }</sup>`;
+}
+
+// cell.format bits (cf. resultsview/table.ts)
+const FORMAT_BEGIN_GROUP = 1;
+
 interface IRawCell {
     value: string | number;
     footnotes: Array<string>;
@@ -645,7 +658,7 @@ function transmogrify(rawCols: Array<IRawColumn>, formats: Array<any>): [ Array<
                 }
                 indices.push(index);
             }
-            const finalSups = [...cell.symbols, ...indices.map(i => ALPHABET[i])];
+            const finalSups = [...cell.symbols, ...indices.map(i => footnoteMark(i))];
             const finalCell = createCell((typeof cell.value === 'string') ? cell.value : format(cell.value, fmt), cell.align);
             if (finalSups.length > 0)
                 finalCell.sups = finalSups;
@@ -753,6 +766,18 @@ function fold(columns: Array<IColumn>, columnNames: Array<string>): Array<Array<
             foldedCells[address.colNo][j * nFoldsInRow + address.rowOffset] = columns[i].cells[j];
         }
         combines[address.colNo] = columns[i].combineBelow;
+    }
+
+    // add spacing around the folds: the first row of each folded group is
+    // set apart from the one above (cf. resultsview/table.ts)
+    if (nFoldsInRow > 1) {
+        for (let j = 0; j < nRows; j += nFoldsInRow) {
+            for (const cells of foldedCells) {
+                const cell = cells[j];
+                if (cell)
+                    cell.format = (cell.format || 0) | FORMAT_BEGIN_GROUP;
+            }
+        }
     }
 
     // add row span's for 'combineBelow'
@@ -879,10 +904,9 @@ function hydrateTable(tablePB: any): ITable {
 
     for (let i = 0; i < footnotes.length; ++i) {
         const fn = footnotes[i];
-        const sup = ALPHABET[i];
         rows.push({
             type: 'footnote',
-            cells: [ { ...createCell(fn, 'l'), colSpan: folded.length, sups: [sup] } ]
+            cells: [ { ...createCell(fn, 'l'), colSpan: folded.length, sups: [ footnoteMark(i) ] } ]
         });
     }
 

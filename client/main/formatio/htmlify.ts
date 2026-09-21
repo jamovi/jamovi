@@ -110,9 +110,9 @@ const STYLESHEET = `
         font-size: 12px;
         margin: 24px;
     }
-    h1 { font-size: 160%; color: #3E6DA9; margin-bottom: 12px; }
-    h2 { font-size: 130%; color: #3E6DA9; margin-bottom: 12px; }
-    h3, h4, h5, h6 { font-size: 110%; margin-bottom: 12px; }
+    h1 { font-size: 160%; color: #3E6DA9; margin-top: 24px; margin-bottom: 12px; }
+    h2 { font-size: 130%; color: #3E6DA9; margin-top: 24px; margin-bottom: 12px; }
+    h3, h4, h5, h6 { font-size: 110%; margin-top: 16px; margin-bottom: 12px; }
     h1, h2, h3, h4, h5, h6 { break-after: avoid; page-break-after: avoid; }
     table, img, pre { break-inside: avoid; page-break-inside: avoid; }
     img { max-width: 100%; height: auto; }
@@ -307,9 +307,7 @@ function formatNoteRow(r: IRow, nCols: number): HTMLTableRowElement {
             nodes.push(note);
         }
         else if (cell.sups && cell.sups.length > 0) {
-            const sup = document.createElement('sup');
-            sup.textContent = cell.sups.join(',');
-            nodes.push(sup, document.createTextNode(' '));
+            nodes.push(...chunkNodes(html2Chunks(cell.sups.join(''))), document.createTextNode(' '));
         }
         nodes.push(...chunkNodes(cell.chunks));
     }
@@ -360,15 +358,15 @@ function tableCell(tag: 'th' | 'td', nodes: Array<Node>, props: ICellProps): HTM
     return cell;
 }
 
-// a cell's content, with its footnote superscripts
+// a cell's content, with its footnote markers and symbols. both are used
+// exactly as hydrate.ts gives them -- a footnote's already '<sup>a</sup>',
+// and a symbol's already whatever it needs to be, plain ('*') or its own
+// markup ('<sup>μ</sup>') -- so there's nothing to add here (cf.
+// resultsview/table.ts, which likewise appends cell.sups as given)
 function cellNodes(cell: ICell): Array<Node> {
     const nodes = chunkNodes(cell.chunks);
-    // symbols may themselves contain markup (e.g. jmv's '<sup>μ</sup>')
-    if (cell.sups && cell.sups.length > 0) {
-        const sup = document.createElement('sup');
-        sup.append(...chunkNodes(html2Chunks(cell.sups.join(','))));
-        nodes.push(sup);
-    }
+    if (cell.sups && cell.sups.length > 0)
+        nodes.push(...chunkNodes(html2Chunks(cell.sups.join(''))));
     return nodes;
 }
 

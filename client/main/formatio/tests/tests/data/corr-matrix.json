@@ -38,6 +38,7 @@
             }
           ],
           "align": "l",
+          "format": 1,
           "rowSpan": 3
         },
         {
@@ -47,7 +48,8 @@
               "content": "Pearson's r"
             }
           ],
-          "align": "l"
+          "align": "l",
+          "format": 1
         },
         {
           "content": "—",
@@ -56,7 +58,8 @@
               "content": "—"
             }
           ],
-          "align": "r"
+          "align": "r",
+          "format": 1
         },
         null
       ]
@@ -140,6 +143,7 @@
             }
           ],
           "align": "l",
+          "format": 1,
           "rowSpan": 3
         },
         {
@@ -149,7 +153,8 @@
               "content": "Pearson's r"
             }
           ],
-          "align": "l"
+          "align": "l",
+          "format": 1
         },
         {
           "content": "0.803",
@@ -158,7 +163,8 @@
               "content": "0.803"
             }
           ],
-          "align": "r"
+          "align": "r",
+          "format": 1
         },
         {
           "content": "—",
@@ -167,7 +173,8 @@
               "content": "—"
             }
           ],
-          "align": "r"
+          "align": "r",
+          "format": 1
         }
       ]
     },

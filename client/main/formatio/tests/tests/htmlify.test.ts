@@ -49,15 +49,17 @@ describe('htmlify tables', () => {
     }
 
     it('keeps inline formatting in cells, and adds footnote superscripts', () => {
+        // hydrate.ts marks a footnote letter up itself ('<sup>b</sup>'), as
+        // it's the one piece of cell.sups with no markup of its own
         const table: ITable = {
             type: 'table',
             title: 'A table',
             nCols: 2,
             rows: [
                 { type: 'title', cells: [ cell('p<sub>tukey</sub>', 'c'), cell('η²<sup>a</sup>', 'c') ] },
-                { type: 'body', cells: [ cell('< .001', 'r', { sups: ['b'] }), cell('0.5', 'r') ] },
+                { type: 'body', cells: [ cell('< .001', 'r', { sups: ['<sup>b</sup>'] }), cell('0.5', 'r') ] },
                 { type: 'footnote', cells: [ cell('a note & more', 'l', { colSpan: 2, sups: ['note'] }) ] },
-                { type: 'footnote', cells: [ cell('specific', 'l', { colSpan: 2, sups: ['b'] }) ] },
+                { type: 'footnote', cells: [ cell('specific', 'l', { colSpan: 2, sups: ['<sup>b</sup>'] }) ] },
             ],
         };
         const doc = build(table);
@@ -71,6 +73,29 @@ describe('htmlify tables', () => {
         expect(tds[2].textContent).toBe('Note. a note & more');
         expect(tds[2].querySelector('em')!.textContent).toBe('Note. ');
         expect(tds[3].textContent).toBe('b specific');
+    });
+
+    it('renders a symbol exactly as given, without superscripting it again', () => {
+        // jmv symbols are usually plain text (e.g. significance stars, or a
+        // unicode superscript like '⁻'), already whatever they need to
+        // be; some (e.g. linreg's estimated marginal means) carry markup of
+        // their own instead ('<sup>μ</sup>') -- neither should be
+        // wrapped in another <sup>, unlike a footnote letter (see above)
+        const table: ITable = {
+            type: 'table',
+            title: 'A table',
+            nCols: 1,
+            rows: [
+                { type: 'title', cells: [ cell('x', 'c') ] },
+                { type: 'body', cells: [ cell('1.23', 'r', { sups: [ '*', '<sup>μ</sup>' ] }) ] },
+            ],
+        };
+        const doc = build(table);
+        const td = doc.querySelector('tbody td')!;
+        const sups = td.querySelectorAll('sup');
+        expect(sups.length).toBe(1);  // only the markup symbol is a <sup>
+        expect(sups[0].textContent).toBe('μ');
+        expect(td.textContent).toBe('1.23*μ');  // no comma, and '*' stays plain
     });
 
     it('merges combined rows and spans super titles', () => {

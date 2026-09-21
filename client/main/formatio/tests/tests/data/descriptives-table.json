@@ -45,7 +45,8 @@
               "content": "N"
             }
           ],
-          "align": "l"
+          "align": "l",
+          "format": 1
         },
         {
           "content": "60.00",
@@ -54,7 +55,8 @@
               "content": "60.00"
             }
           ],
-          "align": "r"
+          "align": "r",
+          "format": 1
         },
         {
           "content": "60.00",
@@ -63,7 +65,8 @@
               "content": "60.00"
             }
           ],
-          "align": "r"
+          "align": "r",
+          "format": 1
         },
         {
           "content": "60.00",
@@ -72,7 +75,8 @@
               "content": "60.00"
             }
           ],
-          "align": "r"
+          "align": "r",
+          "format": 1
         }
       ]
     },
@@ -213,7 +217,7 @@
           ],
           "align": "r",
           "sups": [
-            "a"
+            "<sup>a</sup>"
           ]
         },
         null
@@ -331,7 +335,7 @@
           "align": "l",
           "colSpan": 4,
           "sups": [
-            "a"
+            "<sup>a</sup>"
           ]
         }
       ]
