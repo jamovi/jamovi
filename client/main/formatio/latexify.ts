@@ -224,7 +224,7 @@ function generateFigure(figure: IImage): Array<string> {
 // generate tables
 function generateTable(table: ITable): Array<string> {
     // replace non-printable characters, handle footnotes
-    table = cleanTable(table);
+    cleanTable(table);
 
     // define variables
     let output = [];
@@ -461,7 +461,8 @@ function tableCellAlign(table: ITable): Array<string> {
 }
 
 // replace non-printable characters in tables, handle footnotes, etc.
-function cleanTable(table: ITable): ITable {
+// mutates table's cells in place
+function cleanTable(table: ITable): void {
 
     for (let i = 0; i < table.rows.length; ++i) {
         const row = table.rows[i];
@@ -494,8 +495,6 @@ function cleanTable(table: ITable): ITable {
             }
         }
     }
-
-    return table;
 }
 
 // replace LaTeX special characters, non-printable characters, and HTML attributes in strings

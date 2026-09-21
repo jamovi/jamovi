@@ -143,6 +143,31 @@ describe('htmlify tables', () => {
         expect(cells[2].style.paddingTop).toBe('8px');    // begins a group
         expect(cells[3].style.paddingLeft).toBe('24px');  // indented
     });
+
+    it('positions a sup out of flow, so it does not throw off a column of right-aligned numbers', () => {
+        // without this, '0.578***' would be right-aligned as a whole, so its
+        // digits would sit to the left of a plain '0.664' in the same column
+        const table: ITable = {
+            type: 'table',
+            title: 'A table',
+            nCols: 1,
+            rows: [
+                { type: 'title', cells: [ cell('x', 'c') ] },
+                { type: 'body', cells: [ cell('0.578', 'r', { sups: ['***'] }) ] },
+                { type: 'body', cells: [ cell('0.664', 'r') ] },
+            ],
+        };
+        const doc = build(table);
+        const tds = doc.querySelectorAll<HTMLTableCellElement>('tbody td');
+        expect(tds[0].style.position).toBe('relative');
+        expect(tds[0].style.paddingRight).toBe('20px');  // 8px base + 12px reserved
+        const sups = tds[0].querySelector<HTMLElement>('span');
+        expect(sups!.style.position).toBe('absolute');
+        expect(sups!.textContent).toBe('***');
+        // a cell with no sups still reserves the same padding, so both
+        // cells' right-aligned digits land at the same horizontal position
+        expect(tds[1].style.paddingRight).toBe('20px');
+    });
 });
 
 describe('htmlify figures', () => {
@@ -197,7 +222,12 @@ describe('htmlify text', () => {
         const doc = build(text, { level: 2 });
         expect(doc.querySelector('h2')!.textContent).toBe('A heading');
         expect(doc.querySelector('strong')!.textContent).toBe('bold');
-        expect(doc.querySelector('a')!.getAttribute('href')).toBe('https://www.jamovi.org/?a=1&b=2');
+        const a = doc.querySelector('a')!;
+        expect(a.getAttribute('href')).toBe('https://www.jamovi.org/?a=1&b=2');
+        // opens in a new tab, so it doesn't navigate away from the exported
+        // document itself (e.g. a reference's link to jamovi.org)
+        expect(a.getAttribute('target')).toBe('_blank');
+        expect(a.getAttribute('rel')).toBe('noopener noreferrer');
         // one ordered list, with a nested list inside its last item
         const ols = doc.querySelectorAll('ol');
         expect(ols.length).toBe(2);
@@ -293,7 +323,11 @@ describe('createDoc', () => {
         expect(refs[0]!.startsWith('[1] ')).toBe(true);
         expect(refs[1]!.startsWith('[2] ')).toBe(true);
         expect(refs[1]).toContain('jamovi');
-        expect(doc.querySelector('h1 ~ p a')).not.toBeNull();  // the urls are links
+        const link = doc.querySelector('h1 ~ p a')!;  // the urls are links
+        expect(link).not.toBeNull();
+        // opens in a new tab, so following it (e.g. to jamovi.org) doesn't
+        // navigate away from the exported document itself
+        expect(link.getAttribute('target')).toBe('_blank');
     });
 
     it('leaves the references out when they are hidden', () => {

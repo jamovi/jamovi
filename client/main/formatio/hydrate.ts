@@ -209,6 +209,10 @@ function deltaInlineAttrs(attributes?: { [name: string]: any }): IChunkAttribute
         if ( ! DELTA_PARAGRAPH_ATTRS.has(name))
             attrs[name] = value;
     }
+    // the annotation editor's link dialog doesn't require a scheme (e.g.
+    // 'www.jamovi.org'), so one's added here too (cf. normalizeUrl())
+    if (attrs.link)
+        attrs.link = normalizeUrl(attrs.link);
     return attrs as IChunkAttributes;
 }
 
@@ -473,6 +477,17 @@ function hydrateNotice(noticePB: any): IText {
     };
 }
 
+// a link typed without a scheme (e.g. 'www.jamovi.org', from an annotation's
+// link dialog) would otherwise resolve as a path relative to wherever the
+// document ends up -- the exported file on disk, or the app's own page --
+// rather than the external site intended, so it's given one explicitly.
+// fragments (#x) and root-relative paths (/x) are left as they are
+function normalizeUrl(url: string): string {
+    if (/^[a-z][a-z0-9+.-]*:/i.test(url) || url.startsWith('#') || url.startsWith('/'))
+        return url;
+    return `https://${ url }`;
+}
+
 // converts a string of inline html (p<sub>tukey</sub>, <i>Note.</i>, ...)
 // into chunks. anything that isn't markup is text, so 'p < .001' is safe
 export function html2Chunks(html: string): Array<ITextChunk> {
@@ -537,7 +552,7 @@ function html2Paragraphs(content: string | Node[]): Array<IParagraph> {
             inline.script = 'sub';
         const href = element.getAttribute('href');
         if (tag === 'A' && href)
-            inline.link = href;
+            inline.link = normalizeUrl(href);
         if (/^H[1-6]$/.test(tag))
             block.header = parseInt(tag.charAt(1));
         if (tag === 'PRE')
@@ -812,7 +827,10 @@ function fold(columns: Array<IColumn>, columnNames: Array<string>): Array<Array<
 }
 
 // ensure that the first two bits of the cell format (BEGIN.GROUP / END.GROUP) are consistent for all cells in a row
-function ensureFormat(cellsByRow: Array<Array<ICell>>): Array<Array<ICell>> {
+// spreads each row's BEGIN.GROUP / END.GROUP bits (the first two bits of
+// cell.format) across every cell in that row, leaving NEGATIVE and INDENT
+// (the other two bits) untouched. mutates cellsByRow in place
+function ensureFormat(cellsByRow: Array<Array<ICell>>): void {
     // first determine what the maximum value of format (BEGIN.GROUP: 1, END.GROUP: 2) is, while ensuring
     // that the other format markers (NEGATIVE: 4, INDENT: 8) remain unaffected
     const maxFormat = cellsByRow.map(r => Math.max(...r.map(c => (c && c.format) ? c.format & 3 : 0)));
@@ -832,8 +850,6 @@ function ensureFormat(cellsByRow: Array<Array<ICell>>): Array<Array<ICell>> {
             }
         }
     }
-
-    return cellsByRow;
 }
 
 function hydrateTable(tablePB: any): ITable {
@@ -885,7 +901,8 @@ function hydrateTable(tablePB: any): ITable {
     const [ cellsByColumn, footnotes ] = transmogrify(rawColumns, formatsByColumn);
 
     const folded = fold(cellsByColumn, columnNames);
-    const cellsByRow = ensureFormat(transpose(folded));
+    const cellsByRow = transpose(folded);
+    ensureFormat(cellsByRow);
     const bodyRows: Array<IRow> = cellsByRow.map(cells => {
         return {
             type: 'body',

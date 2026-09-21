@@ -52,6 +52,16 @@ describe('hydration of annotations (quill deltas)', () => {
         expect(text.paragraphs[0].attributes).toBeUndefined();
     });
 
+    it("adds a scheme to a link typed without one (the link dialog doesn't require it)", () => {
+        const text = fromDelta([
+            { insert: 'jamovi', attributes: { link: 'www.jamovi.org' } },
+            { insert: '\n' },
+        ]);
+        expect(text.paragraphs[0].chunks).toEqual([
+            { content: 'jamovi', attributes: { link: 'https://www.jamovi.org' } },
+        ]);
+    });
+
     it('keeps blank lines, and embeds formulas as chunks', () => {
         const text = fromDelta([
             { insert: 'a\n\n' },
@@ -92,6 +102,21 @@ describe('hydration of html and markdown elements', () => {
         expect(text.paragraphs[0]).toEqual({ chunks: [ { content: 'Heading' } ] });
         expect(text.paragraphs[1].chunks).toEqual([ { content: 'A ' }, { content: 'bold', attributes: { bold: true } }, { content: ' word.' } ]);
         expect(text.paragraphs.slice(2).map(p => p.attributes)).toEqual([ { list: 'ordered' }, { list: 'ordered' } ]);
+    });
+
+    it('adds a scheme to an html link typed without one, but leaves a fragment or root-relative path alone', () => {
+        const text = hydrate({ name: 'h', visible: 0, html: { content:
+            '<p><a href="www.jamovi.org">a</a> <a href="#x">b</a> <a href="/x">c</a> <a href="mailto:x@y.z">d</a></p>'
+        } }) as IText;
+        expect(text.paragraphs[0].chunks).toEqual([
+            { content: 'a', attributes: { link: 'https://www.jamovi.org' } },
+            { content: ' ' },
+            { content: 'b', attributes: { link: '#x' } },
+            { content: ' ' },
+            { content: 'c', attributes: { link: '/x' } },
+            { content: ' ' },
+            { content: 'd', attributes: { link: 'mailto:x@y.z' } },
+        ]);
     });
 
     it('treats text with no block wrapper as one paragraph', () => {

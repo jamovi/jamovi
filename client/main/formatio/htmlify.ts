@@ -340,7 +340,14 @@ function tableCell(tag: 'th' | 'td', nodes: Array<Node>, props: ICellProps): HTM
         padding[2] += 4;
     if (props.indent)
         padding[3] += 16;
+    // a right-aligned (numeric) cell reserves extra room on its right for a
+    // trailing sup (see cellNodes()), so that sup doesn't throw off the
+    // numbers' own right alignment when only some rows have one (cf.
+    // resultsview/table.ts's '-integer'/'-number' padding-inline-end)
+    if (props.align === 'r')
+        padding[1] += 12;
     cell.style.padding = padding.map((px) => `${ px }px`).join(' ');
+    cell.style.position = 'relative';
 
     if (props.align)
         cell.style.textAlign = alignment(props.align);
@@ -361,12 +368,22 @@ function tableCell(tag: 'th' | 'td', nodes: Array<Node>, props: ICellProps): HTM
 // a cell's content, with its footnote markers and symbols. both are used
 // exactly as hydrate.ts gives them -- a footnote's already '<sup>a</sup>',
 // and a symbol's already whatever it needs to be, plain ('*') or its own
-// markup ('<sup>μ</sup>') -- so there's nothing to add here (cf.
-// resultsview/table.ts, which likewise appends cell.sups as given)
+// markup ('<sup>μ</sup>') -- so there's nothing to add to them here (cf.
+// resultsview/table.ts, which likewise appends cell.sups as given). they're
+// positioned out of flow, so a trailing sup doesn't count towards the
+// cell's own width -- otherwise a value with one (e.g. '0.578***') would
+// sit out of line with the plain values above/below it in the same,
+// right-aligned column (cf. table.ts's '.jmv-results-table-sup', and
+// tableCell()'s position: relative and reserved padding for 'r' cells)
 function cellNodes(cell: ICell): Array<Node> {
     const nodes = chunkNodes(cell.chunks);
-    if (cell.sups && cell.sups.length > 0)
-        nodes.push(...chunkNodes(html2Chunks(cell.sups.join(''))));
+    if (cell.sups && cell.sups.length > 0) {
+        const sups = document.createElement('span');
+        sups.style.position = 'absolute';
+        sups.style.paddingInlineStart = '2px';
+        sups.append(...chunkNodes(html2Chunks(cell.sups.join(''))));
+        nodes.push(sups);
+    }
     return nodes;
 }
 
@@ -511,8 +528,20 @@ function chunkNodes(chunks: Array<ITextChunk>): Array<Node> {
             });
         }
         const link = attrs.link;
-        if (link)
-            wrap('a', (el) => (el as HTMLAnchorElement).href = link);
+        if (link) {
+            // opens in a new tab, so following a link -- e.g. a reference's
+            // link to jamovi.org -- doesn't navigate away from the exported
+            // document itself (cf. main/references.ts's Reference.setup(),
+            // which keeps the literal target="_blank" that referenceAsHTML()
+            // writes into the reference text; that's lost by the time it
+            // reaches here, since html2Chunks() only carries a link's href)
+            wrap('a', (el) => {
+                const a = el as HTMLAnchorElement;
+                a.href = link;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+            });
+        }
 
         return node;
     });
