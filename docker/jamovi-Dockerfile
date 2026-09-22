@@ -52,7 +52,7 @@ ARG MODS_ROOT=$JAMOVI_ROOT/docker/mods
 
 COPY $JAMOVI_ROOT/server/requirements.txt $MODS_ROOT/server/requirements.tx[t] /tmp/source/
 RUN --mount=type=cache,target=/root/.cache/pip \
-    python3 -m pip install --trusted-host pypi.python.org -r /tmp/source/requirements.txt --break-system-packages
+    python3 -m pip install --trusted-host pypi.python.org -r /tmp/source/requirements.txt --break-system-packages --ignore-installed
 
 COPY $JAMOVI_ROOT/readstat /tmp/source/readstat
 WORKDIR /tmp/source/readstat

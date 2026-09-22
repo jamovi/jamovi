@@ -4,7 +4,7 @@
 
 'use strict';
 
-import yaml from 'js-yaml';
+import { load as yamlLoad } from 'js-yaml';
 
 import host from './host';
 import Version from './utils/version';
@@ -364,7 +364,7 @@ class Module {
         if (response.ok) {
             let content = await response.text();
             try {
-                let moduleDefn = yaml.load(content);
+                let moduleDefn = yamlLoad(content);
                 if (moduleDefn.languages)
                     this._languages = moduleDefn.languages;
 
@@ -459,7 +459,7 @@ class Module {
                     if (response.ok) {
                         try {
                             let defn = await response.text();
-                            defn = yaml.load(defn);
+                            defn = yamlLoad(defn);
                             return defn;
                         }
                         catch (e) {
