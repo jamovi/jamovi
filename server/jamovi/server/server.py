@@ -341,7 +341,11 @@ class _Handlers:
                     file_id = session_files.adopt(f.path, f.sha256, f.filename)
                 else:
                     real = os.path.realpath(f.path)
-                    if os.path.commonpath([upload_path, real]) == upload_path:
+                    try:
+                        under_upload_path = os.path.commonpath([upload_path, real]) == upload_path
+                    except ValueError:
+                        under_upload_path = False  # different drives on windows
+                    if under_upload_path:
                         move_source = True  # the accelerator's copy, no longer needed
                     elif instance.perms.open.local:
                         move_source = False  # the user's own file
