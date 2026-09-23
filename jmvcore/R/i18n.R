@@ -59,8 +59,10 @@ Translator <- R6Class('Translator',
                 if (result != '')
                     text <- result
             } else {
-                # if not found, there could be context
-                match <- regexec('(.*) \\[(.*)\\]', text)[[1]]
+                # if not found, there could be context: 'text [context]', at
+                # the end (cf. the client's i18n.ts extractContext()). a '['
+                # elsewhere, as in a markdown link, isn't one
+                match <- regexec('^(.+) \\[([a-z]+)\\]$', text)[[1]]
                 if (match[1] != -1) {
                     # separate the text from the context
                     context <- substring(text, match[3], match[3] + attr(match, 'match.length')[3] - 1)
