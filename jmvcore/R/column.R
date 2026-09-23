@@ -50,6 +50,7 @@ Column <- R6::R6Class("Column",
             t <- gsub('<sub>', '-', t, fixed=TRUE)
             t
         },
+        titleHtml=function() private$.title,
         type=function() private$.type,
         format=function() paste0(private$.format, collapse=','),
         combineBelow=function() private$.combineBelow,

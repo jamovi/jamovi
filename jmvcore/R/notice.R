@@ -16,6 +16,7 @@ Notice <- R6::R6Class("Notice",
         .type=NA),
     active=list(
         content=function() private$.content,
+        type=function() private$.type,
         status=function() private$.status
     ),
     public=list(

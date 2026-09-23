@@ -6,11 +6,17 @@ PlotObject <- R6::R6Class('PlotObject',
             self$fun <- fun
         },
         fun=NA,
-        print=function() {
+        draw=function() {
             fun <- self$fun
             ret <- fun()
-            if ( ! is.null(ret) && ! is.logical(ret))
-                print(ret)
+            if (is.null(ret) || is.logical(ret))
+                return(isTRUE(ret))
+            print(ret)
+            TRUE
+        },
+        print=function() {
+            self$draw()
+            invisible(self)
         }))
 
 #' the jmvcore Object classes
@@ -401,13 +407,9 @@ Analysis <- R6::R6Class('Analysis',
         .render=function(funName, image, ...) {
             result <- self$.createPlotObject(funName, image, ...)
             image$.setPlot(result)
-            if ( ! is.null(result)) {
-                suppressWarnings(suppressMessages(print(result)))
-                return(TRUE)
-            }
-            else {
+            if (is.null(result))
                 return(FALSE)
-            }
+            suppressWarnings(suppressMessages(result$draw()))
         },
         .createImages=function(noThrow=FALSE, ...) {
             private$.results$.createImages(ppi=self$options$ppi, noThrow=noThrow, ...)
