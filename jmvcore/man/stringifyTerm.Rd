@@ -4,8 +4,7 @@
 \alias{stringifyTerm}
 \title{Converts a term into a string}
 \usage{
-stringifyTerm(components, sep = getOption("jmvTermSep", ":"),
-  raise = FALSE)
+stringifyTerm(components, sep = getOption("jmvTermSep", ":"), raise = FALSE)
 }
 \arguments{
 \item{components}{a character vector of components}

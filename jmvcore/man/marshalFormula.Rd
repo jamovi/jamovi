@@ -4,8 +4,15 @@
 \alias{marshalFormula}
 \title{Marshal a formula into options}
 \usage{
-marshalFormula(formula, data, from = "rhs", type = "vars",
-  permitted = c("numeric", "factor"), subset = ":", required = FALSE)
+marshalFormula(
+  formula,
+  data,
+  from = "rhs",
+  type = "vars",
+  permitted = c("numeric", "factor"),
+  subset = ":",
+  required = FALSE
+)
 }
 \arguments{
 \item{formula}{the formula}

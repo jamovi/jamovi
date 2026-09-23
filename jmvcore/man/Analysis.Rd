@@ -2,7 +2,6 @@
 % Please edit documentation in R/action.R, R/analysis.R, R/array.R, R/column.R,
 %   R/group.R, R/html.R, R/image.R, R/notice.R, R/output.R, R/preformatted.R,
 %   R/state.R, R/svg.R, R/table.R, R/text.R
-\docType{data}
 \name{Action}
 \alias{Action}
 \alias{Analysis}
@@ -19,37 +18,6 @@
 \alias{Table}
 \alias{Text}
 \title{the jmvcore Object classes}
-\format{An object of class \code{R6ClassGenerator} of length 26.}
-\usage{
-Action
-
-Analysis
-
-Array
-
-Column
-
-Group
-
-Html
-
-Image
-
-Notice
-
-Output
-
-Preformatted
-
-State
-
-Svg
-
-Table
-
-Text
-}
 \description{
 the jmvcore Object classes
 }
-\keyword{datasets}

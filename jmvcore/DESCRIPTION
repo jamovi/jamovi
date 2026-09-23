@@ -29,4 +29,6 @@ Suggests:
     fastmap,
     export,
     jmvReadWrite
-RoxygenNote: 6.1.1
+Encoding: UTF-8
+Roxygen: list(r6 = FALSE)
+Config/roxygen2/version: 8.0.0
