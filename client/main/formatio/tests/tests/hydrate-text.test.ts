@@ -2,13 +2,13 @@
 
 import { describe, it, expect } from 'vitest';
 
-import { hydrate, IText } from '../../hydrate';
+import { hydrate, IText, IGroup, ITable, IVerbatimHtml } from '../../hydrate';
 
 // an annotation (a quill delta) is hydrated as the text above an element;
 // an empty group is the simplest thing to hang one off
 function fromDelta(ops: Array<any>): IText {
     const pb = { name: 'g', title: 'G', visible: 0, group: { elements: [] } };
-    return hydrate(pb, [], { 'results//topText': { ops } }) as IText;
+    return hydrate(pb, { values: { 'results//topText': { ops } } }) as IText;
 }
 
 describe('hydration of annotations (quill deltas)', () => {
@@ -124,5 +124,59 @@ describe('hydration of html and markdown elements', () => {
         expect(text.paragraphs).toEqual([
             { chunks: [ { content: 'Note:', attributes: { bold: true } }, { content: ' p < .05' } ] },
         ]);
+    });
+});
+
+// an Html result's <table> (e.g. from R's gt/gtsummary) used to be flattened
+// into disconnected lines of text, losing its structure entirely (issue
+// #1867); it's now kept as a real ITable, so it survives copy/export
+describe('hydration of html tables', () => {
+
+    it('keeps a plain table as an ITable, rather than flattening it into text', () => {
+        const table = hydrate({ name: 'h', visible: 0, html: { content:
+            '<table><thead><tr><th>A</th><th>B</th></tr></thead>' +
+            '<tbody><tr><td>1</td><td>2</td></tr></tbody></table>'
+        } }) as ITable;
+        expect(table.type).toBe('table');
+        expect(table.nCols).toBe(2);
+        expect(table.rows.map(r => r.type)).toEqual([ 'title', 'body' ]);
+        expect(table.rows[0].cells.map(c => c && c.content)).toEqual([ 'A', 'B' ]);
+        expect(table.rows[1].cells.map(c => c && c.content)).toEqual([ '1', '2' ]);
+    });
+
+    it('wraps text and a table together in a group, when both are present', () => {
+        const group = hydrate({ name: 'h', visible: 0, html: { content:
+            '<p>Some text</p><table><tr><td>x</td></tr></table>'
+        } }) as IGroup;
+        expect(group.type).toBe('group');
+        expect(group.title).toBeUndefined();
+        expect(group.items.map(i => i.type)).toEqual([ 'text', 'table' ]);
+    });
+
+    it('honours colspan, spreading it across covered columns (colSpan 0)', () => {
+        const table = hydrate({ name: 'h', visible: 0, html: { content:
+            '<table><tr><th colspan="2">Group</th></tr><tr><td>a</td><td>b</td></tr></table>'
+        } }) as ITable;
+        expect(table.nCols).toBe(2);
+        expect(table.rows[0].cells).toEqual([
+            { content: 'Group', chunks: [ { content: 'Group' } ], align: 'c', colSpan: 2 },
+            { content: 'Group', chunks: [ { content: 'Group' } ], align: 'c', colSpan: 0 },
+        ]);
+    });
+
+    it('honours rowspan, marking the covered rows below (rowSpan 0)', () => {
+        const table = hydrate({ name: 'h', visible: 0, html: { content:
+            '<table><tr><td rowspan="2">x</td><td>1</td></tr><tr><td>2</td></tr></table>'
+        } }) as ITable;
+        expect(table.nCols).toBe(2);
+        expect(table.rows[0].cells[0]).toEqual({ content: 'x', chunks: [ { content: 'x' } ], align: 'l', rowSpan: 2 });
+        expect(table.rows[1].cells[0]).toEqual({ content: 'x', chunks: [ { content: 'x' } ], align: 'l', rowSpan: 0 });
+        expect(table.rows[1].cells[1]).toEqual({ content: '2', chunks: [ { content: '2' } ], align: 'l' });
+    });
+
+    it('is passed through verbatim instead, when verbatimHtml is requested', () => {
+        const content = '<table class="gt_table"><tr><td style="color:red">x</td></tr></table>';
+        const raw = hydrate({ name: 'h', visible: 0, html: { content } }, { verbatimHtml: true }) as IVerbatimHtml;
+        expect(raw).toEqual({ type: 'html', content });
     });
 });

@@ -813,8 +813,10 @@ class ResultsPanel extends EventDistributor {
     // hydrates every analysis (or just the part addressed), and gathers the
     // references they cite. the first analysis of a whole document carries
     // the document heading (see hydrateGroup()), everything else sits
-    // beneath it
-    private _hydrateAll(part?: string): { items: Array<IDocItem>, references: Array<IReference> } {
+    // beneath it. verbatimHtml: see hydrate()'s IHydrateOptions of the same
+    // name -- passed by callers building html (getAsHtml2(), the clipboard),
+    // not docx/latex
+    private _hydrateAll(part?: string, verbatimHtml: boolean = false): { items: Array<IDocItem>, references: Array<IReference> } {
         const items: Array<IDocItem> = [];
         let references: Array<IReference> = [];
 
@@ -824,7 +826,7 @@ class ResultsPanel extends EventDistributor {
             const analysis = this.model.analyses().get(analysisId);
             if (analysis === null)
                 throw new Error('Unable to access analysis');
-            const element = hydrate(analysis.results, address, analysis.options.getValues(), false, analysis.id);
+            const element = hydrate(analysis.results, { address, values: analysis.options.getValues(), analysisId: analysis.id, verbatimHtml });
             if (element !== null)
                 items.push({ element, level: 1 });
             references.push(...analysis.references);
@@ -833,7 +835,7 @@ class ResultsPanel extends EventDistributor {
             references.push(R, jmv);
             let first = true;
             for (const analysis of this.model.analyses()) {
-                const element = hydrate(analysis.results, [], analysis.options.getValues(), first, analysis.id);
+                const element = hydrate(analysis.results, { values: analysis.options.getValues(), top: first, analysisId: analysis.id, verbatimHtml });
                 const level = first ? 1 : 2;
                 first = false;
                 if (element === null)
@@ -915,7 +917,7 @@ class ResultsPanel extends EventDistributor {
     // figures referenced as resources, for the .omv. getAsHTML() below is
     // the results view as rendered
     async getAsHtml2(options: IHtmlDocOptions, part?: string): Promise<string> {
-        const { items, references } = this._hydrateAll(part);
+        const { items, references } = this._hydrateAll(part, true);
 
         for (const item of items)
             await this._fillImages(item.element, options.images || 'inline');
@@ -1049,7 +1051,7 @@ class ResultsPanel extends EventDistributor {
 
             if (address.length === 0) {
                 // the whole document
-                const { items, references } = this._hydrateAll();
+                const { items, references } = this._hydrateAll(undefined, true);
                 for (const item of items)
                     await this._fillImages(item.element);
                 const showRefs = this.model.settings().getSetting('refsMode', 'bottom') !== 'hidden';
@@ -1061,7 +1063,7 @@ class ResultsPanel extends EventDistributor {
                 const analysis = this.model.analyses().get(analysisId);
                 if (analysis === null)
                     throw new Error('Unable to access analysis');
-                const hydrated = hydrate(analysis.results, address, analysis.options.getValues(), false, analysis.id);
+                const hydrated = hydrate(analysis.results, { address, values: analysis.options.getValues(), analysisId: analysis.id, verbatimHtml: true });
 
                 if (hydrated.type === 'image') {
                     // when the whole of what's being copied is a single
@@ -1255,7 +1257,7 @@ class ResultsPanel extends EventDistributor {
             const analysis = this.model.analyses().get(analysisId);
             if (analysis === null)
                 throw new Error('Unable to access analysis');
-            const hydrated = hydrate(analysis.results, address, analysis.options.getValues(), false, analysis.id);
+            const hydrated = hydrate(analysis.results, { address, values: analysis.options.getValues(), analysisId: analysis.id });
             const text = latexify(hydrated);
 
             await host.copyToClipboard({ text });

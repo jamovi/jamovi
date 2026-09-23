@@ -138,7 +138,17 @@ export interface IGroup {
     refs?: Array<string>;
 }
 
-export type IElement = IGroup | ITable | IImage | IText | IPreformatted;
+// an Html result's content, verbatim -- an alternative to hydrateHTML()'s
+// parsed IText/ITable, for a destination that can render arbitrary html
+// itself (htmlify.ts's clipboard/html export) and would rather not lose
+// anything hydrateHTML() can't represent (cf. IHydrateOptions.verbatimHtml)
+export interface IVerbatimHtml {
+    type: 'html';
+    content: string;
+    refs?: Array<string>;
+}
+
+export type IElement = IGroup | ITable | IImage | IText | IPreformatted | IVerbatimHtml;
 type IOptionValues = { [ name: string ]: any };
 type IAddress = Array<string>;
 
@@ -146,10 +156,40 @@ export function hasAttr(item: ITextChunk | IParagraph, attr: string): boolean {
     return (item.attributes !== undefined && attr in item.attributes);
 }
 
-export function hydrate(pb: any, address: IAddress = [], values: IOptionValues = {}, top: boolean = false, analysisId?: number): IElement {
-    analysisId = analysisId || 0;
+export interface IHydrateOptions {
+    address?: IAddress;
+    values?: IOptionValues;
+    top?: boolean;
+    analysisId?: number;
+    // an Html result hydrates as an IVerbatimHtml, its content untouched,
+    // rather than being parsed into an IText/ITable (see hydrateHTML() vs
+    // hydrateVerbatimHTML()) -- for htmlify.ts, which can render arbitrary
+    // html itself, so nothing of the source markup/styling need be lost;
+    // docxify.ts and latexify.ts still need the parsed form, having no html
+    // of their own to fall back on
+    verbatimHtml?: boolean;
+}
 
-    const elements = hydrateElement(pb, address, values, [], top, analysisId);
+// what stays the same across a whole hydrate() call, as it recurses down
+// through hydrateElement()/hydrateGroup()/hydrateArray()/hydrateElements()
+// -- as opposed to pb/target/cursor, which are specific to where in the
+// results tree a given call is
+interface IHydrateContext {
+    values: IOptionValues;
+    top: boolean;
+    analysisId: number;
+    verbatimHtml: boolean;
+}
+
+export function hydrate(pb: any, options: IHydrateOptions = {}): IElement {
+    const context: IHydrateContext = {
+        values: options.values ?? {},
+        top: options.top ?? false,
+        analysisId: options.analysisId ?? 0,
+        verbatimHtml: options.verbatimHtml ?? false,
+    };
+
+    const elements = hydrateElement(pb, options.address ?? [], [], context);
     if (elements === null) {
         return null;
     }
@@ -264,15 +304,15 @@ function hydrateRefs(currPB: any): Array<string> {
     return [];
 }
 
-function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor: Array<string>, top: boolean, analysisId: number): Array<IElement> {
+function hydrateElement(pb: any, target: IAddress, cursor: Array<string>, context: IHydrateContext): Array<IElement> {
 
     cursor = [ ...cursor ];  // clone
 
-    const before = hydrateText(true, values, cursor);
-    const after = hydrateText(false, values, cursor);
+    const before = hydrateText(true, context.values, cursor);
+    const after = hydrateText(false, context.values, cursor);
 
     let element: IElement | null = null;
-    const elements = [];
+    const elements: Array<IElement> = [];
 
     if (before)
         elements.push(before);
@@ -283,11 +323,11 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
             cursor.push(name);
             for (let elementPB of pb.group.elements) {
                 if (elementPB.name === name)
-                    return hydrateElement(elementPB, target, values, cursor, top, analysisId);
+                    return hydrateElement(elementPB, target, cursor, context);
             }
             throw Error('Address not valid');
         }
-        const group = hydrateGroup(pb, target, values, cursor, top, analysisId);
+        const group = hydrateGroup(pb, target, cursor, context);
         if (group) {
             // if there's text at the top of the group, we move it down into
             // the body of the group
@@ -305,11 +345,11 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
             cursor.push(name);
             for (let elementPB of pb.array.elements) {
                 if (elementPB.name === name)
-                    return hydrateElement(elementPB, target, values, cursor, top, analysisId);
+                    return hydrateElement(elementPB, target, cursor, context);
             }
             throw Error('Address not valid');
         }
-        const array = hydrateArray(pb, target, values, cursor, top, analysisId);
+        const array = hydrateArray(pb, target, cursor, context);
         if (array) {
             // if there's text at the top of the group, we move it down into
             // the body of the group
@@ -330,11 +370,11 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         elements.push(element);
     }
     else if (pb.image) {
-        element = hydrateImage(pb, target, cursor, analysisId);
+        element = hydrateImage(pb, target, cursor, context.analysisId);
         elements.push(element);
     }
     else if (pb.svg) {
-        element = hydrateSvg(pb, target, cursor, analysisId);
+        element = hydrateSvg(pb, target, cursor, context.analysisId);
         elements.push(element);
     }
     else if (pb.preformatted) {
@@ -346,7 +386,7 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
         elements.push(element);
     }
     else if (pb.html) {
-        element = hydrateHTML(pb);
+        element = context.verbatimHtml ? hydrateVerbatimHTML(pb) : hydrateHTML(pb);
         elements.push(element);
     }
     else if (pb.notice) {
@@ -369,10 +409,10 @@ function hydrateElement(pb: any, target: IAddress, values: IOptionValues, cursor
     return elements;
 }
 
-function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean, analysisId: number): IGroup | null {
+function hydrateArray(arrayPB: any, target: IAddress, cursor: IAddress, context: IHydrateContext): IGroup | null {
     if (arrayPB.array.elements.length === 0)
         return null;
-    const items = hydrateElements(arrayPB.array.elements, target, values, cursor, top, analysisId);
+    const items = hydrateElements(arrayPB.array.elements, target, cursor, context);
     if (items === null)
         return null;
     return {
@@ -382,26 +422,26 @@ function hydrateArray(arrayPB: any, target: IAddress, values: IOptionValues, cur
     }
 }
 
-function hydrateGroup(groupPB: any, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean, analysisId: number): IGroup | null {
+function hydrateGroup(groupPB: any, target: IAddress, cursor: IAddress, context: IHydrateContext): IGroup | null {
 
     let title: string = groupPB.title;
-    if (top && cursor.length === 0) {
-        title = values['results//heading'] || title;
+    if (context.top && cursor.length === 0) {
+        title = context.values['results//heading'] || title;
         return { type: 'group', title, items: [] };
     }
 
-    const items = hydrateElements(groupPB.group.elements, target, values, cursor, top, analysisId);
+    const items = hydrateElements(groupPB.group.elements, target, cursor, context);
     if (items === null)
         return null;
     return { type: 'group', title, items };
 }
 
-function hydrateElements(elementsPB: Array<any>, target: IAddress, values: IOptionValues, cursor: IAddress, top: boolean, analysisId: number): Array<IElement> | null {
-    const items = [ ]
+function hydrateElements(elementsPB: Array<any>, target: IAddress, cursor: IAddress, context: IHydrateContext): Array<IElement> | null {
+    const items: Array<IElement> = [ ]
     for (const itemPB of elementsPB) {
         const itemCursor = [...cursor, itemPB.name];
         if ([0, 2].includes(itemPB.visible)) {
-            const elem = hydrateElement(itemPB, target, values, itemCursor, top, analysisId);
+            const elem = hydrateElement(itemPB, target, itemCursor, context);
             if (elem !== null) {
                 for (const item of elem)
                     items.push(item);
@@ -461,10 +501,21 @@ function hydrateTextElement(textPB: any): IText {
     return { type: 'text', paragraphs: html2Paragraphs(richMarkdown(textPB.text)) };
 }
 
-function hydrateHTML(htmlPB: any): IText {
+function hydrateHTML(htmlPB: any): IElement {
     // title isn't rendered as a heading in the live results view, so it's
     // left out of the exported/copied content too
-    return { type: 'text', paragraphs: html2Paragraphs(htmlPB.html.content) };
+    const elements = html2Elements(htmlPB.html.content);
+    if (elements.length === 0)
+        return { type: 'text', paragraphs: [] };
+    if (elements.length === 1)
+        return elements[0];
+    // mixed content (text around one or more tables): grouped, with no
+    // title of its own, so it renders as a plain run of elements
+    return { type: 'group', items: elements };
+}
+
+function hydrateVerbatimHTML(htmlPB: any): IVerbatimHtml {
+    return { type: 'html', content: htmlPB.html.content };
 }
 
 function hydrateNotice(noticePB: any): IText {
@@ -504,9 +555,73 @@ export function html2Chunks(html: string): Array<ITextChunk> {
 const BLOCK_TAGS = new Set(['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'LI', 'PRE', 'BLOCKQUOTE',
                             'UL', 'OL', 'TABLE', 'TR', 'TD', 'TH', 'BR', 'HR']);
 
+// the inline/paragraph attributes an element contributes to its descendants,
+// on top of what it inherits from its ancestors (shared by html2Paragraphs,
+// for content that's never a table, and html2Elements, for content that
+// might be -- see hydrateHTML())
+function deriveElementAttrs(element: Element, inline: IChunkAttributes, block: IParagraphAttributes): [IChunkAttributes, IParagraphAttributes] {
+    const tag = element.tagName;
+    inline = { ...inline };
+    block = { ...block };
+
+    if (['B', 'STRONG'].includes(tag))
+        inline.bold = true;
+    if (['I', 'EM'].includes(tag))
+        inline.italic = true;
+    if (tag === 'U')
+        inline.underline = true;
+    if (['S', 'STRIKE', 'DEL'].includes(tag))
+        inline.strike = true;
+    if (tag === 'CODE')
+        inline.code = true;
+    if (tag === 'SUP')
+        inline.script = 'super';
+    if (tag === 'SUB')
+        inline.script = 'sub';
+    const href = element.getAttribute('href');
+    if (tag === 'A' && href)
+        inline.link = normalizeUrl(href);
+    if (/^H[1-6]$/.test(tag))
+        block.header = parseInt(tag.charAt(1));
+    if (tag === 'PRE')
+        block.codeBlock = true;
+    if (tag === 'UL')
+        block.list = 'bullet';
+    if (tag === 'OL')
+        block.list = 'ordered';
+
+    const style = element.getAttribute('style');
+    if (style) {
+        for (const declaration of style.split(';')) {
+            const [ property, value ] = declaration.split(':').map(s => s.trim());
+            if (property === 'text-align') {
+                const align = normaliseAlign(value);
+                if (align)
+                    block.align = align;
+            }
+            else if (property === 'padding') {
+                // quill's indentation, as its html converter writes it
+                const indent = Math.floor(parseInt(value.replaceAll('px', '').split(' ')[3]) / 36);
+                if (indent > 0)
+                    block.indent = indent;
+            }
+            else if (property === 'color') {
+                inline.color = rgb2Hex(value);
+            }
+            else if (property === 'background-color') {
+                inline.background = rgb2Hex(value);
+            }
+        }
+    }
+
+    return [ inline, block ];
+}
+
 // converts html (a string, or a list of top-level nodes as richMarkdown()
 // produces) into paragraphs. block elements begin paragraphs and contribute
-// paragraph attributes, inline elements contribute chunk attributes
+// paragraph attributes, inline elements contribute chunk attributes. this is
+// for content that's never a table (annotations, notices); see html2Elements()
+// for content that might be (an Html result -- see hydrateHTML())
 function html2Paragraphs(content: string | Node[]): Array<IParagraph> {
     const paragraphs: Array<IParagraph> = [];
     let current: IParagraph | null = null;
@@ -533,58 +648,7 @@ function html2Paragraphs(content: string | Node[]): Array<IParagraph> {
 
         const element = node as Element;
         const tag = element.tagName;
-        inline = { ...inline };
-        block = { ...block };
-
-        if (['B', 'STRONG'].includes(tag))
-            inline.bold = true;
-        if (['I', 'EM'].includes(tag))
-            inline.italic = true;
-        if (tag === 'U')
-            inline.underline = true;
-        if (['S', 'STRIKE', 'DEL'].includes(tag))
-            inline.strike = true;
-        if (tag === 'CODE')
-            inline.code = true;
-        if (tag === 'SUP')
-            inline.script = 'super';
-        if (tag === 'SUB')
-            inline.script = 'sub';
-        const href = element.getAttribute('href');
-        if (tag === 'A' && href)
-            inline.link = normalizeUrl(href);
-        if (/^H[1-6]$/.test(tag))
-            block.header = parseInt(tag.charAt(1));
-        if (tag === 'PRE')
-            block.codeBlock = true;
-        if (tag === 'UL')
-            block.list = 'bullet';
-        if (tag === 'OL')
-            block.list = 'ordered';
-
-        const style = element.getAttribute('style');
-        if (style) {
-            for (const declaration of style.split(';')) {
-                const [ property, value ] = declaration.split(':').map(s => s.trim());
-                if (property === 'text-align') {
-                    const align = normaliseAlign(value);
-                    if (align)
-                        block.align = align;
-                }
-                else if (property === 'padding') {
-                    // quill's indentation, as its html converter writes it
-                    const indent = Math.floor(parseInt(value.replaceAll('px', '').split(' ')[3]) / 36);
-                    if (indent > 0)
-                        block.indent = indent;
-                }
-                else if (property === 'color') {
-                    inline.color = rgb2Hex(value);
-                }
-                else if (property === 'background-color') {
-                    inline.background = rgb2Hex(value);
-                }
-            }
-        }
+        [ inline, block ] = deriveElementAttrs(element, inline, block);
 
         const isBlock = BLOCK_TAGS.has(tag);
         if (isBlock)
@@ -605,6 +669,184 @@ function html2Paragraphs(content: string | Node[]): Array<IParagraph> {
     }
 
     return paragraphs;
+}
+
+// converts an Html result's content into a sequence of elements: text (as
+// html2Paragraphs(), gathered into IText elements) with any <table> kept as
+// its own ITable, rather than flattened into text along with everything else
+// (cf. issue #1867 -- a table pasted/exported without its structure is
+// useless, since it's the whole reason the result used html in the first
+// place)
+function html2Elements(content: string): Array<IElement> {
+    const elements: Array<IElement> = [];
+    let paragraphs: Array<IParagraph> = [];
+    let current: IParagraph | null = null;
+
+    function flush() {
+        if (paragraphs.length > 0)
+            elements.push({ type: 'text', paragraphs });
+        paragraphs = [];
+        current = null;
+    }
+
+    function walk(node: Node, inline: IChunkAttributes, block: IParagraphAttributes) {
+
+        if (node.nodeType === Node.ELEMENT_NODE && (node as Element).tagName === 'TABLE') {
+            flush();
+            elements.push(html2Table(node as Element));
+            return;
+        }
+
+        if (node.nodeType === Node.TEXT_NODE) {
+            const text = node.textContent;
+            if ( ! text)
+                return;
+            if (current === null) {
+                // whitespace between blocks isn't content
+                if (text.trim() === '')
+                    return;
+                current = createParagraph([], block);
+                paragraphs.push(current);
+            }
+            current.chunks.push(createChunk(text, inline));
+            return;
+        }
+
+        if (node.nodeType !== Node.ELEMENT_NODE)
+            return;
+
+        const element = node as Element;
+        const tag = element.tagName;
+        [ inline, block ] = deriveElementAttrs(element, inline, block);
+
+        const isBlock = BLOCK_TAGS.has(tag);
+        if (isBlock)
+            current = null;
+        for (const child of Array.from(element.childNodes))
+            walk(child, inline, block);
+        if (isBlock)
+            current = null;
+    }
+
+    const doc = new DOMParser().parseFromString(content, 'text/html');
+    walk(doc.body, {}, {});
+    flush();
+
+    return elements;
+}
+
+function colSpanOf(cellEl: Element): number {
+    return Math.max(parseInt(cellEl.getAttribute('colspan') || '1') || 1, 1);
+}
+
+function rowSpanOf(cellEl: Element): number {
+    return Math.max(parseInt(cellEl.getAttribute('rowspan') || '1') || 1, 1);
+}
+
+// a header cell (<th>) is centred, like a jamovi table's own column titles;
+// a data cell (<td>) follows the table's own alignment, from a style or
+// align attribute, defaulting to left (cf. resultsview/table.ts, which
+// aligns by column type instead -- there's no such type here, html content
+// being free-form)
+function cellAlign(cellEl: Element, isHeader: boolean): 'l' | 'c' | 'r' {
+    const style = cellEl.getAttribute('style');
+    if (style) {
+        for (const declaration of style.split(';')) {
+            const [ property, value ] = declaration.split(':').map(s => s.trim());
+            if (property === 'text-align') {
+                if (value === 'center')
+                    return 'c';
+                if (value === 'right')
+                    return 'r';
+                if (value === 'left')
+                    return 'l';
+            }
+        }
+    }
+    const align = cellEl.getAttribute('align');
+    if (align === 'center')
+        return 'c';
+    if (align === 'right')
+        return 'r';
+    if (align === 'left')
+        return 'l';
+    return isHeader ? 'c' : 'l';
+}
+
+// a rowspan still open from an earlier row, tracked per column: 'first' marks
+// the column the spanning cell itself started at, where the continuation's
+// single placeholder goes (carrying the same colSpan, so a docx/html
+// consumer can still merge it visually); the rest of its columns (if any)
+// are left as colSpan 0, exactly like any other covered column
+interface IPending {
+    cell: ICell;
+    colSpan: number;
+    rowsLeft: number;
+    first: boolean;
+}
+
+// converts a <table> element (as authored by an Html result, e.g. R's gt/
+// gtsummary) into an ITable, so it survives copy/export with its structure
+// intact, rather than being flattened into disconnected lines of text (see
+// html2Elements())
+function html2Table(tableEl: Element): ITable {
+    const trEls = Array.from(tableEl.querySelectorAll('tr'));
+
+    const rawRows = trEls.map((tr) => {
+        const cellEls = Array.from(tr.children).filter((c) => c.tagName === 'TD' || c.tagName === 'TH');
+        const isHeader = tr.parentElement?.tagName === 'THEAD' ||
+            (tr.parentElement === tableEl && cellEls.length > 0 && cellEls.every((c) => c.tagName === 'TH'));
+        return { type: (isHeader ? 'title' : 'body') as 'title' | 'body', cellEls };
+    });
+
+    let nCols = 1;
+    for (const raw of rawRows) {
+        const n = raw.cellEls.reduce((sum, c) => sum + colSpanOf(c), 0);
+        nCols = Math.max(nCols, n);
+    }
+
+    const pending: Array<IPending | null> = new Array(nCols).fill(null);
+
+    const rows: Array<IRow> = rawRows.map((raw) => {
+        const cells: Array<ICell | null> = new Array(nCols).fill(null);
+        let col = 0;
+        let cellIdx = 0;
+
+        while (col < nCols) {
+            const covering = pending[col];
+            if (covering) {
+                cells[col] = covering.first
+                    ? { ...covering.cell, rowSpan: 0, colSpan: covering.colSpan > 1 ? covering.colSpan : undefined }
+                    : { ...covering.cell, rowSpan: 0, colSpan: 0 };
+                pending[col] = (covering.rowsLeft > 1) ? { ...covering, rowsLeft: covering.rowsLeft - 1 } : null;
+                col += 1;
+                continue;
+            }
+            if (cellIdx >= raw.cellEls.length)
+                break;
+
+            const cellEl = raw.cellEls[cellIdx];
+            cellIdx += 1;
+            const cs = Math.min(colSpanOf(cellEl), nCols - col);
+            const rs = rowSpanOf(cellEl);
+            const cell = createCell(cellEl.innerHTML, cellAlign(cellEl, raw.type === 'title'));
+            if (cs > 1)
+                cell.colSpan = cs;
+            if (rs > 1)
+                cell.rowSpan = rs;
+
+            for (let k = 0; k < cs; k++) {
+                cells[col + k] = (k === 0) ? cell : { ...cell, colSpan: 0 };
+                if (rs > 1)
+                    pending[col + k] = { cell, colSpan: cs, rowsLeft: rs - 1, first: (k === 0) };
+            }
+            col += cs;
+        }
+
+        return { type: raw.type, cells };
+    });
+
+    return { type: 'table', title: '', rows, nCols };
 }
 
 function rgb2Hex(rgb: string): string {

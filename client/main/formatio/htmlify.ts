@@ -4,7 +4,7 @@
 // is styled inline, as that's all which survives a paste into word, gmail,
 // etc. the structure mirrors docxify.ts, so the two agree on what's produced
 
-import { IElement, ITable, IRow, ICell, IImage, IPreformatted, IText, ITextChunk } from './hydrate';
+import { IElement, ITable, IRow, ICell, IImage, IPreformatted, IText, IVerbatimHtml, ITextChunk } from './hydrate';
 import { html2Chunks } from './hydrate';
 import { IReference } from '../references';
 import { referenceAsHTML } from '../references';
@@ -142,6 +142,9 @@ function populate(item: IElement, parent: HTMLElement, level: number, context: I
     else if (item.type === 'text') {
         generateText(item, parent, level, context);
     }
+    else if (item.type === 'html') {
+        generateVerbatimHtml(item, parent, context);
+    }
 }
 
 // the "[1] [2]" reference numbers beneath an element, as the results view
@@ -259,9 +262,17 @@ function formatSuperTitle(r: IRow): HTMLTableRowElement {
 }
 
 function formatTitleRow(r: IRow): HTMLTableRowElement {
-    const cells = r.cells.map((cell) => {
-        return tableCell('th', cell ? cellNodes(cell) : [], { align: 'c', bottomRule: true, vAlign: 'bottom' });
-    });
+    const cells: Array<HTMLTableCellElement> = [];
+    for (const cell of r.cells) {
+        if (cell && (cell.rowSpan === 0 || cell.colSpan === 0))  // covered by the cell above/before
+            continue;
+        const props: ICellProps = { align: 'c', bottomRule: true, vAlign: 'bottom' };
+        if (cell?.colSpan && cell.colSpan > 1)
+            props.span = cell.colSpan;
+        if (cell?.rowSpan && cell.rowSpan > 1)
+            props.rowSpan = cell.rowSpan;
+        cells.push(tableCell('th', cell ? cellNodes(cell) : [], props));
+    }
     return row(cells);
 }
 
@@ -276,9 +287,11 @@ function formatBodyRow(r: IRow, i: number, lastBody: number): HTMLTableRowElemen
             cells.push(tableCell('td', [], props));
             continue;
         }
-        if (cell.rowSpan === 0)  // covered by the cell above
+        if (cell.rowSpan === 0 || cell.colSpan === 0)  // covered by the cell above/before
             continue;
         props.align = cell.align;
+        if (cell.colSpan && cell.colSpan > 1)
+            props.span = cell.colSpan;
         if (cell.rowSpan && cell.rowSpan > 1) {
             props.rowSpan = cell.rowSpan;
             props.vAlign = 'top';
@@ -477,6 +490,17 @@ function generateText(text: IText, parent: HTMLElement, level: number, context: 
     }
 
     parent.append(...refNumbers(text.refs, context));
+}
+
+// an Html result's content, dropped in verbatim (see IHydrateOptions.
+// verbatimHtml): unlike every other element here, nothing is rebuilt/
+// restyled to match the rest of the document, so whatever the source
+// markup/styling was survives the clipboard/html export as-is
+function generateVerbatimHtml(item: IVerbatimHtml, parent: HTMLElement, context: IContext): void {
+    const div = document.createElement('div');
+    div.innerHTML = item.content;
+    parent.appendChild(div);
+    parent.append(...refNumbers(item.refs, context));
 }
 
 function alignment(align: string): string {

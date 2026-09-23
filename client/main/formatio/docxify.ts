@@ -300,9 +300,27 @@ function formatSuperTitle(row: IRow): TableRow {
 }
 
 function formatTitleRow(row: IRow): TableRow {
-    const cells = row.cells.map((cell) => {
-        return tableCell(cell ? cellRuns(cell) : [], { align: 'c', bottomRule: true, vAlign: 'bottom' });
-    });
+    const cells: Array<TableCell> = [];
+    for (const cell of row.cells) {
+        const props: ICellProps = { align: 'c', bottomRule: true, vAlign: 'bottom' };
+        if ( ! cell) {
+            cells.push(tableCell([], props));
+            continue;
+        }
+        if (cell.colSpan === 0)  // covered by the span before it
+            continue;
+        if (cell.colSpan && cell.colSpan > 1)
+            props.span = cell.colSpan;
+        if (cell.rowSpan === 0) {
+            // covered by a header cell spanning down from the row above
+            props.vMerge = VerticalMergeType.CONTINUE;
+            cells.push(tableCell([], props));
+            continue;
+        }
+        if (cell.rowSpan && cell.rowSpan > 1)
+            props.vMerge = VerticalMergeType.RESTART;
+        cells.push(tableCell(cellRuns(cell), props));
+    }
     // repeats the column titles when a table breaks across pages
     return new TableRow({ children: cells, tableHeader: true });
 }
@@ -315,6 +333,10 @@ function formatBodyRow(row: IRow, last: boolean): TableRow {
             cells.push(tableCell([], props));
             continue;
         }
+        if (cell.colSpan === 0)  // covered by the span before it
+            continue;
+        if (cell.colSpan && cell.colSpan > 1)
+            props.span = cell.colSpan;
         if (cell.rowSpan === 0) {
             // covered by the cell above; merged into it
             props.vMerge = VerticalMergeType.CONTINUE;
