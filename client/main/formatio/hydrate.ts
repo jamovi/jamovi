@@ -19,9 +19,11 @@ function footnoteMark(index: number): string {
 
 // cell.format bits (cf. resultsview/table.ts)
 const FORMAT_BEGIN_GROUP = 1;
+const FORMAT_END_GROUP = 2;
 
 interface IRawCell {
     value: string | number;
+    integer: boolean;
     footnotes: Array<string>;
     symbols: Array<string>;
     align: 'l' | 'c' | 'r';
@@ -524,8 +526,14 @@ function hydrateNotice(noticePB: any): IText {
         type: 'text',
         paragraphs: html2Paragraphs(html),
         title: noticePB.title,
-        box: noticePB.notice.type,
+        box: noticeBox(noticePB.notice.type),
     };
+}
+
+// the notice's type as IText.box: NoticeType ERROR is 0, but a box of 0
+// means none (and the consumers have error as 4)
+function noticeBox(type: number): number {
+    return (type === 0) ? 4 : type;
 }
 
 // a link typed without a scheme (e.g. 'www.jamovi.org', from an annotation's
@@ -792,10 +800,16 @@ interface IPending {
 function html2Table(tableEl: Element): ITable {
     const trEls = Array.from(tableEl.querySelectorAll('tr'));
 
+    // a row's a header if it's in the thead, or if it's all th's and comes
+    // before the body. (without a thead, the parser puts the rows in an
+    // implicit tbody, so where a row sits can't tell us)
+    let inBody = false;
     const rawRows = trEls.map((tr) => {
         const cellEls = Array.from(tr.children).filter((c) => c.tagName === 'TD' || c.tagName === 'TH');
-        const isHeader = tr.parentElement?.tagName === 'THEAD' ||
-            (tr.parentElement === tableEl && cellEls.length > 0 && cellEls.every((c) => c.tagName === 'TH'));
+        const allTH = cellEls.length > 0 && cellEls.every((c) => c.tagName === 'TH');
+        const isHeader = tr.parentElement?.tagName === 'THEAD' || ( ! inBody && allTH);
+        if ( ! isHeader)
+            inBody = true;
         return { type: (isHeader ? 'title' : 'body') as 'title' | 'body', cellEls };
     });
 
@@ -880,7 +894,8 @@ function extractRawCell(cellPB: any, align: 'l' | 'c' | 'r'): IRawCell | null {
         else
             value = '.';
     }
-    return { value, footnotes: cellPB.footnotes, symbols: cellPB.symbols, align, format: cellPB.format };
+    const integer = (cellPB.cellType === 'i');
+    return { value, integer, footnotes: cellPB.footnotes, symbols: cellPB.symbols, align, format: cellPB.format };
 }
 
 function extractRawColumns(columnsPB: any): Array<IRawColumn> {
@@ -916,7 +931,7 @@ function transmogrify(rawCols: Array<IRawColumn>, formats: Array<any>): [ Array<
                 indices.push(index);
             }
             const finalSups = [...cell.symbols, ...indices.map(i => footnoteMark(i))];
-            const finalCell = createCell((typeof cell.value === 'string') ? cell.value : format(cell.value, fmt), cell.align);
+            const finalCell = createCell(formatValue(cell, fmt), cell.align);
             if (finalSups.length > 0)
                 finalCell.sups = finalSups;
             if (cell.format)
@@ -927,6 +942,16 @@ function transmogrify(rawCols: Array<IRawColumn>, formats: Array<any>): [ Array<
         return { cells, combineBelow };
     });
     return [ finalCells, footnotes ];
+}
+
+// integers are shown as they are, whatever the column's format (cf.
+// resultsview/table.ts)
+function formatValue(cell: IRawCell, fmt: any): string {
+    if (typeof cell.value === 'string')
+        return cell.value;
+    if (cell.integer)
+        return String(cell.value);
+    return format(cell.value, fmt);
 }
 
 function foldTitles(row: Array<ICell>, columnNames: Array<string>): Array<ICell> {
@@ -969,7 +994,7 @@ function recountColSpans(row: Array<ICell | null>): void {
     }
 }
 
-function fold(columns: Array<IColumn>, columnNames: Array<string>): Array<Array<ICell | null>> {
+function fold(columns: Array<IColumn>, columnNames: Array<string>): Array<IColumn> {
     const foldedColumnNames = new Set();
     const subRowNames = new Set();
 
@@ -984,7 +1009,7 @@ function fold(columns: Array<IColumn>, columnNames: Array<string>): Array<Array<
         }
     }
     if (subRowNames.size < 1)
-        return columns.map(col => col.cells);
+        return columns;
 
     const nFoldsInRow = subRowNames.size;
     const nRows = columns[0].cells.length * nFoldsInRow;
@@ -1009,7 +1034,7 @@ function fold(columns: Array<IColumn>, columnNames: Array<string>): Array<Array<
         }
         else {
             colNo = newColumnNames.indexOf(name);
-            rowOffset = 1;
+            rowOffset = 0;
         }
         lookup[name] = { rowOffset, colNo };
     }
@@ -1025,24 +1050,32 @@ function fold(columns: Array<IColumn>, columnNames: Array<string>): Array<Array<
         combines[address.colNo] = columns[i].combineBelow;
     }
 
-    // add spacing around the folds: the first row of each folded group is
-    // set apart from the one above (cf. resultsview/table.ts)
+    // add spacing around the folds: the first row of each folded group
+    // begins a group, and the last row ends it
     if (nFoldsInRow > 1) {
         for (let j = 0; j < nRows; j += nFoldsInRow) {
             for (const cells of foldedCells) {
-                const cell = cells[j];
-                if (cell)
-                    cell.format = (cell.format || 0) | FORMAT_BEGIN_GROUP;
+                const first = cells[j];
+                if (first)
+                    first.format = (first.format || 0) | FORMAT_BEGIN_GROUP;
+                const last = cells[j + nFoldsInRow - 1];
+                if (last)
+                    last.format = (last.format || 0) | FORMAT_END_GROUP;
             }
         }
     }
 
-    // add row span's for 'combineBelow'
-    for (const [i, combine] of combines.entries()) {
-        if ( ! combine)
+    return foldedCells.map((cells, i) => ({ cells, combineBelow: combines[i] }));
+}
+
+// a run of equal cells in a combineBelow column becomes a single cell,
+// spanning the run (cf. resultsview/table.ts). mutates columns in place
+function addRowSpans(columns: Array<IColumn>): void {
+    for (const column of columns) {
+        if ( ! column.combineBelow)
             continue;
 
-        const cells = foldedCells[i];
+        const cells = column.cells;
 
         let rowSpan = 1;
         for (let j = cells.length - 1; j >= 0; j--) {
@@ -1064,8 +1097,6 @@ function fold(columns: Array<IColumn>, columnNames: Array<string>): Array<Array<
             }
         }
     }
-
-    return foldedCells;
 }
 
 // ensure that the first two bits of the cell format (BEGIN.GROUP / END.GROUP) are consistent for all cells in a row
@@ -1139,11 +1170,16 @@ function hydrateTable(tablePB: any): ITable {
     rows.push({ type: 'title', cells: titles });
 
     const rawColumns = extractRawColumns(columnsPB);
-    const formatsByColumn = rawColumns.map((x, i) => determFormat(x.cells, columnsPB[i].type, columnsPB[i].format, undefined));
+    // the column's (double) values, as resultsview/table.ts gives them
+    const formatsByColumn = columnsPB.map((columnPB: any) => {
+        const values = columnPB.cells.map((cellPB: any) => (cellPB.cellType === 'd') ? cellPB.d : undefined);
+        return determFormat(values, columnPB.type, columnPB.format, undefined);
+    });
     const [ cellsByColumn, footnotes ] = transmogrify(rawColumns, formatsByColumn);
 
     const folded = fold(cellsByColumn, columnNames);
-    const cellsByRow = transpose(folded);
+    addRowSpans(folded);
+    const cellsByRow = transpose(folded.map((column) => column.cells));
     ensureFormat(cellsByRow);
     const bodyRows: Array<IRow> = cellsByRow.map(cells => {
         return {

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 
 import { describe, it } from 'vitest';
 import { expect } from 'chai';

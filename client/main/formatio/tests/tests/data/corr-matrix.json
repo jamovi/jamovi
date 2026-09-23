@@ -109,6 +109,7 @@
             }
           ],
           "align": "l",
+          "format": 2,
           "rowSpan": 0
         },
         {
@@ -118,7 +119,8 @@
               "content": "p-value"
             }
           ],
-          "align": "l"
+          "align": "l",
+          "format": 2
         },
         {
           "content": "—",
@@ -127,7 +129,8 @@
               "content": "—"
             }
           ],
-          "align": "r"
+          "align": "r",
+          "format": 2
         },
         null
       ]
@@ -231,6 +234,7 @@
             }
           ],
           "align": "l",
+          "format": 2,
           "rowSpan": 0
         },
         {
@@ -240,7 +244,8 @@
               "content": "p-value"
             }
           ],
-          "align": "l"
+          "align": "l",
+          "format": 2
         },
         {
           "content": "< .001",
@@ -249,7 +254,8 @@
               "content": "< .001"
             }
           ],
-          "align": "r"
+          "align": "r",
+          "format": 2
         },
         {
           "content": "—",
@@ -258,7 +264,8 @@
               "content": "—"
             }
           ],
-          "align": "r"
+          "align": "r",
+          "format": 2
         }
       ]
     }
