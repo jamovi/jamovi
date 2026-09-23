@@ -7,7 +7,7 @@ import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
 
 import { createDoc, IDocItem, IDocOptions } from '../../docxify';
-import { IElement, IText, IImage, ITable, ICell, html2Chunks } from '../../hydrate';
+import { hydrate, IElement, IText, IImage, ITable, ICell, html2Chunks } from '../../hydrate';
 import { jmv, R } from '../../../references';
 
 
@@ -128,6 +128,20 @@ describe('docxify tables', () => {
             }
             expect(n).toBe(3);
         }
+    });
+
+    // e.g. a gtsummary table in an Html result
+    it("puts an html table's tfoot note beneath the rule, not above it", async () => {
+        const table = hydrate({ name: 'h', visible: 0, html: { content:
+            '<table><thead><tr><th>Characteristic</th><th>Overall</th></tr></thead>' +
+            '<tbody><tr><td>Age</td><td>47</td></tr></tbody>' +
+            '<tfoot><tr><td colspan="2">Median (IQR)</td></tr></tfoot></table>'
+        } }) as ITable;
+        const pkg = await build([ table ]);
+        const [ , body, note ] = Array.from(pkg.document.getElementsByTagNameNS('*', 'tr'));
+        expect(body.getElementsByTagNameNS('*', 'bottom')[0].getAttribute('w:sz')).toBe('16');
+        expect(note.getElementsByTagNameNS('*', 'bottom').length).toBe(0);
+        expect(note.textContent).toBe('Median (IQR)');
     });
 });
 

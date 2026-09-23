@@ -174,6 +174,21 @@ describe('hydration of html tables', () => {
         expect(table.rows[1].cells[1]).toEqual({ content: '2', chunks: [ { content: '2' } ], align: 'l' });
     });
 
+    it('makes a tfoot row a note beneath the table, spanning it (e.g. gt\'s source notes)', () => {
+        const table = hydrate({ name: 'h', visible: 0, html: { content:
+            '<table><thead><tr><th>A</th><th>B</th></tr></thead>' +
+            '<tbody><tr><td>1</td><td>2</td></tr></tbody>' +
+            '<tfoot><tr><td colspan="2"><sup>1</sup> n (%)</td></tr></tfoot></table>'
+        } }) as ITable;
+        expect(table.rows.map(r => r.type)).toEqual([ 'title', 'body', 'footnote' ]);
+        expect(table.rows[2].cells).toEqual([ {
+            content: '1 n (%)',
+            chunks: [ { content: '1', attributes: { script: 'super' } }, { content: ' n (%)' } ],
+            align: 'l',
+            colSpan: 2,
+        } ]);
+    });
+
     it('is passed through verbatim instead, when verbatimHtml is requested', () => {
         const content = '<table class="gt_table"><tr><td style="color:red">x</td></tr></table>';
         const raw = hydrate({ name: 'h', visible: 0, html: { content } }, { verbatimHtml: true }) as IVerbatimHtml;

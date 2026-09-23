@@ -607,16 +607,20 @@ function formatTableRow(row: IRow, colLength: Array<number>, colAlign: Array<str
 function formatNote(row: IRow): Array<string> {
     let output = [];
 
-    for (let i = 0; i < row.cells.length; ++i) {
-        if (row.cells[i].content.length > 0 && row.cells[i].sups.length > 0) {
-            if (row.cells[i].sups[0] === 'note') {
-                // General and significance notes
-                output.push('\\textit{Note.}~' + row.cells[i].content.trim() + ' \\\\');
-            }
-            else {
-                // Specific notes
-                output.push(rmDblDollar(formatHTML(row.cells[i].sups.join('')) + '~' + row.cells[i].content.trim() + ' \\\\'));
-            }
+    for (const cell of row.cells) {
+        if ( ! cell || cell.content.length === 0)
+            continue;
+        if ( ! cell.sups || cell.sups.length === 0) {
+            // an html table's note (from its tfoot), shown as it is
+            output.push(cell.content.trim() + ' \\\\');
+        }
+        else if (cell.sups[0] === 'note') {
+            // General and significance notes
+            output.push('\\textit{Note.}~' + cell.content.trim() + ' \\\\');
+        }
+        else {
+            // Specific notes
+            output.push(rmDblDollar(formatHTML(cell.sups.join('')) + '~' + cell.content.trim() + ' \\\\'));
         }
     }
 

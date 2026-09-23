@@ -798,7 +798,11 @@ interface IPending {
 // intact, rather than being flattened into disconnected lines of text (see
 // html2Elements())
 function html2Table(tableEl: Element): ITable {
-    const trEls = Array.from(tableEl.querySelectorAll('tr'));
+    const allTrEls = Array.from(tableEl.querySelectorAll('tr'));
+    // a row in the tfoot is a note beneath the table (e.g. gt's source
+    // notes), rather than more of its body
+    const trEls = allTrEls.filter((tr) => tr.parentElement?.tagName !== 'TFOOT');
+    const footTrEls = allTrEls.filter((tr) => tr.parentElement?.tagName === 'TFOOT');
 
     // a row's a header if it's in the thead, or if it's all th's and comes
     // before the body. (without a thead, the parser puts the rows in an
@@ -859,6 +863,16 @@ function html2Table(tableEl: Element): ITable {
 
         return { type: raw.type, cells };
     });
+
+    // a note spans the table, as a jamovi table's own notes do (see
+    // hydrateTable()), but unlike those there's no 'Note.' added -- the
+    // html has whatever it wants shown
+    for (const tr of footTrEls) {
+        const cellEls = Array.from(tr.children).filter((c) => c.tagName === 'TD' || c.tagName === 'TH');
+        const cell = createCell(cellEls.map((c) => c.innerHTML).join(' '), 'l');
+        if (cell.content)
+            rows.push({ type: 'footnote', cells: [ { ...cell, colSpan: nCols } ] });
+    }
 
     return { type: 'table', title: '', rows, nCols };
 }
