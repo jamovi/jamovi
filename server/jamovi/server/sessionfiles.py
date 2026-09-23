@@ -16,7 +16,7 @@ from typing import BinaryIO
 FILE_ID_RE = re.compile(r'^[0-9a-f]{64}(\.[A-Za-z0-9]{1,16})?$')
 
 # extensions there's no point deflating again when writing to an .omv
-STORED_EXTS = frozenset(('.zip', '.gz', '.xz', '.bz2', '.7z', '.png', '.jpg', '.jpeg', '.omv', '.xlsx', '.docx'))
+STORED_EXTS = frozenset(('.zip', '.gz', '.xz', '.bz2', '.7z', '.png', '.jpg', '.jpeg', '.omv', '.xlsx', '.docx', '.odt'))
 
 CHUNK_SIZE = 64 * 1024
 

@@ -678,6 +678,10 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                 // the complete document; the server writes it as-is
                 content = await this.attributes.resultsSupplier.getAsDocx(options.part);
             }
+            else if (options.path.endsWith('.odt')) {
+                // the complete document; the server writes it as-is
+                content = await this.attributes.resultsSupplier.getAsOdt(options.part);
+            }
             else if (options.path.endsWith('.pdf')) {
                 // the html document, printed
                 const html = await this.attributes.resultsSupplier.getAsHtml2({images:'inline', generator:app}, options.part);

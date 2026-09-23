@@ -912,6 +912,27 @@ class ResultsPanel extends EventDistributor {
         return createDoc(items, { references, figures, showRefs });
     }
 
+    // the OpenDocument Text counterpart to getAsDocx(), for LibreOffice/
+    // OpenOffice; built the same way, from the same hydrated items
+    async getAsOdt(part?: string): Promise<ArrayBuffer> {
+        // the odt-building code is sizeable, so it's loaded when first needed
+        const { createDoc } = await import('./formatio/odtify');
+
+        const { items, references } = this._hydrateAll(part);
+
+        const figures = async (address: string): Promise<IFigure | null> => {
+            const content = await this._getContent(unflatten(address), { });
+            if ( ! content || ! content.image)
+                return null;
+            const png = await (await fetch(content.image)).arrayBuffer();
+            return { png, svg: content.vector ? content.svg : undefined };
+        };
+
+        const showRefs = this.model.settings().getSetting('refsMode', 'bottom') !== 'hidden';
+
+        return createDoc(items, { references, figures, showRefs });
+    }
+
     // the results as an html document (like getAsDocx()): self-contained,
     // with the figures inline, for the html and pdf exports; or with the
     // figures referenced as resources, for the .omv. getAsHTML() below is
@@ -1200,6 +1221,7 @@ class ResultsPanel extends EventDistributor {
                 };
 
                 options.filters.push({ name: 'Word', description: _('Word Document {ext}', { ext: '(.docx)' }), extensions: [ 'docx' ] });
+                options.filters.push({ name: 'OpenDocument', description: _('OpenDocument Text {ext}', { ext: '(.odt)' }), extensions: [ 'odt' ] });
                 if (part === '')
                     options.filters.push({ name: 'LaTeX', description: _('LaTeX bundle {ext}', { ext: '(.zip)' }), extensions:  [ 'zip' ] });
 
