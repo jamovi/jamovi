@@ -18,6 +18,25 @@ Column <- R6::R6Class("Column",
         .width = 0,
         .measures=list(),
         .measured=FALSE,
+        .measuredWith=NULL,  # the number format measured with
+        .measureIfNeeded=function() {
+            current <- list(numberFormat(), decimalSymbol(private$.options))
+            if ( ! private$.measured || ! identical(current, private$.measuredWith))
+                self$.measure()
+        },
+        # a cell's value, as it's printed: as in jamovi (see formatValue()),
+        # but with a missing value left blank
+        .valueForPrint=function(cell, fmt) {
+            value <- cell$value
+            if (length(value) == 1 && is.na(value) && ! is.nan(value))
+                return('')
+            formatValue(value, fmt)
+        },
+        .supWidth=function(cell) {
+            if (length(cell$sups) == 0)
+                return(0)
+            1 + length(cell$sups)  # a space, and the sups
+        },
         .options=NULL,
         deep_clone=function(name, value) {
             value
@@ -39,8 +58,7 @@ Column <- R6::R6Class("Column",
         superTitle=function() private$.superTitle,
         hasSuperTitle=function() ( ! is.null(private$.superTitle)),
         width=function() {
-            if ( ! private$.measured)
-                self$.measure()
+            private$.measureIfNeeded()
             private$.width
         },
         visible=function(value) {
@@ -159,18 +177,14 @@ Column <- R6::R6Class("Column",
             private$.refs
         },
         .measure=function() {
-            titleWidth <- nchar(self$title)
+            fmt <- determineFormat(self, decimalSymbol(private$.options))
+            values <- vapply(private$.cells, private$.valueForPrint, '', fmt=fmt)
+            supwidth <- max(c(0, vapply(private$.cells, private$.supWidth, 0)))
+            width <- max(c(0, nchar(values))) + supwidth
 
-            p <- ('pvalue' %in% private$.format)
-            zto <- ('zto' %in% private$.format)
-            pc <- ('pc' %in% private$.format)
-
-            if (private$.type == "integer")
-                private$.measures <- measureElements(private$.cells, maxdp=0, type=private$.type, p=p, zto=zto, pc=pc)
-            else
-                private$.measures <- measureElements(private$.cells, type=private$.type, p=p, zto=zto, pc=pc)
-
-            private$.width <- max(private$.measures$width, titleWidth)
+            private$.measures <- list(fmt=fmt, width=width, supwidth=supwidth)
+            private$.width <- max(width, nchar(self$title))
+            private$.measuredWith <- list(numberFormat(), decimalSymbol(private$.options))
             private$.measured <- TRUE
         },
         .titleForPrint=function(width=NULL) {
@@ -182,47 +196,47 @@ Column <- R6::R6Class("Column",
 
             paste0(t, pad)
         },
-        .cellForPrint=function(i, measures=NULL, width=NA) {
-            if ( ! private$.measured)
-                self$.measure()
+        # the width of the i'th cell, and of its superscripts
+        .cellWidths=function(i) {
+            private$.measureIfNeeded()
+            cell <- private$.cells[[i]]
+            supwidth <- private$.supWidth(cell)
+            width <- nchar(private$.valueForPrint(cell, private$.measures$fmt)) + supwidth
+            list(width=width, supwidth=supwidth)
+        },
+        # the i'th cell, padded to width, with its superscripts (the
+        # footnotes) in the last supwidth of it
+        .cellForPrint=function(i, width=NULL, supwidth=NULL) {
+            private$.measureIfNeeded()
 
-            if (is.null(measures))
-                measures <- private$.measures
+            if (is.null(width))
+                width <- private$.measures$width
+            if (is.null(supwidth))
+                supwidth <- private$.measures$supwidth
 
-            if ( ! is.na(width))
-                measures$width <- width
+            fmt <- private$.measures$fmt
+            cell <- private$.cells[[i]]
+            value <- private$.valueForPrint(cell, fmt)
 
-            p <- ('pvalue' %in% private$.format)
-            zto <- ('zto' %in% private$.format)
-            pc <- ('pc' %in% private$.format)
+            sups <- ''
+            if (length(cell$sups) > 0)
+                sups <- paste0(' ', paste(.SUPCHARS[cell$sups + 1], collapse=''))
+            sups <- paste0(sups, spaces(max(0, supwidth - nchar(sups))))
 
-            v <- formatElement(private$.cells[[i]],
-                w=measures$width,
-                dp=measures$dp,
-                sf=measures$sf,
-                expw=measures$expwidth,
-                supw=measures$supwidth,
-                type=private$.type,
-                p=p,
-                zto=zto,
-                pc=pc)
+            pad <- spaces(max(0, width - supwidth - nchar(value)))
+            # text is to the left, and numbers to the right
+            if (is.character(cell$value) && ! private$.type %in% c('number', 'integer'))
+                str <- paste0(value, pad, sups)
+            else
+                str <- paste0(pad, value, sups)
 
             if (private$.combineBelow && i > 1) {
-                above <- formatElement(private$.cells[[i - 1]],
-                   w=measures$width,
-                   dp=measures$dp,
-                   sf=measures$sf,
-                   expw=measures$expwidth,
-                   supw=measures$supwidth,
-                   type=private$.type,
-                   p=p,
-                   zto=zto,
-                   pc=pc)
-                if (v == above)
-                    v <- repstr(' ', nchar(v))
+                above <- private$.cells[[i - 1]]
+                if (identical(value, private$.valueForPrint(above, fmt)) && identical(cell$sups, above$sups))
+                    str <- spaces(nchar(str))
             }
 
-            return(v)
+            str
         },
         asProtoBuf=function() {
 

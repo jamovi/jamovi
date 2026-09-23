@@ -509,8 +509,7 @@ Table <- R6::R6Class('Table',
 
             for (column in private$.columns) {
                 if (column$visible) {
-                    cell <- column$getCell(row)
-                    measurements <- measureElements(list(cell))
+                    measurements <- column$.cellWidths(row)
                     widthWOSup <- measurements$width - measurements$supwidth
                     maxWidthWOSup <- max(maxWidthWOSup, widthWOSup)
                     maxSupInRow <- max(maxSupInRow, measurements$supwidth)
@@ -679,12 +678,7 @@ Table <- R6::R6Class('Table',
                     width <- widest$width
                     supwidth <- widest$supwidth
 
-                    cell <- column$cells[[j]]
-                    measurements <- measureElements(list(cell))
-                    measurements$width <- max(measurements$width, width)
-                    measurements$supwidth  <- supwidth
-
-                    pieces <- c(pieces, private$.padstr, column$.cellForPrint(j, measurements), private$.padstr)
+                    pieces <- c(pieces, private$.padstr, column$.cellForPrint(j, width=width, supwidth=supwidth), private$.padstr)
                 }
 
             }
