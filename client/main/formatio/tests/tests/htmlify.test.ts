@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
-import path from 'path';
-import fs from 'fs';
+import path from 'node:path';
+import fs from 'node:fs';
 
 import { describe, it, expect } from 'vitest';
 
@@ -140,6 +140,9 @@ describe('htmlify tables', () => {
         const doc = build(table);
         const cells = Array.from(doc.querySelectorAll('th, td')) as Array<HTMLTableCellElement>;
         expect(cells.map((c) => c.style.borderBottom !== '')).toEqual([ true, true, false, false, true, false ]);
+        // the rule beneath the body is heavier than those above it
+        expect(cells[1].style.borderBottomWidth).toBe('1px');
+        expect(cells[4].style.borderBottomWidth).toBe('2px');
         expect(cells[2].style.paddingTop).toBe('8px');    // begins a group
         expect(cells[3].style.paddingLeft).toBe('24px');  // indented
     });

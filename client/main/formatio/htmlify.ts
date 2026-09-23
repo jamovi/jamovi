@@ -39,6 +39,7 @@ const FORMAT_END_GROUP = 2;
 const FORMAT_INDENTED = 8;
 
 const RULE = '1px solid #333333';
+const HEAVY_RULE = '2px solid #333333';  // beneath the body (cf. resultsview/main.css)
 const MONO = "Consolas, Menlo, monospace";
 
 // notices: warning-1, warning-2, info, error (cf. resultsview/notice.ts)
@@ -282,7 +283,7 @@ function formatTitleRow(r: IRow): HTMLTableRowElement {
 function formatBodyRow(r: IRow, i: number, lastBody: number): HTMLTableRowElement {
     const cells: Array<HTMLTableCellElement> = [];
     for (const cell of r.cells) {
-        const props: ICellProps = { bottomRule: i === lastBody };
+        const props: ICellProps = { bottomRule: i === lastBody, heavy: true };
         if ( ! cell) {
             cells.push(tableCell('td', [], props));
             continue;
@@ -332,6 +333,7 @@ interface ICellProps {
     span?: number;
     rowSpan?: number;
     bottomRule?: boolean;
+    heavy?: boolean;    // the bottom rule is the heavier one, beneath the body
     vAlign?: 'top' | 'bottom';
     indent?: boolean;   // an indented row (a level beneath the one above)
     before?: boolean;   // the first row of a group, set apart from the one above
@@ -371,7 +373,7 @@ function tableCell(tag: 'th' | 'td', nodes: Array<Node>, props: ICellProps): HTM
     if (props.rowSpan && props.rowSpan > 1)
         cell.rowSpan = props.rowSpan;
     if (props.bottomRule)
-        cell.style.borderBottom = RULE;
+        cell.style.borderBottom = props.heavy ? HEAVY_RULE : RULE;
     if (props.small)
         cell.style.fontSize = 'smaller';
 

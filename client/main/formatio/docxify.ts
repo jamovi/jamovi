@@ -91,6 +91,7 @@ const FONT = 'Calibri';
 const MONO = 'Consolas';
 
 const RULE = { style: BorderStyle.SINGLE, size: 8, color: '000000', space: 0 };
+const HEAVY_RULE = { ...RULE, size: 16 };  // beneath the body (cf. resultsview/main.css)
 const NO_RULE = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
 
 const HEADINGS = [
@@ -328,7 +329,7 @@ function formatTitleRow(row: IRow): TableRow {
 function formatBodyRow(row: IRow, last: boolean): TableRow {
     const cells: Array<TableCell> = [];
     for (const cell of row.cells) {
-        const props: ICellProps = { bottomRule: last };
+        const props: ICellProps = { bottomRule: last, heavy: true };
         if ( ! cell) {
             cells.push(tableCell([], props));
             continue;
@@ -376,6 +377,7 @@ interface ICellProps {
     span?: number;
     vMerge?: (typeof VerticalMergeType)[keyof typeof VerticalMergeType];
     bottomRule?: boolean;
+    heavy?: boolean;  // the bottom rule is the heavier one, beneath the body
     vAlign?: 'top' | 'bottom';
     indent?: number;
     before?: number;
@@ -396,7 +398,7 @@ function tableCell(runs: Array<ParagraphChild>, props: ICellProps): TableCell {
         columnSpan: (props.span && props.span > 1) ? props.span : undefined,
         verticalMerge: props.vMerge,
         verticalAlign: props.vAlign === 'bottom' ? VerticalAlign.BOTTOM : VerticalAlign.TOP,
-        borders: props.bottomRule ? { bottom: RULE } : undefined,
+        borders: props.bottomRule ? { bottom: props.heavy ? HEAVY_RULE : RULE } : undefined,
     });
 }
 
