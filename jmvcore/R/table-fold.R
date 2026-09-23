@@ -72,9 +72,17 @@ fold <- function(input) {
             foldedIndices <- rowPlan[[foldedName]]
             for (fold in seq_along(foldedIndices)) {
                 index <- foldedIndices[fold];
-                value <- input$getColumn(index)$.cellForPrint(rowNo)
+                inColumn <- input$getColumn(index)
+                inCell <- inColumn$getCell(rowNo)
                 outRow <- ((rowNo - 1) * nFolds) + fold + (rowNo - 1)
-                output$setCell(rowNo=outRow, colNo, value)
+                # the value's formatted as its own column has it, but its
+                # symbols and footnotes are carried across as they are, so
+                # they're lined up across the whole of the folded column
+                output$setCell(rowNo=outRow, colNo, inColumn$.formattedValue(rowNo))
+                for (symbol in inCell$symbols)
+                    output$addSymbol(rowNo=outRow, col=colNo, symbol)
+                for (note in inCell$footnotes)
+                    output$addFootnote(rowNo=outRow, col=colNo, note)
             }
         }
     }

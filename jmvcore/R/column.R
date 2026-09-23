@@ -32,10 +32,19 @@ Column <- R6::R6Class("Column",
                 return('')
             formatValue(value, fmt)
         },
+        # what follows a cell's value: its symbols (e.g. '*'), and then its
+        # footnotes, as in jamovi. a symbol may carry markup of its own
+        # (e.g. <sup>), and only its text is printed
+        .supsForPrint=function(cell) {
+            symbols <- gsub('<[^>]*>', '', cell$symbols)
+            footnotes <- .SUPCHARS[cell$sups + 1]
+            sups <- paste(c(symbols, footnotes), collapse='')
+            if (sups == '')
+                return('')
+            paste0(' ', sups)
+        },
         .supWidth=function(cell) {
-            if (length(cell$sups) == 0)
-                return(0)
-            1 + length(cell$sups)  # a space, and the sups
+            nchar(private$.supsForPrint(cell))
         },
         .options=NULL,
         deep_clone=function(name, value) {
@@ -197,6 +206,11 @@ Column <- R6::R6Class("Column",
 
             paste0(t, pad)
         },
+        # the i'th cell's value, formatted, but without its padding or sups
+        .formattedValue=function(i) {
+            private$.measureIfNeeded()
+            private$.valueForPrint(private$.cells[[i]], private$.measures$fmt)
+        },
         # the width of the i'th cell, and of its superscripts
         .cellWidths=function(i) {
             private$.measureIfNeeded()
@@ -219,21 +233,19 @@ Column <- R6::R6Class("Column",
             cell <- private$.cells[[i]]
             value <- private$.valueForPrint(cell, fmt)
 
-            sups <- ''
-            if (length(cell$sups) > 0)
-                sups <- paste0(' ', paste(.SUPCHARS[cell$sups + 1], collapse=''))
-            sups <- paste0(sups, spaces(max(0, supwidth - nchar(sups))))
+            sups <- private$.supsForPrint(cell)
+            supsPadded <- paste0(sups, spaces(max(0, supwidth - nchar(sups))))
 
             pad <- spaces(max(0, width - supwidth - nchar(value)))
             # text is to the left, and numbers to the right
             if (is.character(cell$value) && ! private$.type %in% c('number', 'integer'))
-                str <- paste0(value, pad, sups)
+                str <- paste0(value, pad, supsPadded)
             else
-                str <- paste0(pad, value, sups)
+                str <- paste0(pad, value, supsPadded)
 
             if (private$.combineBelow && i > 1) {
                 above <- private$.cells[[i - 1]]
-                if (identical(value, private$.valueForPrint(above, fmt)) && identical(cell$sups, above$sups))
+                if (identical(value, private$.valueForPrint(above, fmt)) && identical(sups, private$.supsForPrint(above)))
                     str <- spaces(nchar(str))
             }
 
