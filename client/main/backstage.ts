@@ -1098,7 +1098,7 @@ export class BackstageModel extends EventMap<IBackstageModel> {
             if (status.download) {
                 let source = path.basename(status.path);
                 let target = path.basename(options.path);
-                let url = `dl/${ source }?filename=${ target }`;
+                let url = `dl/${ encodeURIComponent(source) }?filename=${ encodeURIComponent(target) }`;
                 await host.triggerDownload(url);
             }
         }

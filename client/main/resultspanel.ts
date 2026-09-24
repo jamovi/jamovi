@@ -1158,7 +1158,7 @@ class ResultsPanel extends EventDistributor {
                 let status = await this.model.save(saveOptions);
                 if (host.isElectron === false && status.path) {
                     let source = path.basename(status.path);
-                    let url = `dl/${ source }?filename=${ path.basename(result.file) }`;
+                    let url = `dl/${ encodeURIComponent(source) }?filename=${ encodeURIComponent(path.basename(result.file)) }`;
                     await host.triggerDownload(url);
                 }
             }
@@ -1198,7 +1198,7 @@ class ResultsPanel extends EventDistributor {
                 let status = await this.model.save(saveOptions);
                 if (host.isElectron === false && status.path) {
                     let source = path.basename(status.path);
-                    let url = `dl/${ source }?filename=${ path.basename(result.file) }`;
+                    let url = `dl/${ encodeURIComponent(source) }?filename=${ encodeURIComponent(path.basename(result.file)) }`;
                     await host.triggerDownload(url);
                 }
             }
@@ -1232,7 +1232,7 @@ class ResultsPanel extends EventDistributor {
                 let status = await this.model.save(saveOptions);
                 if (host.isElectron === false && status.path) {
                     let source = path.basename(status.path);
-                    let url = `dl/${ source }?filename=${ path.basename(result.file) }`;
+                    let url = `dl/${ encodeURIComponent(source) }?filename=${ encodeURIComponent(path.basename(result.file)) }`;
                     await host.triggerDownload(url);
                 }
             }
