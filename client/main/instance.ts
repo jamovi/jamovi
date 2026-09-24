@@ -592,10 +592,15 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                 filename = result.filename;
 
                 if ( ! options.export) {
-                    this.set('path', result.path);
+                    // a download is written to a temp file (result.path), but
+                    // the data set takes the name the user chose
+                    this.set('path', result.download ? options.path : result.path);
                     this.set('title', result.title);
                     this.set('saveFormat', result.saveFormat);
                     this._dataSetModel.set('edited', false);
+
+                    if (result.download)
+                        return result;
 
                     this._notify({ message: _('File Saved'), cause: _(`Saved to '{filename}'`, { filename }) });
                 }

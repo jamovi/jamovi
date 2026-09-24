@@ -797,6 +797,7 @@ class Instance:
         return (self._project.is_edited
                 and not self._project.is_blank
                 and self._project.path != ''
+                and not self._project.path.startswith('{{Temp}}')
                 and self._project.save_format == 'jamovi')
 
     async def autosave(self):
@@ -884,6 +885,11 @@ class Instance:
 
                 path = file_info.url
                 filename = file_info.filename
+            elif trigger_download:
+                # the file is written to a random temp name; the name the
+                # user chose is only applied when it's downloaded (dl/)
+                path = self._virtualise_path(path)
+                filename = os.path.basename(options['path'])
             else:
                 path = self._virtualise_path(path)
                 filename = os.path.basename(path)
@@ -894,12 +900,13 @@ class Instance:
 
             if not is_export:
                 self._project.title = title
-                self._project.path = path
+                self._project.path = options['path'] if trigger_download else path
                 self._project.save_format = 'jamovi'
                 self._project.is_edited = False
                 self._project.file_sync = file_sync
 
-                self._add_to_recents(path, self._project.title)
+                if not trigger_download:
+                    self._add_to_recents(path, self._project.title)
 
                 result['saveFormat'] = self._project.save_format
 
