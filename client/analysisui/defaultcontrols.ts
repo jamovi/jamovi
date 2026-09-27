@@ -49,7 +49,7 @@ const DefaultControls: { [key: string]: ControlType<CtrlDef> } = {
     Output: OutputControl,
     ModeSelector: ModeSelector,
     ActionButton: ActionButton,
-    FileSelector: FileSelector,
+    File: FileSelector,
 
     /*ListItem: { //Not to be used, no longer supported
         TextBox: GridTextbox, //Not to be used, no longer supported

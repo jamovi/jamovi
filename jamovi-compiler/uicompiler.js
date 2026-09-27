@@ -855,7 +855,7 @@ const constructors = {
     File: {
         create: function(item, isTemplate) {
             let ctrl = { };
-            ctrl.type = 'FileSelector';
+            ctrl.type = 'File';
             CheckTemplateState(item, ctrl, isTemplate);
             return ctrl
         },
@@ -1404,7 +1404,7 @@ const uiOptionControl = {
         }
     },
 
-    FileSelector: {
+    File: {
         usesSingleCell: function(ctrl) {
             return ctrl.useSingleCell === true;
         },
