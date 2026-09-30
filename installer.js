@@ -101,6 +101,8 @@ const check = function(jamovi_home) {
 
             if (mas < 2)
                 throw 'a newer version of jamovi is required, please update to the newest version';
+            if (mas === 28 && maj < 4)
+                throw 'jamovi 28.4 or newer is required, please update to the newest version';
             if (mas > 28)
                 throw 'a newer version of the jamovi-compiler (or jmvtools) is required';
 
