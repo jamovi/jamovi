@@ -97,14 +97,14 @@ class Transmogrifier(NodeTransformer):
             # special handling of X == NA, NA == X, X != NA, NA != X
             if isinstance(right, Name) and right.id == 'NA':
                 if isinstance(op, Eq):
-                    args = [ left, Num(n=1), Num(n=0) ]
+                    args = [ left, Constant(1), Constant(0) ]
                 elif isinstance(op, NotEq):
-                    args = [ left, Num(n=0), Num(n=1) ]
+                    args = [ left, Constant(0), Constant(1) ]
             elif isinstance(left, Name) and left.id == 'NA':
                 if isinstance(op, Eq):
-                    args = [ right, Num(n=1), Num(n=0) ]
+                    args = [ right, Constant(1), Constant(0) ]
                 elif isinstance(op, NotEq):
-                    args = [ right, Num(n=0), Num(n=1) ]
+                    args = [ right, Constant(0), Constant(1) ]
             if args is not None:
                 nu = Call(func=Name(id='IFMISS'), args=args, keywords=[ ])
                 return self.visit(nu)
