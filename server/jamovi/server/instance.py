@@ -93,6 +93,7 @@ class Instance:
         now = monotonic()
 
         self._virgin = True
+        self._opening = False
         self._idle_since = now
         self._no_connection_since = now
         self._no_connection_unclean_disconnect = False
@@ -310,7 +311,10 @@ class Instance:
         return self._coms is not None
 
     def connection_status(self):
-        if self._no_connection_since is None:
+        # while a data set is being opened, the client can't connect yet (it
+        # connects once the open has finished), so it counts as connected --
+        # otherwise a slow open would see the instance ended under it
+        if self._no_connection_since is None or self._opening:
             return ConnectionStatus()
         else:
             return ConnectionStatus(False,
@@ -1174,6 +1178,12 @@ class Instance:
                 if path != '' and not is_temp:
                     self._add_to_recents(path, self._project.title)
             finally:
+                self._opening = False
+                if self._coms is None:
+                    # the client can only connect now, so the time it has
+                    # to do so starts now
+                    self._no_connection_since = monotonic()
+
                 if remove_after and norm_path is not None:
                     # whether the open succeeded or not, the file isn't
                     # needed any more
@@ -1182,6 +1192,7 @@ class Instance:
                     except OSError as e:
                         log.warning("unable to remove '%s': %s", norm_path, e)
 
+        self._opening = True
         create_task(read_file(path, is_temp, stream))
         return stream
 
