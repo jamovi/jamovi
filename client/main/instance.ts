@@ -39,6 +39,19 @@ import { ResultsView } from './results';
 import MsgDialog from '../common/msgdialog';
 import { recentlyRelocated, Relocation } from './relocate';
 
+// a proxy in front of the server gave up waiting for a response (504, or
+// cloudflare's 524). if the browser was still sending the file at the time,
+// the upload itself took too long; otherwise the server did
+function isProxyTimeout(status: number): boolean {
+    return status === 504 || status === 524;
+}
+
+function timedOut(uploaded: boolean): string {
+    if (uploaded)
+        return _('The server took too long to respond. Please try again.');
+    return _('The upload took too long to complete. Please try again with a faster connection, or a smaller file.');
+}
+
 // whether a response body says the session has gone
 function isNoSession(body: string): boolean {
     try {
@@ -346,6 +359,9 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                     setProgress({ title: _('Uploading'), p: event.loaded, n: event.total, cancel });
             });
 
+            let uploaded = false;  // the whole file was sent
+            xhr.upload.addEventListener('load', () => uploaded = true);
+
             const data = new FormData();
             for (const file of files) {
                 if (typeof file === 'string') {
@@ -373,6 +389,9 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                 let message = xhr.response?.message || _('File size exceeds session limits');
                 throw new UserFacingError(_('Upload failed'), { cause: message });
             }
+
+            if (isProxyTimeout(xhr.status))
+                throw new UserFacingError(_('Upload failed'), { cause: timedOut(uploaded) });
 
             if (xhr.status !== 200)
                 throw new UserFacingError(_('Upload failed'), { cause: xhr.statusText });
@@ -470,6 +489,9 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                             setProgress({ title: _('Uploading'), p: event.loaded, n: event.total, cancel: () => xhr.abort() });
                     });
 
+                    let uploaded = false;  // the whole file was sent
+                    xhr.upload.addEventListener('load', () => uploaded = true);
+
                     let url = `${ host.baseUrl }open?p=`;
 
                     const data = new FormData();
@@ -502,6 +524,9 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
 
                     if (xhr.status === 413)
                         throw new UserFacingError(_('Upload failed'), { cause: _('File size exceeds session limits') });
+
+                    if (isProxyTimeout(xhr.status))
+                        throw new UserFacingError(_('Upload failed'), { cause: timedOut(uploaded) });
 
                     if (xhr.status !== 200)
                         throw new UserFacingError(_('Upload failed'), { cause: xhr.statusText });
