@@ -449,6 +449,7 @@ class Session(dict):
                     if prevented:
                         session_no_connection_since = now
                         session_idle_since = now
+                        session_start_time = now  # the time limit starts once it's in use
                     elif session_expiry_prevented:
                         log.info('session is active (will expire)')
                     session_expiry_prevented = expiry_prevented
