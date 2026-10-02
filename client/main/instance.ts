@@ -157,6 +157,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
     _dataSetModel: DataSetViewModel;
     _instanceId: string;
     _onBC: (broadcast) => void;
+    _onResume: (event: Event) => void;
     transId: number = 0;
     seqNo: number = 0;
     command: string = '';
@@ -193,6 +194,17 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         this._onBC = (bc => this._onReceive(bc));
         this.attributes.coms.on('broadcast', this._onBC);
 
+        // a page coming back from the background may have a dead connection
+        // that hasn't noticed (an iPad, in particular)
+        this._onResume = (event) => {
+            if (event.type === 'pageshow' && ! (event as PageTransitionEvent).persisted)
+                return;
+            if (document.visibilityState === 'visible')
+                this._verifyConnection();
+        };
+        document.addEventListener('visibilitychange', this._onResume);
+        window.addEventListener('pageshow', this._onResume);
+
         this._modules.on('moduleUninstalled', (meta) => {
             let moduleName = meta.name;
             this._modules.purgeCache(moduleName);
@@ -227,6 +239,8 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         this._dataSetModel.off('columnsChanged', this._columnsChanged, this);
         this._analyses.off('analysisOptionsChanged', this._onOptionsChanged, this);
         this.attributes.coms.off('broadcast', this._onBC);
+        document.removeEventListener('visibilitychange', this._onResume);
+        window.removeEventListener('pageshow', this._onResume);
         this._settings.destroy();
     }
 
@@ -947,6 +961,24 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             type: error.type ? error.type : 'info',
         });
         this.trigger('notification', notification);
+    }
+
+    _verifyConnection() {
+
+        // electron's server is local; there's no connection to lose, and a
+        // failure there closes jamovi
+        if (host.isElectron || ! this._instanceId)
+            return;
+
+        let coms = this.attributes.coms;
+
+        let instanceRequest = new coms.Messages.InstanceRequest();
+        let request = new coms.Messages.ComsMessage();
+        request.payload = instanceRequest.toArrayBuffer();
+        request.payloadType = 'InstanceRequest';
+        request.instanceId = this._instanceId;
+
+        coms.verify(request);
     }
 
     _beginInstance(instanceId: string) {

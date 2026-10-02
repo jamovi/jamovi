@@ -55,6 +55,8 @@ class Coms {
     ready: Promise<void>;
     _listeners: { eventName:string, callback: (...args: any[]) => void }[] = [];
     _transactions: ComsTransaction[] = [];
+    _lastReceived: number = 0;
+    _verifying: boolean = false;
 
     constructor() {
 
@@ -112,6 +114,50 @@ class Coms {
         return this._opened === true;
     }
 
+    // checks the connection is still alive. a socket can look open long after
+    // the connection has gone: an iPad suspends a page in the background, and
+    // on resuming, the socket may never report its close. if nothing at all
+    // arrives in response (any message counts, as the reply can be queued
+    // behind a long request, an open, say) the socket is given up on, and
+    // reconnected as for a dropped connection
+    verify(request, timeout: number = 5000) {
+
+        if ( ! this._opened || this._verifying)
+            return;
+
+        const ws = this._ws;
+
+        // already closed, but not yet reported; no need to wait
+        if (ws.readyState !== WebSocket.OPEN) {
+            this._abandon();
+            return;
+        }
+
+        this._verifying = true;
+        const sentAt = Date.now();
+
+        this.send(request).catch(() => { });  // an error is still an answer
+
+        setTimeout(() => {
+            this._verifying = false;
+            if (this._ws !== ws || ! this._opened)
+                return;
+            if (this._lastReceived >= sentAt)
+                return;
+            this._abandon();
+        }, timeout);
+    }
+
+    // gives up on the current socket (without waiting for it to report its
+    // close) and reconnects as for a dropped connection
+    _abandon() {
+        const ws = this._ws;
+        ws.onopen = ws.onmessage = ws.onerror = ws.onclose = null;
+        ws.close();
+        this._opened = false;
+        this.reconnect([0, 200, 400, 600, 800]);
+    }
+
     reconnect(retries: number[]) {
         if (retries.length === 0) {
             this._notifyEvent('failure');
@@ -152,6 +198,8 @@ class Coms {
     }
 
     receive(event) {
+
+        this._lastReceived = Date.now();
 
         let response = this.Messages.ComsMessage.decode(event.data);
 
