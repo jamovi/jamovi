@@ -219,7 +219,18 @@ class _Handlers:
             file_title, dot_ext = os.path.splitext(uploaded.filename)
             file_ext = dot_ext[1:] if dot_ext else None
             is_temp = True
-            remove_after = uploaded.ours  # it's our temp file
+            if uploaded.ours:
+                remove_after = True  # it's our temp file
+            else:
+                # an upload accelerator's copy, in upload_path, is ours to
+                # remove once read too. anything outside it is someone's own
+                # file, and is left alone
+                real = os.path.realpath(uploaded.path)
+                root = os.path.realpath(upload_path)
+                try:
+                    remove_after = os.path.commonpath([root, real]) == root
+                except ValueError:
+                    remove_after = False  # different drives on windows
         elif 'path' in options:
             file_path = options['path']
             is_temp = options.get('temp', False) is not False
