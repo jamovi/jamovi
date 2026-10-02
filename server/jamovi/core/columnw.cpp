@@ -309,17 +309,25 @@ void ColumnW::appendLevel(int value, const char *label, const char *importValue,
 {
     ColumnStruct *s = struc();
 
-    string tmp;
+    // label and importValue may point into the memory map, which can move
+    // when we allocate below, so we work from copies
+
+    string labelCopy;
     if (label == NULL)
     {
         stringstream ss;
         ss << value;
-        tmp = ss.str();
-        label = tmp.c_str();
+        labelCopy = ss.str();
+    }
+    else
+    {
+        labelCopy = label;
     }
 
-    if (importValue == NULL)
-        importValue = label;
+    string importValueCopy = (importValue == NULL) ? labelCopy : string(importValue);
+
+    label = labelCopy.c_str();
+    importValue = importValueCopy.c_str();
 
     bool treatAsMissing;
     if (dataType() == DataType::TEXT)
@@ -359,8 +367,6 @@ void ColumnW::appendLevel(int value, const char *label, const char *importValue,
     memcpy(chars, label, length);
     chars = _mm->base(chars);
 
-    if (importValue == NULL)
-        importValue = label;
     length = strlen(importValue)+1;
     size_t importAllocated;
     char *importChars = _mm->allocate<char>(length, &importAllocated);
