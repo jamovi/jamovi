@@ -17,11 +17,30 @@ MemoryMap *MemoryMap::attach(const std::string &path)
     file = new interprocess::file_mapping(path.c_str(), interprocess::read_only);
 #endif
 
-    interprocess::mapped_region *region = new interprocess::mapped_region(*file,       interprocess::read_only);
+    interprocess::mapped_region *region;
+
+    try
+    {
+        region = new interprocess::mapped_region(*file,       interprocess::read_only);
+    }
+    catch (...)
+    {
+        delete file;
+        throw;
+    }
 
     MemoryMap *mm = new MemoryMap(path, file, region);
     mm->_size = region->get_size();
-    mm->check();
+
+    try
+    {
+        mm->check();
+    }
+    catch (...)
+    {
+        delete mm;
+        throw;
+    }
 
     return mm;
 }
