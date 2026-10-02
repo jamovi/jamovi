@@ -13,8 +13,6 @@
 #include <cmath>
 #include <climits>
 
-#include <cassert>
-
 class DataSetW;
 
 class ColumnW : public Column

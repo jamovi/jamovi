@@ -197,11 +197,11 @@ void ColumnW::setDValue(int rowIndex, double value, bool initing)
 
 void ColumnW::setSValue(int rowIndex, const char *value, bool initing)
 {
+    if (dataType() != DataType::TEXT || measureType() != MeasureType::ID)
+        throw runtime_error("setSValue() requires a text ID column");
+
     if ( ! initing)
         _discardScratchColumn();
-
-    assert(dataType() == DataType::TEXT);
-    assert(measureType() == MeasureType::ID);
 
     if (value == NULL || value[0] == '\0')
     {
@@ -235,7 +235,8 @@ void ColumnW::setIValue(int rowIndex, int value, bool initing)
             if (oldValue != INT_MIN)
             {
                 Level *level = rawLevel(oldValue);
-                assert(level != NULL);
+                if (level == NULL)
+                    throw runtime_error("level not found");
                 level->count--;
 
                 if (level->count == 0 && level->pinned == false)
@@ -256,8 +257,9 @@ void ColumnW::setIValue(int rowIndex, int value, bool initing)
                 const char *c_str = str.c_str();
                 insertLevel(newValue, c_str, c_str);
                 level = rawLevel(newValue);
+                if (level == NULL)
+                    throw runtime_error("level not found");
             }
-            assert(level != NULL);
             level->count++;
             if (columnType() != ColumnType::FILTER && ! this->_parent->isRowFiltered(rowIndex))
                 level->countExFiltered++;
@@ -411,7 +413,8 @@ void ColumnW::updateLevelCounts() {
             if (v == INT_MIN)
                 continue;
             Level *level = rawLevel(v);
-            assert(level != NULL);
+            if (level == NULL)
+                throw runtime_error("level not found");
             level->count++;
             if ( ! this->_parent->isRowFiltered(i))
                 level->countExFiltered++;
@@ -462,8 +465,6 @@ void ColumnW::insertLevel(int value, const char *label, const char *importValue,
             Level &level = levels[i];
             Level &nextLevel = levels[i+1];
 
-            assert(level.value != value);
-
             if (ascending && level.value > value)
             {
                 nextLevel = level;
@@ -513,7 +514,8 @@ void ColumnW::removeLevel(int value)
             break;
     }
 
-    assert(i != s->levelsUsed); // level not found
+    if (i == s->levelsUsed)
+        throw runtime_error("level not found");
 
     int index = i;
 
