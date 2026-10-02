@@ -38,6 +38,16 @@ import Coms, { QQ } from './coms';
 import { ResultsView } from './results';
 import MsgDialog from '../common/msgdialog';
 
+// whether a response body says the session has gone
+function isNoSession(body: string): boolean {
+    try {
+        return JSON.parse(body).status === 'no-session';
+    }
+    catch (e) {
+        return false;
+    }
+}
+
 export interface IInstanceOpenOptions {
     path?: string,
     url?: string,
@@ -388,6 +398,22 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             if (options.file)
                 this._checkUpload([ options.file ]);
 
+            // 'no-session' means the session the cookies name has gone (and
+            // the cookies have been cleared). with an auth token (i.e. at
+            // boot) a new one can be started, by going round again. without
+            // one (in-app) the session has ended, and the user is told so
+            let noSessionRetried = false;
+            const noSession = () => {
+                if (options.authToken && ! noSessionRetried) {
+                    noSessionRetried = true;
+                    return;
+                }
+                throw new UserFacingError(_('Unable to open'), {
+                    cause: _('Your session has ended. Please refresh the page to continue.'),
+                    status: 'disconnected',
+                });
+            };
+
             while (true) {
 
                 if (options.file) {
@@ -461,6 +487,11 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                     if (xhr.status === 204)
                         return { 'status': 'OK' };
 
+                    if (xhr.status === 401 && isNoSession(xhr.responseText)) {
+                        noSession();
+                        continue;
+                    }
+
                     if (xhr.status === 413)
                         throw new UserFacingError(_('Upload failed'), { cause: _('File size exceeds session limits') });
 
@@ -498,6 +529,11 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
 
                     if (response.status === 204)
                         return { 'status': 'OK' };
+
+                    if (response.status === 401 && isNoSession(await response.text())) {
+                        noSession();
+                        continue;
+                    }
 
                     if (response.status === 413)
                         throw new UserFacingError(_('Unable to open'), { cause: _('File size exceeds session limits') });
