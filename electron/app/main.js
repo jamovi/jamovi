@@ -472,10 +472,6 @@ if (os.platform() === 'win32') {
 
             splash.loadURL('file://' + __dirname + '/splash.html');
             splash.show();
-            splash.webContents.on('will-navigate', (e, url) => {
-                e.preventDefault();
-                shell.openExternal(url);
-            });
         }
     });
 }

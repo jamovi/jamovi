@@ -13,7 +13,6 @@
             position: absolute;
             top: 35px;
             left: 180px;
-            transition: .3s top;
         }
 
         .label {
@@ -21,19 +20,6 @@
             line-height: 25px;
             vertical-align: middle;
             font-size: 20px;
-            color: #aaaaaa;
-            font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
-        }
-
-        #msg {
-            height: 15px;
-            width: 170px;
-            line-height: 13px;
-            vertical-align: middle;
-
-            opacity: 0;
-            transition: .5s opacity;
-            font-size: 10px;
             color: #aaaaaa;
             font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
         }
@@ -135,16 +121,6 @@
             stroke-dashoffset: 20;
         }
     </style>
-    <script>
-        setTimeout(() => {
-            let msg = document.getElementById("msg");
-            msg.style.opacity = "1";
-            let container = document.getElementById("container");
-            container.style.height = "45px";
-            container.style.top = "27.5px";
-
-        }, 10000);
-    </script>
   </head>
   <body>
     <div class="box">
@@ -193,7 +169,6 @@
 
          <div id="container">
             <div class="label">starting jamovi...</div>
-            <div id="msg">start-up is slow, <span><i><a href="https://www.jamovi.org/startup-is-slow.html">what can cause this?</a></i></span></div>
          </div>
     </div>
   </body>
