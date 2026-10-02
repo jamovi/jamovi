@@ -353,6 +353,10 @@ void DataSetW::deleteRows(int delStart, int delEnd)
 
             column.setRowCount<int>(finalCount);
         }
+
+        // the memory map may have moved
+        dss     = _mm->resolve(_rel);
+        columns = _mm->resolve(dss->columns);
     }
 
     dss->rowCount = finalCount;
