@@ -43,6 +43,7 @@ import type { InfoBox } from './infobox';
 import keyboardJS  from 'keyboardjs';
 import HighContrast from '../common/highcontrast';
 import Store from './store';
+import { relocate } from './relocate';
 
 declare global {
     interface Window {
@@ -1023,6 +1024,12 @@ ready(async() => {
 
                 if (result.status === 'OK')
                     break;
+
+                if (result.status === 'reload' || result.status === 'redirect') {
+                    // the server asks for the page to be loaded again
+                    relocate(result);
+                    await new Promise((resolve, reject) => { /* never */ });
+                }
 
                 if (result.status === 'requires-auth' && result.event === 'full') {
                     location = 'full';

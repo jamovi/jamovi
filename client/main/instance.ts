@@ -37,6 +37,7 @@ import { ISaveOptions } from './backstage/fsentry';
 import Coms, { QQ } from './coms';
 import { ResultsView } from './results';
 import MsgDialog from '../common/msgdialog';
+import { recentlyRelocated, Relocation } from './relocate';
 
 // whether a response body says the session has gone
 function isNoSession(body: string): boolean {
@@ -75,7 +76,10 @@ interface IInstanceOpenSuccess {
     url?: string,
 }
 
-export type IInstanceOpenResult = IInstanceOpenSuccess | IInstanceOpenRequiresInteraction | IInstanceOpenError;
+// the page is to be loaded again; see relocate.ts
+type IInstanceOpenRelocation = Relocation;
+
+export type IInstanceOpenResult = IInstanceOpenSuccess | IInstanceOpenRequiresInteraction | IInstanceOpenError | IInstanceOpenRelocation;
 
 export interface IInstanceOpenProgress {
     title: string,
@@ -395,6 +399,10 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             if (options.authToken)
                 headers.append('Authorization', `Bearer ${ options.authToken }`);
 
+            // tells the server not to ask for a relocation again
+            if (recentlyRelocated())
+                headers.append('X-Jamovi-Relocated', '1');
+
             if (options.file)
                 this._checkUpload([ options.file ]);
 
@@ -593,7 +601,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                         status: 'error',
                     });
                 }
-                else if (message.status !== 'OK' && message.status !== 'requires-auth') {
+                else if ( ! [ 'OK', 'requires-auth', 'reload', 'redirect' ].includes(message.status)) {
                     let title = message.title || _('Unable to open');
                     throw new UserFacingError(title, {
                         cause: message.message || _('Unexpected error'),
