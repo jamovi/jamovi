@@ -810,7 +810,7 @@ const createWindow = function(open) {
 
         let filePath = open.open;
         if ( ! (filePath.startsWith('http://') || filePath.startsWith('https://')))
-            filePath = path.resolve(filePath);
+            filePath = path.resolve(filePath).replace(/\\/g, '/');
 
         url = `${ url }#open?path=${ encodeURIComponent(filePath) }`;
 

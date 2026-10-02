@@ -173,7 +173,7 @@ function setDialogProvider(provider) {
 }
 
 function getPathForFile(file) {
-    return webUtils.getPathForFile(file);
+    return webUtils.getPathForFile(file).replace(/\\/g, '/');
 }
 
 async function showSaveDialog(options) {
