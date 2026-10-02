@@ -286,6 +286,26 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         });
     }
 
+    // refuses an upload that can't succeed, before any of it is sent. once a
+    // browser starts sending a body the server has no way to stop it, so an
+    // upload refused by the server is an upload sent in full first
+    _checkUpload(files: Iterable<File | string>) {
+
+        if ( ! this.attributes.coms.connected)
+            throw new UserFacingError(_('Upload failed'), { cause: _('The connection to the session has been lost') });
+
+        if (host.maxUploadMB === undefined)
+            return;
+
+        let size = 0;
+        for (const file of files) {
+            if (typeof file !== 'string')  // a path (electron) is copied, not sent
+                size += file.size;
+        }
+        if (size > host.maxUploadMB * 1024 * 1024)
+            throw new UserFacingError(_('Upload failed'), { cause: _('File size exceeds session limits') });
+    }
+
     // copies files into the session (for a 'File' analysis option), where
     // the engine can read them. files are either File objects (a browser:
     // the bytes are uploaded) or paths (electron: the server, which is on
@@ -294,6 +314,8 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
     uploadFiles(files: FileList | File[] | string[], signal?: AbortSignal): ProgressStream<IInstanceOpenProgress, IFileEntry[]> {
 
         return new ProgressStream(async (setProgress): Promise<IFileEntry[]> => {
+
+            this._checkUpload(files);
 
             // fetch doesn't support upload progress, so we need to use xhr
             let xhr = new XMLHttpRequest();
@@ -362,6 +384,9 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
 
             if (options.authToken)
                 headers.append('Authorization', `Bearer ${ options.authToken }`);
+
+            if (options.file)
+                this._checkUpload([ options.file ]);
 
             while (true) {
 
@@ -437,7 +462,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                         return { 'status': 'OK' };
 
                     if (xhr.status === 413)
-                        throw new UserFacingError(_('Upload failed'), { cause: 'File size exceeds session limits' });
+                        throw new UserFacingError(_('Upload failed'), { cause: _('File size exceeds session limits') });
 
                     if (xhr.status !== 200)
                         throw new UserFacingError(_('Upload failed'), { cause: xhr.statusText });
@@ -475,7 +500,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                         return { 'status': 'OK' };
 
                     if (response.status === 413)
-                        throw new UserFacingError(_('Unable to open'), { cause: 'File size exceeds session limits' });
+                        throw new UserFacingError(_('Unable to open'), { cause: _('File size exceeds session limits') });
 
                     if (response.status !== 200)
                         throw new UserFacingError(_('Unable to open'), { cause: response.statusText });

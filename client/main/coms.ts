@@ -106,6 +106,12 @@ class Coms {
         });
     }
 
+    // whether the websocket to the session is up. it's down while a dropped
+    // connection is being retried, and for good once the retries run out
+    get connected(): boolean {
+        return this._opened === true;
+    }
+
     reconnect(retries: number[]) {
         if (retries.length === 0) {
             this._notifyEvent('failure');

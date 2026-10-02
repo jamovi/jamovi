@@ -7,7 +7,13 @@ declare global {
         config: {
             client: {
                 roots: [string, string, string],
-            }
+            },
+            // limits the deployment enforces, which the client checks first
+            // so a request that would be refused isn't sent. absent where
+            // the deployment doesn't impose them (electron, self-hosted)
+            limits?: {
+                maxUploadMB?: number,
+            },
         }
     }
 }
@@ -31,6 +37,10 @@ function resolveUrl(root) {
 export const baseUrl = resolveUrl(window.config.client.roots[0]);
 export const analysisUIUrl = resolveUrl(window.config.client.roots[1]);
 export const resultsViewUrl = resolveUrl(window.config.client.roots[2]);
+
+// the largest upload the deployment accepts (in MB, as nginx counts them:
+// 1MB = 1048576 bytes), or undefined for no limit
+export const maxUploadMB: number | undefined = window.config.limits?.maxUploadMB;
 
 
 export interface IExtensionGroup {
@@ -379,6 +389,7 @@ export default {
     baseUrl,
     analysisUIUrl,
     resultsViewUrl,
+    maxUploadMB,
     closeWindow,
     openWindow,
     open,
