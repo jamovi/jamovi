@@ -192,7 +192,7 @@ protected:
     }
 
     int ivalue(int index);
-    const char *svalue(int index);
+    std::string svalue(int index);
     double dvalue(int index, bool acceptEuroDecimal=false);
 
     bool isEuroDecimalTextColumn();

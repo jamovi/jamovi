@@ -797,22 +797,19 @@ void ColumnW::changeDMType(DataType::Type dataType, MeasureType::Type measureTyp
         {
             for (int rowNo = 0; rowNo < rowCount(); rowNo++)
             {
-                const char *value = old.svalue(rowNo);
-                string copy = string(value);
-                // value is in shared memory, which may move if setSValue
-                // results in a segment enlargement, so we make a copy
-                setSValue(rowNo, copy.c_str(), true);
+                string value = old.svalue(rowNo);
+                setSValue(rowNo, value.c_str(), true);
             }
         }
         else
         {
             for (int rowNo = 0; rowNo < rowCount(); rowNo++)
             {
-                const char *value = old.svalue(rowNo);
+                string value = old.svalue(rowNo);
 
-                if (value[0] != '\0')
+                if ( ! value.empty())
                 {
-                    int levelIndex = valueForLabel(value);
+                    int levelIndex = valueForLabel(value.c_str());
                     setIValue(rowNo, levelIndex, true);
                 }
                 else
@@ -902,7 +899,7 @@ void ColumnW::_transferLevels(ColumnW &dest, ColumnW &src)
                 {
                     value = src.ivalue(i);
                     if (value != INT_MIN && ! dest.hasLevel(value))
-                        dest.insertLevel(value, src.svalue(i));
+                        dest.insertLevel(value, src.svalue(i).c_str());
                 }
 
                 ColumnStruct *s = dest.struc();
@@ -915,9 +912,9 @@ void ColumnW::_transferLevels(ColumnW &dest, ColumnW &src)
                 int count = 0;
                 for (int i = 0; i < src.rowCount(); i++)
                 {
-                    const char *value = src.svalue(i);
-                    if (value[0] != '\0' && ! dest.hasLevel(value))
-                        dest.appendLevel(count++, value);
+                    string value = src.svalue(i);
+                    if ( ! value.empty() && ! dest.hasLevel(value.c_str()))
+                        dest.appendLevel(count++, value.c_str());
                 }
             }
         }
@@ -931,7 +928,7 @@ void ColumnW::_transferLevels(ColumnW &dest, ColumnW &src)
                     if (src.dataType() == DataType::DECIMAL)
                         dest.insertLevel(value); // src.svalue() would return a decimal string
                     else
-                        dest.insertLevel(value, src.svalue(i));
+                        dest.insertLevel(value, src.svalue(i).c_str());
                 }
             }
         }
