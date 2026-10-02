@@ -579,6 +579,7 @@ void ColumnW::setMissingValues(const vector<MissingValue> &newMissingValues)
                 length = strlen(newMissingValue.value.s) + 1;
                 sValue = _mm->allocateSize<char>(length, &allocated);
                 memcpy(sValue, newMissingValue.value.s, length);
+                s = struc();
                 missingValues = _mm->resolve<MissingValue>(s->missingValues);
                 missingValues[i].value.s = _mm->base<char>(sValue);
                 break;
@@ -614,6 +615,7 @@ void ColumnW::setMissingValues(const vector<MissingValue> &newMissingValues)
         }
     }
 
+    s = struc();
     s->changes++;
 }
 
