@@ -18,6 +18,8 @@ import os.path
 
 from enum import Enum
 
+ctypedef char* charptr
+
 cdef extern from "column.h":
     cdef cppclass CLevelData "LevelData":
         CLevelData()
@@ -429,8 +431,12 @@ cdef class Column:
         return max_dp_required
 
     def append(self, value):
+        cdef charptr null_value = NULL
         if self.data_type is DataType.DECIMAL:
             self._this.append[double](value)
+        elif self.data_type is DataType.TEXT and self.measure_type is MeasureType.ID:
+            self._this.append[charptr](null_value)
+            self._this.setSValue(self.row_count - 1, value.encode('utf-8'), False)
         else:
             self._this.append[int](value)
 

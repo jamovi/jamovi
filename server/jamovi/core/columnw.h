@@ -59,19 +59,9 @@ public:
 
     template<typename T> void append(const T &value)
     {
-        ColumnStruct *cs = _mm->resolve<ColumnStruct>(_rel);
-
-        setRowCount<T>(cs->rowCount + 1);
-
-        cs = _mm->resolve<ColumnStruct>(_rel);
-        int blockIndex = cs->rowCount * sizeof(T) / VALUES_SPACE;
-        Block **blocks = _mm->resolve<Block*>(cs->blocks);
-        Block *currentBlock = _mm->resolve<Block>(blocks[blockIndex]);
-
-        int index = cs->rowCount % (VALUES_SPACE / sizeof(T));
-
-        T* p = (T*) &currentBlock->values[index * sizeof(T)];
-        *p = value;
+        int index = _mm->resolve<ColumnStruct>(_rel)->rowCount;
+        setRowCount<T>(index + 1);
+        cellAt<T>(index) = value;
     }
 
 private:
