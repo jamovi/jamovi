@@ -28,12 +28,20 @@ int Column::id() const {
 
 const char *Column::name() const
 {
-    return _mm->resolve(struc()->name);
+    const char *name = struc()->name;
+    if (name != NULL)
+        return _mm->resolve(name);
+    else
+        return "";
 }
 
 const char *Column::importName() const
 {
-    return _mm->resolve(struc()->importName);
+    const char *importName = struc()->importName;
+    if (importName != NULL)
+        return _mm->resolve(importName);
+    else
+        return "";
 }
 
 const char *Column::description() const
