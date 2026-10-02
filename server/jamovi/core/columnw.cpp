@@ -864,24 +864,24 @@ void ColumnW::_transferLevels(ColumnW &dest, ColumnW &src)
         {
             if (src.dataType() == DataType::DECIMAL)
             {
-                set<int64_t> values;
+                set<double> values;
 
                 for (int i = 0; i < src.rowCount(); i++)
                 {
                     double value = src.dvalue(i);
                     if ( ! isnan(value))
-                        values.insert((int64_t)round(value * 1000));
+                        values.insert(round(value * 1000) + 0.0);  // + 0.0 turns -0.0 into 0.0
                 }
 
                 int count = 0;
-                set<int64_t>::iterator itr;
+                set<double>::iterator itr;
                 for (itr = values.begin(); itr != values.end(); itr++)
                 {
-                    int64_t value = *itr;
+                    double value = *itr;
                     stringstream ss;
                     ss.setf(ios::fixed);
                     ss << setprecision(src.dps());
-                    ss << ((double)value) / 1000;
+                    ss << value / 1000;
                     string v = ss.str();
                     dest.insertLevel(count++, v.c_str(), v.c_str());
                 }

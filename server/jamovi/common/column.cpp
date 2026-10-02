@@ -569,12 +569,13 @@ const char *Column::svalue(int index)
         else
         {
             // we round and divide so it matches _transferLevels()
-            int64_t thous = (int64_t)round(value * 1000);
+            // (adding 0.0 turns -0.0 into 0.0, so it isn't displayed as -0)
+            double thous = round(value * 1000) + 0.0;
 
             stringstream ss;
             ss.setf(ios::fixed);
             ss << setprecision(dps());
-            ss << ((double)thous) / 1000;
+            ss << thous / 1000;
             tmp = ss.str();
             return tmp.c_str();
         }
