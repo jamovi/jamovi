@@ -55,10 +55,10 @@ cdef extern from "datasetw.h":
         CDataSet *create(CMemoryMap *mm) except +
         @staticmethod
         CDataSet *retrieve(CMemoryMap *mm) except +
-        int rowCount() const
-        int rowCountExFiltered() const
-        int columnCount() const
-        bool isRowFiltered(int index) const
+        int rowCount() except +
+        int rowCountExFiltered() except +
+        int columnCount() except +
+        bool isRowFiltered(int index) except +
         CColumn appendColumn(const char *name, const char *importName) except +
         CColumn insertColumn(int index, const char *name, const char *importName) except +
         void setRowCount(size_t count) except +
@@ -70,13 +70,13 @@ cdef extern from "datasetw.h":
         CColumn operator[](int index) except +
         CColumn operator[](const char *name) except +
         CColumn getColumnById(int id) except +
-        bool hasWeights();
+        bool hasWeights() except +
         int weights() except +
-        void setWeights(int id);
-        void setEdited(bool edited);
-        bool isEdited() const;
-        void setBlank(bool blank);
-        bool isBlank() const;
+        void setWeights(int id) except +
+        void setEdited(bool edited) except +
+        bool isEdited() except +
+        void setBlank(bool blank) except +
+        bool isBlank() except +
 
 class ColumnIterator:
     def __init__(self, dataset):
@@ -211,62 +211,62 @@ cdef class DataSet:
 
 cdef extern from "columnw.h":
     cdef cppclass CColumn "ColumnW":
-        const char *name() const
-        void setName(const char *name)
-        const char *importName() const
-        void setImportName(const char *name)
-        const char *description() const
-        void setDescription(const char *description)
-        int id() const
-        void setId(int id)
-        void setColumnType(CColumnType columnType)
-        CColumnType columnType() const
-        void setDataType(CDataType dataType)
-        CDataType dataType() const
-        void setMeasureType(CMeasureType measureType)
-        CMeasureType measureType() const
-        void setAutoMeasure(bool auto)
-        bool autoMeasure() const
-        void append[T](const T &value)
-        T raw[T](int index)
-        const char *raws(int index);
-        void setIValue(int index, int value, bool init)
-        void setDValue(int index, double value, bool init)
-        void setSValue(int index, const char *value, bool init)
-        const char *getLabel(int value) const
-        const char *getLabel(const char* value) const
-        const char *getImportValue(int value) const
-        int valueForLabel(const char *label) const
-        void appendLevel(int value, const char *label, const char *importValue, bool pinned)
-        void appendLevel(int value, const char *label)
-        void insertLevel(int value, const char *label, const char *importValue, bool pinned)
-        void insertLevel(int value, const char *label)
-        int levelCount() const
-        bool hasLevel(const char *label) const
-        bool hasLevel(int value) const
-        bool hasLevels() const
-        void clearLevels()
-        void updateLevelCounts()
-        void trimUnusedLevels()
-        const vector[CLevelData] levels()
-        void setLevels(vector[CLevelData] levels)
-        void setMissingValues(vector[CMissingValue] missingValues)
-        const vector[CMissingValue] missingValues()
-        void setDPs(int dps)
-        int dps() const
-        int rowCount() const;
-        int rowCountExFiltered() const;
-        int changes() const;
-        const char *formula() const;
-        void setFormula(const char *value);
-        const char *formulaMessage() const;
-        void setFormulaMessage(const char *value);
-        void setActive(bool active);
-        bool active() const;
-        void setTrimLevels(bool trim);
-        bool trimLevels() const;
-        void changeDMType(CDataType dataType, CMeasureType measureType);
-        bool shouldTreatAsMissing(int index);
+        const char *name() except +
+        void setName(const char *name) except +
+        const char *importName() except +
+        void setImportName(const char *name) except +
+        const char *description() except +
+        void setDescription(const char *description) except +
+        int id() except +
+        void setId(int id) except +
+        void setColumnType(CColumnType columnType) except +
+        CColumnType columnType() except +
+        void setDataType(CDataType dataType) except +
+        CDataType dataType() except +
+        void setMeasureType(CMeasureType measureType) except +
+        CMeasureType measureType() except +
+        void setAutoMeasure(bool auto) except +
+        bool autoMeasure() except +
+        void append[T](const T &value) except +
+        T raw[T](int index) except +
+        const char *raws(int index) except +
+        void setIValue(int index, int value, bool init) except +
+        void setDValue(int index, double value, bool init) except +
+        void setSValue(int index, const char *value, bool init) except +
+        const char *getLabel(int value) except +
+        const char *getLabel(const char* value) except +
+        const char *getImportValue(int value) except +
+        int valueForLabel(const char *label) except +
+        void appendLevel(int value, const char *label, const char *importValue, bool pinned) except +
+        void appendLevel(int value, const char *label) except +
+        void insertLevel(int value, const char *label, const char *importValue, bool pinned) except +
+        void insertLevel(int value, const char *label) except +
+        int levelCount() except +
+        bool hasLevel(const char *label) except +
+        bool hasLevel(int value) except +
+        bool hasLevels() except +
+        void clearLevels() except +
+        void updateLevelCounts() except +
+        void trimUnusedLevels() except +
+        const vector[CLevelData] levels() except +
+        void setLevels(vector[CLevelData] levels) except +
+        void setMissingValues(vector[CMissingValue] missingValues) except +
+        const vector[CMissingValue] missingValues() except +
+        void setDPs(int dps) except +
+        int dps() except +
+        int rowCount() except +
+        int rowCountExFiltered() except +
+        int changes() except +
+        const char *formula() except +
+        void setFormula(const char *value) except +
+        const char *formulaMessage() except +
+        void setFormulaMessage(const char *value) except +
+        void setActive(bool active) except +
+        bool active() except +
+        void setTrimLevels(bool trim) except +
+        bool trimLevels() except +
+        void changeDMType(CDataType dataType, CMeasureType measureType) except +
+        bool shouldTreatAsMissing(int index) except +
 
     ctypedef enum CColumnType "ColumnType::Type":
         CColumnTypeNone       "ColumnType::NONE"
