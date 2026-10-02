@@ -33,7 +33,7 @@ cdef extern from "column.h":
         bool filtered() const;
     ctypedef union Value:
         char *s
-        float d
+        double d
         int i
     ctypedef enum CMeasureType  "MeasureType::Type":
         CMeasureTypeNone        "MeasureType::NONE"
