@@ -240,7 +240,16 @@ void ColumnW::setIValue(int rowIndex, int value, bool initing)
                 level->count--;
 
                 if (level->count == 0 && level->pinned == false)
+                {
                     removeLevel(oldValue);
+
+                    // removing a text level renumbers the levels above it
+                    if (dataType() == DataType::TEXT && newValue != INT_MIN && newValue > oldValue)
+                    {
+                        newValue--;
+                        value = newValue;
+                    }
+                }
                 else if (columnType() != ColumnType::FILTER && ! this->_parent->isRowFiltered(rowIndex))
                     level->countExFiltered--;
             }
