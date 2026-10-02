@@ -97,7 +97,7 @@ ColumnW DataSetW::operator[](int index)
 {
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
 
-    if (index >= dss->columnCount)
+    if (index < 0 || index >= dss->columnCount)
         throw runtime_error("index out of bounds");
 
     ColumnStruct **columns = _mm->resolve<ColumnStruct*>(dss->columns);
@@ -120,6 +120,9 @@ ColumnW DataSetW::getColumnById(int id)
 
 ColumnW DataSetW::insertColumn(int index, const char *name, const char *importName)
 {
+    if (index < 0 || index > columnCount())
+        throw runtime_error("index out of bounds");
+
     appendColumn(name, importName);
 
     int nCols = columnCount();
@@ -361,6 +364,12 @@ void DataSetW::deleteColumns(int delStart, int delEnd)
     // should store the deleted columns for re-use
 
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+
+    if (delStart > delEnd)
+        return;
+
+    if (delStart < 0 || delEnd >= dss->columnCount)
+        throw runtime_error("index out of bounds");
 
     int delCount = delEnd - delStart + 1;
     int startCount = dss->columnCount;

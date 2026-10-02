@@ -66,7 +66,7 @@ Column DataSet::operator[](int index)
 {
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
 
-    if (index >= dss->columnCount)
+    if (index < 0 || index >= dss->columnCount)
         throw runtime_error("index out of bounds");
 
     ColumnStruct **columns = _mm->resolve<ColumnStruct*>(dss->columns);
