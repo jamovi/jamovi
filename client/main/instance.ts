@@ -52,6 +52,24 @@ function timedOut(uploaded: boolean): string {
     return _('The upload took too long to complete. Please try again with a faster connection, or a smaller file.');
 }
 
+// reads a json lines response, passing on its 'in-progress' lines as
+// progress, and resolving with the last line
+async function readJsonLines(body: ReadableStream | null, setProgress: (progress: any) => void): Promise<any> {
+
+    if (body === null)
+        return undefined;
+
+    const stream = parseJsonLines(body.getReader());
+    for await (const message of stream as AsyncIterable<any>) {
+        if (message.status === 'in-progress') {
+            if ( ! message.title)
+                message.title = _('Opening');
+            setProgress(message);
+        }
+    }
+    return await stream;
+}
+
 // whether a response body says the session has gone
 function isNoSession(body: string): boolean {
     try {
@@ -73,9 +91,15 @@ export interface IInstanceOpenOptions {
     headers?: { [key: string]: string },
 }
 
-interface IInstanceOpenRequiresInteraction {
+// signing in (again) is needed to start a session
+interface IInstanceOpenRequiresAuth {
     status: 'requires-auth',
-    event?: 'full',
+}
+
+// no room to start a session just now
+interface IInstanceOpenFull {
+    status: 'full',
+    message?: string,
 }
 
 interface IInstanceOpenError {
@@ -92,7 +116,7 @@ interface IInstanceOpenSuccess {
 // the page is to be loaded again; see relocate.ts
 type IInstanceOpenRelocation = Relocation;
 
-export type IInstanceOpenResult = IInstanceOpenSuccess | IInstanceOpenRequiresInteraction | IInstanceOpenError | IInstanceOpenRelocation;
+export type IInstanceOpenResult = IInstanceOpenSuccess | IInstanceOpenRequiresAuth | IInstanceOpenFull | IInstanceOpenError | IInstanceOpenRelocation;
 
 export interface IInstanceOpenProgress {
     title: string,
@@ -424,7 +448,6 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         return new ProgressStream(async (setProgress): Promise<IInstanceOpenResult> => {
 
             let response;
-            let welcomeUrl;
 
             let headers = new Headers();
             headers.append('Accept-Language', I18ns.get('app').language);
@@ -439,15 +462,22 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             if (options.file)
                 this._checkUpload([ options.file ]);
 
-            // 'no-session' means the session the cookies name has gone (and
-            // the cookies have been cleared). with an auth token (i.e. at
-            // boot) a new one can be started, by going round again. without
-            // one (in-app) the session has ended, and the user is told so
-            let noSessionRetried = false;
-            const noSession = () => {
-                if (options.authToken && ! noSessionRetried) {
-                    noSessionRetried = true;
-                    return;
+            // 'no-session' means the cookies don't name a live session (and
+            // they've been cleared). with an auth token (i.e. at boot) one is
+            // started, and the open tried again. without one there's nothing
+            // to be done: a data set being reconnected to has gone, and
+            // in-app, the session has ended
+            let sessionStarted = false;
+            const noSession = async (): Promise<IInstanceOpenResult | undefined> => {
+                if (options.authToken && ! sessionStarted) {
+                    sessionStarted = true;
+                    return await this._startSession(headers, setProgress);
+                }
+                if ( ! options.path && ! options.file) {
+                    throw new UserFacingError(_('Sorry'), {
+                        cause: _('This data set is no longer available'),
+                        status: 'terminated',
+                    });
                 }
                 throw new UserFacingError(_('Unable to open'), {
                     cause: _('Your session has ended. Please refresh the page to continue.'),
@@ -506,7 +536,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                     let uploaded = false;  // the whole file was sent
                     xhr.upload.addEventListener('load', () => uploaded = true);
 
-                    let url = `${ host.baseUrl }open?p=`;
+                    let url = `${ host.baseUrl }open`;
 
                     const data = new FormData();
                     data.append('options', JSON.stringify(options));
@@ -532,7 +562,9 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                         return { 'status': 'OK' };
 
                     if (xhr.status === 401 && isNoSession(xhr.responseText)) {
-                        noSession();
+                        const result = await noSession();
+                        if (result)
+                            return result;
                         continue;
                     }
 
@@ -556,17 +588,17 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                         const data = new FormData();
                         data.append('options', JSON.stringify(options));
 
-                        response = await fetch('open?p=', {
+                        response = await fetch('open', {
                             method: 'POST',
                             headers: headers,
                             body: data,
                         });
                     }
                     else {
-                        let url = 'open?p=';
+                        let url = 'open';
 
                         if (options.accessKey)
-                            url += `&key=${ options.accessKey }`;
+                            url += `?key=${ options.accessKey }`;
 
                         response = await fetch(url, {
                             method: 'GET',
@@ -578,7 +610,9 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                         return { 'status': 'OK' };
 
                     if (response.status === 401 && isNoSession(await response.text())) {
-                        noSession();
+                        const result = await noSession();
+                        if (result)
+                            return result;
                         continue;
                     }
 
@@ -589,50 +623,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                         throw new UserFacingError(_('Unable to open'), { cause: response.statusText });
                 }
 
-                const reader = response.body.getReader();
-                const utf8Decoder = new TextDecoder('utf-8');
-
-                let message;
-                for (;;) {
-                    let { done, value } = await reader.read();
-
-                    let pieces;
-                    if (typeof(value) === 'string')
-                        pieces = value.split('\n');
-                    else if ( ! value)
-                        pieces = [ ];
-                    else
-                        pieces = utf8Decoder.decode(value).split('\n');
-
-                    // if the last piece is empty (in jsonlines this will often be the case)
-                    // use the second last piece instead
-                    let lastPiece = pieces[pieces.length - 1] || pieces[pieces.length - 2];
-                    if (lastPiece) {
-                        try {
-                            message = JSON.parse(lastPiece);
-                        }
-                        catch(e) {
-                            message = null;
-                        }
-                    }
-
-                    if (message && message.status === 'in-progress') {
-                        if ( ! message.title)
-                            message.title = _('Opening');
-                        setProgress(message);
-                    }
-
-                    if (done)
-                        break;
-                }
-
-                if (message && message['set-cookies']) {
-                    for (let cookie of message['set-cookies']) {
-                        // if the cookie has a domain, we need to rewrite it to the current domain
-                        // this let's us run the client and server on different domains (i.e. when testing).
-                        document.cookie = cookie.replace(/Domain=[^;]+/, `Domain=${ window.location.hostname }`);
-                    }
-                }
+                const message = await readJsonLines(response.body, setProgress);
 
                 if ( ! message) {
                     throw new UserFacingError(_('Unable to open'), {
@@ -640,7 +631,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                         status: 'error',
                     });
                 }
-                else if ( ! [ 'OK', 'requires-auth', 'reload', 'redirect' ].includes(message.status)) {
+                else if (message.status !== 'OK') {
                     let title = message.title || _('Unable to open');
                     throw new UserFacingError(title, {
                         cause: message.message || _('Unexpected error'),
@@ -648,20 +639,71 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                         messageSrc: message['message-src'],
                     });
                 }
-                else if (message.url === '/open') {
-                    // open is performed in two steps, so we store the welcome
-                    // message from the first step
-                    welcomeUrl = message['message-src'];
-                    continue;
-                }
-                else {
-                    // and apply the welcome message to the second
-                    if ( ! ('message-src' in message) && welcomeUrl !== undefined)
-                        message['message-src'] = welcomeUrl;
-                    return message;
-                }
+
+                return message;
             }
         });
+    }
+
+    // starts a session for the signed in user, and takes its cookies: when
+    // the session is ready, the server hands over a ticket, which is then
+    // exchanged for the cookies. resolves with undefined once the cookies are
+    // set, or otherwise with why there's no session
+    async _startSession(headers: Headers, setProgress: (progress: any) => void): Promise<IInstanceOpenResult | undefined> {
+
+        let response = await fetch(`${ host.baseUrl }session/start`, {
+            method: 'POST',
+            headers: headers,
+        });
+
+        if (response.status !== 200)
+            throw new UserFacingError(_('Unable to open'), { cause: response.statusText });
+
+        const message = await readJsonLines(response.body, setProgress);
+
+        if ( ! message)
+            throw new UserFacingError(_('Unable to open'), { cause: _('Unexpected error') });
+
+        switch (message.status) {
+            case 'ready':
+                break;
+            case 'requires-auth':
+                return { status: 'requires-auth' };
+            case 'full':
+                return { status: 'full', message: message.message };
+            case 'reload':
+            case 'redirect':
+                return message;
+            default:
+                throw new UserFacingError(message.title || _('Unable to open'), {
+                    cause: message.message || _('Unexpected error'),
+                    status: 'error',
+                    messageSrc: message['message-src'],
+                });
+        }
+
+        const claimHeaders = new Headers(headers);
+        claimHeaders.set('Content-Type', 'application/json');
+
+        response = await fetch(`${ host.baseUrl }session/claim`, {
+            method: 'POST',
+            headers: claimHeaders,
+            body: JSON.stringify({ ticket: message.ticket }),
+        });
+
+        if (response.status === 401)
+            return { status: 'requires-auth' };
+
+        if (response.status !== 204) {
+            let cause = response.statusText;
+            try {
+                cause = JSON.parse(await response.text()).message || cause;
+            }
+            catch (e) { }
+            throw new UserFacingError(_('Unable to open'), { cause });
+        }
+
+        return undefined;
     }
 
     async save(options: ISaveOptions) {

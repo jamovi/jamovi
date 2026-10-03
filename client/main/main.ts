@@ -1031,7 +1031,7 @@ ready(async() => {
                     await new Promise((resolve, reject) => { /* never */ });
                 }
 
-                if (result.status === 'requires-auth' && result.event === 'full') {
+                if (result.status === 'full') {
                     location = 'full';
                     params = {};
                     continue;
