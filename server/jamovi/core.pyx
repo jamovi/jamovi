@@ -15,6 +15,7 @@ from jamovi.server.utils import is_int32
 import math
 import os
 import os.path
+import sys
 
 from enum import Enum
 
@@ -23,14 +24,14 @@ ctypedef char* charptr
 cdef extern from "column.h":
     cdef cppclass CLevelData "LevelData":
         CLevelData()
-        CLevelData(int value, const char *label, bool pinned);
-        CLevelData(const char *value, const char *label, bool pinned);
-        int ivalue() const;
-        const char *svalue() const;
-        const char *label() const;
-        bool pinned() const;
-        bool treatAsMissing() const;
-        bool filtered() const;
+        CLevelData(int value, const char *label, bool pinned)
+        CLevelData(const char *value, const char *label, bool pinned)
+        int ivalue() const
+        const char *svalue() const
+        const char *label() const
+        bool pinned() const
+        bool treatAsMissing() const
+        bool filtered() const
     ctypedef union Value:
         char *s
         double d
@@ -293,104 +294,115 @@ class CellIterator:
 cdef class Column:
     cdef CColumn _this
 
-    property id:
-        def __get__(self):
-            return self._this.id();
+    @property
+    def id(self):
+        return self._this.id()
 
-        def __set__(self, id):
-            self._this.setId(id)
+    @id.setter
+    def id(self, id):
+        self._this.setId(id)
 
-    property name:
-        def __get__(self):
-            return self._this.name().decode('utf-8')
+    @property
+    def name(self):
+        return self._this.name().decode('utf-8')
 
-        def __set__(self, name):
-            if not isinstance(name, str):
-                raise TypeError('name must be instance of str')
-            self._this.setName(name.encode('utf-8'))
+    @name.setter
+    def name(self, name):
+        if not isinstance(name, str):
+            raise TypeError('name must be instance of str')
+        self._this.setName(name.encode('utf-8'))
 
-    property import_name:
-        def __get__(self):
-            return self._this.importName().decode('utf-8')
+    @property
+    def import_name(self):
+        return self._this.importName().decode('utf-8')
 
-        def __set__(self, name):
-            if not isinstance(name, str):
-                raise TypeError('name must be instance of str')
-            self._this.setImportName(name.encode('utf-8'))
+    @import_name.setter
+    def import_name(self, name):
+        if not isinstance(name, str):
+            raise TypeError('name must be instance of str')
+        self._this.setImportName(name.encode('utf-8'))
 
-    property description:
-        def __get__(self):
-            return self._this.description().decode('utf-8')
+    @property
+    def description(self):
+        return self._this.description().decode('utf-8')
 
-        def __set__(self, desc):
-            if not isinstance(desc, str):
-                raise TypeError('desc must be instance of str')
-            self._this.setDescription(desc.encode('utf-8'))
+    @description.setter
+    def description(self, desc):
+        if not isinstance(desc, str):
+            raise TypeError('desc must be instance of str')
+        self._this.setDescription(desc.encode('utf-8'))
 
-    property column_type:
-        def __get__(self):
-            return ColumnType(self._this.columnType())
+    @property
+    def column_type(self):
+        return ColumnType(self._this.columnType())
 
-        def __set__(self, column_type):
-            if not isinstance(column_type, ColumnType):
-                raise TypeError('column_type must be an instance of ColumnType')
-            if column_type is not self.column_type:
-                self._this.setColumnType(column_type.value)
+    @column_type.setter
+    def column_type(self, column_type):
+        if not isinstance(column_type, ColumnType):
+            raise TypeError('column_type must be an instance of ColumnType')
+        if column_type is not self.column_type:
+            self._this.setColumnType(column_type.value)
 
 
-    property data_type:
-        def __get__(self):
-            return DataType(self._this.dataType())
+    @property
+    def data_type(self):
+        return DataType(self._this.dataType())
 
-    property measure_type:
-        def __get__(self):
-            return MeasureType(self._this.measureType())
+    @property
+    def measure_type(self):
+        return MeasureType(self._this.measureType())
 
-        def __set__(self, measure_type):
-            self._this.setMeasureType(measure_type.value)
+    @measure_type.setter
+    def measure_type(self, measure_type):
+        self._this.setMeasureType(measure_type.value)
 
-    property auto_measure:
-        def __get__(self):
-            return self._this.autoMeasure()
+    @property
+    def auto_measure(self):
+        return self._this.autoMeasure()
 
-        def __set__(self, auto):
-            self._this.setAutoMeasure(auto)
+    @auto_measure.setter
+    def auto_measure(self, auto):
+        self._this.setAutoMeasure(auto)
 
-    property formula:
-        def __get__(self):
-            fmla = self._this.formula()
-            if fmla is NULL:
-                return ''
-            return fmla.decode('utf-8')
+    @property
+    def formula(self):
+        fmla = self._this.formula()
+        if fmla is NULL:
+            return ''
+        return fmla.decode('utf-8')
 
-        def __set__(self, value):
-            self._this.setFormula(value.encode('utf-8'))
+    @formula.setter
+    def formula(self, value):
+        self._this.setFormula(value.encode('utf-8'))
 
-    property formula_message:
-        def __get__(self):
-            fmla_msg = self._this.formulaMessage()
-            if fmla_msg is NULL:
-                return ''
-            return fmla_msg.decode('utf-8')
+    @property
+    def formula_message(self):
+        fmla_msg = self._this.formulaMessage()
+        if fmla_msg is NULL:
+            return ''
+        return fmla_msg.decode('utf-8')
 
-        def __set__(self, value):
-            self._this.setFormulaMessage(value.encode('utf-8'))
+    @formula_message.setter
+    def formula_message(self, value):
+        self._this.setFormulaMessage(value.encode('utf-8'))
 
-    property dps:
-        def __get__(self):
-            if self.data_type is not DataType.DECIMAL:
-                return 0
-            return self._this.dps()
+    @property
+    def dps(self):
+        if self.data_type is not DataType.DECIMAL:
+            return 0
+        return self._this.dps()
 
-        def __set__(self, dps):
-            self._this.setDPs(dps)
+    @dps.setter
+    def dps(self, dps):
+        self._this.setDPs(dps)
 
-    property trim_levels:
-        def __get__(self):
-            return self._this.trimLevels()
+    @property
+    def trim_levels(self):
+        return self._this.trimLevels()
 
-        def __set__(self, trim):
-            self._this.setTrimLevels(trim)
+    @trim_levels.setter
+    def trim_levels(self, trim):
+        self._this.setTrimLevels(trim)
 
     def determine_dps(self):
         if self.data_type == DataType.DECIMAL:
@@ -402,12 +414,13 @@ cdef class Column:
                     break
             self.dps = max_dps
 
-    property active:
-        def __get__(self):
-            return self._this.active()
+    @property
+    def active(self):
+        return self._this.active()
 
-        def __set__(self, active):
-            self._this.setActive(active)
+    @active.setter
+    def active(self, active):
+        self._this.setActive(active)
 
 
     @staticmethod
@@ -455,7 +468,7 @@ cdef class Column:
         if value == -2147483648:
             return ''
         v = value
-        return self._this.getLabel(v).decode('utf-8');
+        return self._this.getLabel(v).decode('utf-8')
 
     def get_value_for_label(self, label):
         return self._this.valueForLabel(label.encode('utf-8'))
@@ -472,17 +485,17 @@ cdef class Column:
 
     @property
     def level_count(self):
-        return self._this.levelCount();
+        return self._this.levelCount()
 
     def has_level(self, index_or_name):
-        cdef int i;
-        cdef string s;
+        cdef int i
+        cdef string s
         if type(index_or_name) is int:
             i = index_or_name
-            return self._this.hasLevel(i);
+            return self._this.hasLevel(i)
         else:
             s = index_or_name.encode('utf-8')
-            return self._this.hasLevel(s.c_str());
+            return self._this.hasLevel(s.c_str())
 
     @property
     def levels(self):
@@ -516,9 +529,9 @@ cdef class Column:
         arr = [ ]
         missing_values = self._this.missingValues()
         for missing_value in missing_values:
-            if missing_value.type is 0:
+            if missing_value.type == 0:
                 arr.append( self.string_missing_value({ 'optr': missing_value.optr, 'value': missing_value.value.s.decode('utf-8'), 'type': missing_value.type }))
-            elif missing_value.type is 1:
+            elif missing_value.type == 1:
                 arr.append( self.string_missing_value({ 'optr': missing_value.optr, 'value': missing_value.value.d, 'type': missing_value.type }))
             else:
                 arr.append( self.string_missing_value({ 'optr': missing_value.optr, 'value': missing_value.value.i, 'type': missing_value.type }))
@@ -526,15 +539,15 @@ cdef class Column:
 
     @property
     def row_count(self):
-        return self._this.rowCount();
+        return self._this.rowCount()
 
     @property
     def row_count_ex_filtered(self):
-        return self._this.rowCountExFiltered();
+        return self._this.rowCountExFiltered()
 
     @property
     def changes(self):
-        return self._this.changes();
+        return self._this.changes()
 
     def clear_at(self, index):
         if self.data_type == DataType.DECIMAL:
@@ -637,7 +650,6 @@ cdef class Column:
         cdef const char* label
         cdef const char* svalue
         cdef int ivalue
-        cdef CLevelData new_level
         cdef bool pinned
 
         if self.data_type == DataType.TEXT:
@@ -695,20 +707,20 @@ cdef class Column:
 
     def string_missing_value(self, missing_value):
         new_value = ''
-        if missing_value['optr'] is 0:
+        if missing_value['optr'] == 0:
             new_value = '== '
-        elif missing_value['optr'] is 1:
+        elif missing_value['optr'] == 1:
             new_value = '!= '
-        elif missing_value['optr'] is 2:
+        elif missing_value['optr'] == 2:
             new_value = '<= '
-        elif missing_value['optr'] is 3:
+        elif missing_value['optr'] == 3:
             new_value = '>= '
-        elif missing_value['optr'] is 4:
+        elif missing_value['optr'] == 4:
             new_value = '< '
-        elif missing_value['optr'] is 5:
+        elif missing_value['optr'] == 5:
             new_value = '> '
 
-        if missing_value['type'] is 0:
+        if missing_value['type'] == 0:
             new_value = "{}'{}'".format(new_value, missing_value['value'])
         else:
             new_value = "{}{}".format(new_value, missing_value['value'])
@@ -717,9 +729,6 @@ cdef class Column:
 
     def set_missing_values(self, missing_values):
         cdef vector[CMissingValue] new_missing_values
-        cdef int optr
-        cdef const char* svalue
-        cdef int ivalue
         cdef CMissingValue m_value
 
         # we have to keep all the missing values bytes in play
@@ -730,12 +739,12 @@ cdef class Column:
 
         for index, missing_value in enumerate(missing_values):
             pmv = self._parse_missing_value(missing_value)
-            if pmv['type'] is 0:
+            if pmv['type'] == 0:
                 utf8_bytes[index] = pmv['value'].encode('utf-8')
                 m_value.value.s = utf8_bytes[index]
-            elif pmv['type'] is 1:
+            elif pmv['type'] == 1:
                 m_value.value.d = pmv['value']
-            elif pmv['type'] is 2:
+            elif pmv['type'] == 2:
                 m_value.value.i = pmv['value']
 
             m_value.type = pmv['type']
@@ -803,11 +812,11 @@ cdef class Dirs:
         # CDirs.appDataDir() seems to have stopped working under macOS
         # hence, us handling it here.
 
-        IF UNAME_SYSNAME == 'Darwin':
+        if sys.platform == 'darwin':
             path = os.path.expanduser('~/Library/Application Support/jamovi')
             os.makedirs(path, exist_ok=True)
             return path
-        ELSE:
+        else:
             return decode(CDirs.appDataDir())
 
     @staticmethod
