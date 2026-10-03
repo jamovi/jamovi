@@ -979,7 +979,9 @@ export class BackstageModel extends EventMap<IBackstageModel> {
                 this.set('activated', false);
 
             let status = await stream;
-            let iid = status.url.match(/([a-z0-9-]+)\/$/)[1];
+            if (status.status !== 'OK' || ! status.instanceId)
+                throw new Error(_('Unexpected response'));
+            let iid = status.instanceId;
             if (this.instance.attributes.blank
                     && this.instance.dataSetModel().attributes.edited === false)
                 host.navigate(iid);

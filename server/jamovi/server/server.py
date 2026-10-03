@@ -56,6 +56,11 @@ def content_disposition(filename: str) -> str:
     return f'attachment; filename="{ fallback }"; filename*=UTF-8\'\'{ encoded }'
 
 
+def _opened(instance_id: str) -> str:
+    # the last line of a successful open
+    return json.dumps({ 'status': 'OK', 'instanceId': instance_id }) + '\n'
+
+
 class _Handlers:
     """All aiohttp route handlers, grouped by the session and config they share."""
 
@@ -182,7 +187,7 @@ class _Handlers:
             message = str(e) or type(e).__name__
             parts.append(f'{{"status":"error","message":{json.dumps(message)}}}\n')
         else:
-            parts.append(f'{{"status":"OK","url":"{instance.id}/"}}\n')
+            parts.append(_opened(instance.id))
 
         return web.Response(content_type='text/plain', text=''.join(parts))
 
@@ -256,7 +261,7 @@ class _Handlers:
             message = str(e) or type(e).__name__
             await resp.write(f'{{"status":"error","message":{json.dumps(message)}}}\n'.encode())
         else:
-            await resp.write(f'{{"status":"OK","url":"{instance.id}/"}}\n'.encode())
+            await resp.write(_opened(instance.id).encode())
         await resp.write_eof()
         return resp
 

@@ -1060,10 +1060,11 @@ ready(async() => {
 
         infoBox.hide();
 
-        if ('url' in result)
-            history.replaceState({}, '', `${host.baseUrl}${result.url}`);
+        if (result.status === 'OK' && result.instanceId) {
+            instanceId = result.instanceId;
+            history.replaceState({}, '', `${host.baseUrl}${instanceId}/`);
+        }
 
-        instanceId = /\/([a-z0-9-]+)\/$/.exec(window.location.pathname)[1];
         await instance.connect(instanceId);
         auth.beginSync();
 

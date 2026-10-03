@@ -110,7 +110,9 @@ interface IInstanceOpenError {
 
 interface IInstanceOpenSuccess {
     status: 'OK',
-    url?: string,
+    // the instance opened. absent when there was nothing to open (an
+    // instance being reconnected to that already has its data set)
+    instanceId?: string,
 }
 
 // the page is to be loaded again; see relocate.ts
@@ -640,7 +642,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                     });
                 }
 
-                return message;
+                return { status: 'OK', instanceId: message.instanceId };
             }
         });
     }
