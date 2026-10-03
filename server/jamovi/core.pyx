@@ -388,7 +388,7 @@ cdef class Column:
 
     @property
     def dps(self):
-        if self.data_type is not DataType.DECIMAL:
+        if self._this.dataType() != CDataTypeDecimal:
             return 0
         return self._this.dps()
 
@@ -445,9 +445,10 @@ cdef class Column:
 
     def append(self, value):
         cdef charptr null_value = NULL
-        if self.data_type is DataType.DECIMAL:
+        cdef CDataType data_type = self._this.dataType()
+        if data_type == CDataTypeDecimal:
             self._this.append[double](value)
-        elif self.data_type is DataType.TEXT and self.measure_type is MeasureType.ID:
+        elif data_type == CDataTypeText and self._this.measureType() == CMeasureTypeID:
             self._this.append[charptr](null_value)
             self._this.setSValue(self.row_count - 1, value.encode('utf-8'), False)
         else:
@@ -502,7 +503,7 @@ cdef class Column:
         arr = [ ]
         if self.has_levels:
             levels = self._this.levels()
-            if self.data_type is DataType.TEXT:
+            if self._this.dataType() == CDataTypeText:
                 count = 0
                 for level in levels:
                     arr.append((
@@ -550,9 +551,10 @@ cdef class Column:
         return self._this.changes()
 
     def clear_at(self, index):
-        if self.data_type == DataType.DECIMAL:
+        cdef CDataType data_type = self._this.dataType()
+        if data_type == CDataTypeDecimal:
             self._this.setDValue(index, float('nan'), False)
-        elif self.data_type == DataType.TEXT and self.measure_type == MeasureType.ID:
+        elif data_type == CDataTypeText and self._this.measureType() == CMeasureTypeID:
             self._this.setSValue(index, '', False)
         else:
             self._this.setIValue(index, -2147483648, False)
@@ -570,32 +572,42 @@ cdef class Column:
                       stacklevel=2)
         warnings.simplefilter('default', DeprecationWarning)  # reset filter
 
-        if index >= self.row_count:
+        if index >= self._this.rowCount():
             raise IndexError()
 
-        if self.data_type is DataType.DECIMAL:
+        if self._this.dataType() == CDataTypeDecimal:
             self._this.setDValue(index, value, False)
         else:
             self._this.setIValue(index, value, False)
 
     def set_value(self, index, value, initing=False):
-        if index >= self.row_count:
+        cdef CDataType data_type
+        cdef int level_i
+        cdef bytes level_v
+
+        if index >= self._this.rowCount():
             raise IndexError()
 
-        if self.data_type is DataType.DECIMAL:
+        # the C++ data/measure types are used here (rather than the
+        # properties), as constructing the python enums is slow
+
+        data_type = self._this.dataType()
+
+        if data_type == CDataTypeDecimal:
             self._this.setDValue(index, value, False)
-        elif self.data_type is DataType.TEXT and isinstance(value, str):
-            if self.measure_type is MeasureType.ID:
-                self._this.setSValue(index, value.encode(), initing)
+        elif data_type == CDataTypeText and isinstance(value, str):
+            if self._this.measureType() == CMeasureTypeID:
+                self._this.setSValue(index, value.encode('utf-8'), initing)
             else:
                 if value == '':
                     level_i = -2147483648
-                elif self.has_level(value):
-                    level_i = self.get_value_for_label(value)
                 else:
-                    level_i = self.level_count
                     level_v = value.encode('utf-8')
-                    self._this.appendLevel(level_i, level_v, level_v, False)
+                    if self._this.hasLevel(<const char*>level_v):
+                        level_i = self._this.valueForLabel(level_v)
+                    else:
+                        level_i = self._this.levelCount()
+                        self._this.appendLevel(level_i, level_v, level_v, False)
                 self._this.setIValue(index, level_i, initing)
         else:
             self._this.setIValue(index, value, initing)
@@ -612,14 +624,18 @@ cdef class Column:
 
     def get_value(self, index):
         cdef int raw
+        cdef CDataType data_type
 
-        if index >= self.row_count:
+        if index >= self._this.rowCount():
             raise IndexError()
 
-        if self.data_type == DataType.DECIMAL:
+        # see set_value() re the use of the C++ types
+        data_type = self._this.dataType()
+
+        if data_type == CDataTypeDecimal:
             return self._this.raw[double](index)
-        elif self.data_type == DataType.TEXT:
-            if self.measure_type == MeasureType.ID:
+        elif data_type == CDataTypeText:
+            if self._this.measureType() == CMeasureTypeID:
                 return self._this.raws(index).decode()
             else:
                 raw = self._this.raw[int](index)
@@ -634,7 +650,7 @@ cdef class Column:
         return CellIterator(self)
 
     def raw(self, index):
-        if self.data_type == DataType.DECIMAL:
+        if self._this.dataType() == CDataTypeDecimal:
             return self._this.raw[double](index)
         else:
             return self._this.raw[int](index)
