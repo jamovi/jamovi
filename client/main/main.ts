@@ -244,10 +244,13 @@ if (window.navigator.platform === 'MacIntel') {
     ]);
 }
 
-// prevent back navigation
-history.pushState(null, null, document.URL);
+// prevent back navigation. the app's url is pushed again whenever back is
+// pressed -- the app's, not whatever back went to, which is the url the
+// page was loaded at, before a data set was opened
+let appUrl = document.URL;
+history.pushState(null, '', appUrl);
 window.addEventListener('popstate', function () {
-    history.pushState(null, null, document.URL);
+    history.pushState(null, '', appUrl);
 });
 
 const highContrast = new HighContrast(document.body, document.body, () => {
@@ -1081,7 +1084,8 @@ ready(async() => {
 
         if (result.status === 'OK' && result.instanceId) {
             instanceId = result.instanceId;
-            history.replaceState({}, '', `${host.baseUrl}${instanceId}/`);
+            appUrl = `${host.baseUrl}${instanceId}/`;
+            history.replaceState({}, '', appUrl);
         }
 
         await instance.connect(instanceId);
