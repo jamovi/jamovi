@@ -633,7 +633,7 @@ ready(async() => {
         const data = event.detail;
         const failed = (message: string) => {
             const notif = {
-                title: _('Unable to open'),
+                title: data.action === 'export' ? _('Unable to export') : _('Unable to open'),
                 message,
                 type: 'error',
                 duration: 3000,
@@ -655,6 +655,25 @@ ready(async() => {
             const filename = data.result.filename || name;
             const url = `temp/${ encodeURIComponent(name) }?filename=${ encodeURIComponent(filename) }`;
             host.openFile(url, filename).catch((e) => failed(e.message || String(e)));
+        }
+        else if (data.action === 'export') {
+            // as above, except in electron the user picks where it goes.
+            // in a browser it's a download, and the browser reports that
+            const name = data.result.path.split('/').pop();
+            const filename = data.result.filename || name;
+            const url = `temp/${ encodeURIComponent(name) }?filename=${ encodeURIComponent(filename) }`;
+            host.exportFile(url, filename).then((result) => {
+                if (result.path) {
+                    // as for a data set or results export
+                    const saved = result.path.split(/[\\/]/).pop() || result.path;
+                    notifications.notify(new Notify({
+                        title: _('Exported'),
+                        message: _(`Exported to '{filename}'`, { filename: saved }),
+                        type: 'info',
+                        duration: 3000,
+                    }));
+                }
+            }).catch((e) => failed(e.message || String(e)));
         }
     });
 

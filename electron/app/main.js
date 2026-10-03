@@ -658,8 +658,43 @@ function openFile(webContents, url, filename) {
     webContents.downloadURL(url);
 }
 
+// exporting a file an analysis produced (an 'export' action): as above,
+// except we leave the save path unset, so electron asks the user where to
+// put it. resolves with the path it was saved to once the download is
+// done; with no path if the user cancelled
+const pendingExports = new Map();
+
+ipc.handle('export-file', (event, { url, filename }) => {
+    if ( ! url.startsWith(rootUrl))
+        throw new Error('Unable to export this file');
+    return new Promise((resolve, reject) => {
+        pendingExports.set(url, { filename: safeFilename(filename), resolve, reject });
+        event.sender.downloadURL(url);
+    });
+});
+
 ready.then(() => {
     session.defaultSession.on('will-download', (event, item) => {
+        const pendingExport = pendingExports.get(item.getURL());
+        if (pendingExport !== undefined) {
+            pendingExports.delete(item.getURL());
+            const { filename, resolve, reject } = pendingExport;
+            const ext = path.extname(filename).slice(1);
+            const options = { defaultPath: path.join(app.getPath('documents'), filename) };
+            if (ext)
+                options.filters = [ { name: ext.toUpperCase(), extensions: [ ext ] } ];
+            item.setSaveDialogOptions(options);
+            item.once('done', (event, state) => {
+                if (state === 'completed')
+                    resolve({ path: item.getSavePath() });
+                else if (state === 'cancelled')
+                    resolve({ });
+                else
+                    reject(new Error(`Unable to save '${ filename }'`));
+            });
+            return;
+        }
+
         const filename = pendingOpens.get(item.getURL());
         if (filename === undefined)
             return;

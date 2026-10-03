@@ -371,6 +371,17 @@ export const openFile = async function(url: string, filename: string) {
         await triggerDownload(url);
 };
 
+// as openFile, except in electron the user is asked where to save it.
+// resolves to the path it was saved to; undefined if the user cancelled,
+// or in a browser (where it's a download, and the browser reports that)
+export const exportFile = async function(url: string, filename: string): Promise<{ path?: string }> {
+    url = new URL(url, window.location.href).href;
+    if (etron.exportFile)
+        return await etron.exportFile(url, filename);
+    await triggerDownload(url);
+    return { };
+};
+
 export const showMessageBox = etron.showMessageBox; // || (async () => { });
 
 export const setEdited = etron.setEdited || (() => {});
@@ -414,6 +425,7 @@ export default {
     os,
     openUrl,
     openFile,
+    exportFile,
     triggerDownload,
     setDialogProvider,
     toggleDevTools,

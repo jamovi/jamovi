@@ -448,11 +448,13 @@ OptionAction <- R6::R6Class(
         # and gets moved into the 'external' subdir of session temp under
         # the filename's extension (so the OS can tell what it is). the
         # subdir is what the server serves from, so nothing else in session
-        # temp (i.e. File option uploads) is reachable that way
+        # temp (i.e. File option uploads) is reachable that way. an 'export'
+        # action is the same, except the desktop app asks the user where to
+        # save the file rather than opening it
         .normaliseExternal=function(res, params) {
             filename <- res$filename
             if ( ! is.character(filename) || length(filename) != 1 || filename == '')
-                stop('module developer fail: an openExternal action result requires a filename')
+                stop(sprintf('module developer fail: an %s action result requires a filename', private$.action))
             filename <- basename(filename)
             ext <- tools::file_ext(filename)
             ext <- if (ext == '') '' else paste0('.', ext)
@@ -537,7 +539,7 @@ OptionAction <- R6::R6Class(
                 ))
             } else if (is.list(res)) {
 
-                if (private$.action == 'openExternal') {
+                if (private$.action %in% c('openExternal', 'export')) {
                     res <- try(private$.normaliseExternal(res, params))
                     if (inherits(res, 'try-error')) {
                         err <- as.character(attr(res, 'condition'))
