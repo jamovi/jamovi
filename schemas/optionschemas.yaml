@@ -165,6 +165,7 @@ Action:
             enum:
               - "open"          # open a data set the analysis produced, in a new window
               - "openExternal"  # hand a file to the OS (desktop) or download it (browser)
+              - "export"        # save a file, asking where (desktop) or download it (browser)
         default:        # to deprecate
             type: bool  # to deprecate
         description: *Description
