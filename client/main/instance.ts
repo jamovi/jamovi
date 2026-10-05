@@ -1308,7 +1308,9 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                 if (response.analysisId === 0)
                     throw 'Analysis Id can not be 0';
 
-                if (response.analysisId % 2 === 0)
+                // the server only creates analyses with odd ids, or puts
+                // back ones removed earlier (with an undo)
+                if (response.analysisId % 2 === 0 && ! response.restored)
                     throw `Analysis with id ${ response.analysisId } does not exist.`;
 
                 let options = OptionsPB.fromPB(response.options, coms.Messages);

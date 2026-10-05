@@ -2,9 +2,11 @@
 
 import pytest
 
+from jamovi.core import ColumnType
 from jamovi.server import jamovi_pb2 as jcoms
 from jamovi.server.history import History
 from jamovi.server.history import AnalysisOptionsChange
+from jamovi.server.options import write_value_to_pb
 from jamovi.server.instance import Instance
 
 from .test_instance import FakeComs
@@ -223,7 +225,7 @@ def _annotate(analysis_id, revision, text):
     request.revision = revision
     request.options.hasNames = True
     request.options.names.append('results//topText')
-    request.options.options.add().s = text
+    write_value_to_pb(text, request.options.options.add())
     # the extras the client sends with every request don't count
     request.options.names.append('.ppi')
     request.options.options.add().i = 72 + revision
@@ -320,4 +322,132 @@ async def test_changes_marked_no_undo_are_not_added(instance: Instance, monkeypa
     assert header.options.get_value('results//topText') == 'derived'
     await instance.on_request(_op('REDO'))
     assert header.options.get_value('results//topText') == 'first'
+    assert coms.errors == [ ]
+
+
+def _create(analysis_id, index):
+    request = jcoms.AnalysisRequest()
+    request.analysisId = analysis_id
+    request.name = 'descriptives'
+    request.ns = 'jmv'
+    request.index = index
+    request.perform = jcoms.AnalysisRequest.Perform.Value('INIT')
+    return request
+
+
+def _delete(analysis_id):
+    request = jcoms.AnalysisRequest()
+    request.analysisId = analysis_id
+    request.perform = jcoms.AnalysisRequest.Perform.Value('DELETE')
+    return request
+
+
+def _ids(instance):
+    return [ (a.id, a.name) for a in instance.project.analyses ]
+
+
+def _restored(coms):
+    return [ m for m in coms.sent if isinstance(m, jcoms.AnalysisResponse) and m.restored ]
+
+
+async def _open_with_analysis(instance):
+    await _open(instance)
+    coms = FakeComs()
+    instance.set_coms(coms)
+    await instance.on_request(_create(2, 2))  # after the header
+    assert coms.errors == [ ]
+    return coms
+
+
+@pytest.mark.asyncio
+async def test_creating_an_analysis_can_be_undone(instance: Instance):
+    coms = await _open_with_analysis(instance)
+    before = _ids(instance)
+    assert len(before) == 3  # header, analysis, its annotation
+    analysis = instance.project.analyses.get(2)
+
+    await instance.on_request(_op('UNDO'))
+    assert _ids(instance) == before[:1]
+    deletes = [ m for m in coms.sent if isinstance(m, jcoms.AnalysisRequest) ]
+    assert deletes[-1].analysisId == 2
+
+    await instance.on_request(_op('REDO'))
+    assert _ids(instance) == before
+    assert instance.project.analyses.get(2) is analysis
+    assert [ m.analysisId for m in _restored(coms)[-2:] ] == [ id for id, _ in before[1:] ]
+    assert coms.errors == [ ]
+
+
+@pytest.mark.asyncio
+async def test_deleting_an_analysis_can_be_undone(instance: Instance, monkeypatch):
+    monkeypatch.setattr(AnalysisOptionsChange, 'MERGE_WITHIN', -1)
+    coms = await _open_with_analysis(instance)
+    header_id, _ = _ids(instance)[0]
+    annotation_id, _ = _ids(instance)[2]
+    before = _ids(instance)
+
+    # what's written below the analysis moves up to the header when it's deleted
+    above = { 'ops': [ { 'insert': 'above\n' } ] }
+    below = { 'ops': [ { 'insert': 'below\n' } ] }
+    await instance.on_request(_annotate(header_id, 1, above))
+    await instance.on_request(_annotate(annotation_id, 1, below))
+
+    await instance.on_request(_delete(2))
+    assert _ids(instance) == before[:1]
+    header = instance.project.analyses.get(header_id)
+    assert header.options.get_value('results//topText') == { 'ops': above['ops'] + below['ops'] }
+
+    # the deletion and the move are undone together
+    await instance.on_request(_op('UNDO'))
+    assert _ids(instance) == before
+    assert header.options.get_value('results//topText') == above
+    annotation = instance.project.analyses.get(annotation_id)
+    assert annotation.options.get_value('results//topText') == below
+
+    await instance.on_request(_op('REDO'))
+    assert _ids(instance) == before[:1]
+    assert coms.errors == [ ]
+
+
+@pytest.mark.asyncio
+async def test_output_columns_come_back_with_their_analysis(instance: Instance):
+    coms = await _open_with_analysis(instance)
+    dataset = instance.project.get_dataset()
+
+    column = dataset.insert_column(1, 'resid', id=50)
+    column.column_type = ColumnType.OUTPUT
+    column.output_analysis_id = 2
+    column.output_option_name = 'resids'
+    column.output_name = 'resid'
+    column.output_assigned_column_name = 'resid'
+    column.output_desired_column_name = 'Residuals'
+
+    await instance.on_request(_delete(2))
+    assert 'resid' not in [ c.name for c in dataset ]
+
+    await instance.on_request(_op('UNDO'))
+    restored = dataset[1]
+    assert (restored.id, restored.name) == (50, 'resid')
+    assert restored.column_type == ColumnType.OUTPUT
+    assert restored.output_analysis_id == 2
+    assert (restored.output_option_name, restored.output_name) == ('resids', 'resid')
+    assert restored.output_desired_column_name == 'Residuals'
+    assert coms.errors == [ ]
+
+
+@pytest.mark.asyncio
+async def test_deleting_all_analyses_can_be_undone(instance: Instance):
+    coms = await _open_with_analysis(instance)
+    await instance.on_request(_create(4, 4))
+    before = _ids(instance)
+    assert len(before) == 5
+
+    request = _delete(0)
+    await instance.on_request(request)
+    assert _ids(instance) == before[:1]
+
+    await instance.on_request(_op('UNDO'))
+    assert _ids(instance) == before
+    await instance.on_request(_op('REDO'))
+    assert _ids(instance) == before[:1]
     assert coms.errors == [ ]

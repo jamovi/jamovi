@@ -20,6 +20,8 @@ from .datasetcontroller import ForbiddenOp
 from .history import History
 from .history import DataSetChange
 from .history import AnalysisOptionsChange
+from .history import AnalysisRemoval
+from .history import AnalysisAddition
 from .options import write_value_to_pb
 from .project import Project
 from . import formatio
@@ -65,6 +67,17 @@ from .i18n import _
 
 
 log = logging.getLogger(__name__)
+
+# an analysis removed from the project (see Instance._remove_analysis()).
+# analyses holds it along with its dependents (its annotation), in order
+RemovedAnalysis = namedtuple('RemovedAnalysis', 'index analyses columns')
+
+# an output column removed along with its analysis, for putting it back.
+# its values aren't kept; the analysis provides them again when it reruns
+OutputColumn = namedtuple('OutputColumn', (
+    'id', 'index', 'name', 'description', 'measure_type',
+    'option_name', 'output_name',
+    'assigned_name', 'desired_name', 'assigned_description'))
 
 ConnectionStatus = namedtuple('ConnectionStatus',
                               ('connected', 'inactive_since', 'unclean', 'virgin'),
@@ -450,13 +463,9 @@ class Instance:
         analysis.results.options.CopyFrom(analysis.options.as_pb())
         analysis.results.revision = revision
 
-        if self._coms is not None:
-            # marked as restored, so the client takes these options in place
-            # of its own (its revision may be ahead of ours)
-            response = jcoms.AnalysisResponse()
-            response.CopyFrom(analysis.results)
-            response.restored = True
-            self._coms.send(response, self._instance_id)
+        # the client's revision may be ahead of ours, so these are marked
+        # as restored
+        self._send_restored(analysis)
 
     def update_analyses(self, dataset, changed=set(), renamed=set(), rows_added_removed=False, filters_changed=False, weights_changed=False):
         """Notify the analyses bound to a data set that it has changed."""
@@ -1432,14 +1441,32 @@ class Instance:
             return
 
         elif request.perform == jcoms.AnalysisRequest.Perform.Value('DELETE') and request.analysisId == 0:  # request to delete all analyses
-            # delete all analyses
-            self._project.analyses.remove_all()
+            analyses = self._project.analyses
+            changes = [ ]
 
-            header = self._project.analyses.create_annotation(0)
+            header = None
+            if analyses.has_header_annotation():
+                header = next(iter(analyses))
+
+            # removed from the end, so each can be put back where it was
+            # (and an undo puts them back from the start)
+            top_level = [ a for a in analyses if a.depends_on == 0 and a is not header ]
+            for analysis in reversed(top_level):
+                removed = self._remove_analysis(analysis.id, notify=False)
+                changes.append(self._create_removal(analysis.id, removed))
+
+            if header is not None:
+                before = header.options.get_user_values()
+                header.reset_options(header.revision + 1)
+                after = header.options.get_user_values()
+                if before != after:
+                    changes.append(AnalysisOptionsChange(header.id, before, after, monotonic(), self._restore_options))
+            else:
+                header = analyses.create_annotation(0)
             header.results.index = 1
             header.results.title = _('Results')
 
-            # find all output columns
+            # find any output columns left over
             dataset = self._project.get_dataset()
             columns_to_delete = [ ]
 
@@ -1447,11 +1474,16 @@ class Instance:
                 if column.column_type == ColumnType.OUTPUT:
                     columns_to_delete.append(column.id)
 
-            # send responses
+            # send responses (the client removes everything, header and all)
             self._coms.send(request, self._instance_id, request)
-            self._coms.send(header.results, self._instance_id)
+            self._send_restored(header)
 
             self._delete_columns(dataset, columns_to_delete)
+
+            if changes:
+                self._project.is_edited = True
+                self._history.add(*changes)
+                self._send_history_position()
 
             return
 
@@ -1462,29 +1494,24 @@ class Instance:
         if analysis is not None:  # analysis already exists
             self._project.is_edited = True
             if request.perform == jcoms.AnalysisRequest.Perform.Value('DELETE'):
-                analysis_to_delete = self._project.analyses[request.analysisId]
-                if analysis_to_delete.name != 'empty':
-                    # delete analyses
-                    for child in analysis_to_delete.dependents:
-                        del self._project.analyses[child.id]
-                    del self._project.analyses[request.analysisId]
-
-                    # delete all output columns
-                    dataset = analysis_to_delete.dataset
-                    columns_to_delete = [ ]
-
-                    for column in dataset:
-                        if column.output_analysis_id == request.analysisId:
-                            columns_to_delete.append(column.id)
-
-                    # send responses
-                    self._coms.send(request, self._instance_id, request, True)
-
-                    self._delete_columns(dataset, columns_to_delete)
+                if analysis.name != 'empty':
+                    changes = [ ]
+                    merge = self._merge_annotation_upwards(analysis)
+                    if merge is not None:
+                        changes.append(merge)
+                    removed = self._remove_analysis(analysis.id, response_to=request)
+                    changes.append(self._create_removal(analysis.id, removed))
+                    self._history.add(*changes)
+                    self._send_history_position()
 
                 else:
-                    analysis_to_delete.reset_options(request.revision)
-                    self._coms.send(analysis_to_delete.results, self._instance_id, request, True)
+                    before = analysis.options.get_user_values()
+                    analysis.reset_options(request.revision)
+                    after = analysis.options.get_user_values()
+                    self._coms.send(analysis.results, self._instance_id, request, True)
+                    if before != after:
+                        self._history.add(AnalysisOptionsChange(analysis.id, before, after, monotonic(), self._restore_options))
+                        self._send_history_position()
             else:
                 before = analysis.options.get_user_values()
                 analysis.set_options(request.options, request.changed, request.revision, request.enabled)
@@ -1552,6 +1579,12 @@ class Instance:
                         child_index += 1
                         self._coms.send(child.results, self._instance_id, complete=True)
 
+                    analysis_id = analysis.id
+                    self._history.add(AnalysisAddition(
+                        lambda: self._remove_analysis(analysis_id),
+                        self._restore_analysis))
+                    self._send_history_position()
+
             except OSError as e:
 
                 log.error('Could not create analysis: ' + str(e))
@@ -1563,6 +1596,140 @@ class Instance:
                 response.error.message = 'Could not create analysis: ' + str(e)
 
                 self._coms.send(response, self._instance_id, request, True)
+
+    def _create_removal(self, analysis_id, removed):
+        return AnalysisRemoval(
+            lambda: self._remove_analysis(analysis_id),
+            self._restore_analysis,
+            removed)
+
+    def _remove_analysis(self, analysis_id, *, response_to=None, notify=True):
+        """Remove an analysis, along with its dependents (its annotation)
+        and its output columns. Returns what _restore_analysis() needs to
+        put it back. notify is whether to tell the client; it's told in
+        reply to response_to, if given"""
+        analyses = self._project.analyses
+        analysis = analyses[analysis_id]
+        index = analyses.index_of(analysis)
+        members = [ analysis ] + analysis.dependents
+        dataset = analysis.dataset
+
+        columns = [ ]
+        for column in dataset:
+            if column.output_analysis_id == analysis_id:
+                columns.append(OutputColumn(
+                    column.id, column.index, column.name, column.description,
+                    column.measure_type, column.output_option_name, column.output_name,
+                    column.output_assigned_column_name, column.output_desired_column_name,
+                    column.output_assigned_column_description))
+
+        for member in members:
+            del analyses[member.id]
+
+        if notify and self._coms is not None:
+            if response_to is not None:
+                self._coms.send(response_to, self._instance_id, response_to, True)
+            else:
+                request = jcoms.AnalysisRequest()
+                request.analysisId = analysis_id
+                request.perform = jcoms.AnalysisRequest.Perform.Value('DELETE')
+                self._coms.send(request, self._instance_id)
+
+        self._delete_columns(dataset, [ column.id for column in columns ])
+        self._project.is_edited = True
+
+        return RemovedAnalysis(index, members, columns)
+
+    def _restore_analysis(self, removed):
+        """Put back an analysis removed with _remove_analysis()"""
+        analyses = self._project.analyses
+        for offset, member in enumerate(removed.analyses):
+            analyses.restore(removed.index + offset, member)
+
+        analysis = removed.analyses[0]
+        if removed.columns:
+            self._restore_output_columns(analysis.dataset, analysis.id, removed.columns)
+
+        for member in removed.analyses:
+            self._send_restored(member)
+
+        if removed.columns or analysis.results is None:
+            # to fill in the output columns, or because it never ran
+            analysis.rerun()
+
+        self._project.is_edited = True
+
+    def _restore_output_columns(self, dataset, analysis_id, columns):
+        controller = self._controllers[dataset.id]
+        response = jcoms.DataSetRR()
+
+        for snapshot in sorted(columns, key=lambda column: column.index):
+            column = dataset.insert_column(snapshot.index, snapshot.name, id=snapshot.id)
+            column.column_type = ColumnType.OUTPUT
+            column.description = snapshot.description
+            column.change(measure_type=snapshot.measure_type)
+            column.output_analysis_id = analysis_id
+            column.output_option_name = snapshot.option_name
+            column.output_name = snapshot.output_name
+            column.output_assigned_column_name = snapshot.assigned_name
+            column.output_desired_column_name = snapshot.desired_name
+            column.output_assigned_column_description = snapshot.assigned_description
+
+            column_pb = response.schema.columns.add()
+            controller.populate_column_schema(column, column_pb, True)
+            column_pb.dataChanged = True
+
+        controller.populate_schema_info(None, response)
+        if self._coms is not None:
+            self._coms.send(response, self._instance_id)
+
+        self.update_analyses(dataset, changed={ column.name for column in columns })
+
+    def _send_restored(self, analysis):
+        # marked as restored, so the client creates it (or takes its options
+        # in place of its own)
+        if self._coms is None:
+            return
+        response = jcoms.AnalysisResponse()
+        if analysis.results is not None:
+            response.CopyFrom(analysis.results)
+        else:
+            # it hasn't run yet
+            response.name = analysis.name
+            response.ns = analysis.ns
+            response.instanceId = self.id
+            response.analysisId = analysis.id
+            response.options.CopyFrom(analysis.options.as_pb())
+            response.index = self._project.analyses.index_of(analysis) + 1
+            response.status = jcoms.AnalysisStatus.Value('ANALYSIS_NONE')
+        response.restored = True
+        self._coms.send(response, self._instance_id)
+
+    def _merge_annotation_upwards(self, analysis):
+        """An analysis' annotation is removed with it, and what was written
+        in it moves to the annotation above. Returns the change, or None
+        if there's nothing to move"""
+        annotations = [ a for a in analysis.dependents if a.name == 'empty' ]
+        if not annotations:
+            return None
+        text = annotations[0].options.get_value('results//topText')
+        if not isinstance(text, dict) or not text.get('ops'):
+            return None
+
+        analyses = self._project.analyses
+        index = analyses.index_of(analysis)
+        if index < 1:
+            return None
+        above = analyses._analyses[index - 1]
+
+        before = above.options.get_user_values()
+        above_text = before.get('results//topText')
+        above_ops = above_text.get('ops', [ ]) if isinstance(above_text, dict) else [ ]
+        after = dict(before)
+        after['results//topText'] = { 'ops': above_ops + text['ops'] }
+
+        self._restore_options(above.id, before, after)
+        return AnalysisOptionsChange(above.id, before, after, monotonic(), self._restore_options)
 
     def _delete_columns(self, dataset, column_ids):
         """Delete columns from a data set, and broadcast the removal."""

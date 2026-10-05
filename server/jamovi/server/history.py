@@ -72,6 +72,40 @@ class AnalysisOptionsChange:
         self._restore(self.analysis_id, self.before, self.after)
 
 
+class AnalysisRemoval:
+    """The removal of an analysis (along with its annotation and output
+    columns). remove() takes it out, and returns what restore() needs to
+    put it back"""
+
+    def __init__(self, remove, restore, removed):
+        self._remove = remove
+        self._restore = restore
+        self._removed = removed
+
+    async def undo(self):
+        self._restore(self._removed)
+        self._removed = None
+
+    async def redo(self):
+        self._removed = self._remove()
+
+
+class AnalysisAddition:
+    """The addition of an analysis; the reverse of AnalysisRemoval"""
+
+    def __init__(self, remove, restore):
+        self._remove = remove
+        self._restore = restore
+        self._removed = None
+
+    async def undo(self):
+        self._removed = self._remove()
+
+    async def redo(self):
+        self._restore(self._removed)
+        self._removed = None
+
+
 class History:
     """The undo/redo history of a project, across all its stores (data sets,
     and later analyses). An entry is a list of changes, possibly to

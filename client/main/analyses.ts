@@ -1,8 +1,6 @@
 
 'use strict';
 
-import Delta from 'quill-delta';
-
 import Options from './options';
 import { GroupBatchingEventEmittier } from '../common/eventmap';
 import DataSetViewModel from './dataset';
@@ -368,29 +366,9 @@ class Analyses extends GroupBatchingEventEmittier {
         for (let i = 0; i < this._analyses.length; i++) {
             let dependent = this._analyses[i];
             if (dependent.dependsOn === analysis) {
+                // the server moves what's written in the annotation to the
+                // one above (see Instance._merge_annotation_upwards())
                 let index = this.indexOf(dependent.id);
-
-                if (dependent.name === 'empty') {
-                    // before remove inbetween annotation move its contents to the previous annotation
-                    let previous = this._analyses[index - 1];
-                    let removingData = dependent.options.getOption('results//topText');
-                    if (removingData) {
-                        let removingDelta = new Delta(removingData.getValue());
-                        let previousData = previous.options.getOption('results//topText');
-                        let previousDelta = null;
-                        if (previousData) {
-                            previousDelta = new Delta(previousData.getValue());
-                            previous.options.setValues({'results//topText': { ops: previousDelta.concat(removingDelta).ops } });
-                        }
-                        else
-                            previous.options.setValues({'results//topText': { ops: removingDelta.ops } });
-                    }
-
-                    this._notifyOptionsChanged(previous);
-                    this._notifyResultsChanged(previous);
-                    ////////
-                }
-
                 this._analyses.splice(index, 1);
                 for (let i = 0; i < this._analyses.length; i++)
                     this._analyses[i].index = i;
