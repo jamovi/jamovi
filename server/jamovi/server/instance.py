@@ -17,6 +17,8 @@ from .utils.stream import ProgressStream
 from .datasetmodel import DataSetModel
 from .datasetcontroller import DataSetController
 from .datasetcontroller import ForbiddenOp
+from .history import History
+from .history import DataSetChange
 from .project import Project
 from . import formatio
 from .permissions import Permissions
@@ -89,6 +91,7 @@ class Instance:
 
         self._project = Project(self)
         self._controllers: dict[int, DataSetController] = { }
+        self._history = History()
 
         now = monotonic()
 
@@ -148,6 +151,7 @@ class Instance:
 
     def _remove_all_datasets(self):
         self._controllers = { }
+        self._history.clear()
         for id in self._project.dataset_ids:
             self._project.remove_dataset(id)
 
@@ -369,8 +373,18 @@ class Instance:
             return
 
         try:
-            controller = self._controller()
-            response = await controller.handle(request)
+            if request.op == jcoms.GetSet.Value('UNDO'):
+                response = await self._undo_redo(self._history.undo)
+            elif request.op == jcoms.GetSet.Value('REDO'):
+                response = await self._undo_redo(self._history.redo)
+            else:
+                controller = self._controller()
+                response = await controller.handle(request)
+                if request.op == jcoms.GetSet.Value('SET') and request.noUndo is False:
+                    self._history.add(DataSetChange(controller))
+
+            response.changesCount = self._history.count
+            response.changesPosition = self._history.position
             self._coms.send(response, self._instance_id, request)
 
         except ForbiddenOp as e:
@@ -380,6 +394,16 @@ class Instance:
         except Exception as e:
             log.exception(e)
             self._coms.send_error(_('Could not perform operation'), str(e), self._instance_id, request)
+
+    async def _undo_redo(self, undo_or_redo):
+        # for now, every change in the history is to a data set, and the
+        # client only ever shows the first one
+        responses = await undo_or_redo()
+        if responses:
+            return responses[0]
+        response = jcoms.DataSetRR()
+        response.op = jcoms.GetSet.Value('SET')
+        return response
 
     def update_analyses(self, dataset, changed=set(), renamed=set(), rows_added_removed=False, filters_changed=False, weights_changed=False):
         """Notify the analyses bound to a data set that it has changed."""
@@ -1295,6 +1319,7 @@ class Instance:
             datasets = MultipleDataSets(paths)
             await controller.dataset.import_from(datasets, n_files > 1)
             controller.mod_tracker.clear()
+            self._history.clear()
 
             response = jcoms.OpenProgress()
             self._coms.send(response, self._instance_id, request)
@@ -1509,8 +1534,8 @@ class Instance:
             response.saveFormat = self._project.save_format
             response.edited = self._project.is_edited
             response.blank = self._project.is_blank
-            response.changesCount = controller.mod_tracker.count
-            response.changesPosition = controller.mod_tracker.position
+            response.changesCount = self._history.count
+            response.changesPosition = self._history.position
 
             controller.populate_schema(response.schema)
 
