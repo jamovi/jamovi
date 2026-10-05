@@ -256,9 +256,9 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         });
     }
 
-    _onOptionsChanged(analysis, incoming) {
+    _onOptionsChanged(analysis, incoming, noUndo?: boolean) {
         if ( ! incoming)
-            this._runAnalysis(analysis);
+            this._runAnalysis(analysis, undefined, noUndo);
     }
 
     destroy() {
@@ -1204,12 +1204,13 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         return coms.sendP(message);
     }
 
-    async _runAnalysis(analysis, changed?) {
+    async _runAnalysis(analysis, changed?, noUndo: boolean = false) {
         this._dataSetModel.set('edited', true);
 
         analysis.revision++;
         let request = await this._constructAnalysisRequest(analysis);
         request.perform = 0; // INIT
+        request.noUndo = noUndo;
 
         if (changed)
             request.changed = changed;
@@ -1331,8 +1332,12 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                 analysis.results.index = response.index;
                 analysis.index = response.index - 1;
 
+                // options restored by an undo or redo replace our own
+                if (response.restored)
+                    analysis.revision = Math.max(analysis.revision, response.revision);
+
                 let options = {};
-                if (response.revision === analysis.revision)
+                if (response.revision === analysis.revision || response.restored)
                     options = OptionsPB.fromPB(response.options, coms.Messages);
 
                 let optionsApplied = false;

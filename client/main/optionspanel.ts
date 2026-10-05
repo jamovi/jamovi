@@ -112,7 +112,7 @@ class AnalysisResources extends EventEmitter {
             },
 
             onOptionsChanged: data => {
-                this.analysis.setOptions(data.values);
+                this.analysis.setOptions(data.values, data.external);
 
                 for (let name in data.properties) {
                     let pData = data.properties[name];

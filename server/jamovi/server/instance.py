@@ -19,6 +19,8 @@ from .datasetcontroller import DataSetController
 from .datasetcontroller import ForbiddenOp
 from .history import History
 from .history import DataSetChange
+from .history import AnalysisOptionsChange
+from .options import write_value_to_pb
 from .project import Project
 from . import formatio
 from .permissions import Permissions
@@ -67,6 +69,11 @@ log = logging.getLogger(__name__)
 ConnectionStatus = namedtuple('ConnectionStatus',
                               ('connected', 'inactive_since', 'unclean', 'virgin'),
                               defaults=(True, None, False, False))
+
+
+def _changed_names(values, other_values):
+    names = values.keys() | other_values.keys()
+    return sorted(name for name in names if values.get(name) != other_values.get(name))
 
 
 class Instance:
@@ -396,14 +403,60 @@ class Instance:
             self._coms.send_error(_('Could not perform operation'), str(e), self._instance_id, request)
 
     async def _undo_redo(self, undo_or_redo):
-        # for now, every change in the history is to a data set, and the
-        # client only ever shows the first one
+        # the client sends undo and redo as DataSetRRs, and expects one
+        # back. changes to analyses are sent to the client as they're
+        # restored (see _restore_options())
         responses = await undo_or_redo()
-        if responses:
-            return responses[0]
+        for response in responses:
+            if isinstance(response, jcoms.DataSetRR):
+                return response
         response = jcoms.DataSetRR()
         response.op = jcoms.GetSet.Value('SET')
         return response
+
+    def _send_history_position(self):
+        # the client enables undo and redo from these
+        if self._coms is None:
+            return
+        broadcast = jcoms.DataSetRR()
+        broadcast.op = jcoms.GetSet.Value('SET')
+        broadcast.changesCount = self._history.count
+        broadcast.changesPosition = self._history.position
+        self._coms.send(broadcast, self._instance_id)
+
+    def _restore_options(self, analysis_id, current, target):
+        # current and target are user values (see Options.get_user_values())
+        analysis = self._project.analyses.get(analysis_id)
+        if analysis is None:
+            return
+
+        options_pb = jcoms.AnalysisOptions()
+        options_pb.hasNames = True
+        for name, value in target.items():
+            options_pb.names.append(name)
+            write_value_to_pb(value, options_pb.options.add())
+
+        # the client only removes a results option (an annotation, say)
+        # when it's sent as null
+        for name in current.keys() - target.keys():
+            if name.startswith('results/'):
+                options_pb.names.append(name)
+                write_value_to_pb(None, options_pb.options.add())
+
+        changed = [ name for name in _changed_names(current, target) if not name.startswith('results/') ]
+
+        revision = analysis.revision + 1
+        analysis.set_options(options_pb, changed, revision)
+        analysis.results.options.CopyFrom(analysis.options.as_pb())
+        analysis.results.revision = revision
+
+        if self._coms is not None:
+            # marked as restored, so the client takes these options in place
+            # of its own (its revision may be ahead of ours)
+            response = jcoms.AnalysisResponse()
+            response.CopyFrom(analysis.results)
+            response.restored = True
+            self._coms.send(response, self._instance_id)
 
     def update_analyses(self, dataset, changed=set(), renamed=set(), rows_added_removed=False, filters_changed=False, weights_changed=False):
         """Notify the analyses bound to a data set that it has changed."""
@@ -1433,8 +1486,15 @@ class Instance:
                     analysis_to_delete.reset_options(request.revision)
                     self._coms.send(analysis_to_delete.results, self._instance_id, request, True)
             else:
+                before = analysis.options.get_user_values()
                 analysis.set_options(request.options, request.changed, request.revision, request.enabled)
+                after = analysis.options.get_user_values()
                 self._coms.send(None, self._instance_id, request, True)
+                if before != after and not request.noUndo:
+                    log.debug('Options changed: %s', ', '.join(_changed_names(before, after)))
+                    change = AnalysisOptionsChange(analysis.id, before, after, monotonic(), self._restore_options)
+                    self._history.add(change)
+                    self._send_history_position()
         else:  # create analysis
             try:
                 duplicating = request.perform == jcoms.AnalysisRequest.Perform.Value('DUPLICATE')

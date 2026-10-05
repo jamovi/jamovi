@@ -158,12 +158,13 @@ export class Analysis {
         return this.name !== 'empty';
     }
 
-    setOptions(values) {
+    // noUndo: the change follows from another (see AnalysisRequest.noUndo)
+    setOptions(values, noUndo: boolean = false) {
         if (this.options.setValues(values)) {
             this.enabled = true;
             this.revision++;
             if (this._parent !== null)
-                this._parent._notifyOptionsChanged(this);
+                this._parent._notifyOptionsChanged(this, false, noUndo);
         }
     }
 
@@ -464,8 +465,8 @@ class Analyses extends GroupBatchingEventEmittier {
         this.trigger('analysisResultsChanged', analysis);
     }
 
-    _notifyOptionsChanged(analysis: Analysis, incoming: boolean = false) : void {  // incoming is true if the options have been changed as a result of the server. It will be falsey if the change to the options has occured because of the client.
-        this.trigger('analysisOptionsChanged', analysis, incoming);
+    _notifyOptionsChanged(analysis: Analysis, incoming: boolean = false, noUndo: boolean = false) : void {  // incoming is true if the options have been changed as a result of the server. It will be falsey if the change to the options has occured because of the client.
+        this.trigger('analysisOptionsChanged', analysis, incoming, noUndo);
     }
 
     _notifyAnalysisCreated(analysis: Analysis): void {

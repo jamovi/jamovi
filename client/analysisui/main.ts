@@ -405,17 +405,23 @@ function updateOptions(values) {
     }
 
     let model = analysis.model;
-    model.options.runInEditScope(() => {
-        let params = Options.getDefaultEventParams("changed");
-        params.externalEvent = true;
-        for (let key in values) {
-            let value = values[key];
-            if (key === 'results//heading')
-                setTitle(value);
-            else
-                model.options.setOptionValue(key, value, params);
-        }
-    });
+    applyingExternalUpdate = true;
+    try {
+        model.options.runInEditScope(() => {
+            let params = Options.getDefaultEventParams("changed");
+            params.externalEvent = true;
+            for (let key in values) {
+                let value = values[key];
+                if (key === 'results//heading')
+                    setTitle(value);
+                else
+                    model.options.setOptionValue(key, value, params);
+            }
+        });
+    }
+    finally {
+        applyingExternalUpdate = false;
+    }
 }
 
 function setOptionsValues(data, editType) {
@@ -462,9 +468,15 @@ function setOptionsValues(data, editType) {
     parentFrame.send("optionsViewReady", true);
 }
 
+// true while options from the main window (i.e. restored by an undo) are
+// being applied. the changes which follow from them (other options updating
+// in response) are sent marked as external, so they aren't added to the
+// history
+let applyingExternalUpdate = false;
+
 function onValuesForServerChanges(e) {
 
-    let compiledList = { values: { }, properties: { } };
+    let compiledList = { values: { }, properties: { }, external: applyingExternalUpdate };
 
     for (let key in e.map) {
         let value = e.map[key];

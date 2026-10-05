@@ -37,6 +37,41 @@ class DataSetChange:
         return await self._controller.redo()
 
 
+class AnalysisOptionsChange:
+    """A change to an analysis' options. before and after are the option
+    values the user can change (see Instance._user_option_values), and
+    restore() puts one of them back. Changes to the same analysis in quick
+    succession (typing, dragging) are merged into one"""
+
+    MERGE_WITHIN = 1.0  # seconds
+
+    def __init__(self, analysis_id: int, before: dict, after: dict, time: float, restore):
+        self.analysis_id = analysis_id
+        self.before = before
+        self.after = after
+        self.time = time
+        self._restore = restore
+
+    @property
+    def is_noop(self) -> bool:
+        return self.before == self.after
+
+    def absorb(self, change) -> bool:
+        if (not isinstance(change, AnalysisOptionsChange)
+                or change.analysis_id != self.analysis_id
+                or change.time - self.time > AnalysisOptionsChange.MERGE_WITHIN):
+            return False
+        self.after = change.after
+        self.time = change.time
+        return True
+
+    async def undo(self):
+        self._restore(self.analysis_id, self.after, self.before)
+
+    async def redo(self):
+        self._restore(self.analysis_id, self.before, self.after)
+
+
 class History:
     """The undo/redo history of a project, across all its stores (data sets,
     and later analyses). An entry is a list of changes, possibly to
@@ -47,6 +82,7 @@ class History:
     def __init__(self):
         self._entries: list[list[Change]] = [ ]
         self._position = 0  # the entries before here can be undone
+        self._can_merge = False
 
     @property
     def can_undo(self) -> bool:
@@ -69,10 +105,27 @@ class History:
     def clear(self):
         self._entries = [ ]
         self._position = 0
+        self._can_merge = False
 
     def add(self, *changes: Change):
         del self._entries[self._position:]
+
+        # a lone change may be merged into the lone change before it, so
+        # long as nothing has been undone or redone in between
+        if self._can_merge and len(changes) == 1 and len(self._entries[-1]) == 1:
+            last = self._entries[-1][0]
+            absorb = getattr(last, 'absorb', None)
+            if absorb is not None and absorb(changes[0]):
+                if getattr(last, 'is_noop', False):
+                    # changed back to how it was; the entry before is
+                    # unrelated, so isn't merged into either
+                    del self._entries[-1]
+                    self._can_merge = False
+                self._position = len(self._entries)
+                return
+
         self._entries.append(list(changes))
+        self._can_merge = True
         if len(self._entries) > History.MAX_LENGTH:
             del self._entries[0]
         self._position = len(self._entries)
@@ -81,6 +134,7 @@ class History:
         if not self.can_undo:
             return [ ]
         self._position -= 1
+        self._can_merge = False
         entry = self._entries[self._position]
         return [ await change.undo() for change in reversed(entry) ]
 
@@ -89,4 +143,5 @@ class History:
             return [ ]
         entry = self._entries[self._position]
         self._position += 1
+        self._can_merge = False
         return [ await change.redo() for change in entry ]

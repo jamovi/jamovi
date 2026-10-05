@@ -11,6 +11,10 @@ NONE = AnalysisOption.Other.Value('NONE')
 TRUE = AnalysisOption.Other.Value('TRUE')
 FALSE = AnalysisOption.Other.Value('FALSE')
 
+# options the client adds to every request (see _optionsExtras() in
+# client/main/instance.ts), along with those beginning with a '.'
+CLIENT_EXTRAS = { 'theme', 'palette', 'decSymbol' }
+
 
 def substitute(values, changes):
     for index, old_value in enumerate(values):
@@ -454,6 +458,22 @@ class Options:
             option = self._options.get(name, None)
             if option is not None and option.type == 'File':
                 OptionFile.keep_ids(pb.options[i], ids)
+
+    def get_user_values(self) -> dict[str, Any]:
+        # the values the user sets. this leaves out the extras the client
+        # sends along with every request (the theme, the ppi, etc.), and
+        # actions, which are only ever true while their run is in flight
+        values = { }
+        for name, value in read_values_from_pb(self._pb).items():
+            if name.startswith('.') or name in CLIENT_EXTRAS:
+                continue
+            if name.startswith('results/') and value is None:
+                continue  # cleared (see compress())
+            option = self._options.get(name, None)
+            if option is not None and option.type == 'Action':
+                continue
+            values[name] = value
+        return values
 
     def clear_actions(self):
         for i, name in enumerate(self._pb.names):
