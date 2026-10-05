@@ -186,14 +186,6 @@ export class Analysis {
         this.revision++;
     }
 
-    clearColumnUse(columnNames) {
-        for (let i = 0; i < columnNames.length; i++)
-            this.options.clearColumnUse(columnNames[i]);
-        this.revision++;
-        if (this._parent !== null)
-            this._parent._notifyOptionsChanged(this);
-    }
-
     getUsingColumns() {
         return this.options.getAssignedColumns();
     }
