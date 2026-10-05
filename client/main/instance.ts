@@ -214,6 +214,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         this._analyses = new Analyses(this._dataSetModel, this._modules);
 
         this._analyses.on('analysisOptionsChanged', this._onOptionsChanged, this);
+        this._analyses.on('analysisDeleted', this._onAnalysisDeleted, this);
 
         this._instanceId = null;
 
@@ -256,6 +257,13 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         });
     }
 
+    // an analysis can be removed by the server (an undo, say), so its
+    // options are closed here rather than only where the user deletes it
+    _onAnalysisDeleted(analysis: Analysis) {
+        if (this.get('selectedAnalysis') === analysis)
+            this.set('selectedAnalysis', null);
+    }
+
     _onOptionsChanged(analysis, incoming, noUndo?: boolean) {
         if ( ! incoming)
             this._runAnalysis(analysis, undefined, noUndo);
@@ -264,6 +272,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
     destroy() {
         this._dataSetModel.off('columnsChanged', this._columnsChanged, this);
         this._analyses.off('analysisOptionsChanged', this._onOptionsChanged, this);
+        this._analyses.off('analysisDeleted', this._onAnalysisDeleted, this);
         this.attributes.coms.off('broadcast', this._onBC);
         document.removeEventListener('visibilitychange', this._onResume);
         window.removeEventListener('pageshow', this._onResume);

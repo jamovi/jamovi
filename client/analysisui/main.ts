@@ -395,6 +395,12 @@ function setTitle(title) {
         $title.append(h('div', { class: 'sub-title' }, original));
 }
 
+// true while options from the main window are being applied (as the panel
+// loads, or restored by an undo). the changes which follow from them (other
+// options updating in response) are sent marked as external, so they aren't
+// added to the history
+let applyingExternalUpdate = false;
+
 function updateOptions(values) {
     if (! analysis || analysis.inError)
         return;
@@ -442,39 +448,40 @@ function setOptionsValues(data, editType) {
     analysis.id = data.id;
     let titleSet = false;
     let model = analysis.model;
-    model.options.runInEditScope(() => {
-        if (analysis.View.beginDataInitialization(data.id)) {
-            let params = Options.getDefaultEventParams("changed");
-            params.silent = true;
-            for (let key in data.options) {
-                let value = data.options[key];
-                if (key === 'results//heading') {
-                    setTitle(value);
-                    titleSet = true;
+    // the options the UI derives as it loads aren't changes the user made
+    applyingExternalUpdate = true;
+    try {
+        model.options.runInEditScope(() => {
+            if (analysis.View.beginDataInitialization(data.id)) {
+                let params = Options.getDefaultEventParams("changed");
+                params.silent = true;
+                for (let key in data.options) {
+                    let value = data.options[key];
+                    if (key === 'results//heading') {
+                        setTitle(value);
+                        titleSet = true;
+                    }
+                    else
+                        model.options.setOptionValue(key, value, params);
                 }
-                else
-                    model.options.setOptionValue(key, value, params);
-            }
-            if (editType === 'absolute') {
-                for (let op of model.options._list) {
-                    if (data.options === null || (op.name in data.options) === false)
-                        model.options.setOptionValue(op.name, null, params);
+                if (editType === 'absolute') {
+                    for (let op of model.options._list) {
+                        if (data.options === null || (op.name in data.options) === false)
+                            model.options.setOptionValue(op.name, null, params);
+                    }
                 }
+                if (titleSet === false)
+                    setTitle('');
+                analysis.View.endDataInitialization(data.id);
             }
-            if (titleSet === false)
-                setTitle('');
-            analysis.View.endDataInitialization(data.id);
-        }
-    });
+        });
+    }
+    finally {
+        applyingExternalUpdate = false;
+    }
 
     parentFrame.send("optionsViewReady", true);
 }
-
-// true while options from the main window (i.e. restored by an undo) are
-// being applied. the changes which follow from them (other options updating
-// in response) are sent marked as external, so they aren't added to the
-// history
-let applyingExternalUpdate = false;
 
 function onValuesForServerChanges(e) {
 
