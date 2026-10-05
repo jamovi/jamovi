@@ -695,6 +695,12 @@ message DataSetRR {
     int32 changesPosition = 8;
     bool noUndo = 9;
     bool filtersChanged = 10;
+
+    // in response to an undo or redo: the analysis it changed (if any), so
+    // the client can show it. if it removed the analysis, changedAnalysisId
+    // is the analysis which was above it (to show where it was)
+    int32 changedAnalysisId = 11;
+    bool changedAnalysisRemoved = 12;
 }
 
 message ModuleRR {

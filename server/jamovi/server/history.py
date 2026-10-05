@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+from collections import namedtuple
 from typing import Any
 from typing import Protocol
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .datasetcontroller import DataSetController
+
+
+# returned by a change's undo() or redo(), to say which analysis it changed.
+# if it removed it, analysis_id is the analysis which was above it
+Revealed = namedtuple('Revealed', 'analysis_id removed', defaults=(False,))
 
 
 class Change(Protocol):
@@ -67,9 +73,11 @@ class AnalysisOptionsChange:
 
     async def undo(self):
         self._restore(self.analysis_id, self.after, self.before)
+        return Revealed(self.analysis_id)
 
     async def redo(self):
         self._restore(self.analysis_id, self.before, self.after)
+        return Revealed(self.analysis_id)
 
 
 class AnalysisRemoval:
@@ -83,11 +91,14 @@ class AnalysisRemoval:
         self._removed = removed
 
     async def undo(self):
+        revealed = Revealed(self._removed.analyses[0].id)
         self._restore(self._removed)
         self._removed = None
+        return revealed
 
     async def redo(self):
         self._removed = self._remove()
+        return Revealed(self._removed.above_id, removed=True)
 
 
 class AnalysisAddition:
@@ -100,10 +111,13 @@ class AnalysisAddition:
 
     async def undo(self):
         self._removed = self._remove()
+        return Revealed(self._removed.above_id, removed=True)
 
     async def redo(self):
+        revealed = Revealed(self._removed.analyses[0].id)
         self._restore(self._removed)
         self._removed = None
+        return revealed
 
 
 class History:

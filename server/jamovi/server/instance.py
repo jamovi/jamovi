@@ -22,6 +22,7 @@ from .history import DataSetChange
 from .history import AnalysisOptionsChange
 from .history import AnalysisRemoval
 from .history import AnalysisAddition
+from .history import Revealed
 from .options import write_value_to_pb
 from .project import Project
 from . import formatio
@@ -69,8 +70,9 @@ from .i18n import _
 log = logging.getLogger(__name__)
 
 # an analysis removed from the project (see Instance._remove_analysis()).
-# analyses holds it along with its dependents (its annotation), in order
-RemovedAnalysis = namedtuple('RemovedAnalysis', 'index analyses columns')
+# analyses holds it along with its dependents (its annotation), in order.
+# above_id is the analysis which was above it (to show where it was)
+RemovedAnalysis = namedtuple('RemovedAnalysis', 'index analyses columns above_id')
 
 # an output column removed along with its analysis, for putting it back.
 # its values aren't kept; the analysis provides them again when it reruns
@@ -419,12 +421,24 @@ class Instance:
         # the client sends undo and redo as DataSetRRs, and expects one
         # back. changes to analyses are sent to the client as they're
         # restored (see _restore_options())
-        responses = await undo_or_redo()
-        for response in responses:
-            if isinstance(response, jcoms.DataSetRR):
-                return response
-        response = jcoms.DataSetRR()
-        response.op = jcoms.GetSet.Value('SET')
+        results = await undo_or_redo()
+
+        response = None
+        for result in results:
+            if isinstance(result, jcoms.DataSetRR):
+                response = result
+                break
+        else:
+            response = jcoms.DataSetRR()
+            response.op = jcoms.GetSet.Value('SET')
+
+        # the first analysis changed is the one to show
+        for result in results:
+            if isinstance(result, Revealed):
+                response.changedAnalysisId = result.analysis_id
+                response.changedAnalysisRemoved = result.removed
+                break
+
         return response
 
     def _send_history_position(self):
@@ -1638,7 +1652,11 @@ class Instance:
         self._delete_columns(dataset, [ column.id for column in columns ])
         self._project.is_edited = True
 
-        return RemovedAnalysis(index, members, columns)
+        above_id = 0
+        if index > 0:
+            above_id = analyses._analyses[index - 1].id
+
+        return RemovedAnalysis(index, members, columns, above_id)
 
     def _restore_analysis(self, removed):
         """Put back an analysis removed with _remove_analysis()"""

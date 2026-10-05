@@ -340,6 +340,31 @@ class ResultsPanel extends EventDistributor {
         });
     }
 
+    // scroll an analysis into view, and highlight it briefly (to show what
+    // an undo or redo changed). an analysis being put back may not be here
+    // yet, or not yet sized, so this waits for it a little
+    revealAnalysis(id: number, highlight: boolean = true, attempts: number = 20) {
+        let resources = this.resources[id];
+        if ( ! resources || ! resources.sized) {
+            if (attempts > 0)
+                setTimeout(() => this.revealAnalysis(id, highlight, attempts - 1), 50);
+            return;
+        }
+
+        let $container = resources.$container;
+        this._scrollIntoView($container, $container.offsetHeight);
+
+        if ( ! highlight)
+            return;
+
+        $container.classList.remove('history-revealed');
+        void $container.offsetWidth;  // restarts the animation
+        $container.classList.add('history-revealed');
+        $container.addEventListener('animationend', () => {
+            $container.classList.remove('history-revealed');
+        }, { once: true });
+    }
+
     _analysisDeleted(analysis) {
         this._updateRefs();
         let resources = this.resources[analysis.id];

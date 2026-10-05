@@ -451,3 +451,41 @@ async def test_deleting_all_analyses_can_be_undone(instance: Instance):
     await instance.on_request(_op('REDO'))
     assert _ids(instance) == before[:1]
     assert coms.errors == [ ]
+
+
+def _last_dataset_response(coms):
+    return [ m for m in coms.sent if isinstance(m, jcoms.DataSetRR) ][-1]
+
+
+@pytest.mark.asyncio
+async def test_undo_says_which_analysis_it_changed(instance: Instance, monkeypatch):
+    monkeypatch.setattr(AnalysisOptionsChange, 'MERGE_WITHIN', -1)
+    coms = await _open_with_analysis(instance)
+    header_id, _ = _ids(instance)[0]
+
+    await instance.on_request(_set_cell(0, 0, 7))
+    await instance.on_request(_annotate(header_id, 1, { 'ops': [ { 'insert': 'x\n' } ] }))
+    await instance.on_request(_delete(2))
+
+    # the analysis put back
+    await instance.on_request(_op('UNDO'))
+    assert _last_dataset_response(coms).changedAnalysisId == 2
+    assert not _last_dataset_response(coms).changedAnalysisRemoved
+
+    # the analysis whose options changed
+    await instance.on_request(_op('UNDO'))
+    assert _last_dataset_response(coms).changedAnalysisId == header_id
+
+    # a change to the data changes no analysis
+    await instance.on_request(_op('UNDO'))
+    response = _last_dataset_response(coms)
+    assert response.changedAnalysisId == 0
+    assert response.incData
+
+    # removing an analysis shows where it was
+    await instance.on_request(_op('REDO'))
+    await instance.on_request(_op('REDO'))
+    await instance.on_request(_op('REDO'))
+    assert _last_dataset_response(coms).changedAnalysisId == header_id
+    assert _last_dataset_response(coms).changedAnalysisRemoved
+    assert coms.errors == [ ]
