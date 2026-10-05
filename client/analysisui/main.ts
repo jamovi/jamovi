@@ -24,6 +24,7 @@ import { h, rich }  from '../common/htmlelementcreator';
 
 import I18ns, { I18n, I18nData } from "../common/i18n";
 import HighContrast from '../common/highcontrast';
+import { getUndoRedoAction } from '../common/undokeys';
 
 declare global {
     function s_(key: string, formats?: { [key: string]: (string|number); } | (string|number)[] | string, options?: { prefix: string; postfix: string; }): string;
@@ -272,6 +273,7 @@ ready(() => {
     document.addEventListener('mousedown', mouseDown);
     document.addEventListener('mouseup', mouseUp);
     document.addEventListener('mousemove', mouseMove);
+    document.addEventListener('keydown', undoRedo);
 
     parentFrame.send('frameDocumentReady', null);
 });
@@ -538,6 +540,15 @@ function mouseDown(event) {
     };
 
     parentFrame.send("onFrameMouseEvent", data);
+}
+
+// undo and redo are handled by the main window, against the shared history
+function undoRedo(event: KeyboardEvent) {
+    const action = getUndoRedoAction(event);
+    if (action === null)
+        return;
+    parentFrame.send('undoRedo', action);
+    event.preventDefault();
 }
 
 function closeOptions() {

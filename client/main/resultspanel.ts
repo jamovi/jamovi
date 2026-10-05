@@ -8,6 +8,7 @@ import { exportElem } from '../common/utils/formatio';
 import ContextMenu from './contextmenu';
 import Notify from './notification';
 import host from './host';
+import ActionHub from './actionhub';
 import selectionLoop from '../common/selectionloop';
 import ContextMenuButton from './contextmenu/contextmenubutton';
 
@@ -641,6 +642,10 @@ class ResultsPanel extends EventDistributor {
                         this.annotationGotFocus();
                         this.dispatchEvent(new CustomEvent('annotationFocus', { bubbles:true }));
                     }
+                    break;
+                case 'undo':
+                case 'redo':
+                    ActionHub.get(eventType).do();
                     break;
                 case 'analysisLostFocus':
                     this.dispatchEvent(new CustomEvent('analysisLostFocus', { bubbles:true }));
