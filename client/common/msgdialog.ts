@@ -65,7 +65,9 @@ declare global {
   }
 }
 
-export default class MsgDialog extends HTMLDialogElement {
+// An autonomous element wrapping a native <dialog>, rather than a customized
+// built-in (extends HTMLDialogElement), as WebKit doesn't support those
+export default class MsgDialog extends HTMLElement {
   static get observedAttributes() {
     return ['message', 'buttons'];
   }
@@ -74,6 +76,7 @@ export default class MsgDialog extends HTMLDialogElement {
   private buttonsEl!: HTMLElement;
   private inputEl!: HTMLInputElement;
   private innerEl!: HTMLElement;
+  private dialogEl!: HTMLDialogElement;
   private bodyId = `msg-dialog-body-${Math.random().toString(36).slice(2)}`;
   private resolve?: (value: MsgDialogResult) => void;
   private buttonLabels: ButtonLabels = { ok: 'OK' };
@@ -84,28 +87,30 @@ export default class MsgDialog extends HTMLDialogElement {
   constructor() {
     super();
 
-    this.appendChild(template.content.cloneNode(true));
+    this.dialogEl = h('dialog', { class: 'msgdialog' });
+    this.dialogEl.appendChild(template.content.cloneNode(true));
+    this.appendChild(this.dialogEl);
 
     // Style the dialog element itself
-    this.style.border = '1px solid #ababab';
-    this.style.borderRadius = '6px';
-    this.style.padding = '1rem';
-    this.style.background = '#f3f3f3';
-    this.style.color = '#000';
-    this.style.minWidth = '320px';
-    this.style.font = '13px "Segoe UI", Tahoma, Geneva, Verdana, sans-serif';
-    this.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.14)';
+    this.dialogEl.style.border = '1px solid #ababab';
+    this.dialogEl.style.borderRadius = '6px';
+    this.dialogEl.style.padding = '1rem';
+    this.dialogEl.style.background = '#f3f3f3';
+    this.dialogEl.style.color = '#000';
+    this.dialogEl.style.minWidth = '320px';
+    this.dialogEl.style.font = '13px "Segoe UI", Tahoma, Geneva, Verdana, sans-serif';
+    this.dialogEl.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.14)';
 
-    this.bodyEl = this.querySelector('.dialog-body') as HTMLElement;
-    this.inputEl = this.querySelector('.input-field') as HTMLInputElement;
-    this.buttonsEl = this.querySelector('.buttons') as HTMLElement;
-    this.innerEl = this.querySelector('.msg-dialog-inner') as HTMLElement;
+    this.bodyEl = this.dialogEl.querySelector('.dialog-body') as HTMLElement;
+    this.inputEl = this.dialogEl.querySelector('.input-field') as HTMLInputElement;
+    this.buttonsEl = this.dialogEl.querySelector('.buttons') as HTMLElement;
+    this.innerEl = this.dialogEl.querySelector('.msg-dialog-inner') as HTMLElement;
 
     this.loop = interactionManager.registerLoop(this.innerEl, { level: 2, modal: true });
 
     this.bodyEl.id = this.bodyId;
-    this.setAttribute('aria-describedby', this.bodyId);
-    this.setAttribute('role', 'alertdialog');
+    this.dialogEl.setAttribute('aria-describedby', this.bodyId);
+    this.dialogEl.setAttribute('role', 'alertdialog');
 
     this.inputEl.addEventListener('keydown', (event) => {
       if (event.key === 'Enter') {
@@ -114,11 +119,11 @@ export default class MsgDialog extends HTMLDialogElement {
       }
     });
 
-    this.addEventListener('close', () => {
+    this.dialogEl.addEventListener('close', () => {
       this.loop.deactivate({ source: 'programmatic' });
     });
 
-    this.addEventListener('cancel', (event) => {
+    this.dialogEl.addEventListener('cancel', (event) => {
       if (!this.buttonLabels.cancel) {
         event.preventDefault();
       } else {
@@ -188,7 +193,7 @@ export default class MsgDialog extends HTMLDialogElement {
   }
 
   private closeDialog(action: 'ok' | 'cancel', value?: string) {
-    if (!this.open || !this.resolve) {
+    if (!this.dialogEl.open || !this.resolve) {
       return;
     }
     const result: MsgDialogResult = action === 'cancel' 
@@ -196,11 +201,11 @@ export default class MsgDialog extends HTMLDialogElement {
       : { action: 'ok', value };
     const resolve = this.resolve;
     this.resolve = undefined;
-    this.close();
+    this.dialogEl.close();
     resolve(result);
   }
 
-  show(message?: string, buttons: ButtonLabels = { ok: 'OK' }, input?: string): Promise<MsgDialogResult> {
+  open(message?: string, buttons: ButtonLabels = { ok: 'OK' }, input?: string): Promise<MsgDialogResult> {
     if (message !== undefined) {
       this.message = message;
     }
@@ -209,12 +214,12 @@ export default class MsgDialog extends HTMLDialogElement {
     this.inputValue = input ?? '';
     this.render();
 
-    if (!document.body.contains(this)) {
+    if (!this.isConnected) {
       document.body.appendChild(this);
     }
 
-    if (!this.open) {
-      this.showModal();
+    if (!this.dialogEl.open) {
+      this.dialogEl.showModal();
       this.innerEl.focus();
     }
 
@@ -229,18 +234,16 @@ export default class MsgDialog extends HTMLDialogElement {
   }
 
   static async show(message: string, buttons: ButtonLabels = { ok: 'OK' }, input?: string): Promise<MsgDialogResult> {
-    let dialog = document.querySelector('dialog.msgdialog') as MsgDialog | null;
-    if (!dialog) {
-      dialog = document.createElement('dialog', { is: 'msg-dialog' }) as MsgDialog;
-      dialog.classList.add('msgdialog');
-    }
-    return dialog.show(message, buttons, input);
+    // constructed with new, rather than createElement(), because the
+    // constructor populates the element
+    let dialog = document.querySelector('msg-dialog') ?? new MsgDialog();
+    return dialog.open(message, buttons, input);
   }
 }
 
-customElements.define('msg-dialog', MsgDialog, { extends: 'dialog' });
+customElements.define('msg-dialog', MsgDialog);
 
 // Add global backdrop styling for the dialog
 const backdropStyle = document.createElement('style');
-backdropStyle.textContent = `dialog[is="msg-dialog"]::backdrop { background: rgba(0, 0, 0, 0.3); }`;
+backdropStyle.textContent = `msg-dialog > dialog::backdrop { background: rgba(0, 0, 0, 0.3); }`;
 document.head.appendChild(backdropStyle);
