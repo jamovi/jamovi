@@ -303,6 +303,14 @@ input, [contenteditable], [contenteditable] * {
     outline-width: 2px;
 }
 
+/* the svg carries its own selection ring, exactly as the image element does.
+   jamovi draws the grip itself rather than use a css `resize`, whose scroll
+   container would clip the ring -- see svg.ts */
+.jmv-results-svg .selectedable-result-item:focus {
+    outline-style: dashed;
+    outline-width: 2px;
+}
+
 .jmv-results-error {
     color: #AAAAAA ;
 }
@@ -579,6 +587,50 @@ table.row-selectable tr.selected th[scope=rowgroup] {
     max-height: 2000px;
     min-width: 50px;
     max-width: 2000px;
+}
+
+/* the svg the user selects is what the grip resizes, so it's what the grip
+   anchors to. the grip lives beside the module's markup rather than in it --
+   an html element can't live inside an svg, and the module's dom is the
+   module's -- and the anchor is scoped to the result, so each grip finds its
+   own svg */
+.jmv-results-svg {
+    anchor-scope: --jmv-results-svg;
+}
+
+.jmv-results-svg svg.selectedable-result-item {
+    anchor-name: --jmv-results-svg;
+}
+
+/* jamovi's own resize gripper, in place of the css `resize` the clip ruled
+   out. The glyph is chromium's own two-stroke corner, so a chart's grip and
+   an image's grip read as the same control. The z-index clears the focused
+   svg, which the selection rule lifts to 5000 and which would otherwise paint
+   its own opaque background over the grip; the min/max the css would have
+   given us are clamped in svg.ts instead. Shown only while the item is
+   selected, the same condition under which an image becomes resizable */
+.jmv-results-svg-grip {
+    position: absolute;
+    inset-inline-end: 0;
+    bottom: 0;
+    /* in the corner of the selection ring, which sits the 12px outline-offset
+       outside the svg. the anchor is named in each anchor() -- chromium
+       doesn't resolve it from position-anchor here. a browser without anchor
+       positioning keeps the result's corner, above */
+    inset-inline-end: calc(anchor(--jmv-results-svg end) - 7px);
+    bottom: calc(anchor(--jmv-results-svg bottom) - 7px);
+    width: 13px;
+    height: 13px;
+    display: none;
+    z-index: 5001;
+    cursor: nwse-resize;
+    background-repeat: no-repeat;
+    background-position: bottom right;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='11'><path d='M10 3 L3 10 M10 7 L7 10' stroke='%238a8a8a' stroke-width='1.4' stroke-linecap='round' fill='none'/></svg>");
+}
+
+.jmv-results-svg:has(svg.selectedable-result-item:focus) > .jmv-results-svg-grip {
+    display: block;
 }
 
 .jmv-results-image-status-indicator {

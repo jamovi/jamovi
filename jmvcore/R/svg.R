@@ -6,7 +6,9 @@ Svg <- R6::R6Class("Svg",
     private=list(
         .path=''),
     active=list(
-        path=function() private$.path
+        # not 'path', which would shadow ResultsElement$path -- the element's
+        # own path in the results tree. Image calls this $filePath too
+        filePath=function() private$.path
     ),
     public=list(
         setContent=function(content) {
