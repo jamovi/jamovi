@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
 
 import { createDoc, IDocItem, IDocOptions } from '../../odtify';
-import { IElement, IText, IImage, ITable, ICell, html2Chunks } from '../../hydrate';
+import { hydrate, IElement, IText, IImage, ITable, ICell, html2Chunks } from '../../hydrate';
 import { jmv, R } from '../../../references';
 
 
@@ -214,6 +214,19 @@ describe('odtify text', () => {
         expect(pkg.xml).not.toContain('Heading');
         expect(pkg.xml).toContain('text:style-name="Notice2"');
         expect(pkg.text).toContain('Warning');
+    });
+
+    it("keeps an html <pre>'s lines, blank lines and spacing (issue #1879)", async () => {
+        const text = hydrate({ name: 'h', visible: 0, html: { content:
+            '<pre>\nStudy       Estimate\nStudy A     1.23\n\nSummary\n</pre>' } }) as IText;
+        const pkg = await build([ text ]);
+        const lines = pkg.xml.match(/<text:p text:style-name="Preformatted">.*?<\/text:p>/g) || [];
+        expect(lines).toEqual([
+            '<text:p text:style-name="Preformatted">Study<text:s text:c="7"/>Estimate</text:p>',
+            '<text:p text:style-name="Preformatted">Study A<text:s text:c="5"/>1.23</text:p>',
+            '<text:p text:style-name="Preformatted"></text:p>',
+            '<text:p text:style-name="Preformatted">Summary</text:p>',
+        ]);
     });
 });
 

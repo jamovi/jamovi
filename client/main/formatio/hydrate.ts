@@ -158,6 +158,26 @@ export function hasAttr(item: ITextChunk | IParagraph, attr: string): boolean {
     return (item.attributes !== undefined && attr in item.attributes);
 }
 
+// a code block's chunks, split into lines at its newlines -- an html <pre>
+// arrives as a single paragraph with its newlines in the text, which a
+// destination whose paragraphs don't keep newlines (docx, odt) must make
+// a paragraph each (cf. issue #1879). a final newline ends the last line,
+// rather than beginning another, as in a browser
+export function codeLines(chunks: Array<ITextChunk>): Array<Array<ITextChunk>> {
+    const lines: Array<Array<ITextChunk>> = [ [] ];
+    for (const chunk of chunks) {
+        chunk.content.split('\n').forEach((content, i) => {
+            if (i > 0)
+                lines.push([]);
+            if (content !== '')
+                lines[lines.length - 1].push({ ...chunk, content });
+        });
+    }
+    if (lines.length > 1 && lines[lines.length - 1].length === 0)
+        lines.pop();
+    return lines;
+}
+
 export interface IHydrateOptions {
     address?: IAddress;
     values?: IOptionValues;

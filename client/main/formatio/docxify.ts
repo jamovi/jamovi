@@ -38,6 +38,7 @@ import { IPreformatted } from './hydrate';
 import { IText } from './hydrate';
 import { ITextChunk } from './hydrate';
 import { html2Chunks } from './hydrate';
+import { codeLines } from './hydrate';
 import { IReference } from '../references';
 import { referenceAsHTML } from '../references';
 
@@ -468,6 +469,13 @@ function generateText(text: IText, level: number, context: IContext): Array<File
             ordered = -1;
             if (attrs.indent)
                 Object.assign(props, { indent: { left: attrs.indent * 720 } });
+        }
+
+        // a paragraph doesn't keep its newlines; each line is one of its own
+        if (attrs.codeBlock && ! attrs.list) {
+            for (const line of codeLines(paragraph.chunks))
+                output.push(new Paragraph({ ...props, children: chunkRuns(line) }));
+            continue;
         }
 
         output.push(new Paragraph(props));

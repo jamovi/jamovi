@@ -31,6 +31,7 @@ import { IText } from './hydrate';
 import { ITextChunk } from './hydrate';
 import { IChunkAttributes } from './hydrate';
 import { html2Chunks } from './hydrate';
+import { codeLines } from './hydrate';
 import { referenceAsHTML } from '../references';
 
 import type { IDocItem, IDocOptions, IFigure, IFigureSource } from './docxify';
@@ -471,7 +472,10 @@ function generateText(text: IText, level: number, context: IContext): Array<stri
             align: attrs.align,
             marginLeftPt: attrs.indent ? attrs.indent * 36 : undefined,
         });
-        output.push(`<text:p text:style-name="${ styleName }">${ chunksXml(paragraph.chunks, context) }</text:p>`);
+        // a paragraph doesn't keep its newlines; each line is one of its own
+        const lines = attrs.codeBlock ? codeLines(paragraph.chunks) : [ paragraph.chunks ];
+        for (const line of lines)
+            output.push(`<text:p text:style-name="${ styleName }">${ chunksXml(line, context) }</text:p>`);
     }
 
     flushList();

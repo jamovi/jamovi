@@ -244,6 +244,16 @@ describe('docxify text', () => {
         expect((pkg.xml.match(/<w:pBdr>/g) || []).length).toBe(2);
         expect(pkg.text).toContain('Warning');
     });
+
+    it("keeps an html <pre>'s lines, blank lines and spacing (issue #1879)", async () => {
+        const text = hydrate({ name: 'h', visible: 0, html: { content:
+            '<pre>\nStudy       Estimate\nStudy A     1.23\n\nSummary\n</pre>' } }) as IText;
+        const pkg = await build([ text ]);
+        const lines = Array.from(pkg.document.getElementsByTagNameNS('*', 'p'))
+            .filter((p) => p.getElementsByTagNameNS('*', 'pStyle')[0]?.getAttribute('w:val') === 'Preformatted')
+            .map((p) => p.textContent);
+        expect(lines).toEqual([ 'Study       Estimate', 'Study A     1.23', '', 'Summary' ]);
+    });
 });
 
 describe('createDoc', () => {
