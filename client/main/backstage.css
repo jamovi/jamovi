@@ -613,40 +613,174 @@ body[dir="rtl"] .silky-bs-back-button > div {
     cursor: default ;
 }
 
-.silky-bs-fslist-entry-meta {
-    margin-top: 3px ;
-    font-size: 75% ;
-    display: grid ;
-    grid-template-columns: 1fr max-content max-content ;
+/* entries with descriptions (e.g. the data library): the name and tags sit on
+   one line, and the description is clamped to two lines and can be expanded */
+/* registered so it resolves to px on the row, and children inherit that rather
+   than re-resolving the em against their own font size */
+@property --silky-bs-fslist-row-height {
+    syntax: '<length>' ;
+    inherits: true ;
+    initial-value: 48px ;
+}
+
+.silky-bs-fslist-item.has-meta {
+    --silky-bs-fslist-row-height: calc(3.6em + 20px) ;
+    height: var(--silky-bs-fslist-row-height) ;
+    padding-block: 6px ;
+    box-shadow: inset 0 -1px 0 #E2E2E2 ;
+    overflow: hidden ;
+    transition: height 0.2s ease ;
+}
+
+.silky-bs-fslist-item.has-meta.expanded {
+    height: auto ;
+    min-height: var(--silky-bs-fslist-row-height) ;
+}
+
+/* pin the icon where it sits in a collapsed row (centred within the padding and
+   border), so it doesn't move when the row expands */
+.silky-bs-fslist-item.has-meta > .silky-bs-flist-item-icon {
+    align-self: flex-start ;
+    margin-top: calc((var(--silky-bs-fslist-row-height) - 16px - 40px) / 2) ;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .silky-bs-fslist-item.has-meta {
+        transition: none ;
+    }
+}
+
+.silky-bs-fslist-item > .silky-bs-fslist-entry-group {
+    flex: 1 1 auto ;
+    min-width: 0 ;
+    display: flex ;
+    flex-direction: column ;
+    justify-content: center ;
+    row-gap: 3px ;
+}
+
+/* when the row can expand, dock the content to the top so it doesn't move while
+   the row slides open or closed */
+.silky-bs-fslist-item.truncated > .silky-bs-fslist-entry-group,
+.silky-bs-fslist-item.expanded > .silky-bs-fslist-entry-group {
+    align-self: flex-start ;
+}
+
+.silky-bs-fslist-entry-meta:empty {
+    display: none ;
+}
+
+.silky-bs-fslist-entry-heading {
+    display: flex ;
     align-items: center ;
+    column-gap: 10px ;
+    line-height: 1.3 ;
 }
 
-.silky-bs-fslist-entry-meta .description {
-    grid-column: 1 / 3;
-    grid-row: 1;
-    color: #777777;
+/* the name keeps its full width, and the tags shrink to make room */
+.silky-bs-fslist-entry-heading > .silky-bs-fslist-entry-name {
+    flex: none ;
+    max-width: 100% ;
+    overflow: hidden ;
+    white-space: nowrap ;
+    text-overflow: ellipsis ;
 }
 
-.silky-bs-fslist-entry-meta .tags {
-    grid-column: 2 / 3;
-    grid-row: 1;
+.silky-bs-fslist-entry-heading > .tags {
+    flex: 0 1 auto ;
+    min-width: 0 ;
+    margin-inline-start: auto ;
+    display: flex ;
+    column-gap: 4px ;
+    overflow: hidden ;
+    font-size: 70% ;
+    line-height: 1.4 ;
 }
 
-.silky-bs-fslist-entry-meta .tag {
-    display: inline-block ;
-    padding: 2px 4px ;
-    /*border-radius: 2px ;*/
-    border-width: 1px ;
-    border-style: solid ;
-    margin: 2px ;
-    color: #FEFEFE ;
+.silky-bs-fslist-entry-heading .tag {
+    flex: 0 1 auto ;
+    min-width: 2.5em ;
+    padding: 1px 6px ;
+    border-radius: 2px ;
+    color: #FFFFFF ;
+    font-weight: 600 ;
+    letter-spacing: 0.02em ;
+    white-space: nowrap ;
+    overflow: hidden ;
+    text-overflow: ellipsis ;
+}
+
+.silky-bs-fslist-item > .silky-bs-fslist-entry-group > .silky-bs-fslist-entry-meta {
+    margin-top: 0px ;
+    font-size: 80% ;
+    line-height: 1.4 ;
+    color: #777777 ;
+    display: -webkit-box ;
+    -webkit-box-orient: vertical ;
+    -webkit-line-clamp: 2 ;
+    line-clamp: 2 ;
+    overflow: hidden ;
+}
+
+.silky-bs-fslist-item.expanded > .silky-bs-fslist-entry-group > .silky-bs-fslist-entry-meta {
+    display: block ;
+    -webkit-line-clamp: unset ;
+    line-clamp: none ;
 }
 
 .silky-bs-fslist-entry-meta .license {
-    grid-column: 3 / 3;
-    grid-row: 1;
+    color: #999999 ;
 }
 
+.silky-bs-fslist-entry-meta .description + .license::before {
+    content: ' \00B7  ' ;
+}
+
+/* negative margins keep the button from making the heading line any taller */
+.silky-bs-fslist-entry-expand {
+    flex: none ;
+    width: 22px ;
+    height: 22px ;
+    margin-block: -3px ;
+    margin-inline-start: -4px ;
+    padding: 0px ;
+    border: none ;
+    border-radius: 50% ;
+    background: transparent ;
+    color: #777777 ;
+    font-size: 16px ;
+    line-height: 22px ;
+    cursor: pointer ;
+    display: none ;
+}
+
+.silky-bs-fslist-item.truncated .silky-bs-fslist-entry-expand,
+.silky-bs-fslist-item.expanded .silky-bs-fslist-entry-expand {
+    display: block ;
+}
+
+.silky-bs-fslist-entry-expand:hover {
+    background-color: rgba(0, 0, 0, 0.08) ;
+    color: #333333 ;
+}
+
+.silky-bs-fslist-entry-expand > span {
+    display: inline-block ;
+    transition: transform 0.15s ;
+}
+
+.silky-bs-fslist-entry-expand[aria-expanded="true"] > span {
+    transform: rotate(180deg) ;
+}
+
+.silky-bs-fslist-entry-meta {
+    margin-top: 3px ;
+    font-size: 75% ;
+}
+
+.silky-bs-fslist-entry-meta .description {
+    color: #777777;
+}
 
 .silky-bs-fslist-entry-path {
     display: none ;
