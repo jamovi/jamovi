@@ -1067,7 +1067,10 @@ class ResultsPanel extends EventDistributor {
             // and survives a copy the same as a plain Image would
 
             const address = event.address.slice();
+            // syntax is copied only where the results view is showing it
+            const showSyntax = this.model.settings().get('syntaxMode');
             let html: string;
+            let text: string | undefined;
             let svg: string | undefined;
 
             if (address.length === 0) {
@@ -1076,7 +1079,7 @@ class ResultsPanel extends EventDistributor {
                 for (const item of items)
                     await this._fillImages(item.element);
                 const showRefs = this.model.settings().getSetting('refsMode', 'bottom') !== 'hidden';
-                html = createHtmlDoc(items, { references, showRefs });
+                html = createHtmlDoc(items, { references, showRefs, showSyntax });
             }
             else {
                 // a single analysis, or an element/group within one
@@ -1104,10 +1107,15 @@ class ResultsPanel extends EventDistributor {
                     await this._fillImages(hydrated);
                 }
 
-                html = htmlify(hydrated);
+                html = htmlify(hydrated, { showSyntax });
+
+                // a lone preformatted (the syntax, say) is offered as its
+                // plain text too, so it pastes cleanly into an editor
+                if (hydrated.type === 'preformatted')
+                    text = hydrated.content;
             }
 
-            await host.copyToClipboard({ html, text: html, svg });
+            await host.copyToClipboard({ html, text: text ?? html, svg });
 
             let note = new Notify({
                 title: _('Copied'),
