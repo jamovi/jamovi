@@ -675,6 +675,7 @@ table.row-selectable tr.selected th[scope=rowgroup] {
 
 .jmv-results-html {
     width: 500px ;
+    min-width: min-content ;
 }
 
 .jmv-results-html .content {
@@ -683,6 +684,7 @@ table.row-selectable tr.selected th[scope=rowgroup] {
 
 .jmv-results-text {
     width: 500px ;
+    min-width: min-content ;
 }
 
 .jmv-results-text .content {
