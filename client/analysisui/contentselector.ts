@@ -181,7 +181,7 @@ export class ContentSelector extends OptionControl<ContentSelectorProperties> {
                         tab.classList.add('selected-tab');
                     break;
                 default:
-                    if (this.tablist instanceof HTMLInputElement)
+                    if (this.tablist instanceof HTMLSelectElement)
                         this.tablist.value = value;
                     break;
             }
