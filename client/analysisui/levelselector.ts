@@ -64,6 +64,7 @@ export class LevelSelector extends OptionControl<LevelSelectorProperties> {
         let label = this.getPropertyValue('label');
         if (label === null)
             label = '';
+        label = this.translate(label);
 
         let columnUsed = 0;
         let cell = null;
