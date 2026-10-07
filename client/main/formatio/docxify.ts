@@ -531,8 +531,14 @@ function chunkRuns(chunks: Array<ITextChunk>, base: IRunOptions = {}): Array<Par
 }
 
 // utf-8 text as base64
+// (converted in chunks, as spreading a large svg's bytes into a single
+// call exceeds the engine's limit on arguments)
 function base64(text: string): string {
-    return btoa(String.fromCharCode(...new TextEncoder().encode(text)));
+    const bytes = new TextEncoder().encode(text);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000)
+        binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    return btoa(binary);
 }
 
 function hexColor(color?: string): string | undefined {

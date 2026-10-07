@@ -31,6 +31,7 @@ interface IPackage {
     xml: string;          // word/document.xml, as text
     text: string;         // all the document's text
     files: Array<string>;
+    zip: JSZip;
 }
 
 // builds the document, and takes it apart again
@@ -45,7 +46,7 @@ async function build(items: Array<IDocItem | IElement>, options?: IDocOptions): 
     if (error)
         throw new Error(error.textContent || 'parse error');
     const text = Array.from(document.getElementsByTagNameNS('*', 't')).map((t) => t.textContent).join('');
-    return { document, xml, text, files: Object.keys(zip.files) };
+    return { document, xml, text, files: Object.keys(zip.files), zip };
 }
 
 describe('docxify tables', () => {
@@ -165,6 +166,16 @@ describe('docxify figures', () => {
         expect(pkg.files.some((f) => f.endsWith('.svg'))).toBe(true);
         expect(pkg.files.some((f) => f.endsWith('.png'))).toBe(true);
         expect(pkg.xml).toContain('asvg:svgBlip');
+    });
+
+    it('embeds a large svg intact', async () => {
+        // well beyond the engine's limit on function arguments
+        const circles = '<circle cx="5" cy="5" r="4"/>'.repeat(20000);
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"><title>µ ≤ σ</title>${ circles }</svg>`;
+        const figures = async () => ({ png: PNG, svg });
+        const pkg = await build([ figure('3/main/plot') ], { figures });
+        const name = pkg.files.find((f) => f.endsWith('.svg'))!;
+        expect(await pkg.zip.file(name)!.async('string')).toBe(svg);
     });
 
     it('leaves a note where the figure could not be had', async () => {
