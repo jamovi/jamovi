@@ -6,6 +6,10 @@
     border-bottom: 1px solid #bdbbbb;
 }
 
+.jmv-content-selector[form="listbox"] .selector-body {
+    border-bottom: none;
+}
+
 .tablist button {
     border: none;
     padding: 6px;
