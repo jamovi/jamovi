@@ -45,6 +45,8 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
     filterExtensions: string[];
     keyTipPath: string;
     initialised = false;
+    _resizeObserver: ResizeObserver | null = null;
+    _entryAnimationEnd = new WeakMap<HTMLElement, () => void>();
 
     constructor(model: FSEntryListModel) {
         super();
@@ -73,7 +75,8 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
             'focus .silky-bs-fslist-browser-import-name' : this._nameGotFocus,
             'focus .silky-bs-fslist-browser-import-filetype' : this._focusChanged,
             'input .search' : this._searchChanged,
-            'click .jmv-bs-fslist-checkbox': this._checkclicked
+            'click .jmv-bs-fslist-checkbox': this._checkclicked,
+            'click .silky-bs-fslist-entry-expand': this._expandClicked
         });
 
         this.model = model;
@@ -91,12 +94,79 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
 
         this.innerHTML = '';
         this._createHeader();
+
+        this._resizeObserver = new ResizeObserver(() => this._updateTruncatedEntries());
+        this._resizeObserver.observe(this.itemsList);
+
         this._render();
     }
 
     disconnectedCallback() {
         this.model.off('change:items change:dirInfo change:status', this._render, this);
         this.model.off('change:suggestedPath', this._suggestedChanged, this);
+
+        this._resizeObserver?.disconnect();
+        this._resizeObserver = null;
+    }
+
+    // only offer to expand descriptions that are actually cut off
+    private _updateTruncatedEntries() {
+        const items = Array.from(this.itemsList.querySelectorAll<HTMLElement>('.silky-bs-fslist-item.has-meta:not(.expanded)'));
+        const truncated = items.map(item => {
+            const meta = item.querySelector<HTMLElement>('.silky-bs-fslist-entry-meta');
+            return meta !== null && meta.scrollHeight > meta.clientHeight + 1;
+        });
+        items.forEach((item, i) => item.classList.toggle('truncated', truncated[i]));
+    }
+
+    private _expandClicked(event: MouseEvent) {
+        const button = (event.target as HTMLElement).closest<HTMLElement>('.silky-bs-fslist-entry-expand');
+        const item = button?.closest<HTMLElement>('.silky-bs-fslist-item');
+        if ( ! button || ! item)
+            return;
+        const expand = button.getAttribute('aria-expanded') !== 'true';
+        button.setAttribute('aria-expanded', expand ? 'true' : 'false');
+        button.setAttribute('aria-label', expand ? _('Hide full description') : _('Show full description'));
+        this._animateEntryHeight(item, expand);
+    }
+
+    // height can't transition to or from auto, so slide between measured heights
+    private _animateEntryHeight(item: HTMLElement, expand: boolean) {
+        const from = item.offsetHeight;
+
+        // measure both heights with transitions off
+        item.style.transition = 'none';
+        item.style.height = '';
+        item.classList.remove('expanded');
+        const collapsedHeight = item.offsetHeight;
+        // the description stays unclamped while sliding, and is clamped again once a collapse finishes
+        item.classList.add('expanded');
+        const expandedHeight = item.offsetHeight;
+        const to = expand ? expandedHeight : collapsedHeight;
+
+        item.style.height = `${ from }px`;
+        item.offsetHeight; // force layout so the transition starts from 'from'
+        item.style.transition = '';
+
+        this._entryAnimationEnd.get(item)?.();
+        const finish = () => {
+            item.removeEventListener('transitionend', onEnd);
+            this._entryAnimationEnd.delete(item);
+            item.style.height = '';
+            item.classList.toggle('expanded', expand);
+        };
+        const onEnd = (event: TransitionEvent) => {
+            if (event.target === item && event.propertyName === 'height')
+                finish();
+        };
+
+        if (from === to || parseFloat(getComputedStyle(item).transitionDuration) === 0) {
+            finish();
+            return;
+        }
+        this._entryAnimationEnd.set(item, () => item.removeEventListener('transitionend', onEnd));
+        item.addEventListener('transitionend', onEnd);
+        item.style.height = `${ to }px`;
     }
 
     private _checkclicked(event) {
@@ -129,6 +199,8 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
     }
 
     private _listPointerDown(event) {
+        if (event.target.closest('.silky-bs-fslist-entry-expand'))
+            return;
         this._clickedItem = document.elementFromPoint(event.pageX, event.pageY).closest('.silky-bs-fslist-item');
         if (this._clickedItem) {
             let fromChecked = event.target.classList.contains('jmv-bs-fslist-checkbox') && !event.target.getAttribute('checked');
@@ -622,25 +694,27 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
                 itemElement.append(itemIcon);
 
                 if (item.description || item.tags || item.license) {
-                    let itemGroup = h('div', { id: labelId, class: 'silky-bs-fslist-entry-group' },
+                    let itemHeading = h('div', { class: 'silky-bs-fslist-entry-heading' },
                         h('div', { class: 'silky-bs-fslist-entry-name' }, name));
-                    let itemMeta = h('div', { class: 'silky-bs-fslist-entry-meta' });
-                    if (item.description) {
-                        itemMeta.append(h('span', { class: 'description' }, item.description));
-                    }
                     if (item.tags) {
                         let tags = h('div', { class: 'tags' });
                         for (let tag of item.tags) {
                             let hue = crc16(tag) % 360;
-                            tags.append(h('div', { class: 'tag', style: `background-color: hsl(${ hue }, 70%, 45%); border-color: hsl(${ hue }, 70%, 45%);` }, tag));
+                            tags.append(h('div', { class: 'tag', style: `background-color: hsl(${ hue }, 70%, 45%);` }, tag));
                         }
-                        itemMeta.append(tags);
+                        itemHeading.append(tags);
+                    }
+                    let itemMeta = h('div', { class: 'silky-bs-fslist-entry-meta' });
+                    if (item.description) {
+                        itemMeta.append(h('span', { class: 'description' }, item.description));
                     }
                     if (item.license) {
-                        itemMeta.append(h('div', { class: 'license' }, `Licensed ${item.license}`));
+                        itemMeta.append(h('span', { class: 'license' }, `Licensed ${item.license}`));
                     }
-                    itemGroup.append(itemMeta);
-                    itemElement.append(itemGroup);
+                    itemHeading.append(h('button', { class: 'silky-bs-fslist-entry-expand', type: 'button', tabindex: '-1', 'aria-expanded': 'false', 'aria-label': _('Show full description') },
+                        h('span', { class: 'mif-expand-more' })));
+                    itemElement.append(h('div', { id: labelId, class: 'silky-bs-fslist-entry-group' }, itemHeading, itemMeta));
+                    itemElement.classList.add('has-meta');
                 }
                 else {
                     itemElement.append(h('div', { class: 'silky-bs-fslist-entry-name' }, name));
@@ -672,6 +746,7 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
             else {
                 this.itemsList.setAttribute('tabindex', '0');
                 this._setSelection(this.items[0]);
+                this._updateTruncatedEntries();
             }
         }
         keyTips.update({ keyTipPath: this.keyTipPath, silent: true});
@@ -998,6 +1073,8 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
     }
 
     private _itemDoubleClicked(event: MouseEvent) {
+        if ((event.target as HTMLElement).closest('.silky-bs-fslist-entry-expand'))
+            return;
         let target = event.currentTarget as HTMLElement;
         const itemTypeStr = target.dataset.type;
         let itemType = itemTypeStr !== undefined ? parseInt(itemTypeStr, 10) as FSItemType : undefined;
