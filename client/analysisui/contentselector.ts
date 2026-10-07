@@ -77,7 +77,7 @@ export class ContentSelector extends OptionControl<ContentSelectorProperties> {
 
         this.tablist = null;
         if (form === 'listbox') {
-            this.tablist = h('select', attrs({ "aria-labelledby": this.labelId, name: name }));
+            this.tablist = h('select', attrs({ class: 'silky-option-input silky-option-combo-input', "aria-labelledby": this.labelId, name: name }));
             this.tablist.addEventListener('change', (event) => {
                 this.setValue((this.tablist as HTMLInputElement).value);
             });
