@@ -60,8 +60,6 @@ Html <- R6::R6Class("Html",
             private$.stale <- FALSE
         },
         setStylesheets=function(stylesheets) {
-            package <- self$analysis$package
-            stylesheets <- paste0(package, "/", stylesheets)
             private$.stylesheets <- stylesheets
             private$.stale <- FALSE
         },
