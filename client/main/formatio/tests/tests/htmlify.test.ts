@@ -250,6 +250,26 @@ describe('htmlify text', () => {
         expect(doc.body.textContent).toContain('bold and a link');
     });
 
+    it('joins the lines of a code block into a single <pre>', () => {
+        const code = (content: string) => ({ chunks: content ? [ { content } ] : [], attributes: { codeBlock: true } });
+        const text: IText = {
+            type: 'text',
+            paragraphs: [
+                code('x <- 1'),
+                code(''),
+                code('y <- 2'),
+                { chunks: [ { content: 'between' } ] },
+                code('z <- 3'),
+            ],
+        };
+        const doc = build(text);
+        const pres = doc.querySelectorAll('pre');
+        expect(pres.length).toBe(2);
+        expect(pres[0].textContent).toBe('x <- 1\n\ny <- 2');
+        expect(pres[0].querySelector('br')).toBeNull();
+        expect(pres[1].textContent).toBe('z <- 3');
+    });
+
     it('keeps a notice together in a box, with its title', () => {
         const text: IText = {
             type: 'text',

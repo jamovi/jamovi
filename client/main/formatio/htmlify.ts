@@ -438,8 +438,19 @@ function generateText(text: IText, parent: HTMLElement, level: number, context: 
     // its nesting depth, so a deeper item opens a list inside the last item
     const lists: Array<HTMLElement> = [];
 
+    // the code block currently open. quill makes each line of a code block
+    // a paragraph of its own; they're joined back into the one <pre>, as a
+    // <pre> each pastes with a blank line (its margins) between every line
+    let pre: HTMLElement | null = null;
+
     for (const paragraph of text.paragraphs) {
         const attrs = paragraph.attributes || {};
+
+        if (attrs.codeBlock && ! attrs.list && pre !== null) {
+            pre.append('\n', ...chunkNodes(paragraph.chunks));
+            continue;
+        }
+        pre = null;
 
         if (attrs.list) {
             const depth = (attrs.indent || 0) + 1;
@@ -472,7 +483,7 @@ function generateText(text: IText, parent: HTMLElement, level: number, context: 
             el = heading('', level + attrs.header - 1);
         }
         else if (attrs.codeBlock) {
-            el = document.createElement('pre');
+            el = pre = document.createElement('pre');
             el.style.fontFamily = MONO;
         }
         else {
@@ -481,7 +492,7 @@ function generateText(text: IText, parent: HTMLElement, level: number, context: 
 
         if (paragraph.chunks.length > 0)
             el.append(...chunkNodes(paragraph.chunks));
-        else
+        else if ( ! attrs.codeBlock)
             el.appendChild(document.createElement('br'));  // a blank line
         if (attrs.align)
             el.style.textAlign = attrs.align;
