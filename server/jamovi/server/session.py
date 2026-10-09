@@ -320,6 +320,8 @@ class Session(dict):
         except ValueError:
             AUTOSAVE_ACTIVE = None
 
+        AUTOSAVE = AUTOSAVE_IDLE is not None or AUTOSAVE_ACTIVE is not None
+
         now = monotonic()
 
         session_start_time = now
@@ -407,10 +409,11 @@ class Session(dict):
                                       '(unclean=%s, virgin=%s)',
                                       id, no_conn_for, status.unclean, status.virgin)
 
-                            try:
-                                await instance.autosave()
-                            except Exception as e:
-                                log.exception(e)
+                            if AUTOSAVE:
+                                try:
+                                    await instance.autosave()
+                                except Exception as e:
+                                    log.exception(e)
 
                             self._notify_session_event(SessionEvent.Type.INSTANCE_ENDED, id)
                             instance.close()
