@@ -587,14 +587,14 @@ function formatTableRow(row: IRow, colLength: Array<number>, colAlign: Array<str
         else {
             crrCll = '~';
         }
-        addSpc = colLength[i] - crrCll.length;
+        addSpc = Math.max(0, colLength[i] - crrCll.length);
         if (colAlign[i] === 'l') {
             cells.push(crrCll + ' '.repeat(addSpc));
         }
         else if (colAlign[i] === 'r') {
             cells.push(' '.repeat(addSpc) + crrCll);
         }
-        else if (colAlign[i] === 'r') {
+        else {
             cells.push(' '.repeat(Math.ceil(addSpc / 2)) + crrCll +
                        ' '.repeat(Math.floor(addSpc / 2)));
         }
