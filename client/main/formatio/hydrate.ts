@@ -634,10 +634,14 @@ function deriveElementAttrs(element: Element, inline: IChunkAttributes, block: I
                     block.indent = indent;
             }
             else if (property === 'color') {
-                inline.color = rgb2Hex(value);
+                const color = rgb2Hex(value);
+                if (color)
+                    inline.color = color;
             }
             else if (property === 'background-color') {
-                inline.background = rgb2Hex(value);
+                const background = rgb2Hex(value);
+                if (background)
+                    inline.background = background;
             }
         }
     }
@@ -897,10 +901,26 @@ function html2Table(tableEl: Element): ITable {
     return { type: 'table', title: '', rows, nCols };
 }
 
-function rgb2Hex(rgb: string): string {
-    if (rgb.startsWith('#'))
-        return rgb;
-    return '#' + Array.from(rgb.match(/[0-9]+/g) || []).map(c => parseInt(c).toString(16).padStart(2, '0')).join('');
+// converts a css colour to #rrggbb, or undefined for one that can't be
+// represented that way (transparent, named colours, inherit, etc.)
+function rgb2Hex(rgb: string): string | undefined {
+    if ( ! rgb)
+        return undefined;
+    rgb = rgb.trim();
+    let m = rgb.match(/^#([0-9a-f]{6})$/i);
+    if (m)
+        return '#' + m[1].toLowerCase();
+    m = rgb.match(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i);
+    if (m)
+        return '#' + (m[1] + m[1] + m[2] + m[2] + m[3] + m[3]).toLowerCase();
+    m = rgb.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([0-9.]+%?)\s*)?\)$/i);
+    if ( ! m)
+        return undefined;
+    if (m[4] !== undefined && parseFloat(m[4]) === 0)
+        return undefined;  // fully transparent
+    return '#' + [ m[1], m[2], m[3] ]
+        .map(c => Math.min(255, parseInt(c)).toString(16).padStart(2, '0'))
+        .join('');
 }
 
 // table text (titles, values, notes) can carry inline html; it's parsed once

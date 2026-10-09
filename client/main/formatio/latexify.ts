@@ -529,15 +529,14 @@ function replace4LaTeX(content: string): string {
     return rmDblDollar(content);
 }
 
-// format color hex codes to be compatible with LaTeX
-function formatRGB(content: string): string {
-    if (content === content.match(/^#[0-f]{6}$/)[0]) {
-        content = [(parseInt(content.slice(1, 3), 16) / 255).toFixed(2),
-                   (parseInt(content.slice(3, 5), 16) / 255).toFixed(2),
-                   (parseInt(content.slice(5, 7), 16) / 255).toFixed(2)].join(', ');
-    }
-
-    return content;
+// format color hex codes to be compatible with LaTeX, or undefined if the
+// color isn't a hex code
+function formatRGB(content: string): string | undefined {
+    if ( ! /^#[0-9a-fA-F]{6}$/.test(content))
+        return undefined;
+    return [(parseInt(content.slice(1, 3), 16) / 255).toFixed(2),
+            (parseInt(content.slice(3, 5), 16) / 255).toFixed(2),
+            (parseInt(content.slice(5, 7), 16) / 255).toFixed(2)].join(', ');
 }
 
 // format a superTitle row
@@ -665,11 +664,13 @@ function formatAttr(chunk: ITextChunk): string {
     if (hasAttr(chunk, 'script') && chunk.attributes.script === 'sub') {
         output = '$_{' + output + '}$';
     }
-    if (hasAttr(chunk, 'color')) {
-        output = '\\textcolor[rgb]{' + formatRGB(chunk.attributes.color) + '}{' + output + '}';
+    const color = hasAttr(chunk, 'color') ? formatRGB(chunk.attributes.color) : undefined;
+    if (color) {
+        output = '\\textcolor[rgb]{' + color + '}{' + output + '}';
     }
-    if (hasAttr(chunk, 'background')) {
-        output = '\\colorbox[rgb]{' + formatRGB(chunk.attributes.background) + '}{' + output + '}';
+    const background = hasAttr(chunk, 'background') ? formatRGB(chunk.attributes.background) : undefined;
+    if (background) {
+        output = '\\colorbox[rgb]{' + background + '}{' + output + '}';
     }
 
     return rmDblDollar(output);
