@@ -94,6 +94,8 @@ interface IContext {
     cellStyles: IStylePool;
     tableN: number;
     frameN: number;
+    // the figures' pngs, stored as files in the package (under Pictures/)
+    pictures: Array<{ path: string, data: Uint8Array | ArrayBuffer }>;
 }
 
 export async function createDoc(items: Array<IDocItem>, options?: IDocOptions): Promise<ArrayBuffer> {
@@ -113,6 +115,7 @@ export async function createDoc(items: Array<IDocItem>, options?: IDocOptions): 
         cellStyles: newPool('TC'),
         tableN: 0,
         frameN: 0,
+        pictures: [],
     };
 
     const body: Array<string> = [];
@@ -134,10 +137,12 @@ export async function createDoc(items: Array<IDocItem>, options?: IDocOptions): 
     // the mimetype entry must be first, and stored (not deflated) -- it's
     // how a bare file-type sniff recognises an ODF package
     zip.file('mimetype', 'application/vnd.oasis.opendocument.text', { compression: 'STORE' });
-    zip.file('META-INF/manifest.xml', MANIFEST_XML);
+    zip.file('META-INF/manifest.xml', buildManifestXml(context.pictures.map((picture) => picture.path)));
     zip.file('meta.xml', META_XML);
     zip.file('styles.xml', STYLES_XML);
     zip.file('content.xml', contentXml);
+    for (const picture of context.pictures)
+        zip.file(picture.path, picture.data);
 
     return await zip.generateAsync({ type: 'arraybuffer' });
 }
@@ -222,9 +227,15 @@ async function generateFigure(figure: IImage, context: IContext): Promise<Array<
     width = round2(width * scale);
     height = round2(height * scale);
 
-    const name = escAttr(figure.title || 'Figure') + ' ' + ( ++context.frameN );
+    const n = ++context.frameN;
+    const name = escAttr(figure.title || 'Figure') + ' ' + n;
+    // the png is stored as its own file in the package, rather than inline
+    // as office:binary-data -- Word doesn't support the latter, and shows
+    // 'the picture can't be displayed' (LibreOffice manages either)
+    const path = `Pictures/image${ n }.png`;
+    context.pictures.push({ path, data: data.png });
     const frame = `<draw:frame text:anchor-type="as-char" draw:style-name="Fr" draw:name="${ name }" svg:width="${ width }pt" svg:height="${ height }pt">` +
-        `<draw:image xlink:href="" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"><office:binary-data>${ base64Bytes(data.png) }</office:binary-data></draw:image></draw:frame>`;
+        `<draw:image xlink:href="${ path }" xlink:type="simple" xlink:show="embed" xlink:actuate="onLoad"/></draw:frame>`;
 
     output.push(`<text:p>${ frame }</text:p>`);
     output.push(...refNumbers(figure.refs, context));
@@ -661,17 +672,6 @@ function chunkXml(chunk: ITextChunk, context: IContext): string {
     return `<text:span text:style-name="${ id }">${ body }</text:span>`;
 }
 
-// utf-8 bytes as base64, chunked so a large image doesn't overflow the call
-// stack via String.fromCharCode(...bytes)
-function base64Bytes(data: Uint8Array | ArrayBuffer): string {
-    const bytes = (data instanceof Uint8Array) ? data : new Uint8Array(data);
-    const CHUNK = 0x8000;
-    let binary = '';
-    for (let i = 0; i < bytes.length; i += CHUNK)
-        binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-    return btoa(binary);
-}
-
 function hexColor(color?: string): string | undefined {
     if ( ! color)
         return undefined;
@@ -814,10 +814,15 @@ const META_XML = '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<office:meta><meta:generator>jamovi</meta:generator><dc:creator>jamovi</dc:creator></office:meta>' +
     '</office:document-meta>';
 
-const MANIFEST_XML = '<?xml version="1.0" encoding="UTF-8"?>\n' +
-    '<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.3">' +
-    '<manifest:file-entry manifest:full-path="/" manifest:version="1.3" manifest:media-type="application/vnd.oasis.opendocument.text"/>' +
-    '<manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>' +
-    '<manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>' +
-    '<manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>' +
-    '</manifest:manifest>';
+// every file in the package (bar the mimetype and the manifest itself) must
+// be listed, pictures included
+function buildManifestXml(pictures: Array<string>): string {
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+        '<manifest:manifest xmlns:manifest="urn:oasis:names:tc:opendocument:xmlns:manifest:1.0" manifest:version="1.3">' +
+        '<manifest:file-entry manifest:full-path="/" manifest:version="1.3" manifest:media-type="application/vnd.oasis.opendocument.text"/>' +
+        '<manifest:file-entry manifest:full-path="content.xml" manifest:media-type="text/xml"/>' +
+        '<manifest:file-entry manifest:full-path="styles.xml" manifest:media-type="text/xml"/>' +
+        '<manifest:file-entry manifest:full-path="meta.xml" manifest:media-type="text/xml"/>' +
+        pictures.map((path) => `<manifest:file-entry manifest:full-path="${ path }" manifest:media-type="image/png"/>`).join('') +
+        '</manifest:manifest>';
+}

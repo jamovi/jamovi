@@ -23,6 +23,8 @@ interface IPackage {
     text: string;         // all the document's text
     files: Array<string>;
     mimetype: string;
+    manifest: string;     // META-INF/manifest.xml, as text
+    zip: JSZip;
 }
 
 // builds the document, and takes it apart again
@@ -32,6 +34,7 @@ async function build(items: Array<IDocItem | IElement>, options?: IDocOptions): 
     const zip = await JSZip.loadAsync(bytes);
     const xml = await zip.file('content.xml')!.async('string');
     const mimetype = await zip.file('mimetype')!.async('string');
+    const manifest = await zip.file('META-INF/manifest.xml')!.async('string');
     // the document must be well-formed xml, or LibreOffice refuses to open it
     const document = new DOMParser().parseFromString(xml, 'application/xml');
     const error = document.querySelector('parsererror');
@@ -40,7 +43,7 @@ async function build(items: Array<IDocItem | IElement>, options?: IDocOptions): 
     const text = Array.from(document.getElementsByTagNameNS('*', 'p'))
         .concat(Array.from(document.getElementsByTagNameNS('*', 'h')))
         .map((p) => p.textContent).join('');
-    return { document, xml, text, files: Object.keys(zip.files), mimetype };
+    return { document, xml, text, files: Object.keys(zip.files), mimetype, manifest, zip };
 }
 
 describe('odtify tables', () => {
@@ -142,11 +145,27 @@ describe('odtify figures', () => {
     it('embeds the png from the figure source, scaled to the page', async () => {
         const figures = async () => ({ png: PNG });
         const pkg = await build([ figure('3/main/plot') ], { figures });
-        expect(pkg.xml).toContain('office:binary-data');
+        // stored as a file in the package, not inline as office:binary-data
+        // -- Word can't display the latter
+        expect(pkg.xml).not.toContain('office:binary-data');
+        expect(pkg.xml).toContain('xlink:href="Pictures/image1.png"');
+        expect(pkg.files).toContain('Pictures/image1.png');
+        const stored = await pkg.zip.file('Pictures/image1.png')!.async('uint8array');
+        expect(Buffer.from(stored).equals(PNG)).toBe(true);
+        expect(pkg.manifest).toContain('manifest:full-path="Pictures/image1.png" manifest:media-type="image/png"');
         // scaled to the text width (451.3pt), keeping its aspect
         expect(pkg.xml).toContain('svg:width="451.3pt" svg:height="225.65pt"');
         expect(pkg.text).toContain('A plot');
         expect(pkg.text).not.toContain('Figure 1');
+    });
+
+    it('gives each figure its own picture file', async () => {
+        const figures = async () => ({ png: PNG });
+        const pkg = await build([ figure('3/main/plot'), figure('4/main/plot') ], { figures });
+        expect(pkg.xml).toContain('xlink:href="Pictures/image1.png"');
+        expect(pkg.xml).toContain('xlink:href="Pictures/image2.png"');
+        expect(pkg.files).toContain('Pictures/image2.png');
+        expect(pkg.manifest).toContain('manifest:full-path="Pictures/image2.png"');
     });
 
     it('leaves a note where the figure could not be exported', async () => {
