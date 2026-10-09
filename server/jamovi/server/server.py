@@ -29,6 +29,8 @@ from .exceptions import FileExistsException, UserException
 
 log = logging.getLogger(__name__)
 
+CLIENT_MAX_SIZE = 100 * 1024 * 1024
+
 
 access_key = conf.get('access_key', None)
 access_key_generated = False
@@ -837,7 +839,7 @@ class Server:
         handlers = _Handlers(self._session, client_path, assets_path, i18n_path,
                              self._dev_server, cache_headers, self)
 
-        main_app = web.Application()
+        main_app = web.Application(client_max_size=CLIENT_MAX_SIZE)
         handlers.add_main_routes(main_app.router)
 
         try:
@@ -847,10 +849,10 @@ class Server:
         except ImportError:
             pass
 
-        analysisui_app = web.Application()
+        analysisui_app = web.Application(client_max_size=CLIENT_MAX_SIZE)
         handlers.add_analysisui_routes(analysisui_app.router)
 
-        resultsview_app = web.Application()
+        resultsview_app = web.Application(client_max_size=CLIENT_MAX_SIZE)
         handlers.add_resultsview_routes(resultsview_app.router)
 
         runners: list[web.AppRunner] = []
@@ -867,7 +869,7 @@ class Server:
             port_c = int(runners[2].addresses[0][1])
 
         elif separate_by == 'path':
-            root_app = web.Application()
+            root_app = web.Application(client_max_size=CLIENT_MAX_SIZE)
             root_app.add_subapp(path_a + '/', main_app)
             root_app.add_subapp(path_b + '/', analysisui_app)
             root_app.add_subapp(path_c + '/', resultsview_app)
@@ -878,7 +880,7 @@ class Server:
             port_a = port_b = port_c = int(runner.addresses[0][1])
 
         else:  # separate_by == 'host'
-            dispatch_app = web.Application(middlewares=[
+            dispatch_app = web.Application(client_max_size=CLIENT_MAX_SIZE, middlewares=[
                 make_host_dispatch_middleware({
                     host_a: main_app,
                     host_b: analysisui_app,
