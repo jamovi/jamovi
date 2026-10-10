@@ -171,15 +171,6 @@ class Option<T=any> {
         }
     }
 
-    clearColumnUse(columnName: string) {
-        if (this._isLeaf)
-            this._onClearColumnUse(columnName);
-        else {
-            for (let i = 0; i < this.children.length; i++)
-                this.children[i].clearColumnUse(columnName);
-        }
-    }
-
     _onGetAssignedColumns() {
         return [];
     }
@@ -187,8 +178,6 @@ class Option<T=any> {
     _onGetAssignedOutputs() {
         return [];
     }
-
-    _onClearColumnUse(columnName: string) {  };
 
     _onRenameColumn(oldName: string, newName: string) {  };
 
@@ -230,11 +219,6 @@ class Variable extends Option<string> {
         super(template, value, true);
     }
 
-    override _onClearColumnUse(columnName) {
-        if (this._value === columnName)
-            this._value = null;
-    }
-
     override _onGetAssignedColumns() {
         if (this._value !== null)
             return [ this._value ];
@@ -260,17 +244,6 @@ class Variables extends Option<string[]> {
 
         r = [...new Set(r)];
         return r;
-    }
-
-    override _onClearColumnUse(columnName: string) {
-        if (this._value !== null) {
-            for (let i = 0; i < this._value.length; i++) {
-                if (this._value[i] === columnName) {
-                    this._value.splice(i, 1);
-                    i -= 1;
-                }
-            }
-        }
     }
 
     override _onRenameColumn(oldName: string, newName: string) {
@@ -327,20 +300,6 @@ class Terms extends Option<string[][]> {
         return t;
     }
 
-    override _onClearColumnUse(columnName: string) {
-        if (this._value !== null) {
-            for (let i = 0; i < this._value.length; i++) {
-                for (let j = 0; j < this._value[i].length; j++) {
-                    if (this._value[i][j] === columnName) {
-                        this._value.splice(i, 1);
-                        i -= 1;
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
     override _onRenameColumn(oldName: string, newName: string) {
         if (this._value !== null) {
             for (let i = 0; i < this._value.length; i++) {
@@ -366,17 +325,6 @@ class Term extends Option<string[]> {
 
         r = [...new Set(r)];
         return r;
-    }
-
-    override _onClearColumnUse(columnName: string) {
-        if (this._value !== null) {
-            for (let i = 0; i < this._value.length; i++) {
-                if (this._value[i] === columnName) {
-                    this._value = null;
-                    return;
-                }
-            }
-        }
     }
 
     override _onRenameColumn(oldName: string, newName: string) {
@@ -407,23 +355,6 @@ class Pairs extends Option<{i1: string, i2: string}[]> {
 
         r = [...new Set(r)];
         return r;
-    }
-
-    override _onClearColumnUse(columnName: string) {
-        if (this._value !== null) {
-            for (let i = 0; i < this._value.length; i++) {
-                if (this._value[i] !== null) {
-                    if (this._value[i].i1 === columnName)
-                        this._value[i].i1 = null;
-                    if (this._value[i].i2 === columnName)
-                        this._value[i].i2 = null;
-                    if (this._value[i].i1 === null && this._value[i].i2 === null) {
-                        this._value.splice(i, 1);
-                        i -= 1;
-                    }
-                }
-            }
-        }
     }
 
     override _onRenameColumn(oldName: string, newName: string) {
@@ -634,13 +565,6 @@ export class Options {
         }
         r = [...new Set(r)];
         return r;
-    }
-
-    clearColumnUse(columnName) {
-        for (let name in this._options) {
-            let option = this._options[name];
-            option.clearColumnUse(columnName);
-        }
     }
 
     renameColumn(oldName, newName) {

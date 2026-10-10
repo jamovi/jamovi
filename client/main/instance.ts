@@ -214,6 +214,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         this._analyses = new Analyses(this._dataSetModel, this._modules);
 
         this._analyses.on('analysisOptionsChanged', this._onOptionsChanged, this);
+        this._analyses.on('analysisDeleted', this._onAnalysisDeleted, this);
 
         this._instanceId = null;
 
@@ -256,14 +257,22 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         });
     }
 
-    _onOptionsChanged(analysis, incoming) {
+    // an analysis can be removed by the server (an undo, say), so its
+    // options are closed here rather than only where the user deletes it
+    _onAnalysisDeleted(analysis: Analysis) {
+        if (this.get('selectedAnalysis') === analysis)
+            this.set('selectedAnalysis', null);
+    }
+
+    _onOptionsChanged(analysis, incoming, noUndo?: boolean) {
         if ( ! incoming)
-            this._runAnalysis(analysis);
+            this._runAnalysis(analysis, undefined, noUndo);
     }
 
     destroy() {
         this._dataSetModel.off('columnsChanged', this._columnsChanged, this);
         this._analyses.off('analysisOptionsChanged', this._onOptionsChanged, this);
+        this._analyses.off('analysisDeleted', this._onAnalysisDeleted, this);
         this.attributes.coms.off('broadcast', this._onBC);
         document.removeEventListener('visibilitychange', this._onResume);
         window.removeEventListener('pageshow', this._onResume);
@@ -1204,12 +1213,13 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         return coms.sendP(message);
     }
 
-    async _runAnalysis(analysis, changed?) {
+    async _runAnalysis(analysis, changed?, noUndo: boolean = false) {
         this._dataSetModel.set('edited', true);
 
         analysis.revision++;
         let request = await this._constructAnalysisRequest(analysis);
         request.perform = 0; // INIT
+        request.noUndo = noUndo;
 
         if (changed)
             request.changed = changed;
@@ -1307,7 +1317,9 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                 if (response.analysisId === 0)
                     throw 'Analysis Id can not be 0';
 
-                if (response.analysisId % 2 === 0)
+                // the server only creates analyses with odd ids, or puts
+                // back ones removed earlier (with an undo)
+                if (response.analysisId % 2 === 0 && ! response.restored)
                     throw `Analysis with id ${ response.analysisId } does not exist.`;
 
                 let options = OptionsPB.fromPB(response.options, coms.Messages);
@@ -1331,8 +1343,12 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                 analysis.results.index = response.index;
                 analysis.index = response.index - 1;
 
+                // options restored by an undo or redo replace our own
+                if (response.restored)
+                    analysis.revision = Math.max(analysis.revision, response.revision);
+
                 let options = {};
-                if (response.revision === analysis.revision)
+                if (response.revision === analysis.revision || response.restored)
                     options = OptionsPB.fromPB(response.options, coms.Messages);
 
                 let optionsApplied = false;

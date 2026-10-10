@@ -8,6 +8,7 @@ import { exportElem } from '../common/utils/formatio';
 import ContextMenu from './contextmenu';
 import Notify from './notification';
 import host from './host';
+import ActionHub from './actionhub';
 import selectionLoop from '../common/selectionloop';
 import ContextMenuButton from './contextmenu/contextmenubutton';
 
@@ -339,6 +340,31 @@ class ResultsPanel extends EventDistributor {
         });
     }
 
+    // scroll an analysis into view, and highlight it briefly (to show what
+    // an undo or redo changed). an analysis being put back may not be here
+    // yet, or not yet sized, so this waits for it a little
+    revealAnalysis(id: number, highlight: boolean = true, attempts: number = 20) {
+        let resources = this.resources[id];
+        if ( ! resources || ! resources.sized) {
+            if (attempts > 0)
+                setTimeout(() => this.revealAnalysis(id, highlight, attempts - 1), 50);
+            return;
+        }
+
+        let $container = resources.$container;
+        this._scrollIntoView($container, $container.offsetHeight);
+
+        if ( ! highlight)
+            return;
+
+        $container.classList.remove('history-revealed');
+        void $container.offsetWidth;  // restarts the animation
+        $container.classList.add('history-revealed');
+        $container.addEventListener('animationend', () => {
+            $container.classList.remove('history-revealed');
+        }, { once: true });
+    }
+
     _analysisDeleted(analysis) {
         this._updateRefs();
         let resources = this.resources[analysis.id];
@@ -641,6 +667,10 @@ class ResultsPanel extends EventDistributor {
                         this.annotationGotFocus();
                         this.dispatchEvent(new CustomEvent('annotationFocus', { bubbles:true }));
                     }
+                    break;
+                case 'undo':
+                case 'redo':
+                    ActionHub.get(eventType).do();
                     break;
                 case 'analysisLostFocus':
                     this.dispatchEvent(new CustomEvent('analysisLostFocus', { bubbles:true }));

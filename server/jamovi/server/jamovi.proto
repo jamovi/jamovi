@@ -63,6 +63,11 @@ message AnalysisRequest {
     bool arbitraryCode = 20;
     bool enabled = 21;
     int32 maxDurationSeconds = 22;
+
+    // the change follows from another (i.e. the options panel updating
+    // options which depend on ones restored by an undo), so it isn't added
+    // to the history
+    bool noUndo = 23;
 }
 
 enum AnalysisStatus {
@@ -97,6 +102,10 @@ message AnalysisResponse {
     bool hasTitle = 19;
     bool arbitraryCode = 20;
     bool enabled = 21;
+
+    // the options have been restored by an undo or redo, and replace the
+    // client's own, whatever the revision
+    bool restored = 22;
 }
 
 message Reference {
@@ -686,6 +695,12 @@ message DataSetRR {
     int32 changesPosition = 8;
     bool noUndo = 9;
     bool filtersChanged = 10;
+
+    // in response to an undo or redo: the analysis it changed (if any), so
+    // the client can show it. if it removed the analysis, changedAnalysisId
+    // is the analysis which was above it (to show where it was)
+    int32 changedAnalysisId = 11;
+    bool changedAnalysisRemoved = 12;
 }
 
 message ModuleRR {

@@ -7,6 +7,7 @@ if ('default' in Framesg) // this import is handled differently between browseri
 
 
 import host from './host';
+import ActionHub from './actionhub';
 import I18ns, { I18nData } from '../common/i18n';
 import Notify from './notification';
 import { CancelledError, UserFacingError } from './errors';
@@ -29,6 +30,7 @@ interface IFrameCommsApi {
     optionsViewReady: (ready: boolean) => void;
     requestData: (data: any) => any;
     action: (data: { type: 'findModule', data: any }) => void;
+    undoRedo: (action: 'undo' | 'redo') => void;
 }
 
 class AnalysisResources extends EventEmitter {
@@ -112,7 +114,7 @@ class AnalysisResources extends EventEmitter {
             },
 
             onOptionsChanged: data => {
-                this.analysis.setOptions(data.values);
+                this.analysis.setOptions(data.values, data.external);
 
                 for (let name in data.properties) {
                     let pData = data.properties[name];
@@ -124,6 +126,10 @@ class AnalysisResources extends EventEmitter {
 
             hideOptions: data => {
                 this.emit("hideOptions");
+            },
+
+            undoRedo: action => {
+                ActionHub.get(action).do();
             },
 
             requestAction: data => {

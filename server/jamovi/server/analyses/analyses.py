@@ -311,6 +311,12 @@ class Analyses:
             raise KeyError(id)
         return analysis
 
+    def restore(self, index, analysis):
+        # puts back an analysis removed earlier (see Instance._remove_analysis())
+        self._analyses.insert(index, analysis)
+        self.update_indices()
+        analysis.notify_restored()
+
     def __delitem__(self, id):
         for analysis in self._analyses:
             if analysis.id == id:

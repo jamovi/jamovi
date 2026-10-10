@@ -458,4 +458,8 @@ class Analysis:
     def notify_removing(self):
         pass
 
+    def notify_restored(self):
+        # put back, after being removed (by an undo, say)
+        pass
+
 
