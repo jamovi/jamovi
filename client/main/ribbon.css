@@ -26,6 +26,64 @@
     align-self: stretch;
 }
 
+.jmv-ribbon-title-wrap {
+    display: none;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    position: relative;
+    margin: 0 8px;
+}
+
+jmv-ribbon[mode='cloud'] .ribbon-tabs {
+    flex-grow: 0;
+}
+
+jmv-ribbon[mode='cloud'] .jmv-ribbon-title-wrap {
+    display: flex;
+}
+
+.jmv-ribbon-title {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    color: white;
+    font: inherit;
+    font-size: 13px;
+    padding: 3px 8px;
+    -webkit-app-region: no-drag;
+    outline: none;
+}
+
+.jmv-ribbon-title:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.jmv-ribbon-title:focus {
+    border-color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.jmv-ribbon-title-wrap.renaming::after {
+    content: '';
+    position: absolute;
+    right: 6px;
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: ribbon-title-spin 0.7s linear infinite;
+    pointer-events: none;
+}
+
+@keyframes ribbon-title-spin {
+    to { transform: rotate(360deg); }
+}
+
 .jmv-ribbon-tab {
     position: relative;
     background-color: inherit;

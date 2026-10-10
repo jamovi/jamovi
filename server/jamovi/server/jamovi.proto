@@ -613,6 +613,7 @@ enum GetSet {
 }
 
 message InfoRequest {
+    string title = 2;
 }
 
 message InfoResponse {

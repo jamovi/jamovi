@@ -32,6 +32,8 @@ export type TabTypes = {
 interface IRibbonModelData {
     tabs : AnyTab[ ];
     selectedTab: keyof TabTypes;
+    title: string;
+    titleState: 'idle' | 'renaming' | 'error';
 }
 
 export class RibbonModel extends EventMap<IRibbonModelData>{
@@ -48,7 +50,9 @@ export class RibbonModel extends EventMap<IRibbonModelData>{
     constructor(modules: Modules, settings: Settings, store: Store) {
         super({
             tabs: [],
-            selectedTab: 'analyses'
+            selectedTab: 'analyses',
+            title: '',
+            titleState: 'idle',
         });
         this._modules = modules;
         this._settings = settings;
@@ -123,6 +127,8 @@ export class RibbonView extends EventDistributor {
     $body: HTMLElement;
     $fileButton: HTMLElement;
     $fullScreen: HTMLElement;
+    $titleInput!: HTMLInputElement;
+    $titleWrap!: HTMLElement;
     tabSelection: SelectionLoop;
     $tabs: NodeListOf<HTMLElement>;
     appMenu: AppMenu;
@@ -180,6 +186,8 @@ export class RibbonView extends EventDistributor {
             h('button', { class: 'jmv-ribbon-tab file-tab', 'data-tabname': 'file', role: 'toolbaritem', 'aria-label': _('File'), 'aria-haspopup': 'true', 'aria-expanded': 'false' },
                 h('span', { style: 'font-size: 150%; pointer-events: none;', class: 'mif-menu' })),
             h('div', { class: 'ribbon-tabs', role: 'tablist' }),
+            h('div', { class: 'jmv-ribbon-title-wrap' },
+                h('input', { class: 'jmv-ribbon-title', type: 'text', 'aria-label': _('Document title') })),
             h('div', { id: 'jmv-user-button' }),
             h('button', { class: 'jmv-ribbon-fullscreen', 'aria-label': _('Enable/disable full screen mode') })));
         this.append(h('div', { id: 'ribbon-body', class: 'jmv-ribbon-body jmv-ribbon-group-body-horizontal', hloop: 'true', role: 'tabpanel', 'aria-roledescription': '' }));
@@ -198,6 +206,40 @@ export class RibbonView extends EventDistributor {
         this.$body   = this.querySelector<HTMLElement>('.jmv-ribbon-body');
         this.$fileButton = this.querySelector<HTMLElement>('.jmv-ribbon-tab[data-tabname="file"]');
         this.$fullScreen = this.querySelector<HTMLElement>('.jmv-ribbon-fullscreen');
+        this.$titleWrap = this.querySelector<HTMLElement>('.jmv-ribbon-title-wrap')!;
+        this.$titleInput = this.querySelector<HTMLInputElement>('.jmv-ribbon-title')!;
+
+        this.model.on('change:titleState', () => {
+            const state = this.model.get('titleState') ?? 'idle';
+            this.$titleWrap.classList.toggle('renaming', state === 'renaming');
+            this.$titleInput.disabled = state === 'renaming';
+        }, this);
+
+        this.model.on('change:title', () => {
+            if (document.activeElement !== this.$titleInput)
+                this.$titleInput.value = this.model.get('title') ?? '';
+        }, this);
+
+        this.$titleInput.addEventListener('focus', () => {
+            this.$titleInput.select();
+        });
+
+        this.$titleInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter')
+                this.$titleInput.blur();
+            else if (event.key === 'Escape') {
+                this.$titleInput.value = this.model.get('title') ?? '';
+                this.$titleInput.blur();
+            }
+        });
+
+        this.$titleInput.addEventListener('blur', () => {
+            const newTitle = this.$titleInput.value.trim();
+            if (newTitle && newTitle !== this.model.get('title'))
+                this.dispatchEvent(new CustomEvent('titleChanged', { detail: newTitle }));
+            else
+                this.$titleInput.value = this.model.get('title') ?? '';
+        });
 
         this.$fileButton.addEventListener('click', (event) => {
             let newEvent = new CustomEvent<{tabName: keyof TabTypes, withMouse: boolean}>('tabSelected', { detail: { tabName: 'file', withMouse: event.detail > 0 }});

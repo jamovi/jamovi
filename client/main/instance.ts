@@ -1042,6 +1042,20 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         });
     }
 
+    async rename(title: string): Promise<void> {
+        const coms = this.attributes.coms;
+        const info = new coms.Messages.InfoRequest();
+        info.title = title;
+        const request = new coms.Messages.ComsMessage();
+        request.payload = info.toArrayBuffer();
+        request.payloadType = 'InfoRequest';
+        request.instanceId = this._instanceId;
+        const response = await coms.send(request);
+        const infoResponse = coms.Messages.InfoResponse.decode(response.payload);
+        if (infoResponse.title)
+            this.set('title', infoResponse.title);
+    }
+
     async _readDataset(loadAnalyses: boolean=true) {
 
         let coms = this.attributes.coms;

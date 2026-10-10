@@ -537,6 +537,14 @@ class Session(dict):
                         last_time_limit_warning += 30
         finally:
             log.debug('%s: run loop ended', self._id)
+            if AUTOSAVE:
+                # the session's ending (time limit, shutdown), so this is the
+                # last chance to save the instances still open
+                for instance in self.values():
+                    try:
+                        await instance.autosave()
+                    except Exception as e:
+                        log.exception(e)
             if self._settings is not None:
                 try:
                     await self._settings.flush()

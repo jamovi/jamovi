@@ -237,6 +237,12 @@ class Instance:
 
     def _virtualise_path(self, path):
 
+        cloud_base_url = conf.get('cloud_base_url')
+        if cloud_base_url:
+            prefix = f'{cloud_base_url}/user/project/'
+            if path.startswith(prefix):
+                return '{{Projects}}/' + path[len(prefix):]
+
         temp_path = self.temp_path()
         if path.startswith(temp_path):
             return path.replace(temp_path, '{{Temp}}')
@@ -348,7 +354,7 @@ class Instance:
         elif type(request) == jcoms.OpenRequest:
             await self._on_open(request)
         elif type(request) == jcoms.InfoRequest:
-            self._on_info(request)
+            await self._on_info(request)
         elif type(request) == jcoms.SettingsRequest:
             self._on_settings(request)
         elif type(request) == jcoms.AnalysisRequest:
@@ -774,10 +780,15 @@ class Instance:
     @property
     def file_sync_client(self):
 
+        cloud_base_url = conf.get('cloud_base_url')
+        cloud_host = parse.urlparse(cloud_base_url).hostname if cloud_base_url else None
+
         class BlockLocalConnector(TCPConnector):
             # block connections to the local network (security!)
             async def _resolve_host(self, host: str, port: int, traces=None):
                 resolved_list = await super()._resolve_host(host, port, traces)
+                if host == cloud_host:
+                    return resolved_list
                 for resolved in resolved_list:
                     if not ip_address(resolved['host']).is_global:
                         raise PermissionError
@@ -1035,7 +1046,11 @@ class Instance:
         # temp file) and should be removed once it's been read
 
         if options is None:
-            options = { }
+            options = {}
+
+        cloud_base_url = conf.get('cloud_base_url')
+        if cloud_base_url and path.startswith('{{Projects}}/'):
+            path = f'{cloud_base_url}/user/project/' + path[len('{{Projects}}/'):]
 
         is_example = path.startswith('{{Examples}}')
         is_session_temp = path.startswith('{{SessionTemp}}')
@@ -1084,6 +1099,7 @@ class Instance:
 
             file_sync: HttpSync | None = None
             norm_path = None
+            initial_cloud_save = False
 
             try:
                 url = None
@@ -1095,8 +1111,7 @@ class Instance:
 
                     read_stream = file_sync.read()
                     async for progress in read_stream:
-                        progress_to_50 = (500 * progress, 1000)
-                        stream.write(progress_to_50)
+                        stream.write((500 * progress, 1000))
 
                     file_info = await read_stream
 
@@ -1134,6 +1149,13 @@ class Instance:
                 if file_sync is not None:
                     self._project.file_sync = file_sync
                     self._project.path = url
+
+                if cloud_base_url and not path.startswith(f'{cloud_base_url}/user/project/') and (file_sync is None or file_sync.read_only):
+                    # anything not already a cloud project becomes one, the
+                    # project this instance was created for (see extras)
+                    self._project.path = f'{cloud_base_url}/user/project/{self._instance_id}'
+                    self._project.save_format = 'jamovi'
+                    initial_cloud_save = True
 
                 stream.set_result(result)
 
@@ -1177,6 +1199,8 @@ class Instance:
                 # success
                 if path != '' and not is_temp:
                     self._add_to_recents(path, self._project.title)
+                if initial_cloud_save and not self._project.is_blank:
+                    self.save({'path': self._project.path, 'overwrite': True})
             finally:
                 self._opening = False
                 if self._coms is None:
@@ -1492,7 +1516,20 @@ class Instance:
         self._controllers[dataset.id].populate_schema_info(None, broadcast)
         self._coms.send(broadcast, self._instance_id)
 
-    def _on_info(self, request):
+    async def _cloud_rename(self, title: str):
+        try:
+            from . import extras
+            await extras.cloud_rename(self._instance_id, self.file_sync_client, title)
+        except ImportError:
+            pass
+        except Exception:
+            log.exception('Failed to rename cloud project')
+
+    async def _on_info(self, request):
+
+        if request.title:
+            self._project.title = request.title
+            await self._cloud_rename(request.title)
 
         response = jcoms.InfoResponse()
 

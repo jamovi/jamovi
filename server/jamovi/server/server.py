@@ -31,6 +31,11 @@ log = logging.getLogger(__name__)
 
 CLIENT_MAX_SIZE = 100 * 1024 * 1024
 
+try:
+    from .extras import create_instance as _create_instance
+except ImportError:
+    _create_instance = None
+
 
 access_key = conf.get('access_key', None)
 access_key_generated = False
@@ -77,6 +82,11 @@ class _Handlers:
         self._server = server  # for _pdfify and _roots
         self._i18n_manifest_cache: dict = {}
         self._download_real_path = os.path.realpath(session.session_path)
+
+    async def _create_instance(self, title=None, project_id=None):
+        if _create_instance is not None:
+            return await _create_instance(self._session, title=title, project_id=project_id)
+        return await self._session.create(), None, None
 
     # -- auth -----------------------------------------------------------------
 
@@ -160,10 +170,13 @@ class _Handlers:
         if instance_id:
             instance = self._session.get(instance_id)
             if instance is None:
-                return web.Response(content_type='text/plain',
-                    text=f'{{"status":"terminated",'
-                         f'"message":{json.dumps(_("This data set is no longer available"))}}}')
-            if url == '' and instance.project.has_datasets:
+                if _create_instance is not None:
+                    instance, url, __ = await self._create_instance(project_id=instance_id)
+                else:
+                    return web.Response(content_type='text/plain',
+                        text=f'{{"status":"terminated",'
+                             f'"message":{json.dumps(_("This data set is no longer available"))}}}')
+            elif url == '' and instance.project.has_datasets:
                 return web.Response(status=204)
 
         title = request.rel_url.query.get('title')
@@ -180,7 +193,11 @@ class _Handlers:
         parts = []
         try:
             if instance is None:
-                instance = await self._session.create()
+                if url:
+                    instance = await self._session.create()
+                else:
+                    instance, __, project_title = await self._create_instance(title=title)
+                    title = project_title or title
             async for progress in instance.open(url, title, is_temp, ext):
                 p, n = progress
                 parts.append(f'{{"status":"in-progress","p":{p},"n":{n}}}\n')
@@ -189,6 +206,8 @@ class _Handlers:
             message = str(e) or type(e).__name__
             parts.append(f'{{"status":"error","message":{json.dumps(message)}}}\n')
         else:
+            if title:
+                instance.project.title = title
             parts.append(_opened(instance.id))
 
         return web.Response(content_type='text/plain', text=''.join(parts))
@@ -248,10 +267,23 @@ class _Handlers:
 
         self._session.set_language(request.headers.get('Accept-Language', 'en'))
 
+        instance_id = request.match_info.get('instance_id')
+        if instance_id is None and file_path and file_path.startswith('{{Projects}}/'):
+            instance_id = file_path[len('{{Projects}}/'):]
+        instance = self._session.get(instance_id) if instance_id else None
+
+        if instance is not None and instance.project.has_datasets:
+            return web.Response(text=_opened(instance.id))
+
         resp = web.StreamResponse(headers={'Content-Type': 'text/plain'})
         await resp.prepare(request)
         try:
-            instance = await self._session.create()
+            if instance is None:
+                instance, __, project_title = await self._create_instance(
+                    title=file_title,
+                    project_id=instance_id,
+                )
+                file_title = project_title or file_title
             async for progress in instance.open(
                 file_path, title=file_title, is_temp=is_temp,
                 ext=file_ext, options=options, remove_after=remove_after,
@@ -263,6 +295,8 @@ class _Handlers:
             message = str(e) or type(e).__name__
             await resp.write(f'{{"status":"error","message":{json.dumps(message)}}}\n'.encode())
         else:
+            if file_title:
+                instance.project.title = file_title
             await resp.write(_opened(instance.id).encode())
         await resp.write_eof()
         return resp

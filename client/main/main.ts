@@ -719,6 +719,18 @@ ready(async() => {
             let title = event.changed.title;
             $fileName.textContent = title;
             document.title = title;
+            ribbonModel.set('title', title);
+        }
+    });
+
+    ribbon.addEventListener('titleChanged', async (event: CustomEvent<string>) => {
+        ribbonModel.set('titleState', 'renaming');
+        try {
+            await instance.rename(event.detail);
+        } catch (e) {
+            ribbonModel.set('title', instance.get('title') ?? '');
+        } finally {
+            ribbonModel.set('titleState', 'idle');
         }
     });
 
