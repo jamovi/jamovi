@@ -20,12 +20,10 @@ async def forward_handler(
 
     path = request.match_info.get('path', '')
 
-    if not path:
-        path = f'/{default_filename}'
-    elif path.endswith('/'):
-        path = f'{path}{default_filename}'
-    elif not path.startswith('/'):
+    if not path.startswith('/'):
         path = f'/{path}'
+    if path.endswith('/'):
+        path = f'{path}{default_filename}'
 
     url = f'{base_url}{path}'
     if request.query_string:
