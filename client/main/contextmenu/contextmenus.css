@@ -30,6 +30,10 @@
     background-image: url('../../assets/menu-data-copy-latex.svg');
 }
 
+.jmv-context-menu-button[data-icon='copyimage'] > .jmv-ribbon-button-icon {
+    background-image: url('../../assets/menu-data-copy-image.svg');
+}
+
 
 .jmv-context-menu-button[data-icon='copy'] > .jmv-ribbon-button-icon {
     background-image: url('../../assets/menu-data-copy.svg');

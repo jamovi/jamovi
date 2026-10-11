@@ -206,6 +206,8 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
         const split: { name:string, label: string }[] = [];
         if (this.type() !== 'Image' && this.type() !== 'Html' && this.type() !== 'Svg')
             split.push({ name: 'copyLatex', label: _('Copy Latex') });
+        if (this.type() === 'Table')
+            split.push({ name: 'copyImage', label: _('Copy as Image') });
 
         return [ { name: 'copy', label: _('Copy'), splitType: 'options', split }, { name: 'export', label: `${_('Export')}...` }, { name: 'addNote', label: _('Add Note')} ];
     }

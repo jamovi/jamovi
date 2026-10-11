@@ -37,6 +37,7 @@ interface IHtmlDocOptions {
 }
 import { createDoc as createHtmlDoc } from './formatio/htmlify';
 import { clipboardData, clipboardDocData, IClipboardData, IRenderedImage } from './formatio/clipboard';
+import { imagify } from './formatio/imagify';
 import { latexify } from './formatio/latexify';
 import { createDoc } from './formatio/latexify';
 import { createBibTex } from './formatio/latexify';
@@ -1290,6 +1291,47 @@ class ResultsPanel extends EventDistributor {
             });
             this.model.trigger('notification', note);
 
+        }
+        else if (event.op === 'copyImage') {
+            // a table as a picture (only tables are offered this), as the
+            // png alone, so it's pasted as the picture wherever it goes
+            const address = event.address.slice();
+            const analysisId = parseInt(address.shift());
+            const analysis = this.model.analyses().get(analysisId);
+            if (analysis === null)
+                throw new Error('Unable to access analysis');
+            const hydrated = hydrate(analysis.results, { address, values: analysis.options.getValues(), analysisId: analysis.id });
+            if (hydrated?.type !== 'table')
+                throw new Error('Only a table can be copied as an image');
+
+            let image: string;
+            try {
+                image = await imagify(hydrated);
+            }
+            catch (e) {
+                // safari won't allow it (see imagify.ts); anything else is
+                // a genuine error
+                if ( ! (e instanceof DOMException && e.name === 'SecurityError'))
+                    throw e;
+                const note = new Notify({
+                    title: _('Unable to copy'),
+                    message: _('Unavailable under Safari and iPads'),
+                    duration: 3000,
+                    type: 'error',
+                });
+                this.model.trigger('notification', note);
+                return;
+            }
+
+            await host.copyToClipboard({ image });
+
+            const note = new Notify({
+                title: _('Copied'),
+                message: _('The content has been copied to the clipboard'),
+                duration: 2000,
+                type: 'success'
+            });
+            this.model.trigger('notification', note);
         }
         else {
 
