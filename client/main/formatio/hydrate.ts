@@ -211,7 +211,10 @@ export function hydrate(pb: any, options: IHydrateOptions = {}): IElement {
         verbatimHtml: options.verbatimHtml ?? false,
     };
 
-    const elements = hydrateElement(pb, options.address ?? [], [], context);
+    // the address is consumed as it's descended (see hydrateElement()), so
+    // it's a copy, leaving the caller's as it was
+    const address = [ ...(options.address ?? []) ];
+    const elements = hydrateElement(pb, address, [], context);
     if (elements === null) {
         return null;
     }

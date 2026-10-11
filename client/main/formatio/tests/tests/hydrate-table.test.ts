@@ -81,3 +81,17 @@ describe('hydration of notices', () => {
         expect(text.box).toBe(4);
     });
 });
+
+describe('hydrate addresses', () => {
+
+    it('leaves the address it\'s given as it was', () => {
+        const table = { name: 't', title: 'T', visible: 0, table: { columns: [ column('x', 'number', [ 1 ]) ], notes: [] } };
+        const pb = { name: '', title: 'Analysis', visible: 0, group: { elements: [ table ] } };
+        const address = [ 't' ];
+        const first = hydrate(pb, { address });
+        expect(address).toEqual([ 't' ]);
+        // so it can be used again, to the same effect
+        expect(hydrate(pb, { address })).toEqual(first);
+        expect(first.type).toBe('table');
+    });
+});
