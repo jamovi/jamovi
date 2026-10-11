@@ -93,8 +93,12 @@ export class NoticeView extends Elem.View<Model> {
 
 
     _handleLinkClick(event: Event) {
-        if (event.target instanceof HTMLElement) {
-            let href = event.target.getAttribute('href');
+        // the listener is on the link itself; event.target may be a child
+        // of it (e.g. <strong>), so use currentTarget
+        if (event.currentTarget instanceof Element) {
+            let href = event.currentTarget.getAttribute('href');
+            // stop the results frame from navigating away
+            event.preventDefault();
             window.openUrl(href);
         }
     }
