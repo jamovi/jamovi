@@ -35,7 +35,8 @@ interface IHtmlDocOptions {
     generator?: string;   // for the <meta name="generator">
     showRefs?: boolean;
 }
-import { htmlify, createDoc as createHtmlDoc } from './formatio/htmlify';
+import { createDoc as createHtmlDoc } from './formatio/htmlify';
+import { clipboardData, clipboardDocData, IClipboardData, IRenderedImage } from './formatio/clipboard';
 import { latexify } from './formatio/latexify';
 import { createDoc } from './formatio/latexify';
 import { createBibTex } from './formatio/latexify';
@@ -1069,17 +1070,19 @@ class ResultsPanel extends EventDistributor {
             const address = event.address.slice();
             // syntax is copied only where the results view is showing it
             const showSyntax = this.model.settings().get('syntaxMode');
-            let html: string;
-            let text: string | undefined;
-            let svg: string | undefined;
+            let data: IClipboardData;
+
+            // each is hydrated twice: for html (verbatimHtml), and parsed
+            // for markdown (see clipboardData())
 
             if (address.length === 0) {
                 // the whole document
                 const { items, references } = this._hydrateAll(undefined, true);
                 for (const item of items)
                     await this._fillImages(item.element);
+                const parsed = this._hydrateAll(undefined, false);
                 const showRefs = this.model.settings().getSetting('refsMode', 'bottom') !== 'hidden';
-                html = createHtmlDoc(items, { references, showRefs, showSyntax });
+                data = clipboardDocData(items, parsed.items, { references, showRefs, showSyntax });
             }
             else {
                 // a single analysis, or an element/group within one
@@ -1087,35 +1090,22 @@ class ResultsPanel extends EventDistributor {
                 const analysis = this.model.analyses().get(analysisId);
                 if (analysis === null)
                     throw new Error('Unable to access analysis');
-                const hydrated = hydrate(analysis.results, { address, values: analysis.options.getValues(), analysisId: analysis.id, verbatimHtml: true });
+                const values = analysis.options.getValues();
+                const hydrated = hydrate(analysis.results, { address, values, analysisId: analysis.id, verbatimHtml: true });
+                const parsed = hydrate(analysis.results, { address, values, analysisId: analysis.id });
 
-                if (hydrated.type === 'image') {
-                    // when the whole of what's being copied is a single
-                    // vector Image, it's also offered as a real image/svg+xml
-                    // clipboard flavour (see host.copyToClipboard) -- the
-                    // results view tells us whether it's actually vector
-                    // (`vector`); an Svg element's markup leans on module css
-                    // and hasn't been paste-tested as a standalone flavour,
-                    // so it's rasterised only, same as a raster Image
-                    const content = await this._getContent(unflatten(hydrated.address), { });
-                    if (content && content.image)
-                        hydrated.path = content.image;
-                    if (content && content.vector)
-                        svg = content.svg;
-                }
-                else {
+                // an image's picture is as the results view has rendered it
+                // -- which also tells us whether it's actually vector
+                let rendered: IRenderedImage | null = null;
+                if (hydrated.type === 'image')
+                    rendered = await this._getContent(unflatten(hydrated.address), { });
+                else
                     await this._fillImages(hydrated);
-                }
 
-                html = htmlify(hydrated, { showSyntax });
-
-                // a lone preformatted (the syntax, say) is offered as its
-                // plain text too, so it pastes cleanly into an editor
-                if (hydrated.type === 'preformatted')
-                    text = hydrated.content;
+                data = clipboardData(hydrated, parsed, rendered, { showSyntax });
             }
 
-            await host.copyToClipboard({ html, text: text ?? html, svg });
+            await host.copyToClipboard(data);
 
             let note = new Notify({
                 title: _('Copied'),

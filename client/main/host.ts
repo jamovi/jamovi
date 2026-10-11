@@ -19,6 +19,7 @@ declare global {
 }
 
 import { Future } from './utils/common';
+import { clipboardFlavours, IClipboardData } from './formatio/clipboard';
 
 import { EventEmitter } from 'eventemitter3';
 
@@ -168,21 +169,23 @@ function supportsSvgFlavour(): boolean {
 // writes through the web clipboard api. resolves false if the browser
 // wouldn't allow it (or doesn't have it), in which case the caller falls
 // back to something else
-async function writeClipboardItem(data): Promise<boolean> {
+async function writeClipboardItem(data: IClipboardData): Promise<boolean> {
 
     if ( ! navigator.clipboard?.write)
         return false;
 
-    const clipboardData = {};
+    const clipboardData: { [ mimeType: string ]: string | Blob | Promise<Blob> } = {};
 
-    if (data.text)
-        clipboardData['text/plain'] = data.text;
-    if (data.html)
-        clipboardData['text/html'] = data.html;
-    if (data.image)
-        clipboardData['image/png'] = blobify(data.image);
-    if (data.svg && supportsSvgFlavour())
-        clipboardData['image/svg+xml'] = new Blob([ data.svg ], { type: 'image/svg+xml' });
+    // the png is a data url, and the svg markup, so both are made blobs
+    const flavours = clipboardFlavours(data, supportsSvgFlavour());
+    for (const [ mimeType, value ] of Object.entries(flavours)) {
+        if (mimeType === 'image/png')
+            clipboardData[mimeType] = blobify(value);
+        else if (mimeType === 'image/svg+xml')
+            clipboardData[mimeType] = new Blob([ value ], { type: mimeType });
+        else
+            clipboardData[mimeType] = value;
+    }
 
     try {
         const clipboardItem = new ClipboardItem(clipboardData);
@@ -197,7 +200,7 @@ async function writeClipboardItem(data): Promise<boolean> {
     }
 }
 
-export const copyToClipboard = async function(data) {
+export const copyToClipboard = async function(data: IClipboardData) {
 
     if (etron.copyToClipboard) {
         // electron's clipboard.write() can't carry a vector flavour, so when
