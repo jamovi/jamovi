@@ -32,6 +32,8 @@ Text <- R6::R6Class("Text",
                 refs=refs)
 
             private$.content <- self$options$translate(content)
+            if ( ! identical(content, ''))
+                private$.stale <- FALSE
         },
         setContent=function(value) {
             if ( ! is.character(value))
@@ -57,6 +59,9 @@ Text <- R6::R6Class("Text",
             content
         },
         fromProtoBuf=function(element, oChanges, vChanges) {
+
+            if ( ! private$.stale)
+                return()
 
             private$.stale <- element$stale
 
