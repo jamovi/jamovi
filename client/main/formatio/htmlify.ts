@@ -116,7 +116,7 @@ const STYLESHEET = `
     h3, h4, h5, h6 { font-size: 110%; margin-top: 16px; margin-bottom: 12px; }
     h1, h2, h3, h4, h5, h6 { break-after: avoid; page-break-after: avoid; }
     table, img, pre { break-inside: avoid; page-break-inside: avoid; }
-    img { max-width: 100%; height: auto; }
+    img { display: block; max-width: 100%; height: auto; }
     th { font-weight: normal; }
     a { color: #3E6DA9; }
 `;
@@ -176,6 +176,9 @@ function heading(title: string, level: number): HTMLElement {
 function caption(title: string): HTMLElement {
     const p = document.createElement('p');
     p.style.fontWeight = 'bold';
+    // kept with the figure when printed to pdf
+    p.style.breakAfter = 'avoid';
+    p.style.pageBreakAfter = 'avoid';
     p.append(...chunkNodes(html2Chunks(title)));
     return p;
 }
