@@ -54,7 +54,8 @@ export function htmlify(item: IElement, options: IHtmlifyOptions = {}): string {
         refNames: [],
     };
 
-    const doc = document.implementation.createHTMLDocument('Results');
+    // no title; google docs pastes it as text above the content
+    const doc = document.implementation.createHTMLDocument();
     populate(item, doc.body, options.level ?? 1, context);
 
     return '<!doctype html>\n' + doc.documentElement.outerHTML;
