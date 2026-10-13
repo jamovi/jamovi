@@ -72,6 +72,12 @@ class Analysis:
         self.changes = set()
         self._status = Analysis.Status.NONE
         self.clear_state = False
+        # the analysis came from a file, which can't supply the state (see
+        # drop_state()); the next run must start from scratch, and an export
+        # must wait on it
+        self.state_dropped = False
+        # futures waiting on the analysis to finish running (see save())
+        self._run_waiters = [ ]
         self.enabled = enabled
         self.arbitrary_code = arbitrary_code
         self.complete = False
@@ -182,6 +188,14 @@ class Analysis:
 
         self.results = results
         self.complete = complete
+
+        if complete and status in (Analysis.Status.COMPLETE, Analysis.Status.ERROR):
+            waiters = self._run_waiters
+            self._run_waiters = [ ]
+            for waiter in waiters:
+                if not waiter.done():
+                    waiter.set_result(None)
+
         if len(results.options.names) > 0:  # if not empty
             # use options from results
             self.options.set(results.options)
@@ -307,6 +321,7 @@ class Analysis:
         results.index = 0
 
         self.set_results(results, silent=True)
+        self.state_dropped = analysis.state_dropped
 
     def add_dependent(self, child):
         self.dependents.append(child)
@@ -360,13 +375,20 @@ class Analysis:
             elif pb.HasField('svg'):
                 pb.svg.path = ''
 
-    def save(self, path, part):
+    async def save(self, path, part):
+        if self.state_dropped:
+            # rendering for an export needs the state, so the analysis has
+            # to run first, and the op can't be queued until it's finished
+            waiter = Future()
+            self._run_waiters.append(waiter)
+            self.rerun()
+            await waiter
         op = Analysis.Op(Analysis.Op.SAVE, self)
         op.path = path
         op.part = part
         self._ops.append(op)
         self.parent._notify_options_changed(self)
-        return op.future
+        return await op.future
 
     @property
     def needs_op(self):
@@ -413,6 +435,24 @@ class Analysis:
         return rel_path
 
     @staticmethod
+    def drop_state(results_pb):
+        """clear the state (see setState() in jmvcore) from each element
+
+        the state is R's serialization of arbitrary objects, and R restores
+        functions, environments and calls as they were saved -- so whoever
+        writes the state decides what runs when it's used. state from a file
+        can't be trusted, and is cleared here before the engine sees it"""
+        results_pb.ClearField('state')
+        if results_pb.HasField('group'):
+            for element_pb in results_pb.group.elements:
+                Analysis.drop_state(element_pb)
+        elif results_pb.HasField('array'):
+            for element_pb in results_pb.array.elements:
+                Analysis.drop_state(element_pb)
+            if results_pb.array.HasField('header'):
+                Analysis.drop_state(results_pb.array.header)
+
+    @staticmethod
     def _lookup(results_pb, address):
         for name in address:
             if results_pb.HasField('group'):
@@ -456,6 +496,10 @@ class Analysis:
         return [ ]
 
     def notify_removing(self):
-        pass
+        waiters = self._run_waiters
+        self._run_waiters = [ ]
+        for waiter in waiters:
+            if not waiter.done():
+                waiter.set_exception(RuntimeError('The analysis was removed'))
 
 

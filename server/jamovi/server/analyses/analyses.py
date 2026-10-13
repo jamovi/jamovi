@@ -131,7 +131,16 @@ class Analyses:
         analysis_pb = jcoms.AnalysisResponse()
         analysis_pb.ParseFromString(serial)
 
+        # the state can't come from a file: a crafted .omv could otherwise
+        # run arbitrary R code when the state is restored and used. images
+        # keep their paths, so they still display, but the analysis has to
+        # run from scratch before anything which needs the state. this holds
+        # even where the file has none, as it may have been saved from a
+        # session where it was dropped, before the analysis ran again
+        Analysis.drop_state(analysis_pb.results)
+
         analysis = self._construct_from_pb(analysis_pb, status=Analysis.Status.COMPLETE)
+        analysis.state_dropped = True
 
         # files is the set of file ids (see OptionFile) that came with the
         # analysis and are now in the session; anything else the options
