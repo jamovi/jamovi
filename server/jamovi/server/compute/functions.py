@@ -483,11 +483,7 @@ def CONTAINS(index, item1: str, in1: str, *args: str, in2: str = '', in3: str = 
 @column_wise
 @returns(DataType.DECIMAL, MeasureType.CONTINUOUS)
 def RANK(var: float):
-    ranks = rankdata(list(var)).tolist()
-    for i, v in enumerate(var):
-        if math.isnan(v):
-            ranks[i] = NaN
-    return ranks
+    return rankdata(list(var), nan_policy='omit').tolist()
 
 
 @column_wise_no_group_by
