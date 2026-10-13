@@ -445,8 +445,9 @@ Analysis <- R6::R6Class('Analysis',
                 decSymbol <- self$options$decSymbol
                 currentDecSymbol <- getOption('OutDec', '.')
                 if (decSymbol != '.' && currentDecSymbol != decSymbol) {
-                    options(OutDec=decSymbol)
-                    on.exit(options(OutDec=currentDecSymbol), add=TRUE)
+                    # scales ignores OutDec, and has its own option
+                    old <- options(OutDec=decSymbol, scales.decimal.mark=decSymbol)
+                    on.exit(options(old), add=TRUE)
                 }
 
                 multip <- ppi / 72
