@@ -2421,6 +2421,8 @@ class TableView extends HTMLElement implements DataSetView {
 
             let column = cells[colNo];
             let $column = this.$columns[colOffset + colNo];
+            if ($column === undefined)
+                continue;
             let $cells  = $column.children;
 
             let columnInfo = this.model.getColumn(colOffset + colNo, true);
@@ -2430,6 +2432,8 @@ class TableView extends HTMLElement implements DataSetView {
             for (let rowNo = 0; rowNo < column.length; rowNo++) {
                 let cell = $cells[rowNo];
                 let cellInfo = column[rowNo];
+                if ( ! cell || ! cellInfo)
+                    continue;
                 let content = this._rawValueToDisplay(cellInfo.value, columnInfo);
                 let filt = filtered[rowNo];
                 let missing = cellInfo.missing;
