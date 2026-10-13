@@ -314,6 +314,12 @@ Options <- R6::R6Class(
                     next()
                 }
 
+                if (name == 'decSymbol') {
+                    if ( ! identical(self$decSymbol, parseOptionPB(optionPB)))
+                        changes <- c(changes, 'decSymbol')
+                    next()
+                }
+
                 if ( ! name %in% names(private$.options))
                     next()
 
