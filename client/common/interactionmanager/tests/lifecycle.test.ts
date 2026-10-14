@@ -176,6 +176,27 @@ describe('FocusLoopLifecycle', () => {
         }
     });
 
+    it('restores the default focus control when it blurs to nothing', () => {
+        vi.useFakeTimers();
+        try {
+            const focusCell = ctx.body.append(new FakeElement('focusCell'));
+            ctx.modes.shouldRestoreDefaultFocusControl.mockImplementation((target, relatedTarget) => target === focusCell && relatedTarget === null);
+            ctx.modes.restoreDefaultFocusControl.mockImplementation(() => focusCell.focus());
+
+            ctx.lifecycle.handleFocusIn(focusCell as unknown as HTMLElement, []);
+            setActiveElement(ctx.body);
+            ctx.lifecycle.handleFocusOut({ target: focusCell, relatedTarget: null } as unknown as FocusEvent);
+            vi.advanceTimersByTime(0);
+
+            expect(ctx.modes.restoreDefaultFocusControl).toHaveBeenCalledOnce();
+            expect(document.activeElement).toBe(focusCell);
+            expect(ctx.modes.scheduleDefaultModeReset).not.toHaveBeenCalled();
+        }
+        finally {
+            vi.useRealTimers();
+        }
+    });
+
     it('does not restore focus during native select focus transitions', () => {
         vi.useFakeTimers();
         try {
