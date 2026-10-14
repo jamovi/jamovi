@@ -710,6 +710,36 @@ body[dir="rtl"] .silky-bs-back-button > div {
     text-overflow: ellipsis ;
 }
 
+/* when expanded, tags that were cut off move to their own line beneath the name,
+   shown in full and wrapping as needed */
+.silky-bs-fslist-item.expanded.tags-truncated .silky-bs-fslist-entry-heading {
+    flex-wrap: wrap ;
+    row-gap: 4px ;
+}
+
+/* the name shrinks rather than pushing the expand button onto the next line */
+.silky-bs-fslist-item.expanded.tags-truncated .silky-bs-fslist-entry-heading > .silky-bs-fslist-entry-name {
+    flex: 0 1 auto ;
+    min-width: 0 ;
+}
+
+.silky-bs-fslist-item.expanded.tags-truncated .silky-bs-fslist-entry-heading > .tags {
+    order: 1 ;
+    flex: 1 0 100% ;
+    margin-inline-start: 0px ;
+    flex-wrap: wrap ;
+    row-gap: 4px ;
+}
+
+.silky-bs-fslist-item.expanded.tags-truncated .silky-bs-fslist-entry-heading .tag {
+    flex: none ;
+    max-width: 100% ;
+}
+
+.silky-bs-fslist-item.expanded.tags-truncated .silky-bs-fslist-entry-expand {
+    margin-inline-start: auto ;
+}
+
 .silky-bs-fslist-item > .silky-bs-fslist-entry-group > .silky-bs-fslist-entry-meta {
     margin-top: 0px ;
     font-size: 80% ;
@@ -954,6 +984,22 @@ body[dir="rtl"] .silky-bs-back-button > div {
     background-color: white;
     border: #c1c1c1 solid 1px;
     border-right-style: none;*/
+}
+
+.silky-bs-fslist-browser-crumb {
+    font: inherit ;
+    color: inherit ;
+    line-height: inherit ;
+    padding: 0px ;
+    border: none ;
+    background: none ;
+    cursor: pointer ;
+}
+
+.silky-bs-fslist-browser-crumb:hover,
+.silky-bs-fslist-browser-crumb:focus-visible {
+    color: #3E6DA9 ;
+    text-decoration: underline ;
 }
 
 .silky-bs-fslist-browse-button {
