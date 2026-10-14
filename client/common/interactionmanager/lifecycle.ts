@@ -162,15 +162,23 @@ export class FocusLoopLifecycle {
             return;
         }
 
-        this.finishUnknownFocusOutRecovery();
+        this.finishUnknownFocusOutRecovery(pending.target);
     }
 
-    private finishUnknownFocusOutRecovery(): void {
+    private finishUnknownFocusOutRecovery(target: EventTarget | null = null): void {
         if (this.restoreStabilizingFocusedLoop())
             return;
 
         if (this.activeModalElement) {
             this.navigator.findFocusableElement(this.activeModalElement);
+            return;
+        }
+
+        // the default focus control (the spreadsheet's focus cell) blurred to
+        // nothing, e.g. a mousedown on a non-focusable cell: take focus back,
+        // as setting the mode below only moves focus when the mode changes
+        if (this.modes.shouldRestoreDefaultFocusControl(target, null)) {
+            this.modes.restoreDefaultFocusControl();
             return;
         }
 
@@ -261,7 +269,10 @@ export class FocusLoopLifecycle {
     }
 
     private classifyFocusMode(element: HTMLElement, composedPath: EventTarget[]): void {
-        const details = this.classifier.elementFocusDetails(element);
+        // focus inside a shadow root (an analysis's heading, say) arrives
+        // retargeted to its host: it's what has the focus that's classified
+        const focused = composedPath[0] instanceof HTMLElement ? composedPath[0] : element;
+        const details = this.classifier.elementFocusDetails(focused);
         const fromPointer = this.input.lastInputWasPointer();
         if (details.usesKeyboard || this.classifier.containsFocusableMenuLevel(composedPath) || (this.modes.inKeyboardMode() && !fromPointer)) {
             const keyboardMode = !element.classList.contains('menu-level') && !fromPointer ? 'keyboard' : 'hover';
