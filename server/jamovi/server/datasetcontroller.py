@@ -70,7 +70,9 @@ class DataSetController:
                 n_block.columnCount = block.columnCount
 
     async def handle(self, request):
-        """Perform a DataSetRR request and return the response.
+        """Perform a DataSetRR GET or SET request and return the response.
+        UNDO and REDO go through the project's History instead (see
+        undo() and redo()).
 
         Raises ForbiddenOp (or other exceptions) on failure; the caller is
         responsible for reporting these to the client.
@@ -92,29 +94,36 @@ class DataSetController:
                 response.op = request.op
                 self._clone_cell_selections(request, response)
                 self._on_dataset_get(request, response)
-        elif request.op == jcoms.GetSet.Value('UNDO'):
-            async with self._data.attach():
-                log.debug('Undo')
-                undo_request = self._mod_tracker.begin_undo()
-                response.op = undo_request.op
-                self._clone_cell_selections(undo_request, response)
-                self._on_dataset_set(undo_request, response)
-                self._mod_tracker.end_undo(response)
-                log.debug('Undo complete')
-        elif request.op == jcoms.GetSet.Value('REDO'):
-            async with self._data.attach():
-                log.debug('Redo')
-                redo_request = self._mod_tracker.get_redo()
-                response.op = redo_request.op
-                self._clone_cell_selections(redo_request, response)
-                self._on_dataset_set(redo_request, response)
-                log.debug('Redo complete')
         else:
             raise ValueError()
 
-        response.changesCount = self._mod_tracker.count
-        response.changesPosition = self._mod_tracker.position
+        return response
 
+    async def undo(self):
+        """Undo the most recent change to the data set, and return the
+        response describing it"""
+        response = jcoms.DataSetRR()
+        async with self._data.attach():
+            log.debug('Undo')
+            undo_request = self._mod_tracker.begin_undo()
+            response.op = undo_request.op
+            self._clone_cell_selections(undo_request, response)
+            self._on_dataset_set(undo_request, response)
+            self._mod_tracker.end_undo(response)
+            log.debug('Undo complete')
+        return response
+
+    async def redo(self):
+        """Redo the most recently undone change to the data set, and return
+        the response describing it"""
+        response = jcoms.DataSetRR()
+        async with self._data.attach():
+            log.debug('Redo')
+            redo_request = self._mod_tracker.get_redo()
+            response.op = redo_request.op
+            self._clone_cell_selections(redo_request, response)
+            self._on_dataset_set(redo_request, response)
+            log.debug('Redo complete')
         return response
 
     def _on_dataset_set_checks(self, request):

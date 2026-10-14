@@ -502,4 +502,8 @@ class Analysis:
             if not waiter.done():
                 waiter.set_exception(RuntimeError('The analysis was removed'))
 
+    def notify_restored(self):
+        # put back, after being removed (by an undo, say)
+        pass
+
 
