@@ -274,8 +274,8 @@ ggPalette <- function(pal = 'jmv', scale = 'discrete') {
     color <- function(n) colorPalette(n, pal=pal, 'color')
 
     return(
-        list(ggplot2::discrete_scale("fill", "jmv", fill),
-             ggplot2::discrete_scale("colour", "jmv", color))
+        list(ggplot2::discrete_scale("fill", palette=fill),
+             ggplot2::discrete_scale("colour", palette=color))
     )
 }
 
