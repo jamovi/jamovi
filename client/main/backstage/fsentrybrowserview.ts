@@ -76,7 +76,8 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
             'focus .silky-bs-fslist-browser-import-filetype' : this._focusChanged,
             'input .search' : this._searchChanged,
             'click .jmv-bs-fslist-checkbox': this._checkclicked,
-            'click .silky-bs-fslist-entry-expand': this._expandClicked
+            'click .silky-bs-fslist-entry-expand': this._expandClicked,
+            'click .silky-bs-fslist-browser-crumb': this._crumbClicked
         });
 
         this.model = model;
@@ -109,14 +110,22 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
         this._resizeObserver = null;
     }
 
-    // only offer to expand descriptions that are actually cut off
+    // only offer to expand descriptions or tags that are actually cut off
     private _updateTruncatedEntries() {
         const items = Array.from(this.itemsList.querySelectorAll<HTMLElement>('.silky-bs-fslist-item.has-meta:not(.expanded)'));
-        const truncated = items.map(item => {
+        const overflows = (el: HTMLElement) => el.scrollWidth > el.clientWidth + 1;
+        const states = items.map(item => {
             const meta = item.querySelector<HTMLElement>('.silky-bs-fslist-entry-meta');
-            return meta !== null && meta.scrollHeight > meta.clientHeight + 1;
+            const tags = item.querySelector<HTMLElement>('.silky-bs-fslist-entry-heading > .tags');
+            const metaTruncated = meta !== null && meta.scrollHeight > meta.clientHeight + 1;
+            const tagsTruncated = tags !== null && (overflows(tags) || Array.from(tags.children as HTMLCollectionOf<HTMLElement>).some(overflows));
+            return { metaTruncated, tagsTruncated };
         });
-        items.forEach((item, i) => item.classList.toggle('truncated', truncated[i]));
+        items.forEach((item, i) => {
+            const { metaTruncated, tagsTruncated } = states[i];
+            item.classList.toggle('truncated', metaTruncated || tagsTruncated);
+            item.classList.toggle('tags-truncated', tagsTruncated);
+        });
     }
 
     private _expandClicked(event: MouseEvent) {
@@ -566,10 +575,12 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
         if (dirInfo !== undefined)
             filePath = pathtools.normalise(dirInfo.path).replace(/\//g, ' \uFE65 ');
 
-        //this.$header.find('.silky-bs-fslist-browser-location').text(filePath);
         const locationEl = this.header.querySelector<HTMLElement>('.silky-bs-fslist-browser-location');
-        if (locationEl)
-            locationEl.textContent = filePath;
+        if (locationEl) {
+            locationEl.textContent = '';
+            if (dirInfo !== undefined)
+                locationEl.append(...this._createBreadcrumbs(dirInfo.path));
+        }
 
         let searchValue = '';
         let search = this.querySelector<HTMLInputElement>('.searchbox > input');
@@ -696,11 +707,11 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
                 if (item.description || item.tags || item.license) {
                     let itemHeading = h('div', { class: 'silky-bs-fslist-entry-heading' },
                         h('div', { class: 'silky-bs-fslist-entry-name' }, name));
-                    if (item.tags) {
+                    if (item.tags?.length) {
                         let tags = h('div', { class: 'tags' });
                         for (let tag of item.tags) {
                             let hue = crc16(tag) % 360;
-                            tags.append(h('div', { class: 'tag', style: `background-color: hsl(${ hue }, 70%, 45%);` }, tag));
+                            tags.append(h('div', { class: 'tag', title: tag, style: `background-color: hsl(${ hue }, 70%, 45%);` }, tag));
                         }
                         itemHeading.append(tags);
                     }
@@ -1175,6 +1186,39 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
             this._goToFolder(filePath);
             this.clearSelection();
         }
+        keyTips.update({ keyTipPath: this.keyTipPath });
+    }
+
+    // each ancestor folder in the path is a link to that folder; the current folder is plain text
+    private _createBreadcrumbs(dirPath: string): (HTMLElement | string)[] {
+        const segments = dirPath.replace(/\/$/, '').split('/');
+        const crumbs: (HTMLElement | string)[] = [];
+        segments.forEach((segment, i) => {
+            if (i > 0)
+                crumbs.push(' \uFE65 ');
+            // the first segment may be a placeholder like {{Examples}}, so it needs translating
+            const label = i === 0 ? pathtools.normalise(segment) : segment;
+            if (label === '')
+                return;
+            if (i === segments.length - 1) {
+                crumbs.push(h('span', { class: 'silky-bs-fslist-browser-crumb-current' }, label));
+                return;
+            }
+            let target = segments.slice(0, i + 1).join('/');
+            if (target.endsWith(':')) // windows drive
+                target += '/';
+            crumbs.push(h('button', { class: 'silky-bs-fslist-browser-crumb', type: 'button', 'data-path': target, 'aria-label': _('Go to {0}', [label]) }, label));
+        });
+        return crumbs;
+    }
+
+    private _crumbClicked(event: MouseEvent) {
+        const crumb = (event.target as HTMLElement).closest<HTMLElement>('.silky-bs-fslist-browser-crumb');
+        const path = crumb?.dataset.path;
+        if ( ! path)
+            return;
+        this._goToFolder(path);
+        this.clearSelection();
         keyTips.update({ keyTipPath: this.keyTipPath });
     }
 
