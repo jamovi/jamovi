@@ -459,6 +459,7 @@ const createTranslationJSON = function(code, domain = 'messages') {
     const parsed = this.translations[code];
     const locale_data = {};
     const jed = {
+        code,
         domain,
         locale_data: {
             [domain]: locale_data
