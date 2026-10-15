@@ -78,6 +78,7 @@ const eventInheritance = {
     ModeSelector: ['OptionControl'],
     LevelSelector: ['OptionControl'],
     TextBox: ['OptionControl'],
+    ColorPicker: ['OptionControl'],
     ListBox: ['OptionControl', 'OptionListControl', 'TargetListSupport'],
     VariablesListBox: ['OptionControl', 'OptionListControl', 'TargetListSupport'],
     Supplier: ['Supplier'],

@@ -125,7 +125,7 @@ class TableView extends HTMLElement implements DataSetView {
 
     _lastPos: Position;
 
-    _resizingColumn: { $resizer: HTMLElement, startPageX: number, column: Column };
+    _resizingColumn: { $resizer: HTMLElement, startPageX: number, startWidth: number, column: Column };
 
 
     constructor(model: DataSetViewModel, controller: ViewController, protected settings: Settings) {
@@ -525,16 +525,27 @@ class TableView extends HTMLElement implements DataSetView {
     _addResizeListeners($element: HTMLElement) {
         const $resizers = $element.querySelector('.jmv-column-header-resizer');
         $resizers.addEventListener('pointerdown', (event: PointerEvent) => {
+            if (event.button !== 0)
+                return;
+
             if (event.target instanceof HTMLElement) {
+                if (this._resizingColumn)
+                    this._endColumnResize();
+
+                let columnId = parseInt(event.target.parentNode instanceof HTMLElement && event.target.parentNode.dataset.id);
+                let column = this.model.getColumnById(columnId);
+                if ( ! column)
+                    return;
+
                 event.target.setPointerCapture(event.pointerId);
 
                 event.target.addEventListener('pointerup', this._resizeUpHandler);
                 event.target.addEventListener('pointercancel', this._resizeUpHandler);
+                event.target.addEventListener('lostpointercapture', this._resizeUpHandler);
                 event.target.addEventListener('pointermove', this._resizeMoveHandler);
 
-                let columnId = parseInt(event.target.parentNode instanceof HTMLElement && event.target.parentNode.dataset.id);
-                let column = this.model.getColumnById(columnId);
-                this._resizingColumn = { $resizer: event.target, startPageX: event.pageX, column: column };
+                let colNo = parseInt(event.target.getAttribute('data-index'));
+                this._resizingColumn = { $resizer: event.target, startPageX: event.pageX, startWidth: this._widths[colNo], column: column };
                 event.stopPropagation();
                 event.preventDefault();
             }
@@ -543,18 +554,36 @@ class TableView extends HTMLElement implements DataSetView {
     }
 
     _resizeMoveHandler(event: PointerEvent) {
+        // if the button has been released without us receiving a pointerup
+        // (i.e. it was swallowed by the OS, a touchpad gesture, a focus
+        // change, etc.) end the resize rather than resizing on hover
+        if ((event.buttons & 1) === 0) {
+            this._endColumnResize();
+            return;
+        }
         this._columnResizeHandler(event, this._resizingColumn);
     }
 
     _resizeUpHandler(event: PointerEvent) {
-        let column = this._resizingColumn.column;
-        if (column.name !== '')  // not virtual
-            this.model.changeColumn(column.id, { width: column.width });
+        this._endColumnResize();
+    }
+
+    _endColumnResize() {
+        let data = this._resizingColumn;
+        if ( ! data)
+            return;
+
         this._resizingColumn = null;
 
-        event.target.removeEventListener('pointerup', this._resizeUpHandler);
-        event.target.removeEventListener('pointercancel', this._resizeUpHandler);
-        event.target.removeEventListener('pointermove', this._resizeMoveHandler);
+        let $resizer = data.$resizer;
+        $resizer.removeEventListener('pointerup', this._resizeUpHandler);
+        $resizer.removeEventListener('pointercancel', this._resizeUpHandler);
+        $resizer.removeEventListener('lostpointercapture', this._resizeUpHandler);
+        $resizer.removeEventListener('pointermove', this._resizeMoveHandler);
+
+        let column = data.column;
+        if (column && column.name !== '')  // not virtual
+            this.model.changeColumn(column.id, { width: column.width });
     }
 
     _updateHeight() {
@@ -2336,29 +2365,30 @@ class TableView extends HTMLElement implements DataSetView {
             this.model.readCells(this.viewport);
     }
 
-    _columnResizeHandler(event: PointerEvent, data: { $resizer: HTMLElement; startPageX: number; column: Column; }) {
+    _columnResizeHandler(event: PointerEvent, data: { $resizer: HTMLElement; startPageX: number; startWidth: number; column: Column; }) {
+        if ( ! data)
+            return;
         if (event.clientX === 0 && event.clientY === 0)
             return;
 
         let column = data.column;
         let $target = data.$resizer;
-        let x = event.pageX - data.startPageX; // event.offsetX - 6;
+        let colNo = parseInt($target.getAttribute('data-index'));
 
-        data.startPageX = event.pageX;
+        // width is measured from where the drag started, so the column
+        // edge stays under the pointer (including after hitting the minimum)
+        let delta = event.pageX - data.startPageX;
+        if (document.body.dir === 'rtl')
+            delta = -delta;
+
+        let newWidth = Math.max(32, data.startWidth + delta);
+        let x = newWidth - this._widths[colNo];
 
         if (x === 0)
             return;
 
-        let colNo = parseInt($target.getAttribute('data-index'));
-
-        let newWidth = this._widths[colNo] + x;
         if (document.body.dir === 'rtl')
-            newWidth = this._widths[colNo] - x;
-
-        if (newWidth < 32) {
-            newWidth = 32;
-            x = newWidth - this._widths[colNo];
-        }
+            x = -x;
 
         column.width = Math.floor(newWidth);
 
