@@ -1419,6 +1419,21 @@ const uiOptionControl = {
         }
     },
 
+    ColorPicker: {
+        usesSingleCell: function(ctrl) {
+            return ctrl.useSingleCell === true;
+        },
+        isContainerControl: function(ctrl) {
+            return false;
+        },
+        isOptionControl: function(ctrl) {
+            return ctrl.isVirtual !== true;
+        },
+        toRaw: function(ctrl) {
+            return "string";
+        }
+    },
+
     RadioButton: {
         usesSingleCell: function(ctrl) {
             return true;
