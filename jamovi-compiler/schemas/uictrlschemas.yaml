@@ -30,6 +30,7 @@ ControlBase:
                   - Content
                   - ActionButton
                   - File
+                  - ColorPicker
         name:
             type: string
         stage:
@@ -549,6 +550,10 @@ ControlInheritance:
         - GridControl
         - OptionControl
     File:
+        - ControlBase
+        - GridControl
+        - OptionControl
+    ColorPicker:
         - ControlBase
         - GridControl
         - OptionControl
