@@ -512,7 +512,12 @@ class Module {
                     let response = await fetch(url);
                     if (response.ok) {
                         try {
-                            return await response.json() as I18nData;
+                            let defn = await response.json() as I18nData;
+                            // modules built with compilers from 2026-03-23 omit the code
+                            // (which determines rtl), so fall back to the one requested
+                            if ( ! defn.code)
+                                defn.code = code;
+                            return defn;
                         }
                         catch (e) {
                             return null;

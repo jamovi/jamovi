@@ -263,8 +263,10 @@ export class I18n {
 
         let rtlLangs = ['ar', 'arc', 'dv', 'fa', 'ha', 'he', 'khw', 'ks', 'ku', 'ps', 'ur', 'yi'];
 
+        code = code.toLowerCase();  // weblate codes can be mixed case with an _ separator (i.e. fa_IR)
+
         return rtlLangs.find((item) => {
-            return code === item || code.startsWith(item + '-');
+            return code === item || code.startsWith(item + '-') || code.startsWith(item + '_');
         });
     }
 
