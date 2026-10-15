@@ -196,13 +196,7 @@ class Main {  // this is constructed at the bottom
     _reallyNotifyResize() {
         let rect = this.$results.getBoundingClientRect();
         let width = rect.width + 40;
-        const errorBox = this.$results.querySelector<HTMLElement>('#errormsg-0 > .error-box');
         let height = rect.height;
-        if (errorBox) {
-            const errorRect = errorBox.getBoundingClientRect();
-            if (errorRect.bottom + 20 > rect.bottom)
-                height += errorRect.bottom - rect.bottom + 20;
-        }
         let scrollIntoView = true;
         let $focusedAnnotations = document.querySelectorAll('.jmv-annotation.focused');
         if ($focusedAnnotations.length > 0)
