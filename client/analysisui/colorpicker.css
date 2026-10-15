@@ -1,0 +1,40 @@
+.jmv-color-picker {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.jmv-color-picker-swatch {
+    flex: none;
+    width: 26px;
+    height: 22px;
+    padding: 1px;
+    border: 1px solid #bebebe;
+    background-color: white;
+    cursor: pointer;
+}
+
+.jmv-color-picker-swatch::-webkit-color-swatch-wrapper {
+    padding: 0px;
+}
+
+.jmv-color-picker-swatch::-webkit-color-swatch {
+    border: none;
+}
+
+/* no (valid) colour -- show a strike through rather than black */
+.jmv-color-picker-swatch.empty::-webkit-color-swatch {
+    background: linear-gradient(to top left, white calc(50% - 1px), #c00000, white calc(50% + 1px)) !important;
+}
+
+.jmv-color-picker-swatch:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+.jmv-color-picker-hex {
+    width: 70px;
+    padding-inline-start: 3px;
+    box-sizing: border-box;
+    font-family: monospace;
+}
