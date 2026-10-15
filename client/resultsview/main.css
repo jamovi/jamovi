@@ -105,7 +105,9 @@ jmv-results-text {
 .jmv-results-error-placement .error-box {
     display: flex;
     flex-direction: row;
-    position: absolute;
+    width: fit-content;
+    max-width: 600px;
+    margin-block: 4px 10px;
     background-color: #ffe6ea;
     align-items: center;
     border-radius: 3px;
@@ -308,10 +310,35 @@ input, [contenteditable], [contenteditable] * {
     color: #AAAAAA ;
 }
 
+/* the error sits in the flow and pushes the content below it down; the grid
+   row transitions between 0fr and 1fr so it slides open and closed */
 .jmv-results-error-placement {
-    height: 0px ;
-    position: relative ;
+    display: grid ;
+    grid-template-rows: 0fr ;
+    /* visibility is transitioned so the error stays visible while it slides closed */
+    transition: grid-template-rows 0.2s ease, visibility 0.2s ;
     visibility: hidden;
+}
+
+.jmv-results-error-placement.shown {
+    grid-template-rows: 1fr ;
+}
+
+.jmv-results-error-slide {
+    min-height: 0px ;
+    overflow: hidden ;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .jmv-results-error-placement {
+        transition: none ;
+    }
+}
+
+/* an error held while the analysis re-runs, which may no longer apply */
+.jmv-results-error-placement.pending .error-box {
+    opacity: 0.5 ;
+    transition: opacity 0.2s ;
 }
 
 .jmv-results-error-message {

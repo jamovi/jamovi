@@ -43,10 +43,39 @@ export class Model<T extends ElementModel> extends EventMap<T> {
 
 type InferType<T> = T extends Model<infer A> ? A : never;
 
+// holds #results at a minimum height while errors slide open or closed;
+// overlapping holds keep the largest height until the last is released
+const resultsHeightHolds = new Map<HTMLElement, number[]>();
+
+function holdResultsHeight(results: HTMLElement, height: number) {
+    let holds = resultsHeightHolds.get(results);
+    if (holds === undefined) {
+        holds = [];
+        resultsHeightHolds.set(results, holds);
+    }
+    holds.push(height);
+    results.style.minHeight = `${ Math.max(...holds) }px`;
+
+    let released = false;
+    return () => {
+        if (released)
+            return;
+        released = true;
+        holds.splice(holds.indexOf(height), 1);
+        if (holds.length === 0) {
+            resultsHeightHolds.delete(results);
+            results.style.minHeight = '';
+        }
+        else
+            results.style.minHeight = `${ Math.max(...holds) }px`;
+    };
+}
+
 export abstract class View<M extends Model<T> = any, T extends ElementModel = InferType<M>> extends HTMLElement {
     layout: Tracker = new Tracker();
     model: M;
     $errorPlacement: HTMLElement;
+    _errorSlideEnd: (() => void) | null = null;
     addIndex: number = 1;
     refs: ReferenceNumbers;
     ready: Promise<void>;
@@ -109,21 +138,96 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
     render() {
         let error = this.model.get('error');
         if (error !== null) {
-            if (this.classList.contains('jmv-results-error'))
-                this.$errorPlacement.querySelector('.jmv-results-error-message').textContent = error.message;
+            const message = this.$errorPlacement.querySelector('.jmv-results-error-message');
+            if (message)
+                message.textContent = error.message;
             else {
-                this.classList.add('jmv-results-error');
-                this.$errorPlacement.append(h('div', { class: 'error-box' },
-                    h('div', { class: 'icon' }),
-                    h('div', { class: 'jmv-results-error-message' }, error.message)));
+                this.$errorPlacement.append(h('div', { class: 'jmv-results-error-slide' },
+                    h('div', { class: 'error-box' },
+                        h('div', { class: 'icon' }),
+                        h('div', { class: 'jmv-results-error-message' }, error.message))));
             }
+            this.classList.add('jmv-results-error');
+            this.$errorPlacement.classList.remove('pending');
             this.setAttribute('aria-invalid', 'true');
+            if ( ! this.$errorPlacement.classList.contains('shown'))
+                this._slideError(true);
+        }
+        else if (this._isInProgress() && this.$errorPlacement.classList.contains('shown')) {
+            // the error is cleared at init and only comes back (if at all) once the
+            // analysis has run, so hold it in place until then rather than bouncing
+            this.$errorPlacement.classList.add('pending');
+        }
+        else if (this.$errorPlacement.classList.contains('shown')) {
+            this.$errorPlacement.classList.remove('pending');
+            this.classList.remove('jmv-results-error');
+            this.removeAttribute('aria-invalid');
+            this._slideError(false);
+        }
+    }
+
+    // the results frame is resized by the main window with its own height
+    // transition, and resizing it on every frame of the slide makes it flicker.
+    // so the results are held at their larger height for the duration of the
+    // slide, so that the frame is only resized once (before opening, or after
+    // closing)
+    _slideError(show: boolean) {
+        const placement = this.$errorPlacement;
+        const results = this.closest<HTMLElement>('#results');
+
+        this._errorSlideEnd?.();
+        this._errorSlideEnd = null;
+
+        const finish = () => {
+            if ( ! placement.classList.contains('shown'))
+                placement.replaceChildren();
+        };
+
+        if (results === null || parseFloat(getComputedStyle(placement).transitionDuration) === 0) {
+            placement.classList.toggle('shown', show);
+            finish();
+            return;
+        }
+
+        let height: number;
+        if (show) {
+            // measure the opened height with the transition off
+            placement.style.transition = 'none';
+            placement.classList.add('shown');
+            height = results.getBoundingClientRect().height;
+            placement.classList.remove('shown');
+            placement.offsetHeight; // force layout so the slide starts from closed
+            placement.style.transition = '';
         }
         else {
-            this.classList.remove('jmv-results-error');
-            this.$errorPlacement.replaceChildren();
-            this.removeAttribute('aria-invalid');
+            height = results.getBoundingClientRect().height;
         }
+
+        const release = holdResultsHeight(results, height);
+        const onEnd = (event: TransitionEvent) => {
+            if (event.target !== placement)
+                return;
+            end();
+            finish();
+        };
+        const end = () => {
+            placement.removeEventListener('transitionend', onEnd);
+            placement.removeEventListener('transitioncancel', onEnd);
+            this._errorSlideEnd = null;
+            release();
+        };
+        placement.addEventListener('transitionend', onEnd);
+        placement.addEventListener('transitioncancel', onEnd);
+        this._errorSlideEnd = end;
+
+        placement.classList.toggle('shown', show);
+    }
+
+    _isInProgress() {
+        const status = this.model.attributes.status;
+        return status === AnalysisStatus.ANALYSIS_INITED
+            || status === AnalysisStatus.ANALYSIS_RUNNING
+            || status === AnalysisStatus.ANALYSIS_RENDERING;
     }
 
     _collapseSection() {
