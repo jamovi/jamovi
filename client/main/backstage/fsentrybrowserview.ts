@@ -347,13 +347,22 @@ export class FSEntryBrowserView extends EventDistributor implements IBackstagePa
         if (this.model.clickProcess === 'save' || this.model.clickProcess === 'export') {
             type = 'save';
             const inputEl = this.header.querySelector<HTMLInputElement>('.silky-bs-fslist-browser-save-name');
-            const filename = inputEl?.value.trim() ?? '';
-            //filename = this.$header.find('.silky-bs-fslist-browser-save-name').val().trim();
+            filename = inputEl?.value.trim() ?? '';
         }
         else if (this.model.clickProcess === 'import')
             type = 'import';
 
-        this.model.requestBrowse({ list: this.model.fileExtensions, type, filename });
+        // native dialogs default to the first filter, so move the
+        // currently selected file type to the front of the list
+        let list = this.model.fileExtensions;
+        const select = this.querySelector<HTMLSelectElement>('.silky-bs-fslist-browser-save-filetype-inner');
+        if (select) {
+            const index = parseInt(select.value);
+            if (index > 0 && index < list.length)
+                list = [ list[index], ...list.slice(0, index), ...list.slice(index + 1) ] as typeof list;
+        }
+
+        this.model.requestBrowse({ list, type, filename });
     }
 
     private _createFileTypeSelector() {

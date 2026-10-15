@@ -745,8 +745,9 @@ export class BackstageModel extends EventMap<IBackstageModel> {
                 defaultPath: path.join(osPath, '')
             });
 
-            if ( ! result.cancelled)
-                this._dialogPath = result.files[0];
+            if (result.cancelled)
+                return;
+            this._dialogPath = result.files[0];
         }
         else if (type === 'import') {
 
@@ -756,8 +757,9 @@ export class BackstageModel extends EventMap<IBackstageModel> {
                 defaultPath: path.join(osPath, '')
             });
 
-            if ( ! result.cancelled)
-                this._dialogPath = result.files;
+            if (result.cancelled)
+                return;
+            this._dialogPath = result.files;
         }
         else if (type === 'save') {
 
@@ -766,9 +768,9 @@ export class BackstageModel extends EventMap<IBackstageModel> {
                 defaultPath: path.join(osPath, filename),
             });
 
-            if ( ! result.cancelled) {
-                this._dialogPath = result.file;
-            }
+            if (result.cancelled)
+                return;
+            this._dialogPath = result.file;
         }
 
         this.set('activated', false);
