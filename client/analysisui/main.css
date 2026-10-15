@@ -27,6 +27,7 @@
 @import "contentselector.css";
 @import "gridactionbutton.css";
 @import "fileselector.css";
+@import "colorpicker.css";
 
 * {
     user-select: none ;

@@ -22,6 +22,7 @@ import OutputControl from './output';
 import ModeSelector from './contentselector';
 import ActionButton from './gridactionbutton';
 import FileSelector from './fileselector';
+import ColorPicker from './colorpicker';
 import { ControlType, CtrlDef } from './optionsview';
 
 const DefaultControls: { [key: string]: ControlType<CtrlDef> } = {
@@ -50,6 +51,7 @@ const DefaultControls: { [key: string]: ControlType<CtrlDef> } = {
     ModeSelector: ModeSelector,
     ActionButton: ActionButton,
     File: FileSelector,
+    ColorPicker: ColorPicker,
 
     /*ListItem: { //Not to be used, no longer supported
         TextBox: GridTextbox, //Not to be used, no longer supported
