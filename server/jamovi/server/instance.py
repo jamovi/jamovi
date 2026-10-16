@@ -564,6 +564,9 @@ class Instance:
 
             if self._coms is not None and response is not None:
                 controller.populate_schema_info(None, response)
+                # the client takes its undo state from every DataSetRR
+                response.changesCount = controller.mod_tracker.count
+                response.changesPosition = controller.mod_tracker.position
                 self._coms.send(response, self._instance_id)
 
             self.update_analyses(dataset, changed=changed, renamed=renamed, rows_added_removed=rows_added_removed)
