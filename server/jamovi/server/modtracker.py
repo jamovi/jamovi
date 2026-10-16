@@ -153,7 +153,12 @@ class ModTracker:
 
             changes = state_data['changes']
             for id in changes:
-                column = self._data.get_column_by_id(id)
+                try:
+                    column = self._data.get_column_by_id(id)
+                except KeyError:
+                    # output columns are added and removed by analyses, outside
+                    # of the undo history, so may no longer exist
+                    continue
                 if column.cell_tracker.state_id != changes[id]['state_id']:
                     column.cell_tracker.state_id = changes[id]['state_id']
                     ranges = []
