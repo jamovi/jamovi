@@ -659,6 +659,10 @@ message DataSetRR {
         string cbHtml = 8;
 
         bool clear = 9;
+
+        // when present, the rows of this block are these data set row
+        // indices, rather than the view rows rowStart to rowStart + rowCount
+        repeated int32 rowIndices = 10 [packed=true];
     }
 
     message RowData {

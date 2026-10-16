@@ -342,7 +342,8 @@ class ModTracker:
         if self._suspend_cell_tracking is False:
             column.cell_tracker.set_cells_as_edited(0, self._data.row_count - 1)
 
-    def log_data_write(self, block):
+    def log_data_write(self, column_start, column_count, row_indices):
+        """log the cells about to be written; row_indices are data set rows"""
         if self._active:
             event_data = self._event_data
             new_event = event_data['undo']
@@ -350,22 +351,18 @@ class ModTracker:
             new_event.incData = True
             v_count = self._data.visible_column_count
             r_count = self._data.row_count
-            if block.incCBData is False and block.columnStart < v_count and block.rowStart < r_count:
+            row_indices = [ index for index in row_indices if index < r_count ]
+            if column_start < v_count and len(row_indices) > 0:
                 data_block = new_event.data.add()
+                data_block.rowIndices[:] = row_indices
+                data_block.rowCount = len(row_indices)
 
-                row_end = block.rowStart + block.rowCount - 1
-                data_block.rowStart = block.rowStart
-                if row_end < r_count:
-                    data_block.rowCount = block.rowCount
-                else:
-                    data_block.rowCount = r_count - block.rowStart
-
-                data_block.columnStart = block.columnStart
-                column_end = block.columnStart + block.columnCount - 1
+                data_block.columnStart = column_start
+                column_end = column_start + column_count - 1
                 if column_end < v_count:
-                    data_block.columnCount = block.columnCount
+                    data_block.columnCount = column_count
                 else:
-                    data_block.columnCount = v_count - block.columnStart
+                    data_block.columnCount = v_count - column_start
                 event_data['space_used'] += self._populate_data(data_block)
 
     def log_rows_appended(self, start, end):
@@ -450,9 +447,12 @@ class ModTracker:
             column.cell_tracker.set_cells_as_edited(row_start, row_end)
 
     def _populate_data(self, block_pb):
+        # undo blocks address data set rows, so they replay correctly
+        # whatever the view order at the time
+        if len(block_pb.rowIndices) == 0:
+            block_pb.rowIndices[:] = range(block_pb.rowStart, block_pb.rowStart + block_pb.rowCount)
         col_start = block_pb.columnStart
-        row_start = block_pb.rowStart
-        row_count = block_pb.rowCount
+        row_indices = block_pb.rowIndices
         col_count = block_pb.columnCount
         base_index = 0
         search_index = col_start
@@ -472,7 +472,7 @@ class ModTracker:
             search_index = 0
 
             if column.data_type == DataType.DECIMAL:
-                for r in range(row_start, row_start + row_count):
+                for r in row_indices:
                     cell = block_pb.values.add()
                     if r >= column.row_count:
                         cell.o = jcoms.SpecialValues.Value('MISSING')
@@ -490,7 +490,7 @@ class ModTracker:
                         end_redo = True
                         break
             elif column.data_type == DataType.TEXT:
-                for r in range(row_start, row_start + row_count):
+                for r in row_indices:
                     cell = block_pb.values.add()
                     if r >= column.row_count:
                         cell.o = jcoms.SpecialValues.Value('MISSING')
@@ -508,7 +508,7 @@ class ModTracker:
                         end_redo = True
                         break
             else:
-                for r in range(row_start, row_start + row_count):
+                for r in row_indices:
                     cell = block_pb.values.add()
                     if r >= column.row_count:
                         cell.o = jcoms.SpecialValues.Value('MISSING')

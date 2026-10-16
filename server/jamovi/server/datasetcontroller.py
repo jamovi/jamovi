@@ -28,6 +28,22 @@ EURO_REGEX = re.compile(r'^\d+,\d+$')
 log = logging.getLogger(__name__)
 
 
+def _runs(indices):
+    """split indices into runs of consecutive ascending values; yields (start, count)"""
+    start = None
+    count = 0
+    for index in indices:
+        if start is not None and index == start + count:
+            count += 1
+        else:
+            if start is not None:
+                yield start, count
+            start = index
+            count = 1
+    if start is not None:
+        yield start, count
+
+
 class ForbiddenOp(PermissionError):
     def __init__(self, operation, message):
         super().__init__(message)
@@ -929,6 +945,7 @@ class DataSetController:
             for i in range(block_count):
                 block_pb = request.data[i]
                 block = { 'row_start': block_pb.rowStart, 'column_start': block_pb.columnStart }
+                block['row_indices'] = list(block_pb.rowIndices) if len(block_pb.rowIndices) > 0 else None
                 blocks[i] = block
                 row_count = 0
                 col_count = 0
@@ -999,11 +1016,20 @@ class DataSetController:
                     if is_actually_clear != block['clear']:
                         block['clear'] = is_actually_clear
 
+                if block['row_indices'] is not None:
+                    row_count = min(row_count, len(block['row_indices']))
+                    block['row_count'] = row_count
+                    block['row_indices'] = block['row_indices'][:row_count]
+
                 if block_pb.clear is False:
                     if right_most_column_index < block_pb.columnStart + col_count - 1:
                         right_most_column_index = block_pb.columnStart + col_count - 1
-                    if bottom_most_row_index < block_pb.rowStart + row_count - 1:
-                        bottom_most_row_index = block_pb.rowStart + row_count - 1
+                    if block['row_indices'] is not None:
+                        bottom_row = max(block['row_indices'], default=-1)
+                    else:
+                        bottom_row = block_pb.rowStart + row_count - 1
+                    if bottom_most_row_index < bottom_row:
+                        bottom_most_row_index = bottom_row
                 else:
                     size = 0
                     bottom_most_row_index = -1
@@ -1063,16 +1089,22 @@ class DataSetController:
 
         data_list = []
 
-        del response.data[:]
-        response.incData = True
-        for block in data:
-            n_block = response.data.add()
-            n_block.rowStart = block['row_start']
-            n_block.columnStart = block['column_start']
-            n_block.rowCount = block['row_count']
-            n_block.columnCount = block['column_count']
-            n_block.clear = block['clear']
-            self._mod_tracker.log_data_write(n_block)
+        expected_n_rows = self._data.row_count
+
+        if bottom_most_row_index >= self._data.row_count:
+            expected_n_rows = bottom_most_row_index + 1
+
+        for i, block in enumerate(data):
+            block['in_view_rows'] = block['row_indices'] is None
+            if block['in_view_rows']:
+                # resolve the view rows to data set rows. these are recorded
+                # on the request, so a redo addresses the same data set rows
+                # regardless of the view order at the time
+                row_start = block['row_start']
+                row_count = max(0, min(block['row_count'], expected_n_rows - row_start))
+                block['row_indices'] = self._data.get_data_indices(row_start, row_count)
+                request.data[i].rowIndices[:] = block['row_indices']
+            self._mod_tracker.log_data_write(block['column_start'], block['column_count'], block['row_indices'])
 
         cols_changed = set()  # schema changes to send
         reparse = set()
@@ -1080,10 +1112,6 @@ class DataSetController:
 
         n_cols_before = self._data.total_column_count
         n_rows_before = self._data.row_count
-        expected_n_rows = self._data.row_count
-
-        if bottom_most_row_index >= self._data.row_count:
-            expected_n_rows = bottom_most_row_index + 1
 
         if right_most_column_index != -1:
             right_most_column_data = self._get_column(right_most_column_index, 0, True)
@@ -1097,18 +1125,11 @@ class DataSetController:
 
         for block in data:
             col_start = block['column_start']
-            row_start = block['row_start']
-            row_count = block['row_count']
+            row_indices = block['row_indices']
             col_count = block['column_count']
 
-            if row_count == 0 or col_count == 0:
+            if len(row_indices) == 0 or col_count == 0:
                 continue
-
-            if row_start >= expected_n_rows:
-                continue
-
-            if row_start + row_count - 1 >= expected_n_rows:
-                row_count = expected_n_rows - row_start
 
             base_index = 0
             search_index = col_start
@@ -1125,7 +1146,7 @@ class DataSetController:
                 search_index = 0
 
                 if column.is_virtual is False and column.column_type not in { ColumnType.COMPUTED, ColumnType.RECODED, ColumnType.FILTER }:
-                    data_list.append({ 'column': column, 'row_start': row_start, 'row_count': row_count, 'values': block['values'][i] })
+                    data_list.append({ 'column': column, 'row_indices': row_indices, 'values': block['values'][i] })
 
                 if column.column_type == ColumnType.DATA or column.column_type == ColumnType.NONE:
                     data_col_count += 1
@@ -1191,14 +1212,9 @@ class DataSetController:
 
         for data_item in data_list:
             column = data_item['column']
-            row_start = data_item['row_start']
-            row_count = data_item['row_count']
+            indices_map = data_item['row_indices']
+            row_count = len(indices_map)
             values = data_item['values']
-
-            if self._data.ex_filtered and self._data.has_filters:
-                indices_map = self._data.get_indices_ex_filtered(row_start, row_count)
-            else:
-                indices_map = list(range(row_start, row_start + row_count))
 
             column.column_type = ColumnType.DATA
             column.set_needs_recalc()  # invalidate dependent nodes
@@ -1306,11 +1322,8 @@ class DataSetController:
                     else:
                         raise RuntimeError('Should not get here')
 
-            if self._data.ex_filtered and self._data.has_filters:
-                for row_no in indices_map:
-                    self._mod_tracker.set_cells_as_edited(column, row_no, row_no)
-            else:
-                self._mod_tracker.set_cells_as_edited(column, row_start, row_start + row_count - 1)
+            for run_start, run_count in _runs(indices_map):
+                self._mod_tracker.set_cells_as_edited(column, run_start, run_start + run_count - 1)
 
             cols_changed.add(column)
 
@@ -1363,6 +1376,23 @@ class DataSetController:
         for column in cols_changed:
             changes['columns'].add(column)
             changes['data_changed'].add(column)
+
+        # the response describes the changed cells in view rows
+        del response.data[:]
+        response.incData = True
+        for block in data:
+            if block['in_view_rows']:
+                view_runs = [ (block['row_start'], block['row_count']) ]
+            else:
+                view_rows = sorted(set(self._data.get_view_indices(block['row_indices'])))
+                view_runs = _runs(view_rows)
+            for row_start, row_count in view_runs:
+                n_block = response.data.add()
+                n_block.rowStart = row_start
+                n_block.columnStart = block['column_start']
+                n_block.rowCount = row_count
+                n_block.columnCount = block['column_count']
+                n_block.clear = block['clear']
 
         self._populate_cells(request, response)
 
