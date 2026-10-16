@@ -195,6 +195,33 @@ class DataSetModel:
         assert self._dataset is not None
         return self._dataset.get_indices_ex_filtered(row_start, row_count)
 
+    @property
+    def is_view_remapped(self):
+        """whether view rows differ from data set rows"""
+        return self.ex_filtered and self.has_filters
+
+    def get_data_indices(self, view_start, view_count):
+        """the data set rows displayed at a range of view rows"""
+        if not self.is_view_remapped:
+            return list(range(view_start, view_start + view_count))
+        n_view = self.row_count_ex_filtered
+        view_end = view_start + view_count
+        indices = [ ]
+        if view_start < n_view:
+            indices.extend(self.get_indices_ex_filtered(view_start, min(view_end, n_view) - view_start))
+        for view_row in range(max(view_start, n_view), view_end):
+            indices.append(self.get_index_ex_filtered(view_row))
+        return indices
+
+    def get_view_indices(self, data_indices):
+        """the view rows displaying data set rows (omitting those not displayed)"""
+        if not self.is_view_remapped:
+            return list(data_indices)
+        # TODO: this is O(n); keep an inverse map alongside the view order
+        n_view = self.row_count_ex_filtered
+        inverse = { index: view_row for view_row, index in enumerate(self.get_indices_ex_filtered(0, n_view)) }
+        return [ inverse[index] for index in data_indices if index in inverse ]
+
     def set_values(self, columns: ColumnRef, row_offset: int, values: CellValueArea):
         self._dataset.set_values(columns, row_offset, values)
 
