@@ -125,6 +125,7 @@ properties:
                         - Group
                         - Action
                         - File
+                        - Color
             required:
                 - name
                 - type

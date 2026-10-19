@@ -26,6 +26,35 @@ test_that('OptionBool works', {
 })
 
 
+test_that('OptionColor works', {
+    color <- OptionColor$new('color')
+    expect_equal(color$value, '#000000')
+
+    color <- OptionColor$new('color', value='#3E6DA9')
+    expect_equal(color$value, '#3e6da9')
+    expect_silent(color$check())
+
+    color$value <- 'steelblue'
+    expect_equal(color$value, '#4682b4')
+
+    color$value <- '#abc'
+    expect_equal(color$value, '#aabbcc')
+
+    color$value <- 'abcdef'
+    expect_equal(color$value, '#abcdef')
+})
+
+test_that('OptionColor rejects bad values', {
+    for (value in list('notacolour', '#12345', 'transparent', '#ff000080', '2', 7, NULL)) {
+        color <- OptionColor$new('color')
+        color$value <- value
+        expect_error(
+            color$check(),
+            "Argument 'color' must be a colour, such as '#3e6da9' or 'steelblue'",
+            fixed=TRUE)
+    }
+})
+
 test_that('OptionList works', {
 
     lst <- OptionList$new(

@@ -439,6 +439,70 @@ export class StringFormat extends Format<string> {
     }
 }
 
+let colorContext: CanvasRenderingContext2D | null = null;
+
+// a '#rrggbb' hex code, as held by a Color option. parse() accepts any css
+// colour (#abc, abcdef, 'steelblue', ...); colours with transparency aren't
+// supported, as the native colour picker can't represent them
+export class ColorFormat extends Format<string> {
+
+    name = 'color';
+
+    static default: '#000000';
+
+    override toString(raw: string) {
+        return raw;
+    }
+
+    override toAriaLabel(raw: string) {
+        return s_('Colour {hex}', { hex: raw });
+    }
+
+    // returns the colour as '#rrggbb', or null if it isn't one
+    parse(value: string): string | null {
+        if (typeof(value) !== 'string')
+            return null;
+        value = value.trim();
+        if (value === '')
+            return null;
+        if (/^[0-9a-f]{3}([0-9a-f]{3})?$/i.test(value))
+            value = '#' + value;
+
+        if (colorContext === null)
+            colorContext = document.createElement('canvas').getContext('2d') as CanvasRenderingContext2D;
+        let ctx = colorContext;
+
+        // an invalid colour leaves fillStyle unchanged, so try two different
+        // starting points to tell 'invalid' apart from 'same as before'
+        ctx.fillStyle = '#000000';
+        ctx.fillStyle = value;
+        let first = ctx.fillStyle as string;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillStyle = value;
+        let second = ctx.fillStyle as string;
+
+        if (first !== second)
+            return null;
+        if ( ! first.startsWith('#'))  // i.e. rgba(...)
+            return null;
+        return first.toLowerCase();
+    }
+
+    override isValid(raw: any) {
+        return typeof(raw) === 'string' && /^#[0-9a-f]{6}$/i.test(raw);
+    }
+
+    override isEmpty(raw: string) {
+        return raw === null || raw === '';
+    }
+
+    override isEqual(raw1: string, raw2: string) {
+        if (raw1 === null || raw2 === null)
+            return raw1 === raw2;
+        return raw1.toLowerCase() === raw2.toLowerCase();
+    }
+}
+
 type OutputType = {value: boolean, vars: string[]};
 export class OutputFormat extends Format<OutputType> {
 
@@ -546,6 +610,8 @@ export const FormatDef = {
     bool: new BooleanFormat(),
 
     string: new StringFormat(),
+
+    color: new ColorFormat(),
 
     output: new OutputFormat(),
 

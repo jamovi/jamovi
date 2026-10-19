@@ -974,6 +974,61 @@ OptionLevel <- R6::R6Class(
     "OptionString",
     inherit=Option)
 
+# normalises a colour to '#rrggbb', or returns NULL if it isn't an opaque
+# colour. accepts anything R does ('steelblue', '#4682B4', ...), as well as
+# '#rgb' and hex codes without the leading '#'
+normaliseColor <- function(value) {
+    if ( ! is.character(value) || length(value) != 1 || is.na(value))
+        return(NULL)
+    value <- trimws(value)
+    if (grepl('^#?[0-9a-fA-F]{3}$', value)) {
+        digits <- strsplit(sub('^#', '', value), '')[[1]]
+        value <- paste0('#', paste0(rep(digits, each=2), collapse=''))
+    }
+    else if (grepl('^[0-9a-fA-F]{6}$', value)) {
+        value <- paste0('#', value)
+    }
+    else if (grepl('^[0-9]*$', value)) {
+        return(NULL)  # col2rgb() would treat these as palette indices
+    }
+    rgb <- tryCatch(grDevices::col2rgb(value, alpha=TRUE), error=function(e) NULL)
+    if (is.null(rgb) || rgb[4] != 255)
+        return(NULL)
+    tolower(grDevices::rgb(rgb[1], rgb[2], rgb[3], maxColorValue=255))
+}
+
+#' @rdname Options
+#' @export
+OptionColor <- R6::R6Class(
+    "OptionColor",
+    inherit=Option,
+    private=list(
+        .default='#000000',
+        .check=function(data, checkValues, checkVars, checkData) {
+            if ( ! checkValues)
+                return()
+            if (is.null(normaliseColor(private$.value)))
+                reject("Argument '{a}' must be a colour, such as '#3e6da9' or 'steelblue'",
+                       code="a_must_be_a_colour",
+                       a=self$name)
+        }
+    ),
+    public=list(
+        initialize=function(name, value='#000000', ...) {
+            super$initialize(name, value, ...)
+        }
+    ),
+    active=list(
+        # the value is always a '#rrggbb' hex code; a value which isn't a
+        # colour is retained as is, so check() can reject it
+        value=function(value) {
+            if (missing(value))
+                return(private$.value)
+            color <- normaliseColor(value)
+            private$.value <- if (is.null(color)) value else color
+        }
+    ))
+
 #' @rdname Options
 #' @export
 OptionFile <- R6::R6Class(
