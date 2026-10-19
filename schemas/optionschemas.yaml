@@ -254,6 +254,24 @@ String:
             type: boolean
         description: *Description
 
+Color:
+    "$schema": http://json-schema.org/draft-04/schema#
+    additionalProperties: false
+    properties:
+        name:
+            type: string
+        type:
+            enum:
+              - "Color"
+        default:
+            type: string
+            pattern: "^#[0-9a-fA-F]{6}$"
+        title:
+            type: string
+        hidden:
+            type: boolean
+        description: *Description
+
 List:
     "$schema": http://json-schema.org/draft-04/schema#
     additionalProperties: false

@@ -1020,6 +1020,22 @@ const constructors = {
         }
     },
 
+    Color: {
+        create: function(item, isTemplate) {
+            let ctrl = { };
+            ctrl.type = "ColorPicker";
+            CheckTemplateState(item, ctrl, isTemplate);
+            return ctrl;
+        },
+        toRaw: function(obj, key) {
+            // a '#rrggbb' hex code
+            if (key === undefined || key.length === 0)
+                return "string";
+
+            return null;
+        }
+    },
+
     Variables: {
         create: function(item, isTemplate) {
             let ctrl = { }
