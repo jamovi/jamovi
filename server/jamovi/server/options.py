@@ -133,6 +133,8 @@ class Option:
             return { 'value': False, 'vars': [ ], 'synced': [ ] }
         elif self.type == 'File':
             return [ ]
+        elif self.type == 'Color':
+            return '#000000'
         else:
             return None
 

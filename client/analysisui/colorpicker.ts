@@ -1,6 +1,6 @@
 'use strict';
 
-import { FormatDef, StringFormat } from './formatdef';
+import { FormatDef, ColorFormat } from './formatdef';
 import interactionManager from '../common/interactionmanager';
 import { h, rich }  from '../common/htmlelementcreator';
 import type LayoutGrid from './layoutgrid';
@@ -8,12 +8,12 @@ import { VerticalAlignment } from './layoutcell';
 import OptionControl, { GridOptionControlProperties } from './optioncontrol';
 
 export type ColorPickerProperties = GridOptionControlProperties<string> & {
-    format: StringFormat;
+    format: ColorFormat;
 }
 
 // a colour swatch (the browser's native colour picker) alongside the hex
-// code, which can also be typed into. the value is a String option holding
-// a '#rrggbb' hex code
+// code, which can also be typed into. the value is a '#rrggbb' hex code,
+// normally of a Color option (it can also be used with a String option)
 export class ColorPicker extends OptionControl<ColorPickerProperties> {
 
     label: HTMLElement = null;
@@ -29,7 +29,7 @@ export class ColorPicker extends OptionControl<ColorPickerProperties> {
     protected override registerProperties(properties) {
         super.registerProperties(properties);
 
-        this.registerSimpleProperty('format', FormatDef.string);
+        this.registerSimpleProperty('format', FormatDef.color);
     }
 
     override onPropertyChanged(name) {
@@ -73,16 +73,21 @@ export class ColorPicker extends OptionControl<ColorPickerProperties> {
 
         this.input.addEventListener('focus', () => this.input.select());
         this.input.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter')
+            if (event.key === 'Enter') {
                 this.input.blur();
+            }
+            else if (event.key === 'Escape') {
+                this.update();  // discard what's been typed
+                this.input.blur();
+            }
         });
         this.input.addEventListener('change', () => {
-            let hex = toHex(this.input.value);
+            let hex = this.getPropertyValue('format').parse(this.input.value);
             if (hex === null) {
-                this.input.classList.add('silky-options-option-invalid');
+                // not a colour; put back the current value
+                this.update();
                 return;
             }
-            this.input.classList.remove('silky-options-option-invalid');
             this.setValue(hex);
             this.update();  // setValue() won't update if normalising produced the existing value
         });
@@ -127,9 +132,10 @@ export class ColorPicker extends OptionControl<ColorPickerProperties> {
         this.input.value = value;
         this.input.classList.remove('silky-options-option-invalid');
 
-        // the native picker only understands #rrggbb, so a default like
-        // 'red' (which R is fine with) is shown via its hex equivalent
-        let hex = toHex(value);
+        // the native picker only understands #rrggbb, so a value from a
+        // String option like 'red' (which R is fine with) is shown via its
+        // hex equivalent
+        let hex = this.getPropertyValue('format').parse(value);
         this.swatch.value = hex === null ? '#000000' : hex;
         this.swatch.classList.toggle('empty', hex === null);
 
@@ -140,38 +146,6 @@ export class ColorPicker extends OptionControl<ColorPickerProperties> {
         super.onOptionValueChanged(key, data);
         this.update();
     }
-}
-
-let context: CanvasRenderingContext2D | null = null;
-
-// normalises any css colour (#abc, abcdef, 'steelblue', ...) to '#rrggbb', or
-// null if it isn't one. colours with transparency aren't supported, as the
-// native picker can't represent them
-export function toHex(value: string): string | null {
-    value = value.trim();
-    if (value === '')
-        return null;
-    if (/^[0-9a-f]{3}([0-9a-f]{3})?$/i.test(value))
-        value = '#' + value;
-
-    if (context === null)
-        context = document.createElement('canvas').getContext('2d') as CanvasRenderingContext2D;
-    let ctx = context;
-
-    // an invalid colour leaves fillStyle unchanged, so try two different
-    // starting points to tell 'invalid' apart from 'same as before'
-    ctx.fillStyle = '#000000';
-    ctx.fillStyle = value;
-    let first = ctx.fillStyle as string;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillStyle = value;
-    let second = ctx.fillStyle as string;
-
-    if (first !== second)
-        return null;
-    if ( ! first.startsWith('#'))  // i.e. rgba(...)
-        return null;
-    return first.toLowerCase();
 }
 
 export default ColorPicker;

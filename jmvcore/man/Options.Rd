@@ -15,6 +15,7 @@
 \alias{OptionNumber}
 \alias{OptionString}
 \alias{OptionLevel}
+\alias{OptionColor}
 \alias{OptionFile}
 \alias{OptionGroup}
 \alias{OptionPair}
