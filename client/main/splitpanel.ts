@@ -213,10 +213,34 @@ export class SplitPanel extends EventDistributor {
 
                 let data = { left: currentSection.getNext("left"), right: currentSection, self: this};
 
+                // the pointer currently dragging this splitter (null when not dragging)
+                let dragPointerId: number = null;
+
+                const endResize = async (event: PointerEvent) => {
+                    if (dragPointerId === null || event.pointerId !== dragPointerId)
+                        return;
+
+                    dragPointerId = null;
+
+                    if (splitter.hasPointerCapture(event.pointerId))
+                        splitter.releasePointerCapture(event.pointerId);
+
+                    this._saveWidths();
+
+                    this._resizing = false;
+                    this.suspendDocking('both');
+
+                    await this.checkDockConditions(true);
+
+                    this.normalise();
+                };
+
                 splitter.addEventListener("pointerdown", (event: PointerEvent) => {
-                    let button = event.button;
+                    if (event.button !== 0 || this._resizing)
+                        return;
 
                     splitter.setPointerCapture(event.pointerId);
+                    dragPointerId = event.pointerId;
 
                     this._resizing = true;
                     this._startPosX = event.pageX;
@@ -226,27 +250,23 @@ export class SplitPanel extends EventDistributor {
                     this._allData = false;
 
                     this.allowDocking('both');
+                });
 
-                    ['pointerup', 'pointercancel'].forEach(eventName => splitter.addEventListener(eventName, async (event: PointerEvent) => {
-                        if (this._resizing === false)
-                            return;
-
-                        splitter.releasePointerCapture(event.pointerId);
-
-                        this._saveWidths();
-
-                        this._resizing = false;
-                        this.suspendDocking('both');
-
-                        await this.checkDockConditions(true);
-
-                        this.normalise();
-                    }, { once:true }));
+                // lostpointercapture catches cases where pointerup never reaches
+                // the splitter (i.e. a context menu or focus change mid-drag)
+                ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(eventName => {
+                    splitter.addEventListener(eventName, endResize);
                 });
 
                 splitter.addEventListener("pointermove", async (event: PointerEvent) => {
-                    if (this._resizing === false)
+                    if (dragPointerId === null || event.pointerId !== dragPointerId)
                         return;
+
+                    // the button was released without us receiving a pointerup
+                    if ((event.buttons & 1) === 0) {
+                        await endResize(event);
+                        return;
+                    }
 
                     this._resultsWidth = null;
 
