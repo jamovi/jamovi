@@ -221,15 +221,15 @@ if (window.navigator.platform === 'MacIntel') {
         {
             label: 'jamovi',
             submenu: [
-                { role: 'about', label: _('About jamovi') },
+                { role: 'about', label: _('About {}', 'jamovi') },
                 { type: 'separator' },
-                { role: 'quit', label: _('Quit jamovi') },
+                { role: 'quit', label: _('Quit {}', 'jamovi') },
             ]
         },
         {
             label: _('File'),
             submenu: [
-                { role: 'close', label: _('Close') },
+                { role: 'close', label: _('Close Window') },
             ]
         },
         {
@@ -238,7 +238,7 @@ if (window.navigator.platform === 'MacIntel') {
                 { role: 'cut', label: _('Cut') },
                 { role: 'copy', label: _('Copy') },
                 { role: 'paste', label: _('Paste') },
-                { role: 'selectAll', label: _('Select all') },
+                { role: 'selectAll', label: _('Select All') },
             ]
         },
     ]);
