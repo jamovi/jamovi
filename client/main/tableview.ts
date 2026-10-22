@@ -1440,10 +1440,14 @@ class TableView extends HTMLElement implements DataSetView {
                 this._delayedEditing = false;
             });
 
-            this._focusCell.addEventListener('blur', async (event) => {
+            this._focusCell.addEventListener('blur', (event) => {
                 if (this._editing) {
                     this._focusValue = this._focusCell.value;
-                    await this._endEditing();
+                    // focus has moved elsewhere (possibly into a focus loop
+                    // that is still activating), so a failed edit must not
+                    // take it back - that would blur the cell again and loop.
+                    // the invalid value is discarded instead.
+                    this._endEditing(false).catch(() => this._abortEditing());
                 }
             });
 
@@ -1787,7 +1791,7 @@ class TableView extends HTMLElement implements DataSetView {
         });
     }
 
-    _endEditing() {
+    _endEditing(reclaimFocusOnError = true) {
         if (this._editing === false)
             return Promise.resolve();
 
@@ -1815,9 +1819,9 @@ class TableView extends HTMLElement implements DataSetView {
                 type: 'error',
             });
 
-            if (this._focusCell) 
+            if (reclaimFocusOnError && this._focusCell)
                 this._focusCell.select();
-            
+
             throw 'cancelled';
         });
     }
