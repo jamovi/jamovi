@@ -8,8 +8,6 @@ aiosignal==1.4.0
     # via aiohttp
 attrs==26.1.0
     # via aiohttp
-certifi==2026.10.19
-    # via -r requirements.in
 cffi==2.1.1
     # via cryptography
 chardet==7.7.0
@@ -69,6 +67,8 @@ pytest-asyncio==1.4.0
 pyyaml==6.0.3
     # via -r requirements.in
 scipy==1.18.1
+    # via -r requirements.in
+truststore==0.10.5
     # via -r requirements.in
 yarl==1.25.1
     # via aiohttp

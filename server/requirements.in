@@ -15,6 +15,6 @@ aiohttp
 cryptography
 protobuf
 loguru
-certifi>=2026.10.19
+truststore
 pytest
 pytest_asyncio

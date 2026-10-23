@@ -1,12 +1,11 @@
 
-import ssl
 from asyncio import create_task
 from functools import partial
 from tempfile import TemporaryFile
 
 import aiohttp
-import certifi
 
+from .utils import ssl_context
 from .utils.stream import ProgressStream
 from .i18n import _
 
@@ -43,7 +42,7 @@ class _DownloadInfo:
 
 class Download:
     def __init__(self):
-        self._ssl_context = ssl.create_default_context(cafile=certifi.where())
+        self._ssl_context = ssl_context()
 
     def download(self, url, io=None):
         info = _DownloadInfo(io, ProgressStream())

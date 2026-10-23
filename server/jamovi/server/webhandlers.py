@@ -5,6 +5,8 @@ import mimetypes
 import aiohttp
 from aiohttp import web
 
+from .utils import ssl_context
+
 # Headers not safe to forward between proxy and upstream
 _HOP_BY_HOP = frozenset({
     'connection', 'keep-alive', 'proxy-authenticate', 'proxy-authorization',
@@ -37,7 +39,7 @@ async def forward_handler(
     resp = web.StreamResponse()
 
     async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers=forward_headers) as upstream:
+        async with session.get(url, headers=forward_headers, ssl=ssl_context()) as upstream:
             resp.set_status(upstream.status)
             for key, value in upstream.headers.items():
                 if key.lower() not in _HOP_BY_HOP:

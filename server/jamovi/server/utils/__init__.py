@@ -3,8 +3,7 @@
 
 import os.path
 import ssl
-
-import certifi
+import sys
 
 from .csvparser import CSVParser
 from .htmlparser import HTMLParser
@@ -62,5 +61,10 @@ context = None
 def ssl_context():
     global context
     if context is None:
-        context = ssl.create_default_context(cafile=certifi.where())
+        if sys.platform in ('win32', 'darwin'):
+            # use the OS trust store (picks up enterprise/MDM installed roots)
+            import truststore
+            context = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        else:
+            context = ssl.create_default_context()
     return context
