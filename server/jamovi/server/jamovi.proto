@@ -601,6 +601,19 @@ message DataSetSchema {
     uint32 rowCountExFiltered = 15;
     bool filtersVisible = 16;
 
+    message SortKey {
+        int32 columnId = 1;
+        bool descending = 2;
+    }
+
+    message ViewSort {
+        repeated SortKey keys = 1;
+    }
+
+    // the order the rows are displayed in. in a request, present only
+    // when the order is to change (no keys displays rows in data order)
+    ViewSort sort = 17;
+
     repeated TransformSchema transforms = 10;
     repeated RowRange removedRowRanges = 11;
 }
@@ -690,6 +703,7 @@ message DataSetRR {
     int32 changesPosition = 8;
     bool noUndo = 9;
     bool filtersChanged = 10;
+    bool viewOrderChanged = 11;
 }
 
 message ModuleRR {
