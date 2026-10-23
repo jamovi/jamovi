@@ -59,7 +59,9 @@ class Download:
 
     async def _download(self, url, info):
         try:
-            async with aiohttp.ClientSession() as session:
+            # trust_env, so we go through the user's proxy (env vars, or the
+            # system settings on windows/macOS).
+            async with aiohttp.ClientSession(trust_env=True) as session:
                 async with session.get(
                     url,
                     ssl=self._ssl_context,
@@ -83,7 +85,7 @@ class Download:
             raise DownloadError(status=e.status) from e
         except aiohttp.ClientSSLError as e:
             try:
-                async with aiohttp.ClientSession() as session:
+                async with aiohttp.ClientSession(trust_env=True) as session:
                     async with session.get(
                         'http://clients3.google.com/generate_204'
                     ) as response:
