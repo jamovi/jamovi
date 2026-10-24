@@ -9,6 +9,7 @@ from jamovi.server.pool import Pool
 from jamovi.server.utils import ProgressStream
 from jamovi.server.jamovi_pb2 import AnalysisRequest
 from jamovi.server.jamovi_pb2 import AnalysisResponse
+from jamovi.server.jamovi_pb2 import AnalysisStatus
 
 from jamovi.server.dataset import DataType
 from jamovi.server.dataset import MeasureType
@@ -146,3 +147,5 @@ async def test_analysis(engine_session: EngineSession):
 
     assert results.instanceId == request.instanceId
     assert results.analysisId == request.analysisId
+    assert results.error.message == ""
+    assert results.status == AnalysisStatus.Value("ANALYSIS_INITED")
