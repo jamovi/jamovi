@@ -186,14 +186,14 @@ class Worker:
     def _setup_module_load_path(self, module_name: str = "jmv"):
         if self._lib_paths is None:
             self._lib_paths = cast(Callable[[StrVector], None], r("base::.libPaths"))
-        base_path = f"{ self._module_roots[0] }/base/R"
-        jmv_path = f"{ self._module_roots[0] }/jmv/R"
-        paths = list(
-            map(lambda root: f"{ root }/{ module_name }/R", self._module_roots)
-        )
-        paths.append(jmv_path)
-        paths.append(base_path)
-        paths.append(self._r_libs)
+        # as for the C++ engine; jmv and base (jmvcore, etc.) are found in
+        # the system modules root(s), not just the first (user) root
+        paths = []
+        for root in self._module_roots:
+            paths.append(f"{ root }/{ module_name }/R")
+            paths.append(f"{ root }/jmv/R")
+            paths.append(f"{ root }/base/R")
+        paths.extend(path for path in self._r_libs.split(os.pathsep) if path)
 
         self._lib_paths(StrVector(paths))
 
@@ -358,7 +358,7 @@ class Worker:
 
         except (RRuntimeError, CancelledError) as e:
             lang = "python" if isinstance(e, CancelledError) else "R"
-            logger.debug("Analysis cancelled by SIGINT ({})", lang)
+            logger.debug("Analysis cancelled by SIGINT ({}): {}", lang, e)
             results = create_error_results(request, "This analysis was cancelled")
             results_bytes = results.SerializeToString()
             self._send_results(results_bytes, True)
