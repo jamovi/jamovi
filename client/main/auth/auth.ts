@@ -4,9 +4,7 @@
 import ProgressStream from '../utils/progressstream';
 
 export function events() {
-    let stream = new ProgressStream();
-    stream.resolve(undefined);
-    return stream;
+    return new ProgressStream(async () => undefined);
 }
 
 export function promptSignIn(opts) {

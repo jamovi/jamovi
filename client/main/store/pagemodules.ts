@@ -26,7 +26,9 @@ class PageModules extends HTMLElement {
     modules: ModulesBase
     settings: Settings
     marker: Markjs;
-    _events: ProgressStream<{type: 'refresh'}, {type: 'refresh'}>;
+    _events: ProgressStream<{type: 'refresh'}, void>;
+    _emitEvent: (event: {type: 'refresh'}) => void;
+    _closeEvents: () => void;
     $message: HTMLElement;
     $search: HTMLInputElement;
     $body: HTMLElement;
@@ -166,7 +168,10 @@ class PageModules extends HTMLElement {
             this.modules.retrieve();
     });
 
-        this._events = new ProgressStream<{type: 'refresh'}, {type: 'refresh'}>();
+        const events = ProgressStream.withResolvers<{type: 'refresh'}, void>();
+        this._events = events.stream;
+        this._emitEvent = events.progress;
+        this._closeEvents = events.resolve;
 
         (async () => {
             // event dispatcher
@@ -194,12 +199,12 @@ class PageModules extends HTMLElement {
     }
 
     _triggerRefresh() {
-        this._events.setProgress({ type: 'refresh' });
+        this._emitEvent({ type: 'refresh' });
     }
 
     stopListening() {
         // technically not necessary, because this is never remove()d
-        this._events.resolve();
+        this._closeEvents();
         //Backbone.View.prototype.stopListening(this, arguments);
     }
 

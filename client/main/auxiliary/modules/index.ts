@@ -1358,7 +1358,45 @@ export default class ModulesAuxView extends AuxView {
         this.updateSummaryProgress();
         this.updateInstallCard(module);
 
-        void this.model.installModule(source).then(() => {
+        const install = this.model.installModule(source);
+        void (async () => {
+            try {
+                for await (const progress of install) {
+                    const previousState = this.installStates.get(module.name);
+                    if (previousState === undefined && this.cancelledInstallSources.has(source))
+                        continue;
+
+                    const value = progress?.[0] || 0;
+                    const total = progress?.[1] || 1;
+                    const percent = Math.max(0, Math.min(100, Math.round((100 * value) / total)));
+                    this.installStates.set(module.name, {
+                        source,
+                        progress: [ value, total ],
+                        percent,
+                        cancelRequested: previousState?.cancelRequested === true,
+                    });
+                    this.updateSummaryProgress();
+                    this.updateInstallCard(module);
+                }
+                await install;
+            }
+            catch (error: any) {
+                const wasCancelled = this.installStates.get(module.name)?.cancelRequested === true
+                    || this.cancelledInstallSources.delete(source);
+                this.installStates.delete(module.name);
+                this.updateSummaryProgress();
+                if (! wasCancelled) {
+                    this.model.trigger('notification', new Notify({
+                        title: _('Unable to install module'),
+                        message: error.cause || error.message || '',
+                        duration: 4000,
+                        type: 'error'
+                    }));
+                }
+                this.update();
+                return;
+            }
+
             this.cancelledInstallSources.delete(source);
             this.installStates.delete(module.name);
             this.updateSummaryProgress();
@@ -1370,37 +1408,7 @@ export default class ModulesAuxView extends AuxView {
                 type: 'success'
             }));
             this.update();
-        }, error => {
-            const wasCancelled = this.installStates.get(module.name)?.cancelRequested === true
-                || this.cancelledInstallSources.delete(source);
-            this.installStates.delete(module.name);
-            this.updateSummaryProgress();
-            if (! wasCancelled) {
-                this.model.trigger('notification', new Notify({
-                    title: _('Unable to install module'),
-                    message: error.cause || error.message || '',
-                    duration: 4000,
-                    type: 'error'
-                }));
-            }
-            this.update();
-        }, progress => {
-            const previousState = this.installStates.get(module.name);
-            if (previousState === undefined && this.cancelledInstallSources.has(source))
-                return;
-
-            const value = progress?.[0] || 0;
-            const total = progress?.[1] || 1;
-            const percent = Math.max(0, Math.min(100, Math.round((100 * value) / total)));
-            this.installStates.set(module.name, {
-                source,
-                progress: [ value, total ],
-                percent,
-                cancelRequested: previousState?.cancelRequested === true,
-            });
-            this.updateSummaryProgress();
-            this.updateInstallCard(module);
-        });
+        })();
     }
 
     cancelInstallModule(module: IModuleMeta): void {

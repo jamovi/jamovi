@@ -1,7 +1,7 @@
 'use strict';
 
 import { EventMap } from "../common/eventmap";
-import Coms, { QQ } from "./coms";
+import Coms from "./coms";
 import { Block, IAreaSelection, ISelection, RowBlock } from "./selection";
 
 enum TransformAction {
@@ -447,7 +447,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
             return this.attributes.columns[index];
     }
 
-    insertRows(ranges: { rowStart: number, rowCount: number}[]): QQ.Promise<any> {
+    insertRows(ranges: { rowStart: number, rowCount: number}[]): Promise<any> {
 
         let coms = this.attributes.coms;
 
@@ -1805,7 +1805,7 @@ class DataSetViewModel extends DataSetModel<DataSetViewModelData & DataSetModelD
     readCells(viewport: IAreaSelection) {
         this.requestCells(viewport).then(dataInfo => {
             this.setCells(dataInfo);
-        }).done();
+        });
     }
 
     _parseCells(response) {

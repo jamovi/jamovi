@@ -943,9 +943,6 @@ export class BackstageModel extends EventMap<IBackstageModel> {
             else
                 this.set('operation', '');
         });
-
-        if (promise.done)  // if Q promise
-            promise.done();
     }
 
     _placeChanged() {

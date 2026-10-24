@@ -34,7 +34,7 @@ interface CreateAnalysisOptions {
 
 import { parse as parseJsonLines } from './utils/jsonlines';
 import { ISaveOptions } from './backstage/fsentry';
-import Coms, { QQ } from './coms';
+import Coms from './coms';
 import { ResultsView } from './results';
 import MsgDialog from '../common/msgdialog';
 import { recentlyRelocated, Relocation } from './relocate';
@@ -138,10 +138,10 @@ export interface IFileEntry {
 }
 
 export interface IModuleInteractions {
-    installModule: (name: string) => QQ.Promise<void>,
-    uninstallModule: (name: string) => QQ.Promise<void>,
-    setModuleVisibility: (name: string, value: boolean) =>  QQ.Promise<void>,
-    retrieveAvailableModules: () => QQ.Promise<void>,
+    installModule: (name: string) => ProgressStream<[number, number], void>,
+    uninstallModule: (name: string) => PromiseLike<void>,
+    setModuleVisibility: (name: string, value: boolean) => PromiseLike<void>,
+    retrieveAvailableModules: () => PromiseLike<void>,
 }
 
 export interface ISettingsProvider {
@@ -314,7 +314,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
 
     }
 
-    import(paths: string[]) {
+    async import(paths: string[]) {
 
         let coms = this.attributes.coms;
 
@@ -332,24 +332,29 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         request.payloadType = 'OpenRequest';
         request.instanceId = this._instanceId;
 
-        return coms.send(request).then((response) => {
-            progress.dismiss();
-            this._readDataset(false);
-            this._notify({
-                message: _('File imported'),
-                cause:  _('Import successful'),
-            });
-        }, (error: { message: string, cause: string }) => {
+        const stream = coms.send(request);
+        try {
+            for await (const prog of stream) {
+                progress.set('progress', prog);
+                this.trigger('notification', progress);
+            }
+            await stream;
+        }
+        catch (error) {
             progress.dismiss();
             // we still have to retrieveInfo() on failure, because the import
             // may have failed on, say, the second data set, and the data set
             // will still have changed
             this._readDataset(false);
             this._notify(error);
-        }, (prog: [number, number]) => {
-            progress.set('progress', prog);
-            this.trigger('notification', progress);
-            return prog;
+            return;
+        }
+
+        progress.dismiss();
+        this._readDataset(false);
+        this._notify({
+            message: _('File imported'),
+            cause:  _('Import successful'),
         });
     }
 
@@ -898,11 +903,9 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         message.payloadType = 'FSRequest';
         message.instanceId = this.instanceId();
 
-        let promise = coms.send(message);
-        promise = promise.then((response) => {
+        return coms.send(message).then((response) => {
             return coms.Messages.FSResponse.decode(response.payload);
         });
-        return promise;
     }
 
     restartEngines() {

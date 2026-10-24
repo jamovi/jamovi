@@ -2,9 +2,9 @@
 'use strict';
 
 import ProtoBuf from 'protobufjs';
-import Q from 'q';
 
 import auth from './auth/auth';
+import ProgressStream from './utils/progressstream';
 
 import PROTO_DEFN from '../assets/coms.proto?raw';
 
@@ -14,36 +14,6 @@ interface ComsTransaction {
     reject  : (reason?: string) => void,
     onprogress : (progress: [number, number]) => void,
     requestTime : Date
-}
-
-export declare namespace QQ {
-  export interface Promise<T> {
-    then<TResult1 = T, TResult2 = never>(
-      onFulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null,
-      onRejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null,
-      onProgress?: ((progress: any) => void) | undefined | null
-    ): Promise<TResult1 | TResult2>;
-
-    catch<TResult = never>(
-      onRejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null
-    ): Promise<T | TResult>;
-
-    finally<U>(onFinally: () => U | PromiseLike<U>): Promise<T>;
-  }
-
-  interface Deferred<T> {
-    promise: Promise<T>;
-    resolve(value?: T | PromiseLike<T>): void;
-    reject(reason?: any): void;
-    notify(progress: any): void;
-    makeNodeResolver(): (err: any, value: T) => void;
-  }
-
-  function defer<T>(): Deferred<T>;
-  function resolve<T>(value?: T | PromiseLike<T>): Promise<T>;
-  function reject<T = never>(reason?: any): Promise<T>;
-  function all<T>(promises: (T | PromiseLike<T>)[]): Promise<T[]>;
-  function delay<T>(value: T, ms: number): Promise<T>;
 }
 
 class Coms {
@@ -66,12 +36,12 @@ class Coms {
         this.ready = Promise.resolve();
     }
 
-    connect(): QQ.Promise<void> {
+    connect(): Promise<void> {
 
         let url = `${ window.location.origin }${ window.location.pathname }coms`;
         url = url.replace('http', 'ws'); // http -> ws, https -> wss
 
-        return new Q.promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
 
             this._ws = new WebSocket(url);
             this._ws.binaryType = 'arraybuffer';
@@ -172,23 +142,30 @@ class Coms {
         }, retryIn);
     }
 
-    send(request): QQ.Promise<any> {
+    send(request): ProgressStream<[number, number], any> {
 
-        return new Q.promise((resolve, reject, onprogress) => {
+        const { stream, progress, resolve, reject } = ProgressStream.withResolvers<[number, number], any>();
 
-            this._transId++;
+        this._transId++;
 
-            request.id = this._transId;
+        request.id = this._transId;
+        try {
             this._ws.send(request.toArrayBuffer());
+        }
+        catch (e) {
+            reject(e);
+            return stream;
+        }
 
-            this._transactions.push({
-                id : this._transId,
-                resolve : resolve,
-                reject  : reject,
-                onprogress : onprogress,
-                requestTime : new Date()
-            });
+        this._transactions.push({
+            id : this._transId,
+            resolve : resolve,
+            reject  : reject,
+            onprogress : progress,
+            requestTime : new Date()
         });
+
+        return stream;
     }
 
     sendP(request) {
@@ -215,10 +192,14 @@ class Coms {
             let trans = this._transactions[i];
             if (trans.id === response.id) {
                 found = true;
-                if (response.status === this.Messages.Status.COMPLETE)
+                if (response.status === this.Messages.Status.COMPLETE) {
+                    this._transactions.splice(i, 1);
                     trans.resolve(response);
-                else if (response.status === this.Messages.Status.ERROR)
+                }
+                else if (response.status === this.Messages.Status.ERROR) {
+                    this._transactions.splice(i, 1);
                     trans.reject(response.error);
+                }
                 else if (response.status === this.Messages.Status.IN_PROGRESS)
                     trans.onprogress([ response.progress, response.progressTotal ]);
                 else

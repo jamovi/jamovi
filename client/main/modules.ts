@@ -114,19 +114,18 @@ export class ModulesBase extends EventMap<IModulesModel> {
         };
     }
 
-    install(path: string) {
+    async install(path: string) {
         this.set('progress', [ 0, 1 ]);
         this.set('status', 'installing');
         let install = this._instance.installModule(path);
-        install.then(() => {
+        try {
+            for await (const progress of install)
+                this.set('progress', progress);
+            return await install;
+        }
+        finally {
             this.set('status', 'done');
-        }, error => {
-            this.set('status', 'done');
-            throw error;
-        }, progress => {
-            this.set('progress', progress);
-        });
-        return install;
+        }
     }
 
     uninstall(name: string) {
