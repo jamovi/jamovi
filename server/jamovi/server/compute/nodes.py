@@ -11,8 +11,8 @@ from itertools import compress
 
 import numpy as np
 
-from jamovi.core import DataType
-from jamovi.core import MeasureType
+from jamovi.server.dataset.enums import DataType
+from jamovi.server.dataset.enums import MeasureType
 from . import FValues
 from . import convert
 from . import is_missing

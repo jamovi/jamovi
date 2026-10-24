@@ -1,12 +1,15 @@
 """Storage: where an instance's data sets live, and which engines read them.
 
 The storage type is chosen with the 'storage' setting (or the
-JAMOVI_STORAGE environment variable); 'shmem' (the default) or 'duckdb'.
+JAMOVI_STORAGE environment variable); 'shmem' or 'duckdb'. It defaults to
+'shmem' when the (compiled) core is available, and 'duckdb' otherwise.
 """
 
 from __future__ import annotations
 
+import importlib
 import posixpath
+from functools import cache
 
 from .dataset import DataSet
 from .dataset import Store
@@ -17,11 +20,25 @@ from .utils import conf
 STORAGE_TYPES = ('shmem', 'duckdb')
 
 
+@cache
+def core_available() -> bool:
+    """Whether the (compiled) core, required by shmem, is available"""
+    try:
+        core = importlib.import_module('jamovi.core')
+    except ImportError:
+        return False
+    # without the compiled module, jamovi/core (its sources) imports as an
+    # empty namespace package
+    return hasattr(core, 'MemoryMap')
+
+
 def storage_type() -> str:
     """The configured storage type"""
-    s_type = conf.get('storage', 'shmem')
+    s_type = conf.get('storage', 'shmem' if core_available() else 'duckdb')
     if s_type not in STORAGE_TYPES:
         raise ValueError(f"Unrecognised storage type '{ s_type }'")
+    if s_type == 'shmem' and not core_available():
+        raise RuntimeError("shmem storage requires the (compiled) core; use duckdb storage instead")
     return s_type
 
 

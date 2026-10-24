@@ -17,9 +17,9 @@ from ..sessionfiles import SessionFiles
 from ..sessionfiles import STORED_EXTS
 from ..sessionfiles import is_file_id
 
-from jamovi.core import ColumnType
-from jamovi.core import DataType
-from jamovi.core import MeasureType
+from jamovi.server.dataset.enums import ColumnType
+from jamovi.server.dataset.enums import DataType
+from jamovi.server.dataset.enums import MeasureType
 from jamovi.server.appinfo import app_info
 
 from ..i18n import _

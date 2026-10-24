@@ -10,8 +10,8 @@ from functools import lru_cache
 
 import yaml
 
-from jamovi.core import Dirs
-from jamovi.core import PlatformInfo
+from jamovi.server.utils.dirs import Dirs
+from jamovi.server.utils.dirs import PlatformInfo
 
 import jamovi.server.i18n as i18n
 from jamovi.server.utils import conf

@@ -22,7 +22,7 @@ from . import storage
 from .scheduler import Scheduler
 from . import i18n
 
-from jamovi.core import Dirs
+from jamovi.server.utils.dirs import Dirs
 
 from .settings import Settings
 from .utils import conf

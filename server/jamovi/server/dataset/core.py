@@ -1,12 +1,9 @@
-
 # core imports all together so we can suppress the
-# pylint import error in a single place
+# pylint import error in a single place. only the shared memory store
+# requires the (compiled) core
 
 # pylint: disable=import-error,unused-import
 from jamovi.core import DataSet
 from jamovi.core import MemoryMap
-from jamovi.core import ColumnType
-from jamovi.core import DataType
-from jamovi.core import MeasureType
 
-__all__ = ['DataSet', 'MemoryMap', 'ColumnType', 'DataType', 'MeasureType']
+__all__ = ['DataSet', 'MemoryMap']

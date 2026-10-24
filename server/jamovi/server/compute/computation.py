@@ -7,8 +7,8 @@ import ast
 
 import numpy as np
 
-from jamovi.core import DataType
-from jamovi.core import MeasureType
+from jamovi.server.dataset.enums import DataType
+from jamovi.server.dataset.enums import MeasureType
 
 from .typevalues import convert
 from .chunks import convert_chunk

@@ -3,7 +3,7 @@ from math import isnan
 from itertools import islice
 from ezodf import opendoc, newdoc, Table
 
-from jamovi.core import DataType
+from jamovi.server.dataset.enums import DataType
 from jamovi.server.datasetmodel import DataSetModel
 
 from .reader import Reader

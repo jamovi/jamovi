@@ -2,11 +2,11 @@
 # Copyright (C) 2016 Jonathon Love
 #
 
-from jamovi.core import ColumnType
-from jamovi.core import DataType
-from jamovi.core import MeasureType
-from jamovi.core import Dirs
-from jamovi.core import DataSet
+from jamovi.server.dataset.enums import ColumnType
+from jamovi.server.dataset.enums import DataType
+from jamovi.server.dataset.enums import MeasureType
+from jamovi.server.utils.dirs import Dirs
+from jamovi.server.dataset import DataSet
 
 from . import jamovi_pb2 as jcoms
 
