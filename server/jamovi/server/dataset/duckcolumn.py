@@ -5,6 +5,7 @@ from collections.abc import Sequence
 from typing import TYPE_CHECKING, Iterable, Iterator, TypeAlias
 
 from .column import Column
+from .column import CellValue
 from .core import ColumnType, DataType, MeasureType
 
 if TYPE_CHECKING:
@@ -12,6 +13,8 @@ if TYPE_CHECKING:
 
 
 Level: TypeAlias = tuple[int, str, str, bool]
+# a level, with whether it's filtered, and treated as missing
+LevelInfo: TypeAlias = tuple[int, str, str, bool, bool, bool]
 
 
 @dataclass
@@ -185,6 +188,9 @@ class DuckColumn(Column):
             self._apply("measure_type", measure_type.value)
 
     def change(self, *, data_type=None, measure_type=None, levels=None):
+        # NONE means unchanged
+        if data_type is DataType.NONE:
+            data_type = None
         if measure_type is MeasureType.NONE:
             measure_type = None
         self._dataset.column_change(
@@ -196,6 +202,12 @@ class DuckColumn(Column):
 
     def get_value(self, index: int) -> int | float | str:
         return self._dataset.get_value(index, self)
+
+    def set_values(self, index: int, values: Iterable[CellValue], initing=False):
+        self._dataset.column_set_values(index, self, values, initing)
+
+    def get_values(self, index: int, n_rows: int) -> list[CellValue]:
+        return [self.get_value(index + offset) for offset in range(n_rows)]
 
     @property
     def trim_levels(self) -> bool:
@@ -268,8 +280,19 @@ class DuckColumn(Column):
         return False
 
     @property
-    def levels(self) -> Sequence[tuple[int, str, str, bool]]:
-        return self._levels_tup
+    def levels(self) -> Sequence[LevelInfo]:
+        # built on demand, as filtered depends on the (changing) counts
+        return tuple(
+            (
+                level.value,
+                level.label,
+                level.import_value,
+                level.pinned,
+                self._trim_levels and level.count_ex_filtered == 0,
+                False,  # treat as missing; TODO when missing values are supported
+            )
+            for level in self._levels
+        )
 
     @property
     def dlevels(self) -> list[DuckLevel]:

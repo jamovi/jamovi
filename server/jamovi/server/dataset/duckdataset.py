@@ -22,6 +22,8 @@ from .core import DataType
 from .core import MeasureType
 
 from .dataset import DataSet
+from .dataset import ColumnRef
+from .dataset import CellValueArea
 from .duckcolumn import DuckColumn
 from .duckcolumn import DuckLevel
 from .duckcolumn import Level
@@ -94,6 +96,7 @@ class DuckDataSet(DataSet):
     _cache_filter_state: OrderedDict[int, bool]
 
     _weights: int
+    _attach_modes: list[bool]
 
     @staticmethod
     def create(store: "DuckStore", dataset_id: int) -> DuckDataSet:
@@ -157,14 +160,17 @@ class DuckDataSet(DataSet):
         self._column_count = 0
         self._row_count = 0
         self._row_count_ex_filtered = 0
-        self._cache = DataCache(self.get_values)
+        self._cache = DataCache(self.get_range)
         self._weights = 0
+        self._attach_modes = []
 
     def attach(self, read_only: bool = False) -> None:
         self._store.attach(read_only)
+        self._attach_modes.append(read_only)
 
     def detach(self) -> None:
-        self._store.detach()
+        # readers can be attached concurrently, but a writer is exclusive
+        self._store.detach(self._attach_modes.pop())
 
     def _execute(
         self, query: object, args: object = None
@@ -189,7 +195,20 @@ class DuckDataSet(DataSet):
         if column.data_type is DataType.TEXT:
             if raw_value == -2147483648:
                 return ""
-            return column.get_label(raw_value)
+            # text data is stored (and its levels counted) by import value
+            for level in column.dlevels:
+                if level.value == raw_value:
+                    return level.import_value
+            raise KeyError(f"No level for { raw_value } found")
+        return raw_value
+
+    def _column_raw_value_for_label(self, column: DuckColumn, label: str) -> int:
+        if label == "":
+            return -2147483648
+        if column.has_level(label):
+            return column.get_value_for_label(label)
+        raw_value = max((level[0] for level in column.levels), default=-1) + 1
+        column.append_level(raw_value, label, label)
         return raw_value
 
     def set_value(
@@ -203,6 +222,15 @@ class DuckDataSet(DataSet):
 
         if isinstance(column, int):
             column = self._columns_by_index[column]
+
+        if (
+            column.data_type is DataType.TEXT
+            and column.measure_type is not MeasureType.ID
+            and isinstance(raw_value, str)
+        ):
+            # as for the shared memory data set, labels are converted to
+            # their level's value (adding the level if necessary)
+            raw_value = self._column_raw_value_for_label(column, raw_value)
 
         if column.data_type is DataType.DECIMAL:
             assert isinstance(raw_value, Number)
@@ -225,7 +253,7 @@ class DuckDataSet(DataSet):
             row_filtered = self.is_row_filtered(row)
 
             if not initing:
-                old_value = self.get_value(row, column)
+                old_value = self._get_stored_value(row, column)
                 if value == old_value:
                     return
                 if not is_missing(old_value):
@@ -236,6 +264,10 @@ class DuckDataSet(DataSet):
                     levels_changed = True
 
             if not is_missing(value):
+                if (column.data_type is not DataType.TEXT
+                        and not column.has_level(value)):
+                    # as for the shared memory data set, add the missing level
+                    column.insert_level(value, str(value), str(value))
                 self._column_change_level_use_counts(
                     column, value, 1, 0 if row_filtered else 1
                 )
@@ -327,10 +359,26 @@ class DuckDataSet(DataSet):
         self._execute("COMMIT")
         column.notify_levels_changed(levels)
 
+    def _get_stored_value(self, row: int, column: DuckColumn) -> int | float | str:
+        """retrieve a value as stored (text by its import value)"""
+        return self._cache.get_value(row, 2 + column.index)
+
     def get_value(self, row: int, column: int | DuckColumn) -> int | float | str:
         """retrieve a value from the data set"""
-        column = column if isinstance(column, int) else column.index
-        return self._cache.get_value(row, 2 + column)
+        if isinstance(column, int):
+            column = self._columns_by_index[column]
+        value = self._get_stored_value(row, column)
+        if (
+            column.data_type is DataType.TEXT
+            and column.measure_type is not MeasureType.ID
+            and value != ""
+        ):
+            # as for the shared memory data set, text values are their
+            # level's label (they're stored by import value)
+            for level in column.dlevels:
+                if level.import_value == value:
+                    return level.label
+        return value
 
     def delete_columns(self, col_start: int, col_end: int) -> None:
         n = col_end - col_start + 1
@@ -367,7 +415,7 @@ class DuckDataSet(DataSet):
         """return raw value"""
         if isinstance(column, int):
             column = self._columns_by_index[column]
-        value = self.get_value(row, column)
+        value = self._get_stored_value(row, column)
         if column.data_type is DataType.TEXT and column.has_levels:
             assert isinstance(value, str)
             if value == "":
@@ -380,8 +428,8 @@ class DuckDataSet(DataSet):
         return not self._cache.get_value(index, 1)
 
     def get_index_ex_filtered(self, index: int) -> int:
-        # TODO
-        return index
+        """the row at index, when the filtered rows are hidden"""
+        return self.get_indices_ex_filtered(index, 1)[0]
 
     @property
     def column_count(self) -> int:
@@ -419,7 +467,7 @@ class DuckDataSet(DataSet):
             bracketed = map(lambda x: f"({ x })", batch)
             joined = ",".join(bracketed)
             self._execute(
-                f"""INSERT INTO "sheet_data_{ self._id }" VALUES { joined }"""
+                f"""INSERT INTO "sheet_data_{ self._id }" (index) VALUES { joined }"""
             )
         self._store.execute("COMMIT")
         self._row_count += n
@@ -471,11 +519,33 @@ class DuckDataSet(DataSet):
             (weights_id,),
         )
 
-    def get_indices_ex_filtered(self, row_start: int, row_count: int) -> Iterable[int]:
-        return [
-            self.get_index_ex_filtered(index)
-            for index in range(row_start, row_start + row_count)
-        ]
+    def get_indices_ex_filtered(self, row_start: int, row_count: int) -> list[int]:
+        """the rows from row_start, when the filtered rows are hidden"""
+        n_ex_filtered = self._row_count_ex_filtered
+        row_end = row_start + row_count
+
+        if n_ex_filtered == self.row_count:
+            # nothing filtered
+            return list(range(row_start, row_end))
+
+        indices = []
+        if row_start < n_ex_filtered:
+            results = self._execute(
+                f"""
+                SELECT index
+                FROM "sheet_data_{ self._id }"
+                WHERE index_ex_filtered >= ? AND index_ex_filtered < ?
+                ORDER BY index_ex_filtered
+            """,
+                (row_start, min(row_end, n_ex_filtered)),
+            ).fetchall()
+            indices.extend(index for (index,) in results)
+
+        # (virtual) rows beyond the end of the data set
+        for index in range(max(row_start, n_ex_filtered), row_end):
+            indices.append(index - n_ex_filtered + self.row_count)
+
+        return indices
 
     def refresh_filter_state(self) -> None:
         logger.debug("resfreshing filter state")
@@ -493,7 +563,7 @@ class DuckDataSet(DataSet):
         if len(filter_iids) == 0:
             self._execute(f"""
                 UPDATE "sheet_data_{ self._id }" AS data
-                SET filter = 1
+                SET filter = 1, index_ex_filtered = index
             """)
         else:
             equals_one = [f""""{ iid }" = 1""" for iid in filter_iids]
@@ -535,10 +605,11 @@ class DuckDataSet(DataSet):
         row: int,
         column: DuckColumn,
         values: Iterable[int] | Iterable[float] | Iterable[str],
+        initing: bool = False,
     ):
         """set values of a column"""
         for offset, value in enumerate(values):
-            column.set_value(row + offset, value)
+            column.set_value(row + offset, value, initing)
 
     def column_clear_levels(self, column: DuckColumn) -> None:
         """clear the levels of a column in the database"""
@@ -577,13 +648,32 @@ class DuckDataSet(DataSet):
         column.notify_attribute_changed(name, value)
         self._cache.clear()
 
+    def _resolve_columns(self, columns: ColumnRef) -> list[DuckColumn]:
+        if isinstance(columns, (int, str)):
+            columns = [columns]
+        return [self[index_or_name] for index_or_name in columns]
+
+    def set_values(self, columns: ColumnRef, row_offset: int, values: CellValueArea):
+        """set values of columns, one sequence of values per column"""
+        for column, column_values in zip(self._resolve_columns(columns), values):
+            column.set_values(row_offset, column_values)
+
     def get_values(
+        self, columns: ColumnRef, row_offset: int, n_rows: int
+    ) -> CellValueArea:
+        """retrieve values of columns, one sequence of values per column"""
+        return [
+            column.get_values(row_offset, n_rows)
+            for column in self._resolve_columns(columns)
+        ]
+
+    def get_range(
         self, row_start: int, column_start: int, row_end: int, column_end: int
     ) -> tuple[tuple]:
         """retrieve a range of data set values"""
         return self._get_values(row_start, column_start, row_end, column_end, "index")
 
-    def get_values_ex_filtered(
+    def get_range_ex_filtered(
         self, row_start: int, column_start: int, row_end: int, column_end: int
     ) -> tuple[tuple]:
         """retrieve a range of data set values, excluding filtered rows"""
@@ -733,61 +823,29 @@ class DuckDataSet(DataSet):
         null_value = NULL_VALUES[data_type]
         prev_null = NULL_VALUES[column.data_type]
 
+        # 1. convert missings to NULL
+        value_sql = f'nullif("{ column.iid }", { prev_null })'
+
+        # 2. perform the cast
+        if data_type is DataType.TEXT and column.data_type is DataType.DECIMAL:
+            value_sql = f"printf('%.{ column.dps }f', { value_sql })"
+        else:
+            value_sql = f"TRY_CAST({ value_sql } AS { sql_type })"
+
+        # 3. convert NULLs back to missings
+        value_sql = f"ifnull({ value_sql }, { null_value })"
+
+        # this is done in place, as duckdb (>= 1.3) won't commit an ALTER
+        # TABLE following an UPDATE of the same table in a transaction
         self._execute(f"""
             BEGIN TRANSACTION
             ;
             ALTER TABLE "sheet_data_{ self._id }"
-            RENAME COLUMN "{ column.iid }" TO temp
+            ALTER COLUMN "{ column.iid }" SET DATA TYPE { sql_type }
+            USING { value_sql }
             ;
             ALTER TABLE "sheet_data_{ self._id }"
-            ADD COLUMN "{ column.iid }" { sql_type } DEFAULT { null_value }
-        """)
-
-        select = f"""
-            SELECT temp AS value, index
-            FROM "sheet_data_{ self._id }"
-        """
-
-        select = f"""
-            -- 1. convert missings to NULL
-            SELECT
-                nullif(value, { prev_null }) AS value,
-                index
-            FROM ({ select })
-        """
-
-        if data_type is DataType.TEXT and column.data_type is DataType.DECIMAL:
-            select = f"""
-                -- 2. perform the cast
-                SELECT
-                    printf('%.{ column.dps }f', value) AS value,
-                    index
-                FROM ({ select })
-            """
-        else:
-            select = f"""
-                -- 2. perform the cast
-                SELECT
-                    TRY_CAST(value AS { sql_type }) AS value,
-                    index
-                FROM ({ select })
-            """
-
-        select = f"""
-            -- 3. convert NULLs back to missings
-            SELECT
-                ifnull(value, { null_value }) AS value,
-                index
-            FROM ({ select })
-        """
-
-        self._execute(f"""
-            UPDATE "sheet_data_{ self._id }" AS main
-            SET "{ column.iid }" = new.value
-            FROM ({ select }) AS new
-            WHERE main.index = new.index
-            ;
-            ALTER TABLE "sheet_data_{ self._id }" DROP COLUMN temp
+            ALTER COLUMN "{ column.iid }" SET DEFAULT { null_value }
             ;
             COMMIT
         """)
@@ -1029,11 +1087,11 @@ class DuckDataSet(DataSet):
 
         new_dlevels = []
         for level in levels:
-            value, label, import_value, pinned = level
+            value, label, import_value, pinned = level[:4]
             level_value = (
                 value if column.data_type is DataType.INTEGER else import_value
             )
-            count, count_ex_filtered = counts.get(value, (0, 0))
+            count, count_ex_filtered = counts.get(level_value, (0, 0))
             dlevel = DuckLevel(
                 value, label, import_value, pinned, count, count_ex_filtered
             )
