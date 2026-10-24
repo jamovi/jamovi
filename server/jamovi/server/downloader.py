@@ -1,12 +1,12 @@
 
-from asyncio import create_task
-from functools import partial
 from tempfile import TemporaryFile
+from typing import IO
+from typing import Callable
 
 import aiohttp
 
 from .utils import ssl_context
-from .utils.stream import ProgressStream
+from .utils.stream import progress_stream
 from .i18n import _
 
 
@@ -32,32 +32,13 @@ class CaptivePortalError(DownloadError):
         super().__init__(message)
 
 
-class _DownloadInfo:
-    def __init__(self, file, stream):
-        self.progress = 0
-        self.size = -1
-        self.file = file
-        self.stream = stream
-
-
 class Download:
     def __init__(self):
         self._ssl_context = ssl_context()
 
-    def download(self, url, io=None):
-        info = _DownloadInfo(io, ProgressStream())
-        info.stream.write((0, 1))
-        task = create_task(self._download(url, info))
-        task.add_done_callback(partial(self._complete, info))
-        return info.stream
-
-    def _complete(self, info, result):
-        try:
-            result.result()
-        except Exception as e:
-            info.stream.set_exception(e)
-
-    async def _download(self, url, info):
+    @progress_stream
+    async def download(self, progress: Callable[[tuple[int, int]], None], url: str, file: IO[bytes] | None = None) -> IO[bytes] | None:
+        progress((0, 1))
         try:
             # trust_env, so we go through the user's proxy (env vars, or the
             # system settings on windows/macOS).
@@ -68,19 +49,21 @@ class Download:
                     timeout=aiohttp.ClientTimeout(total=24 * 60 * 60),
                 ) as response:
                     response.raise_for_status()
+                    size = -1
                     content_length = response.headers.get('Content-Length')
                     if content_length is not None:
-                        info.size = int(content_length)
+                        size = int(content_length)
+                    received = 0
                     async for chunk in response.content.iter_chunked(64 * 1024):
-                        if info.file is None:
-                            info.file = TemporaryFile()
-                        info.file.write(chunk)
-                        info.progress += len(chunk)
-                        info.stream.write((info.progress, info.size))
-            if info.file is not None:
-                info.file.flush()
-                info.file.seek(0)
-            info.stream.set_result(info.file)
+                        if file is None:
+                            file = TemporaryFile()
+                        file.write(chunk)
+                        received += len(chunk)
+                        progress((received, size))
+            if file is not None:
+                file.flush()
+                file.seek(0)
+            return file
         except aiohttp.ClientResponseError as e:
             raise DownloadError(status=e.status) from e
         except aiohttp.ClientSSLError as e:

@@ -1,5 +1,4 @@
 
-from asyncio import create_task
 from tempfile import mkstemp
 from ssl import SSLContext
 from urllib import parse
@@ -9,6 +8,7 @@ from http.cookies import SimpleCookie
 from dataclasses import dataclass
 
 from typing import BinaryIO
+from typing import Callable
 from typing import Iterable
 
 from aiohttp import ClientSession
@@ -16,7 +16,7 @@ from aiohttp import ClientResponse
 from aiohttp.client_exceptions import ClientError
 from aiohttp.client_exceptions import ClientResponseError
 
-from jamovi.server.utils import ProgressStream
+from jamovi.server.utils import progress_stream
 from jamovi.server.i18n import _
 from jamovi.server import formatio
 
@@ -119,43 +119,31 @@ class HttpSync:
     def matches(self, url: str) -> bool:
         return self._url == url
 
-    def read(self) -> ProgressStream:
-        stream = ProgressStream()
-        stream.write(0)
-        create_task(self.__read(stream))
-        return stream
-
-    def write(self, content: BinaryIO, content_size: int, overwrite: bool = False) -> ProgressStream:
-        stream = ProgressStream()
-        stream.write(0)
-        create_task(self.__write(content, content_size, overwrite, stream))
-        return stream
-
-    async def __read(self, stream: ProgressStream) -> None:
+    @progress_stream
+    async def read(self, progress: Callable[[float], None]) -> HttpSyncFileInfo:
+        progress(0)
         try:
-            await self._read(stream)
+            return await self._read(progress)
         except ClientError as e:
-            stream.set_exception(HttpSyncException(e))
-        except BaseException as e:
-            stream.set_exception(e)
+            raise HttpSyncException(e)
 
-    async def _read(self, stream: ProgressStream) -> None:
+    async def _read(self, progress: Callable[[float], None]) -> HttpSyncFileInfo:
         headers = self._options.get('headers', None)
         async with self._client.get(self._url, headers=headers) as response:
-            await self._read_response(response, stream)
+            return await self._read_response(response, progress)
 
-    async def __write(self, content: BinaryIO, content_size: int, overwrite: bool, stream: ProgressStream) -> None:
+    @progress_stream
+    async def write(self, progress: Callable[[float], None], content: BinaryIO, content_size: int, overwrite: bool = False) -> HttpSyncFileInfo:
+        progress(0)
         try:
-            await self._write(content, content_size, overwrite, stream)
+            return await self._write(content, content_size, overwrite, progress)
         except ClientError as e:
-            stream.set_exception(HttpSyncException(e))
-        except BaseException as e:
-            stream.set_exception(e)
+            raise HttpSyncException(e)
 
-    async def _write(self, content: BinaryIO, content_size: int, overwrite: bool, stream: ProgressStream) -> None:
+    async def _write(self, content: BinaryIO, content_size: int, overwrite: bool, progress: Callable[[float], None]) -> HttpSyncFileInfo:
         raise NotImplementedError
 
-    async def _read_response(self, response: ClientResponse, stream: ProgressStream) -> None:
+    async def _read_response(self, response: ClientResponse, progress: Callable[[float], None]) -> HttpSyncFileInfo:
         self._cookies = response.cookies
         self._final_url = str(response.url)
 
@@ -167,9 +155,9 @@ class HttpSync:
         if not formatio.is_supported(self._filename):
             raise ValueError(_('Unrecognised file format'))
 
-        await self._read_into_tempfile(self._filename, response, stream)
+        return await self._read_into_tempfile(self._filename, response, progress)
 
-    async def _read_into_tempfile(self, filename: str, response: ClientResponse, stream: ProgressStream) -> None:
+    async def _read_into_tempfile(self, filename: str, response: ClientResponse, progress: Callable[[float], None]) -> HttpSyncFileInfo:
 
         content_length = response.content_length
 
@@ -190,19 +178,18 @@ class HttpSync:
             if content_length:
                 n = content_length
 
-            stream.write(p / n)
+            progress(p / n)
 
             async for data in response.content.iter_any():
                 self._temp_file.write(data)
                 if content_length:
                     p += len(data)
-                    stream.write(p / n)
+                    progress(p / n)
         finally:
             if self._temp_file is not None:
                 self._temp_file.close()
 
-        info = HttpSyncFileInfo(self._temp_file_path, filename, ext)
-        stream.set_result(info)
+        return HttpSyncFileInfo(self._temp_file_path, filename, ext)
 
     @property
     def shareable(self) -> Iterable[Shareable]:

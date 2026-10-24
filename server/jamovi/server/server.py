@@ -181,9 +181,11 @@ class _Handlers:
         try:
             if instance is None:
                 instance = await self._session.create()
-            async for progress in instance.open(url, title, is_temp, ext):
+            stream = instance.open(url, title, is_temp, ext)
+            async for progress in stream:
                 p, n = progress
                 parts.append(f'{{"status":"in-progress","p":{p},"n":{n}}}\n')
+            await stream
         except Exception as e:
             log.exception(e)
             message = str(e) or type(e).__name__
@@ -252,12 +254,14 @@ class _Handlers:
         await resp.prepare(request)
         try:
             instance = await self._session.create()
-            async for progress in instance.open(
+            stream = instance.open(
                 file_path, title=file_title, is_temp=is_temp,
                 ext=file_ext, options=options, remove_after=remove_after,
-            ):
+            )
+            async for progress in stream:
                 p, n = progress
                 await resp.write(f'{{"status":"in-progress","p":{p},"n":{n}}}\n'.encode())
+            await stream
         except Exception as e:
             log.exception(e)
             message = str(e) or type(e).__name__

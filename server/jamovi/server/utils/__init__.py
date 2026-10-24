@@ -12,6 +12,7 @@ from .fileentry import FileEntry
 from .nulllog import NullLog
 from .latexify import latexify
 from .stream import ProgressStream
+from .stream import progress_stream
 from .describe import describe_datasetrr
 
 

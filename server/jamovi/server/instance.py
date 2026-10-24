@@ -13,7 +13,7 @@ from . import jamovi_pb2 as jcoms
 from .utils import conf
 from .utils import FileEntry
 from .utils import ssl_context
-from .utils.stream import ProgressStream
+from .utils.stream import progress_stream
 from .datasetmodel import DataSetModel
 from .datasetcontroller import DataSetController
 from .datasetcontroller import ForbiddenOp
@@ -36,6 +36,7 @@ import posixpath
 import logging
 import asyncio
 import functools
+from typing import Callable
 from time import monotonic
 from urllib import parse
 
@@ -795,11 +796,6 @@ class Instance:
         return self._file_sync_client
 
 
-    def save(self, options):
-        stream = ProgressStream()
-        create_task(self._save(options, stream))
-        return stream
-
     def needs_autosave(self) -> bool:
         return (self._project.is_edited
                 and not self._project.is_blank
@@ -818,7 +814,8 @@ class Instance:
         finally:
             self._autosaving = False
 
-    async def _save(self, options, return_stream):
+    @progress_stream
+    async def save(self, progress_cb: Callable[[tuple[int, int]], None], options) -> dict:
 
         path = options['path']
         trigger_download = False
@@ -877,7 +874,7 @@ class Instance:
                 stream = self._on_save_everything(path, content, is_export)
 
             async for progress in stream:
-                return_stream.write((progress * multiplier, 1000))
+                progress_cb((progress * multiplier, 1000))
 
             if file_sync:
                 stat_info = os.stat(path)
@@ -887,7 +884,7 @@ class Instance:
                     overwrite = options.get('overwrite', False)
                     stream = file_sync.write(file, file_size, overwrite)
                     async for progress in stream:
-                        return_stream.write((multiplier + progress * multiplier, 1000))
+                        progress_cb((multiplier + progress * multiplier, 1000))
                     file_info: HttpSyncFileInfo = await stream
 
                 path = file_info.url
@@ -920,10 +917,10 @@ class Instance:
             if trigger_download:
                 result['download'] = True
 
-            return_stream.set_result(result)
+            return result
 
-        except FileExistsException as e:
-            return_stream.set_exception(e)
+        except FileExistsException:
+            raise
 
         except Exception as e:
 
@@ -945,7 +942,7 @@ class Instance:
             else:
                 cause = str(e)
 
-            return_stream.set_exception(UserException(message, cause))
+            raise UserException(message, cause)
 
         finally:
             if staging_path is not None:
@@ -1033,7 +1030,8 @@ class Instance:
         else:
             raise Exception(_('Unable to access analysis'))
 
-    def open(self, path, title=None, is_temp=False, ext=None, options=None, remove_after=False):
+    @progress_stream
+    async def open(self, write_progress: Callable[[tuple[int, int]], None], path, title=None, is_temp=False, ext=None, options=None, remove_after=False):
         # remove_after: the file at path is ours (i.e. an upload written to a
         # temp file) and should be removed once it's been read
 
@@ -1077,127 +1075,116 @@ class Instance:
             log_title = log_title[:16] + '...'
         log.info("opening '%s'", log_title)
 
-        stream = ProgressStream()
+        self._opening = True
 
-        async def read_file(path, is_temp, stream):
+        file_sync: HttpSync | None = None
+        norm_path = None
 
-            nonlocal title
-            nonlocal ext
-            nonlocal remove_after
+        try:
+            url = None
 
-            file_sync: HttpSync | None = None
-            norm_path = None
+            if is_url(path):
 
-            try:
-                url = None
+                url = path
+                file_sync = create_file_sync(url, options, self.file_sync_client)
 
-                if is_url(path):
+                read_stream = file_sync.read()
+                async for progress in read_stream:
+                    progress_to_50 = (500 * progress, 1000)
+                    write_progress(progress_to_50)
 
-                    url = path
-                    file_sync = create_file_sync(url, options, self.file_sync_client)
+                file_info = await read_stream
 
-                    read_stream = file_sync.read()
-                    async for progress in read_stream:
-                        progress_to_50 = (500 * progress, 1000)
-                        stream.write(progress_to_50)
+                # the sync downloads into a temp file, which we own
+                norm_path = file_info.url
+                remove_after = True
+                title, __ = os.path.splitext(file_info.filename)
+                ext = file_info.ext
 
-                    file_info = await read_stream
+                if ext == 'omv' and not file_sync.read_only:
+                    is_temp = False
 
-                    # the sync downloads into a temp file, which we own
-                    norm_path = file_info.url
-                    remove_after = True
-                    title, __ = os.path.splitext(file_info.filename)
-                    ext = file_info.ext
+            else:
+                norm_path = self._normalise_path(path)
 
-                    if ext == 'omv' and not file_sync.read_only:
-                        is_temp = False
+            # opening replaces any data sets already here
+            self._remove_all_datasets()
 
+            ioloop = asyncio.get_event_loop()
+
+            def prog_cb(p):
+                if url:  # downloaded
+                    progress = (500 + 500 * p, 1000)
                 else:
-                    norm_path = self._normalise_path(path)
+                    progress = (1000 * p, 1000)
+                ioloop.call_soon_threadsafe(write_progress, progress)
 
-                # opening replaces any data sets already here
-                self._remove_all_datasets()
+            main_settings = self._settings.group('main')
+            func = functools.partial(formatio.read, self._project, norm_path, prog_cb, main_settings, is_temp=is_temp, title=title, ext=ext)
+            async with self._project.attach():
+                result = await ioloop.run_in_executor(None, func)
 
-                ioloop = asyncio.get_event_loop()
+            self._sync_controllers()
 
-                def prog_cb(p):
-                    if url:  # downloaded
-                        progress = (500 + 500 * p, 1000)
+            if file_sync is not None:
+                self._project.file_sync = file_sync
+                self._project.path = url
+
+            if self._project.analyses.count() == 0 or self._project.analyses._analyses[0].name != 'empty':
+                annotation = self._project.analyses.create_annotation(0)
+                annotation.results.index = 1
+                annotation.results.title = _('Results')
+
+            i = 1
+            while i < self._project.analyses.count():
+                analysis = self._project.analyses._analyses[i]
+
+                if analysis.name == 'empty':
+                    log.info(f'Missing Analysis: { analysis.depends_on }')
+                    del self._project.analyses[analysis.id]
+                else:
+                    annotation_index = i + 1
+                    if annotation_index == self._project.analyses.count():
+                        annotation = self._project.analyses.create_annotation(annotation_index)
+                        annotation.results.index = annotation_index + 1
+                        analysis.add_dependent(annotation)
                     else:
-                        progress = (1000 * p, 1000)
-                    ioloop.call_soon_threadsafe(stream.write, progress)
-
-                main_settings = self._settings.group('main')
-                func = functools.partial(formatio.read, self._project, norm_path, prog_cb, main_settings, is_temp=is_temp, title=title, ext=ext)
-                async with self._project.attach():
-                    result = await ioloop.run_in_executor(None, func)
-
-                self._sync_controllers()
-
-                if file_sync is not None:
-                    self._project.file_sync = file_sync
-                    self._project.path = url
-
-                stream.set_result(result)
-
-                if self._project.analyses.count() == 0 or self._project.analyses._analyses[0].name != 'empty':
-                    annotation = self._project.analyses.create_annotation(0)
-                    annotation.results.index = 1
-                    annotation.results.title = _('Results')
-
-                i = 1
-                while i < self._project.analyses.count():
-                    analysis = self._project.analyses._analyses[i]
-
-                    if analysis.name == 'empty':
-                        log.info(f'Missing Analysis: { analysis.depends_on }')
-                        del self._project.analyses[analysis.id]
-                    else:
-                        annotation_index = i + 1
-                        if annotation_index == self._project.analyses.count():
+                        annotation = self._project.analyses._analyses[annotation_index]
+                        if annotation.name != 'empty' or annotation.depends_on != analysis.id:
+                            if annotation.name == 'empty':
+                                log.info(f'Dependency miss-match: { annotation.depends_on }, { analysis.id }')
+                                del self._project.analyses[annotation.id]
+                            else:
+                                log.info(f'Missing Annotation: { analysis.id }')
                             annotation = self._project.analyses.create_annotation(annotation_index)
                             annotation.results.index = annotation_index + 1
                             analysis.add_dependent(annotation)
-                        else:
-                            annotation = self._project.analyses._analyses[annotation_index]
-                            if annotation.name != 'empty' or annotation.depends_on != analysis.id:
-                                if annotation.name == 'empty':
-                                    log.info(f'Dependency miss-match: { annotation.depends_on }, { analysis.id }')
-                                    del self._project.analyses[annotation.id]
-                                else:
-                                    log.info(f'Missing Annotation: { analysis.id }')
-                                annotation = self._project.analyses.create_annotation(annotation_index)
-                                annotation.results.index = annotation_index + 1
-                                analysis.add_dependent(annotation)
-                        i = annotation_index + 1
+                    i = annotation_index + 1
 
-            except Exception as e:
-                if not isinstance(e, formatio.FileReadError):
-                    log.exception(e)
-                self._remove_all_datasets()
-                stream.set_exception(e)
-            else:
-                # success
-                if path != '' and not is_temp:
-                    self._add_to_recents(path, self._project.title)
-            finally:
-                self._opening = False
-                if self._coms is None:
-                    # the client can only connect now, so the time it has
-                    # to do so starts now
-                    self._no_connection_since = monotonic()
+        except Exception as e:
+            if not isinstance(e, formatio.FileReadError):
+                log.exception(e)
+            self._remove_all_datasets()
+            raise
+        else:
+            # success
+            if path != '' and not is_temp:
+                self._add_to_recents(path, self._project.title)
+            return result
+        finally:
+            self._opening = False
+            if self._coms is None:
+                # the client can only connect now, so the time it has
+                # to do so starts now
+                self._no_connection_since = monotonic()
 
-                if remove_after and norm_path is not None:
-                    # whether the open succeeded or not, the file isn't
-                    # needed any more
-                    try:
-                        os.remove(norm_path)
-                    except OSError as e:
-                        log.warning("unable to remove '%s': %s", norm_path, e)
-
-        self._opening = True
-        create_task(read_file(path, is_temp, stream))
-        return stream
+            if remove_after and norm_path is not None:
+                # whether the open succeeded or not, the file isn't
+                # needed any more
+                try:
+                    os.remove(norm_path)
+                except OSError as e:
+                    log.warning("unable to remove '%s': %s", norm_path, e)
 
     async def _on_open(self, request):
 
@@ -1541,6 +1528,7 @@ class Instance:
                     stream = modules.install(request.path)
                     async for progress in stream:
                         self._coms.send(None, self._instance_id, request, complete=False, progress=progress)
+                    await stream
 
                     self._coms.send(None, self._instance_id, request)
                     self._session.notify_global_changes()
@@ -1610,6 +1598,10 @@ class Instance:
                     module_pb = response.modules.add()
                     self._module_to_pb(module, module_pb)
                 self._coms.send(response, self._instance_id, request)
+            except asyncio.CancelledError:
+                if not stream.cancelled():
+                    raise
+                # superseded by a newer read of the library
             except Exception as e:
                 self._coms.send_error(_('Unable to access library'), str(e), self._instance_id, request)
 

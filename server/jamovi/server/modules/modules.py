@@ -5,7 +5,6 @@ import logging
 import shutil
 import json
 from zipfile import ZipFile
-from asyncio import ensure_future as create_task
 from collections import namedtuple
 from functools import lru_cache
 
@@ -19,6 +18,7 @@ from jamovi.server.utils import conf
 from jamovi.server.downloader import Downloader
 from jamovi.server.downloader import DownloadError
 from jamovi.server.utils.stream import ProgressStream
+from jamovi.server.utils.stream import progress_stream
 from jamovi.server.utils.zipverify import verify_jmo
 from jamovi.server.appinfo import determine_r_version
 from jamovi.server.appinfo import app_info
@@ -237,35 +237,30 @@ class Modules:
             await self._reread_installed()
             self._original = list(map(lambda x: x.name, self._modules))
 
-    def read_library(self):
+    def read_library(self) -> ProgressStream:
 
-        if self._read_task is not None and not self._read_task.done():
+        if self._read_task is not None:
             self._read_task.cancel()
 
-        out_stream = ProgressStream()
+        self._read_task = self._read_library()
+        return self._read_task
 
-        async def transform() -> None:
+    @progress_stream
+    async def _read_library(self, progress):
+        lang_code = i18n.get_language()
+        if lang_code and not lang_code.startswith('en'):
+            lang_stream = Downloader.download(
+                f'{LIBRARY_ROOT}/index-{lang_code}')
             try:
-                lang_code = i18n.get_language()
-                if lang_code and not lang_code.startswith('en'):
-                    lang_stream = Downloader.download(
-                        f'{LIBRARY_ROOT}/index-{lang_code}')
-                    try:
-                        result = await lang_stream
-                        out_stream.set_result(self._parse_index(result))
-                        return
-                    except DownloadError as e:
-                        if e.status != 404:
-                            raise
+                result = await lang_stream
+                return self._parse_index(result)
+            except DownloadError as e:
+                if e.status != 404:
+                    raise
 
-                url = f'{LIBRARY_ROOT}/index'
-                result = await Downloader.download(url)
-                out_stream.set_result(self._parse_index(result))
-            except Exception as e:
-                out_stream.set_exception(e)
-
-        self._read_task = create_task(transform())
-        return out_stream
+        url = f'{LIBRARY_ROOT}/index'
+        result = await Downloader.download(url)
+        return self._parse_index(result)
 
     def _parse_index(self, path):
         try:
@@ -414,33 +409,20 @@ class Modules:
             self._notify_listeners({ 'type': 'moduleUpdated', 'data': { 'name': meta.name }})
         self._notify_listeners({ 'type': 'modulesChanged' })
 
-    def install(self, path):
-
-        out_stream = ProgressStream()
-
-        async def download_and_install(path):
-
-            in_stream = None
+    @progress_stream
+    async def install(self, progress, path: str):
+        if path.startswith(LIBRARY_ROOT):
+            in_stream = Downloader.download(path)
             try:
-                if path.startswith(LIBRARY_ROOT):
-                    in_stream = Downloader.download(path)
-                    async for progress in in_stream:
-                        out_stream.write(progress)
-                    path = in_stream.result()
-                    verify_jmo(path)
+                async for p in in_stream:
+                    progress(p)
+                path = await in_stream
+            finally:
+                in_stream.cancel()  # does nothing if it's done
+            verify_jmo(path)
 
-                await self.install_from_file(path)
-                out_stream.set_result((1, 1))
-
-            except Exception as e:
-                if in_stream:
-                    in_stream.cancel()
-                out_stream.set_exception(e)
-
-        t = create_task(download_and_install(path))
-        t.add_done_callback(lambda f: f.result())
-
-        return out_stream
+        await self.install_from_file(path)
+        return (1, 1)
 
     def __iter__(self):
         return self._modules.__iter__()
