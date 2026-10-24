@@ -13,7 +13,7 @@ from jamovi.server.jamovi_pb2 import AnalysisResponse
 from jamovi.server.dataset import DataType
 from jamovi.server.dataset import MeasureType
 
-from .conftest import Session
+from .conftest import EngineSession
 
 from loguru import logger
 
@@ -24,10 +24,12 @@ PERFORM_RUN = AnalysisRequest.Perform.Value("RUN")
 
 @pytest.mark.asyncio
 @pytest.mark.timeout(20)
-async def test_analysis(session: Session):
+async def test_analysis(engine_session: EngineSession):
+    session = engine_session
     request = AnalysisRequest()
     request.sessionId = session.session_id
     request.instanceId = session.instance_id
+    request.datasetId = session.dataset_id
     request.analysisId = 1
     request.ns = "jmv"
     request.name = "anova"

@@ -54,6 +54,8 @@ from tempfile import mktemp
 from tempfile import mkstemp
 
 from .dataset import StoreFactory
+from .storage import Storage
+from .storage import create_storage
 
 from .utils import fs
 from .utils import is_url
@@ -83,7 +85,7 @@ class Instance:
 
         os.makedirs(self._instance_path, exist_ok=True)
         os.makedirs(self.temp_path(), exist_ok=True)
-        self._buffer_path = posixpath.join(instance_path, 'buffer')
+        self._storage = create_storage(instance_path)
 
         self._coms = None
         self._perms = Permissions.retrieve()
@@ -134,10 +136,10 @@ class Instance:
     def log(self):
         return self._log
 
-    def create_store(self):
-        """Create the backing store for a data set. The engine expects to
-        find it at {instance}/buffer."""
-        return StoreFactory.create(self._buffer_path, 'duckdb')
+    @property
+    def storage(self) -> Storage:
+        """Where the data sets live"""
+        return self._storage
 
     def _sync_controllers(self):
         """Create controllers for data sets which don't have one yet (the
@@ -299,6 +301,7 @@ class Instance:
         self._session.modules.remove_listener(self._module_event)
         self._controllers = { }
         self._project.close()
+        self._storage.close()
 
     def _close(self, clean=True):
         log.debug('instance %s: connection closed (clean=%s)', self._instance_id, clean)
@@ -1258,7 +1261,8 @@ class Instance:
 
                 assert self._buffer_path is not None
 
-                self._mm = StoreFactory.create(self._buffer_path, 'duckdb')
+                # a scratch data set, to copy from
+                self._mm = StoreFactory.create(self._buffer_path, 'shmem')
                 model.dataset = self._mm.create_dataset()
 
                 ioloop = asyncio.get_event_loop()

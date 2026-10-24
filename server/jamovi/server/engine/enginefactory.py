@@ -22,8 +22,9 @@ class EngineFactory:
         if em_type == 'shmem':
             return ShMemManager(path, pool, config)
         elif em_type == 'remote':
+            # not part of this repo (provided by the cloud deployment)
             # pylint: disable-next=import-outside-toplevel,import-error
-            from .remotepool import RemotePool
+            from jamovi.server.remotepool import RemotePool
             return RemotePool(path, pool)
         elif em_type == 'duckdb':
             # pylint: disable-next=import-outside-toplevel

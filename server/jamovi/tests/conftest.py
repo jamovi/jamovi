@@ -5,7 +5,6 @@ import os
 from os import path
 from tempfile import TemporaryDirectory
 from uuid import uuid4
-import math
 
 from importlib import resources
 from dataclasses import dataclass
@@ -24,26 +23,13 @@ from jamovi.server.dataset import Column
 from jamovi.server.dataset import DataType
 from jamovi.server.dataset import MeasureType
 
-from .utils import load
 from jamovi.server.pool import Pool
 
 from jamovi.server.datasetmodel import DataSetModel
 from jamovi.server.instance import Instance
 from jamovi.server.session import Session
 
-from jamovi.server.dataset import CellValue
-
-
-def equals(x: CellValue, y: CellValue) -> bool:
-    """test if two cell values are equal"""
-    if isinstance(x, float) and isinstance(y, float):
-        if math.isnan(x):
-            return math.isnan(y)
-        if math.isnan(y):
-            return False
-        return pytest.approx(x) == y
-    else:
-        return x == y
+from .utils import load
 
 
 @pytest.fixture(scope='module')
@@ -51,35 +37,48 @@ def temp_dir() -> Iterator[str]:
     with TemporaryDirectory() as temp:
         yield temp
 
+
+@pytest.fixture
+def instance_path(temp_dir: str) -> str:
+    """a fresh {session}/{instance} directory"""
+    session_id = str(uuid4())
+    instance_id = str(uuid4())
+    instance_path = path.join(temp_dir, session_id, instance_id)
+    os.makedirs(instance_path)
+    return instance_path
+
+
 @dataclass
-class Session:
+class EngineSession:
     work_dir: str
     session_id: str
     instance_id: str
+    dataset_id: int
     dataset: DataSet
     store: Store
     pool: Pool
 
+
 @pytest_asyncio.fixture
-async def session(temp_dir: str) -> AsyncIterable[Session]:
-    """construct a session"""
-    session_id: str = str(uuid4())
-    instance_id: str = str(uuid4())
-    instance_path = f"{ temp_dir }/{ session_id }/{ instance_id }"
-    store_path = f"{ instance_path }/store.duckdb"
-    os.makedirs(instance_path, exist_ok=True)
-    store = StoreFactory.create(store_path, "duckdb")
-    dataset = store.create_dataset()
+async def engine_session(temp_dir: str, instance_path: str) -> AsyncIterable[EngineSession]:
+    """a duckdb data set, with duckdb engines to run analyses on it"""
+    session_path, instance_id = path.split(instance_path)
+    session_id = path.basename(session_path)
+    # the engine expects to find the database at {instance}/buffer
+    store = StoreFactory.create(path.join(instance_path, "buffer"), "duckdb")
+    dataset_id = 1
+    dataset = store.create_dataset(dataset_id)
     pool = Pool(1)
     engine_manager = EngineFactory.create("duckdb", temp_dir, pool, {})
     await engine_manager.start()
-    yield Session(temp_dir, session_id, instance_id, dataset, store, pool)
+    yield EngineSession(temp_dir, session_id, instance_id, dataset_id, dataset, store, pool)
     await engine_manager.stop()
+    store.close()
 
 
 @pytest.fixture
-def shared_memory_store(temp_dir: str) -> Iterator[Store]:
-    temp_file = path.join(temp_dir, "fred.mm")
+def shared_memory_store(instance_path: str) -> Iterator[Store]:
+    temp_file = path.join(instance_path, "buffer")
     store = StoreFactory.create(temp_file, "shmem")
     yield store
     store.close()
@@ -94,12 +93,8 @@ def empty_shmem_dataset(shared_memory_store: Store) -> Iterator[DataSet]:
 
 
 @pytest.fixture
-def duckdb_store(
-    dir_and_session_and_instance_ids: tuple[str, str, str],
-) -> Iterator[Store]:
-    temp_dir, session_id, instance_id = dir_and_session_and_instance_ids
-    store_path = f"{ temp_dir }/{ session_id }/{ instance_id }/store.duckdb"
-    store = StoreFactory.create(store_path, "duckdb")
+def duckdb_store(instance_path: str) -> Iterator[Store]:
+    store = StoreFactory.create(path.join(instance_path, "buffer"), "duckdb")
     yield store
     store.close()
 

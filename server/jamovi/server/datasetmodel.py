@@ -17,7 +17,6 @@ from jamovi.core import ColumnType
 from jamovi.core import DataType
 from jamovi.core import MeasureType
 
-from jamovi.server.dataset import Store
 from jamovi.server.dataset import ColumnRef
 from jamovi.server.dataset import CellValueArea
 
@@ -84,7 +83,6 @@ class DataSetModel:
 
     _project: Project | None
     _dataset: DataSet | None
-    _store: Store | None
     _id: int
     _name: str
     _reuseable_virtual_ids: deque
@@ -102,7 +100,6 @@ class DataSetModel:
     def __init__(self, project: Project | None = None):
         self._project = project
         self._dataset = None
-        self._store = None
         self._id = 0
         self._name = ''
         self._reuseable_virtual_ids = deque([])
@@ -127,15 +124,32 @@ class DataSetModel:
         if read_only:
             await self._rwlock.acquire_read()
             try:
-                yield
+                with self.attach_store(read_only=True):
+                    yield
             finally:
                 await self._rwlock.release_read()
         else:
             await self._rwlock.acquire_write()
             try:
-                yield
+                with self.attach_store():
+                    yield
             finally:
                 await self._rwlock.release_write()
+
+    @contextmanager
+    def attach_store(self, read_only: bool = False):
+        """attach the data set to its backing store (without taking the
+        lock). the caller must otherwise have exclusive access to the data
+        set, i.e. it was just created and isn't shared yet"""
+        dataset = self._dataset
+        if dataset is None:
+            yield
+            return
+        dataset.attach(read_only)
+        try:
+            yield
+        finally:
+            dataset.detach()
 
     @property
     def id(self) -> int:
@@ -157,19 +171,8 @@ class DataSetModel:
     def project(self) -> Project | None:
         return self._project
 
-    @property
-    def store(self) -> Store | None:
-        return self._store
-
-    @store.setter
-    def store(self, store: Store | None):
-        self._store = store
-
     def close(self):
         self._dataset = None
-        if self._store is not None:
-            self._store.close()
-            self._store = None
 
     @property
     def filters_visible(self):
