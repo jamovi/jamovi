@@ -119,7 +119,7 @@ def alter_levels(levels: Iterable[Level], changes: dict[int, dict]) -> Iterable[
     """Alter levels"""
     new_levels = [ ]
     for level in levels:
-        value, label, import_value, pinned = level
+        value, label, import_value, pinned = level[:4]
         level_changes = changes.get(value, {})
         for k, v in level_changes.items():
             if k == 'label':
