@@ -8,9 +8,9 @@ import math
 from io import TextIOWrapper
 from json.decoder import JSONDecodeError
 
-from jamovi.core import ColumnType
-from jamovi.core import DataType
-from jamovi.core import MeasureType
+from jamovi.server.dataset.enums import ColumnType
+from jamovi.server.dataset.enums import DataType
+from jamovi.server.dataset.enums import MeasureType
 
 from .reader import Reader
 

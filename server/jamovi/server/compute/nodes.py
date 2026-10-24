@@ -9,8 +9,8 @@ from collections import OrderedDict
 from numbers import Number
 from itertools import compress
 
-from jamovi.core import DataType
-from jamovi.core import MeasureType
+from jamovi.server.dataset.enums import DataType
+from jamovi.server.dataset.enums import MeasureType
 from . import FValues
 from . import convert
 from . import is_missing

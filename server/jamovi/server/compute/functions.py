@@ -11,8 +11,8 @@ from scipy.stats import boxcox
 # numpy, scipy return numpy.float64's, so need to convert back to float
 from scipy.stats import rankdata
 
-from jamovi.core import DataType
-from jamovi.core import MeasureType
+from jamovi.server.dataset.enums import DataType
+from jamovi.server.dataset.enums import MeasureType
 from jamovi.server.compute import is_missing
 from jamovi.server.compute import is_equal
 

@@ -17,7 +17,12 @@ import os
 import os.path
 import sys
 
-from enum import Enum
+# these don't require the core, so they're defined (and used) without it
+from jamovi.server.dataset.enums import DataType
+from jamovi.server.dataset.enums import MeasureType
+from jamovi.server.dataset.enums import ColumnType
+from jamovi.server.utils.dirs import Dirs
+from jamovi.server.utils.dirs import PlatformInfo
 
 ctypedef char* charptr
 
@@ -800,60 +805,6 @@ cdef class Column:
     def should_treat_as_missing(self, index):
         return self._this.shouldTreatAsMissing(index)
 
-cdef extern from "dirs.h":
-    cdef cppclass CDirs "Dirs":
-        @staticmethod
-        string homeDir() except +
-        @staticmethod
-        string documentsDir() except +
-        @staticmethod
-        string downloadsDir() except +
-        @staticmethod
-        string appDataDir() except +
-        @staticmethod
-        string tempDir() except +
-        @staticmethod
-        string exeDir() except +
-        @staticmethod
-        string rHomeDir() except +
-        @staticmethod
-        string libraryDir() except +
-        @staticmethod
-        string desktopDir() except +
-
-cdef class Dirs:
-    @staticmethod
-    def app_data_dir():
-        # return decode(CDirs.appDataDir())
-        # CDirs.appDataDir() seems to have stopped working under macOS
-        # hence, us handling it here.
-
-        if sys.platform == 'darwin':
-            path = os.path.expanduser('~/Library/Application Support/jamovi')
-            os.makedirs(path, exist_ok=True)
-            return path
-        else:
-            return decode(CDirs.appDataDir())
-
-    @staticmethod
-    def temp_dir():
-        return decode(CDirs.tempDir())
-    @staticmethod
-    def exe_dir():
-        return decode(CDirs.exeDir())
-    @staticmethod
-    def documents_dir():
-        return decode(CDirs.documentsDir())
-    @staticmethod
-    def downloads_dir():
-        return decode(CDirs.downloadsDir())
-    @staticmethod
-    def home_dir():
-        return decode(CDirs.homeDir())
-    @staticmethod
-    def desktop_dir():
-        return decode(CDirs.desktopDir())
-
 cdef extern from "memorymapw.h":
     cdef cppclass CMemoryMap "MemoryMapW":
         @staticmethod
@@ -878,124 +829,3 @@ cdef class MemoryMap:
 
 def decode(string str):
     return str.c_str().decode('utf-8')
-
-
-class DataType(Enum):
-    INTEGER = CDataTypeInteger
-    DECIMAL = CDataTypeDecimal
-    TEXT    = CDataTypeText
-    NONE    = CDataTypeNone
-
-    @staticmethod
-    def stringify(data_type):
-        if data_type == DataType.INTEGER:
-            return 'Integer'
-        elif data_type == DataType.DECIMAL:
-            return 'Decimal'
-        elif data_type == DataType.TEXT:
-            return 'Text'
-        else:
-            return 'Integer'
-
-    @staticmethod
-    def parse(data_type):
-        if data_type == 'Integer':
-            return DataType.INTEGER
-        elif data_type == 'Decimal':
-            return DataType.DECIMAL
-        elif data_type == 'Text':
-            return DataType.TEXT
-        else:
-            return DataType.INTEGER
-
-
-class MeasureType(Enum):
-    NONE         = CMeasureTypeNone
-    NOMINAL      = CMeasureTypeNominal
-    ORDINAL      = CMeasureTypeOrdinal
-    CONTINUOUS   = CMeasureTypeContinuous
-    ID           = CMeasureTypeID
-
-    @staticmethod
-    def stringify(measure_type):
-        if measure_type == MeasureType.CONTINUOUS:
-            return 'Continuous'
-        elif measure_type == MeasureType.ORDINAL:
-            return 'Ordinal'
-        elif measure_type == MeasureType.NOMINAL:
-            return 'Nominal'
-        elif measure_type == MeasureType.ID:
-            return 'ID'
-        else:
-            return 'None'
-
-    @staticmethod
-    def parse(measure_type):
-        if measure_type == 'Continuous':
-            return MeasureType.CONTINUOUS
-        elif measure_type == 'Ordinal':
-            return MeasureType.ORDINAL
-        elif measure_type == 'Nominal':
-            return MeasureType.NOMINAL
-        elif measure_type == 'ID':
-            return MeasureType.ID
-        elif measure_type == 'None':
-            return MeasureType.NONE
-        else:
-            return MeasureType.CONTINUOUS
-
-class ColumnType(Enum):
-    NONE     = CColumnTypeNone
-    DATA     = CColumnTypeData
-    COMPUTED = CColumnTypeComputed
-    RECODED  = CColumnTypeRecoded
-    FILTER  = CColumnTypeFilter
-    OUTPUT  = CColumnTypeOutput
-
-    @staticmethod
-    def stringify(value):
-        if value == ColumnType.DATA:
-            return 'Data'
-        elif value == ColumnType.COMPUTED:
-            return 'Computed'
-        elif value == ColumnType.RECODED:
-            return 'Recoded'
-        elif value == ColumnType.FILTER:
-            return 'Filter'
-        elif value == ColumnType.OUTPUT:
-            return 'Output'
-        elif value == ColumnType.NONE:
-            return 'None'
-        else:
-            return 'Data'
-
-    @staticmethod
-    def parse(value):
-        if value == 'Data':
-            return ColumnType.DATA
-        elif value == 'Computed':
-            return ColumnType.COMPUTED
-        elif value == 'Recoded':
-            return ColumnType.RECODED
-        elif value == 'Filter':
-            return ColumnType.FILTER
-        elif value == 'Output':
-            return ColumnType.OUTPUT
-        elif value == 'None':
-            return ColumnType.NONE
-        else:
-            return ColumnType.DATA
-
-cdef extern from "platforminfo.h":
-    cdef cppclass CPlatformInfo "PlatformInfo":
-        @staticmethod
-        cpplist[string] platform()
-
-class PlatformInfo:
-    @staticmethod
-    def platform():
-        platforms = CPlatformInfo.platform()
-        ps = [ ]
-        for plat in platforms:
-            ps.append(decode(plat))
-        return ps

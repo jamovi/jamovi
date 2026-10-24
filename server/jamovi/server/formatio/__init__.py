@@ -6,6 +6,7 @@ import re
 import importlib
 
 from collections import OrderedDict
+from logging import getLogger
 
 from .exceptions import FileReadError
 from .exceptions import FileWriteError
@@ -15,6 +16,11 @@ from . import blank
 
 
 __all__ = ('FileReadError', 'FileWriteError')  # prevent flake whining F401
+
+log = getLogger(__name__)
+
+# compiled modules some plugins require; without them, those plugins are skipped
+OPTIONAL_COMPILED = ('jamovi.readstat', 'jamovi.librdata')
 
 
 readers = OrderedDict()
@@ -34,7 +40,13 @@ else:
 plugins = list(sorted(plugins))
 
 for plugin in plugins:
-    module = importlib.import_module(plugin, 'jamovi.server.formatio')
+    try:
+        module = importlib.import_module(plugin, 'jamovi.server.formatio')
+    except ModuleNotFoundError as e:
+        if e.name not in OPTIONAL_COMPILED:
+            raise
+        log.info("'%s' not available, skipping %s", e.name, plugin)
+        continue
     if hasattr(module, 'get_readers'):
         module_readers = module.get_readers()
         module_readers = map(lambda x: (x[0], x), module_readers)

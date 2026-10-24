@@ -5,6 +5,9 @@ import typing
 
 import pytest
 
+# requires the (compiled) readstat module
+pytest.importorskip("jamovi.readstat")
+
 from jamovi.server.dataset import DataType
 from jamovi.server.dataset import MeasureType
 from jamovi.server.dataset import Column

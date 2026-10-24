@@ -9,7 +9,7 @@ from base64 import urlsafe_b64encode
 import os
 import os.path
 
-from jamovi.core import MeasureType
+from jamovi.server.dataset.enums import MeasureType
 from jamovi.server import jamovi_pb2 as jcoms
 
 Output = namedtuple('Output', 'name title description measure_type values levels')

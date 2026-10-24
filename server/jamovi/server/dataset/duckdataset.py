@@ -17,9 +17,9 @@ import math
 
 from jamovi.server.logging import logger
 
-from .core import ColumnType
-from .core import DataType
-from .core import MeasureType
+from .enums import ColumnType
+from .enums import DataType
+from .enums import MeasureType
 
 from .dataset import DataSet
 from .dataset import ColumnRef

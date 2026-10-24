@@ -118,6 +118,14 @@ class DuckEngine:
         )
         env["JAMOVI_MODULES_PATH"] = module_paths
         env["PATH"] = self._config.get("path", env.get("PATH", ""))
+        # so the worker finds this jamovi package (i.e. when run from source)
+        # (jamovi/server/engine/duckengine.py -> the directory containing jamovi)
+        jamovi_root = os.path.dirname(
+            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        )
+        env["PYTHONPATH"] = os.pathsep.join(
+            path for path in (jamovi_root, env.get("PYTHONPATH")) if path
+        )
 
         self._process = await create_subprocess_exec(
             sys.executable,

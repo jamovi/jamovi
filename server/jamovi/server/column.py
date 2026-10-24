@@ -4,9 +4,9 @@ import re
 from collections import namedtuple
 from typing import Iterable
 
-from jamovi.core import ColumnType
-from jamovi.core import MeasureType
-from jamovi.core import DataType
+from jamovi.server.dataset.enums import ColumnType
+from jamovi.server.dataset.enums import MeasureType
+from jamovi.server.dataset.enums import DataType
 
 from .celltracker import CellTracker
 

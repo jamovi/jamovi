@@ -19,7 +19,7 @@ from .clientconnection import client_connection_handler
 from .session import Session
 from .utils import conf
 from .appinfo import app_info
-from jamovi.core import Dirs
+from jamovi.server.utils.dirs import Dirs
 from .i18n import _
 from .webhandlers import make_single_file_handler, make_static_dir_handler
 from .webhandlers import make_forward, make_host_dispatch_middleware

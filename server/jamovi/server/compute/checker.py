@@ -7,7 +7,7 @@ from inspect import Parameter
 from math import isnan
 from ..i18n import _
 
-from jamovi.core import ColumnType
+from jamovi.server.dataset.enums import ColumnType
 
 from . import functions
 

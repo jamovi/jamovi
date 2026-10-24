@@ -7,10 +7,10 @@ import typing
 from contextlib import asynccontextmanager
 from contextlib import contextmanager
 
-from jamovi.core import DataSet
-from jamovi.core import ColumnType
-from jamovi.core import DataType
-from jamovi.core import MeasureType
+from jamovi.server.dataset import DataSet
+from jamovi.server.dataset.enums import ColumnType
+from jamovi.server.dataset.enums import DataType
+from jamovi.server.dataset.enums import MeasureType
 
 from jamovi.server.dataset import ColumnRef
 from jamovi.server.dataset import CellValueArea

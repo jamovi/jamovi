@@ -1,6 +1,6 @@
 
-from jamovi.core import ColumnType
-from jamovi.core import DataType
+from jamovi.server.dataset.enums import ColumnType
+from jamovi.server.dataset.enums import DataType
 import math
 import sys
 

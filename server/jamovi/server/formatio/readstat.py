@@ -4,9 +4,9 @@ from numbers import Number
 from datetime import date
 import math
 
-from jamovi.core import ColumnType
-from jamovi.core import DataType
-from jamovi.core import MeasureType
+from jamovi.server.dataset.enums import ColumnType
+from jamovi.server.dataset.enums import DataType
+from jamovi.server.dataset.enums import MeasureType
 
 from jamovi.readstat import Parser as ReadStatParser
 from jamovi.readstat import Error as ReadStatError

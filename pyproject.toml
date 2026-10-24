@@ -36,6 +36,7 @@ lint = ["pylint", "ruff-lint"]
 
 [tool.pytest.ini_options]
 pythonpath = "server"
+testpaths = ["server/jamovi/tests"]
 addopts = [
     "--import-mode=importlib",
     "--strict-markers",

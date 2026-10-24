@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Iterable, Iterator, TypeAlias
 
 from .column import Column
 from .column import CellValue
-from .core import ColumnType, DataType, MeasureType
+from .enums import ColumnType, DataType, MeasureType
 
 if TYPE_CHECKING:
     from .duckdataset import DuckDataSet

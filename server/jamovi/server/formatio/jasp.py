@@ -9,8 +9,8 @@ import struct
 import os
 import os.path
 
-from jamovi.core import DataType
-from jamovi.core import MeasureType
+from jamovi.server.dataset.enums import DataType
+from jamovi.server.dataset.enums import MeasureType
 
 
 def get_readers():

@@ -2,9 +2,9 @@ from typing import Protocol
 from typing import Iterable
 from abc import abstractmethod
 
-from .core import DataType
-from .core import ColumnType
-from .core import MeasureType
+from .enums import DataType
+from .enums import ColumnType
+from .enums import MeasureType
 
 
 CellValue = int | str | float

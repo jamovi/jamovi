@@ -2,7 +2,7 @@
 
 import pytest
 
-from jamovi.core import ColumnType
+from jamovi.server.dataset.enums import ColumnType
 from jamovi.server.instance import Instance
 
 from jamovi.tests.test_instance import FakeComs, _open
