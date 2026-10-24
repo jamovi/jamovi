@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import typing
-from contextlib import asynccontextmanager, AsyncExitStack
+from contextlib import asynccontextmanager, AsyncExitStack, ExitStack
 
 from .datasetmodel import DataSetModel
 from .analyses import Analyses
@@ -31,6 +31,8 @@ class Project:
     _results_language: str
     _is_edited: bool
     _is_blank: bool
+    _attached: ExitStack | None
+    _attached_read_only: bool
     file_sync: HttpSync | None
 
     def __init__(self, instance: Instance):
@@ -44,6 +46,8 @@ class Project:
         self._results_language = ''
         self._is_edited = False
         self._is_blank = False
+        self._attached = None
+        self._attached_read_only = False
         self.file_sync = None
 
     @property
@@ -86,14 +90,18 @@ class Project:
 
     def add_dataset(self, name: str | None = None, index: int | None = None) -> DataSetModel:
         id = self._next_dataset_id
-        store = self._instance.create_store()
         self._next_dataset_id += 1
 
         dataset = DataSetModel(self)
         dataset.id = id
         dataset.name = self._gen_dataset_name(name)
-        dataset.store = store
-        dataset.dataset = store.create_dataset()
+        dataset.dataset = self._instance.storage.create_dataset(id)
+
+        if self._attached is not None:
+            # i.e. a file reader adding data sets while the project is
+            # attached; these stay attached until the project detaches
+            self._attached.enter_context(
+                dataset.attach_store(read_only=self._attached_read_only))
 
         if index is None or index >= len(self._datasets):
             self._datasets[id] = dataset
@@ -107,6 +115,7 @@ class Project:
     def remove_dataset(self, id: int) -> DataSetModel:
         dataset = self._datasets.pop(id)
         dataset.close()
+        self._instance.storage.remove_dataset(id)
         return dataset
 
     def _gen_dataset_name(self, name: str | None) -> str:
@@ -126,12 +135,17 @@ class Project:
         async with AsyncExitStack() as stack:
             for dataset in list(self._datasets.values()):
                 await stack.enter_async_context(dataset.attach(read_only=read_only))
-            yield
+            prev = (self._attached, self._attached_read_only)
+            self._attached = stack.enter_context(ExitStack())
+            self._attached_read_only = read_only
+            try:
+                yield
+            finally:
+                self._attached, self._attached_read_only = prev
 
     def close(self):
-        for dataset in self._datasets.values():
-            dataset.close()
-        self._datasets = { }
+        for id in self.dataset_ids:
+            self.remove_dataset(id)
 
     # -- document state ---------------------------------------------------------
 

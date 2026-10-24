@@ -181,6 +181,7 @@ class Scheduler:
 
         request_pb.sessionId = analysis.instance.session.id
         request_pb.instanceId = analysis.instance.id
+        request_pb.datasetId = analysis.dataset.id
         request_pb.analysisId = analysis.id
         request_pb.name = analysis.name
         request_pb.ns = analysis.ns

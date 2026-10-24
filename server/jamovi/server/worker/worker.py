@@ -222,7 +222,7 @@ class Worker:
 
         session_id = request.sessionId
         instance_id = request.instanceId
-        dataset_id = "0"  # request.datasetId
+        dataset_id = request.datasetId
         analysis_id = request.analysisId
         perform = request.perform
 
