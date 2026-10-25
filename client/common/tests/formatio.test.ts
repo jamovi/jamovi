@@ -87,7 +87,8 @@ describe('exportElem image/svg+xml', () => {
         expect(html).toContain('.bar { fill: red; }');
         expect(html).toContain('viewBox="0 0 60 40"');
         // and isn't duplicated by the verbatim outerHTML it replaced
-        expect(html.match(/<rect/g)).toHaveLength(1);
+        // (the other rect is the white background _svgMarkup adds)
+        expect(html.match(/<rect class="bar"/g)).toHaveLength(1);
     });
 
     it('accepts an svg element directly', async () => {
