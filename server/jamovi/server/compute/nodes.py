@@ -9,6 +9,8 @@ from collections import OrderedDict
 from numbers import Number
 from itertools import compress
 
+import numpy as np
+
 from jamovi.core import DataType
 from jamovi.core import MeasureType
 from . import FValues
@@ -17,9 +19,23 @@ from . import is_missing
 from . import get_missing
 from . import is_equal
 from . import functions
+from . import vcolumnwise
+from .chunks import default_fchunk
+from .chunks import Chunk
+from .chunks import NotVectorisable
+from .chunks import INT_MISSING
+from .chunks import as_chunk
+from .chunks import any_errors
+from .chunks import to_list
 from ..i18n import _
 
 NaN = float('nan')
+
+# column-wise functions evaluate their input this many rows at a time
+COLUMN_INPUT_CHUNK = 100_000
+
+# these draw a random number for each row, in row order
+RANDOM_FUNCTIONS = { 'UNIF', 'NORM', 'BETA', 'GAMMA', 'SAMPLE' }
 
 
 class FValueConverter:
@@ -115,6 +131,59 @@ class Node:
     def fvalues(self, row_count, filt):
         return FValues(self, row_count, filt)
 
+    def fchunk(self, start, end, row_count, filt):
+        # the values of rows start to end (see chunks.py). vectorised nodes
+        # implement _vchunk(), and evaluate a row at a time when they can't
+        # (or when random functions would draw in a different order). see
+        # the comment at the top of chunks.py for how this fits together
+        if self._can_vectorise() and not self._uses_random():
+            try:
+                return self._vchunk(start, end, row_count, filt)
+            except NotVectorisable:
+                pass
+        return default_fchunk(self, start, end, row_count, filt)
+
+    def _can_vectorise(self):
+        return False
+
+    def _vchunk(self, start, end, row_count, filt):
+        raise NotVectorisable()
+
+    def _gives_plain_values(self, filt):
+        # whether fvalue() gives only numbers (or text), never a level's
+        # (value, label), nor a missing level (-2147483648, ''). most
+        # vectorised nodes treat these as their value; NOT() and INT() don't
+        return False
+
+    def _uses_random(self):
+        for node in ast.walk(self):
+            if isinstance(node, Call) and node._function.__name__ in RANDOM_FUNCTIONS:
+                return True
+        return False
+
+    def _patch(self, chunk: Chunk, rows, start, row_count, filt):
+        # evaluate rows (indices into the chunk) a row at a time, for those a
+        # vectorised evaluation can't be sure of
+        values = chunk.values
+        for i in rows.tolist():
+            try:
+                v = self.fvalue(start + i, row_count, filt)
+            except Exception:
+                if chunk.errors is None:
+                    chunk.errors = np.zeros(len(values), dtype=bool)
+                chunk.errors[i] = True
+                continue
+            if isinstance(v, tuple):
+                v = v[0]
+            t = type(v)
+            if chunk.is_float and (t is float or t is int or t is bool):
+                values[i] = np.nan if t is int and v == INT_MISSING else v
+            elif not chunk.is_float and (t is int or t is bool):
+                values[i] = v
+            else:
+                raise NotVectorisable()
+        return chunk
+
     @property
     def has_levels(self):
         return False
@@ -152,6 +221,21 @@ class Constant(ast.Constant, Node):
 
     def fvalue(self, index, row_count, filt):
         return self.value
+
+    def _can_vectorise(self):
+        t = type(self.value)
+        return t is int or t is bool or t is float
+
+    def _gives_plain_values(self, filt):
+        return True
+
+    def _vchunk(self, start, end, row_count, filt):
+        if type(self.value) is float:
+            return Chunk(np.full(end - start, self.value, dtype=np.float64))
+        try:
+            return Chunk(np.full(end - start, self.value, dtype=np.int64))
+        except OverflowError:
+            raise NotVectorisable()
 
     def is_atomic_node(self):
         return True
@@ -222,6 +306,23 @@ class UnaryOp(ast.UnaryOp, Node):
                 return v
         else:
             raise RuntimeError("Shouldn't get here")
+
+    def _can_vectorise(self):
+        return (isinstance(self.op, (ast.USub, ast.UAdd, ast.Not))
+                and self.operand.data_type is not DataType.TEXT)
+
+    def _vchunk(self, start, end, row_count, filt):
+        operand = as_chunk(self.operand.fchunk(start, end, row_count, filt))
+        values = operand.values
+        missing = operand.missing
+        if isinstance(self.op, ast.USub):
+            values = np.where(missing, values, -values)
+        elif isinstance(self.op, ast.Not):
+            values = np.where(missing, INT_MISSING, values == 0).astype(np.int64)
+        return Chunk(values, operand.errors)
+
+    def _gives_plain_values(self, filt):
+        return self.operand._gives_plain_values(filt)
 
     def is_atomic_node(self):
         return self.operand.is_atomic_node()
@@ -296,6 +397,45 @@ class BoolOp(ast.BoolOp, Node):
         else:
             raise RuntimeError("Shouldn't get here")
 
+    def _can_vectorise(self):
+        for v in self.values:
+            if v.data_type is DataType.TEXT:
+                return False
+        return True
+
+    def _vchunk(self, start, end, row_count, filt):
+        # and: 0 at the first false value (later values aren't evaluated for
+        # that row), otherwise missing if any value is missing, otherwise 1.
+        # or: the same, with true and false the other way round
+        is_and = isinstance(self.op, ast.And)
+        n = end - start
+        undecided = np.ones(n, dtype=bool)
+        any_missing = np.zeros(n, dtype=bool)
+        errors = np.zeros(n, dtype=bool)
+        result = np.full(n, 1 if is_and else 0, dtype=np.int64)
+        for v in self.values:
+            chunk = as_chunk(v.fchunk(start, end, row_count, filt))
+            if chunk.errors is not None:
+                failed = chunk.errors & undecided
+                errors |= failed
+                undecided &= ~failed
+            missing = chunk.missing
+            any_missing |= missing & undecided
+            if is_and:
+                decides = (chunk.values == 0) & ~missing & undecided
+            else:
+                decides = (chunk.values != 0) & ~missing & undecided
+            result[decides] = 0 if is_and else 1
+            undecided &= ~decides
+        result[undecided & any_missing] = INT_MISSING
+        return Chunk(result, errors if errors.any() else None)
+
+    def _gives_plain_values(self, filt):
+        for v in self.values:
+            if not v._gives_plain_values(filt):
+                return False
+        return True
+
     def is_atomic_node(self):
         for value in self.values:
             if not value.is_atomic_node():
@@ -331,6 +471,7 @@ class Call(ast.Call, Node):
     def __init__(self, func, args, keywords):
         Node.__init__(self)
         self._cached_value = None
+        self._cached_column = None  # the vectorised column-wise values
         self._arg_types = [ ]
         self._kw_types = [ ]
         self._d_type = None
@@ -435,6 +576,377 @@ class Call(ast.Call, Node):
 
         return value
 
+    # vectorised row-wise functions (see _v_IF() etc.), and their keywords
+    VECTORISED_FUNCTIONS = {
+        'IF': (), 'IFMISS': (), 'NOT': (), '_FILTER': (),
+        'ABS': (), 'FLOOR': (), 'CEILING': (), 'EXP': (), 'LN': (), 'LOG10': (),
+        'SQRT': (), 'INT': (), 'MAX': (), 'MIN': (), 'COUNT': (),
+        'MEAN': ('ignore_missing', 'min_valid'), 'SUM': ('ignore_missing', 'min_valid'),
+        'STDEV': ('ignore_missing',), 'VAR': ('ignore_missing',),
+    }
+
+    # these give a number (or missing) for each row, never one of their
+    # arguments as it is
+    NUMERIC_FUNCTIONS = {
+        '_FILTER', 'ABS', 'FLOOR', 'CEILING', 'EXP', 'LN', 'LOG10', 'SQRT', 'INT',
+        'MAX', 'MIN', 'COUNT', 'MEAN', 'SUM', 'STDEV', 'VAR', 'ROUND', 'ROW',
+    }
+
+    def _can_vectorise(self):
+        name = self._function.__name__
+        if self._function.meta.is_column_wise:
+            return self._can_vectorise_column_wise()
+        if name not in Call.VECTORISED_FUNCTIONS or self.data_type is DataType.TEXT:
+            return False
+        for arg in self.args:
+            if arg.data_type is DataType.TEXT:
+                return False
+        keywords = Call.VECTORISED_FUNCTIONS[name]
+        for kw in self.keywords:
+            if kw.arg not in keywords or not isinstance(kw.value, Constant):
+                return False
+        return True
+
+    def _gives_plain_values(self, filt):
+        name = self._function.__name__
+        if name in Call.NUMERIC_FUNCTIONS:
+            return True
+        elif name == 'NOT':
+            return self.args[0]._gives_plain_values(filt)
+        elif name == 'IF' or name == 'IFMISS':
+            for arg in self.args[1:]:
+                if not arg._gives_plain_values(filt):
+                    return False
+            return True
+        else:
+            return False
+
+    def _can_vectorise_column_wise(self):
+        # one argument, and group_by only as a keyword, naming a column with
+        # levels (as Z() and SCALE() have it). other group_bys keep the
+        # default, as do positional ones (which fail)
+        if self._function.__name__ not in vcolumnwise.FUNCTIONS:
+            return False
+        if len(self.args) != 1 or self.args[0].data_type is DataType.TEXT:
+            return False
+        for kw in self.keywords:
+            if kw.arg != 'group_by':
+                return False
+            group_by = kw.value
+            if not hasattr(group_by, 'read_chunk') or group_by.is_virtual or not group_by.has_levels:
+                return False
+        return True
+
+    def _vchunk_column_wise(self, start, end, row_count, filt):
+        # the whole column is evaluated once (in the first chunk), and kept
+        # for the others, until the next recalc
+        if self._cached_column is None:
+            self._cached_column = self._column_wise_values(row_count, filt)
+        values, errors = self._cached_column
+        if errors is not None:
+            errors = errors[start:end].copy()
+        if isinstance(values, np.ndarray):
+            return Chunk(values[start:end].copy(), errors)
+        dtype = np.int64 if self.data_type is DataType.INTEGER else np.float64
+        return Chunk(np.full(end - start, values, dtype=dtype), errors)
+
+    @staticmethod
+    def _column_input(node, row_count, filt):
+        # a column-wise function's input as decimals, as FValueConverter
+        # gives them (rows that fail are missing)
+        if hasattr(node, 'fchunk_whole'):  # a column, read once a recalc
+            return as_chunk(node.fchunk_whole(row_count, filt), float).values
+        parts = [ ]
+        for start in range(0, row_count, COLUMN_INPUT_CHUNK):
+            end = min(start + COLUMN_INPUT_CHUNK, row_count)
+            chunk = as_chunk(node.fchunk(start, end, row_count, filt), float)
+            values = chunk.values
+            if chunk.errors is not None:
+                values = values.copy()
+                values[chunk.errors] = np.nan
+            parts.append(values)
+        if len(parts) == 0:
+            return np.zeros(0, dtype=np.float64)
+        return np.concatenate(parts)
+
+    def _column_wise_values(self, row_count, filt):
+        # each row's value (or one value for every row), and the rows that
+        # fail, as SplitValues has them
+        func = vcolumnwise.FUNCTIONS[self._function.__name__]
+        dtype = np.int64 if self.data_type is DataType.INTEGER else np.float64
+        missing = INT_MISSING if dtype is np.int64 else np.nan
+
+        x = Call._column_input(self.args[0], row_count, filt)
+
+        group_by = None
+        for kw in self.keywords:
+            group_by = kw.value
+
+        if group_by is None:
+            try:
+                value = func(x)
+            except Exception:
+                # every row fails
+                return np.full(row_count, missing, dtype=dtype), np.ones(row_count, dtype=bool)
+            return value, None
+
+        # rows are in a level's group if they have its value (integers) or
+        # its label (text); its function value is kept by its label, and each
+        # row has the value of its own label (missing if its level is missing,
+        # failing if its label has no level)
+        levels = group_by.get_levels(row_count, filt)
+        keys = [ ]  # the labels, in order
+        key_index = { }
+        for level in levels:
+            if level[1] not in key_index:
+                key_index[level[1]] = len(keys)
+                keys.append(level[1])
+
+        group_values = to_list(group_by.fchunk_whole(row_count, filt))
+
+        # each row's label index (-2 missing, -1 a label with no level)
+        if group_by.data_type is DataType.TEXT:
+            members = np.array([ v if type(v) is str else None for v in group_values ], dtype=object)
+            codes = np.array([
+                key_index.get(v, -1) if type(v) is str else -2
+                for v in group_values ], dtype=np.int64)
+        else:
+            raws = np.array(group_values, dtype=np.int64)
+            members = raws
+            labels = { level[0]: level[1] for level in levels }
+            codes = np.full(row_count, -2, dtype=np.int64)
+            for raw in np.unique(raws[raws != INT_MISSING]).tolist():
+                if raw not in labels:
+                    raise NotVectorisable()  # get_label() of a value with no level
+                codes[raws == raw] = key_index[labels[raw]]
+
+        by_key = np.full(len(keys) + 2, missing, dtype=dtype)
+        for level in levels:
+            if group_by.data_type is DataType.TEXT:
+                mask = members == level[1]
+            else:
+                mask = members == level[0]
+            try:
+                value = func(x[mask])
+            except Exception:
+                value = missing
+            by_key[key_index[level[1]]] = value
+
+        values = by_key[codes]  # -1 and -2 index the two missing values at the end
+        errors = codes == -1
+        return values, (errors if errors.any() else None)
+
+    def _vchunk(self, start, end, row_count, filt):
+        if self._function.meta.is_column_wise:
+            return self._vchunk_column_wise(start, end, row_count, filt)
+        name = self._function.__name__
+        if name in ('NOT', 'INT') and not self.args[0]._gives_plain_values(filt):
+            raise NotVectorisable()
+        # each argument's chunk, converted to its parameter's type as
+        # fvalue() converts each row's (untyped parameters as they are)
+        args = [ ]
+        for i, arg in enumerate(self.args):
+            arg_type = self._arg_types[min(i, len(self._arg_types) - 1)]
+            if arg_type is not int and arg_type is not float:
+                arg_type = None
+            args.append(as_chunk(arg.fchunk(start, end, row_count, filt), arg_type))
+        kwargs = { kw.arg: convert(kw.value.value, int) for kw in self.keywords }
+        n = end - start
+        chunk = getattr(self, '_v_' + name)(n, *args, **kwargs)
+        if not isinstance(chunk, Chunk):
+            chunk = Chunk(chunk)
+        errors = any_errors(chunk, *args)
+        chunk.errors = errors
+        # infinities in, as python has them
+        unsure = np.zeros(n, dtype=bool)
+        for arg in args:
+            if arg.is_float:
+                unsure |= np.isinf(arg.values)
+        if unsure.any():
+            self._patch(chunk, np.flatnonzero(unsure), start, row_count, filt)
+        return chunk
+
+    @staticmethod
+    def _choose(n, cond, x, y):
+        # x where cond, y elsewhere; with x and y of different types, as
+        # decimals, unless an integer is big enough that comparing it as a
+        # decimal (isclose()) could differ from comparing it as an integer
+        x = x.values if x is not None else np.ones(n, dtype=np.int64)
+        y = y.values if y is not None else np.full(n, INT_MISSING, dtype=np.int64)
+        if x.dtype != y.dtype:
+            for ints in (x, y):
+                if ints.dtype == np.int64:
+                    present = ints[ints != INT_MISSING]
+                    if len(present) > 0 and np.max(np.abs(present)) >= 1e8:
+                        raise NotVectorisable()
+            x = Chunk(x).as_float().values
+            y = Chunk(y).as_float().values
+        return np.where(cond, x, y)
+
+    @staticmethod
+    def _set_missing(values, missing):
+        values[missing] = np.nan if values.dtype == np.float64 else INT_MISSING
+        return values
+
+    @staticmethod
+    def _check_int32(values):
+        # python's integers don't overflow
+        present = values[values != INT_MISSING]
+        if len(present) > 0 and np.max(np.abs(present)) > 2 ** 31 - 1:
+            raise NotVectorisable()
+        return values
+
+    def _v_IF(self, n, cond, x=None, y=None):
+        values = Call._choose(n, cond.values != 0, x, y)
+        return Call._set_missing(values, cond.missing)
+
+    def _v_IFMISS(self, n, cond, x=None, y=None):
+        return Call._choose(n, cond.missing, x, y)
+
+    def _v_NOT(self, n, x):
+        return np.where(x.missing, INT_MISSING, x.values == 0).astype(np.int64)
+
+    def _v__FILTER(self, n, cond):
+        return np.where(cond.missing, 0, cond.values)
+
+    # maths
+
+    def _v_ABS(self, n, x):
+        return np.abs(x.values) if x.is_float else np.where(x.missing, INT_MISSING, np.abs(x.values))
+
+    def _v_FLOOR(self, n, x):
+        if not x.is_float:
+            return x.values
+        missing = x.missing
+        values = np.floor(np.where(missing, 0, x.values)).astype(np.int64)
+        return Call._check_int32(Call._set_missing(values, missing))
+
+    def _v_CEILING(self, n, x):
+        if not x.is_float:
+            return x.values
+        missing = x.missing
+        values = np.ceil(np.where(missing, 0, x.values)).astype(np.int64)
+        return Call._check_int32(Call._set_missing(values, missing))
+
+    def _v_INT(self, n, x):
+        x = x.as_float()
+        values = Call._check_int32(x.as_int().values)
+        return values
+
+    def _v_EXP(self, n, x):
+        with np.errstate(all='ignore'):
+            values = np.exp(x.values)
+        errors = np.isfinite(x.values) & np.isinf(values)  # OverflowError
+        return Chunk(values, errors)
+
+    def _log(self, x, log):
+        # math.log() fails for 0 and below (ValueError)
+        errors = x.values <= 0
+        with np.errstate(all='ignore'):
+            values = log(np.where(errors, 1.0, x.values))
+        return Chunk(values, errors)
+
+    def _v_LN(self, n, x):
+        return self._log(x, np.log)
+
+    def _v_LOG10(self, n, x):
+        return self._log(x, np.log10)
+
+    def _v_SQRT(self, n, x):
+        errors = x.values < 0
+        values = np.sqrt(np.where(errors, 0.0, x.values))
+        return Chunk(values, errors)
+
+    # across arguments
+
+    @staticmethod
+    def _stack(args):
+        return np.vstack([ arg.as_float().values for arg in args ])
+
+    def _v_MAX(self, n, *args):
+        values = Call._stack(args)
+        missing = np.isnan(values)
+        errors = np.all(missing, axis=0)  # max() of nothing
+        values = np.max(np.where(missing, -np.inf, values), axis=0)
+        return Chunk(Call._set_missing(values, errors), errors)
+
+    def _v_MIN(self, n, *args):
+        values = Call._stack(args)
+        missing = np.isnan(values)
+        errors = np.all(missing, axis=0)  # min() of nothing
+        values = np.min(np.where(missing, np.inf, values), axis=0)
+        return Chunk(Call._set_missing(values, errors), errors)
+
+    def _v_COUNT(self, n, *args):
+        if len(args) == 0:
+            return np.zeros(n, dtype=np.int64)
+        return np.sum(np.vstack([ ~arg.missing for arg in args ]), axis=0).astype(np.int64)
+
+    @staticmethod
+    def _valid(args, filter_missing):
+        # the values, which are missing (and left out if filter_missing),
+        # and how many values each row has
+        values = Call._stack(args)
+        missing = np.isnan(values)
+        if filter_missing:
+            counts = np.sum(~missing, axis=0)
+        else:
+            counts = np.full(values.shape[1], values.shape[0])
+        return values, missing, counts
+
+    def _v_MEAN(self, n, *args, ignore_missing=0, min_valid=0):
+        filter_missing = min_valid > 0 or ignore_missing != 0
+        values, missing, counts = Call._valid(args, filter_missing)
+        with np.errstate(all='ignore'):
+            if filter_missing:
+                means = np.sum(np.where(missing, 0.0, values), axis=0) / counts
+            else:
+                means = np.sum(values, axis=0) / counts  # NaN if any are
+        too_few = counts < min_valid
+        errors = (counts == 0) & ~too_few  # mean() of nothing
+        means[too_few | errors] = np.nan
+        return Chunk(means, errors)
+
+    def _v_SUM(self, n, *args, ignore_missing=0, min_valid=0):
+        filter_missing = min_valid > 0 or ignore_missing != 0
+        values, missing, counts = Call._valid(args, filter_missing)
+        if filter_missing:
+            sums = np.sum(np.where(missing, 0.0, values), axis=0)
+        else:
+            sums = np.sum(values, axis=0)
+        sums[counts < min_valid] = np.nan
+        return sums
+
+    @staticmethod
+    def _variance(values, missing, counts):
+        # about the first value, so rows of equal values are exactly 0
+        values = np.where(missing, 0.0, values)
+        first = values[np.argmax(~missing, axis=0), np.arange(values.shape[1])]
+        with np.errstate(all='ignore'):
+            deviations = np.where(missing, 0.0, values - first)
+            mean = np.sum(deviations, axis=0) / counts
+            squares = np.where(missing, 0.0, (deviations - mean) ** 2)
+            return np.sum(squares, axis=0) / (counts - 1)
+
+    def _v_VAR(self, n, *args, ignore_missing=0):
+        values, missing, counts = Call._valid(args, ignore_missing != 0)
+        variances = Call._variance(values, missing, counts)
+        errors = counts < 2  # variance() of fewer than two
+        if ignore_missing == 0:
+            variances[np.any(missing, axis=0)] = np.nan
+        variances[errors] = np.nan
+        return Chunk(variances, errors)
+
+    def _v_STDEV(self, n, *args, ignore_missing=0):
+        values, missing, counts = Call._valid(args, ignore_missing != 0)
+        with np.errstate(all='ignore'):
+            stdevs = np.sqrt(Call._variance(values, missing, counts))
+        errors = counts < 2  # stdev() of fewer than two
+        if ignore_missing == 0:
+            errors |= np.any(missing, axis=0)  # stdev() fails with NaN
+        stdevs[errors] = np.nan
+        return Chunk(stdevs, errors)
+
     def is_atomic_node(self):
         return False
 
@@ -444,6 +956,7 @@ class Call(ast.Call, Node):
 
     def set_needs_recalc(self):
         self._cached_value = None
+        self._cached_column = None
         Node.set_needs_recalc(self)
 
     def _determine_d_m_types(self):
@@ -659,6 +1172,67 @@ class BinOp(ast.BinOp, Node):
         else:
             return get_missing()
 
+    def _can_vectorise(self):
+        return (self.data_type is not DataType.TEXT
+                and isinstance(self.op, BinOp.VECTORISED_OPS))
+
+    VECTORISED_OPS = (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.FloorDiv, ast.Mod, ast.Pow, ast.BitXor)
+
+    def _vchunk(self, start, end, row_count, filt):
+        ul_type = float if self.data_type is DataType.DECIMAL else int
+        left = as_chunk(self.left.fchunk(start, end, row_count, filt), ul_type)
+        right = as_chunk(self.right.fchunk(start, end, row_count, filt), ul_type)
+        a = left.values
+        b = right.values
+        missing = left.missing | right.missing
+        errors = any_errors(left, right)
+        if errors is None:
+            errors = np.zeros(len(a), dtype=bool)
+        op = self.op
+
+        if ul_type is int and (np.any(np.abs(a) > 2 ** 31) or np.any(np.abs(b) > 2 ** 31)):
+            raise NotVectorisable()
+
+        with np.errstate(all='ignore'):
+            if isinstance(op, ast.Add):
+                values = a + b
+            elif isinstance(op, ast.Sub):
+                values = a - b
+            elif isinstance(op, ast.Mult):
+                values = a * b
+            elif isinstance(op, ast.Div):
+                missing |= b == 0
+                values = a / b
+            elif isinstance(op, ast.FloorDiv):
+                missing |= b == 0
+                values = np.floor_divide(a, np.where(b == 0, 1, b))
+            elif isinstance(op, ast.Mod):
+                errors |= (b == 0) & ~missing  # ZeroDivisionError
+                values = np.mod(a, np.where(b == 0, 1, b))
+            else:  # Pow, BitXor
+                values = np.power(a, b)
+                finite = np.isfinite(a) & np.isfinite(b) & ~missing
+                if np.any(finite & np.isnan(values)):
+                    raise NotVectorisable()  # a negative to a fraction is complex
+                errors |= finite & np.isinf(values)  # OverflowError, ZeroDivisionError
+
+        if ul_type is float:
+            values[missing] = np.nan
+            chunk = Chunk(values, errors if errors.any() else None)
+            # infinities in, as python has them
+            unsure = ~missing & (np.isinf(a) | np.isinf(b))
+            if unsure.any():
+                self._patch(chunk, np.flatnonzero(unsure), start, row_count, filt)
+        else:
+            values[missing] = INT_MISSING
+            if np.any(np.abs(values[~missing]) > 2 ** 31 - 1):
+                raise NotVectorisable()  # python's integers don't overflow
+            chunk = Chunk(values, errors if errors.any() else None)
+        return chunk
+
+    def _gives_plain_values(self, filt):
+        return True
+
     def is_atomic_node(self):
         return self.left.is_atomic_node() and self.right.is_atomic_node()
 
@@ -779,6 +1353,77 @@ class Compare(ast.Compare, Node):
                 return v1 != v2
         else:
             raise RuntimeError("Shouldn't get here")
+
+    def _can_vectorise(self):
+        if self.left.data_type is DataType.TEXT:
+            return False
+        for comp in self.comparators:
+            if comp.data_type is DataType.TEXT:
+                return False
+        return True
+
+    def _vchunk(self, start, end, row_count, filt):
+        # each row is missing if a value is, 0 at the first comparison that
+        # fails (later values aren't evaluated for that row), otherwise 1
+        n = end - start
+        result = np.ones(n, dtype=np.int64)
+        undecided = np.ones(n, dtype=bool)
+        errors = np.zeros(n, dtype=bool)
+
+        def evaluate(node):
+            chunk = as_chunk(node.fchunk(start, end, row_count, filt))
+            if chunk.errors is not None:
+                failed = chunk.errors & undecided
+                errors[failed] = True
+                undecided[failed] = False
+            missing = chunk.missing & undecided
+            result[missing] = INT_MISSING
+            undecided[missing] = False
+            return chunk
+
+        v1 = evaluate(self.left)
+        for op, comp in zip(self.ops, self.comparators):
+            v2 = evaluate(comp)
+            fails = ~Compare._vtest(v1, op, v2) & undecided
+            result[fails] = 0
+            undecided[fails] = False
+            v1 = v2
+
+        return Chunk(result, errors if errors.any() else None)
+
+    def _gives_plain_values(self, filt):
+        return True
+
+    @staticmethod
+    def _isclose(a, b):
+        # as math.isclose()
+        a = a.astype(np.float64)
+        b = b.astype(np.float64)
+        with np.errstate(all='ignore'):
+            close = np.abs(a - b) <= 1e-09 * np.maximum(np.abs(a), np.abs(b))
+        return (a == b) | (close & np.isfinite(a) & np.isfinite(b))
+
+    @staticmethod
+    def _vtest(v1, op, v2):
+        a = v1.values
+        b = v2.values
+        if isinstance(op, ast.Lt):
+            return a < b
+        elif isinstance(op, ast.Gt):
+            return a > b
+        elif isinstance(op, ast.GtE):
+            return a >= b
+        elif isinstance(op, ast.LtE):
+            return a <= b
+        elif isinstance(op, ast.Eq):
+            if v1.is_float or v2.is_float:
+                return Compare._isclose(a, b)
+            else:
+                return a == b
+        elif isinstance(op, ast.NotEq):
+            return ~Compare._isclose(a, b)
+        else:
+            raise NotVectorisable()
 
     def is_atomic_node(self):
         if self.left.is_atomic_node() is False:

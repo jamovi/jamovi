@@ -44,6 +44,42 @@ def _runs(indices):
         yield start, count
 
 
+def recalc_edited_rows(columns, reparsed, rows):
+    """recalculate the columns after an edit of these rows: only those rows
+    where a column's formula, and those of the changed columns it's
+    calculated from, read only each row's own values; all rows otherwise"""
+    columns = set(columns)
+    partial = set(c for c in columns if c not in reparsed and c.can_recalc_rows)
+    changed = True
+    while changed:
+        changed = False
+        for column in list(partial):
+            for dep in column.dependencies:
+                if dep in columns and dep not in partial:
+                    partial.discard(column)
+                    changed = True
+                    break
+
+    ranges = [ (start, start + count) for start, count in _runs(sorted(rows)) ]
+
+    # in dependency order, so a column's dependencies have their new
+    # values (whole, or for these rows) before it does
+    done = set()
+    pending = list(columns)
+    while len(pending) > 0:
+        for column in pending:
+            if all(dep in done or dep not in columns for dep in column.dependencies):
+                break
+        else:
+            column = pending[0]
+        pending.remove(column)
+        if column in partial:
+            column.recalc_rows(ranges)
+        else:
+            column.recalc()
+        done.add(column)
+
+
 class ForbiddenOp(PermissionError):
     def __init__(self, operation, message):
         super().__init__(message)
@@ -1367,8 +1403,14 @@ class DataSetController:
             column.parse_formula()
         for column in recalc:
             column.set_needs_recalc()
-        for column in recalc:
-            column.recalc()
+        if n_rows_changed:
+            for column in recalc:
+                column.recalc()
+        else:
+            edited_rows = set()
+            for data_item in data_list:
+                edited_rows.update(data_item['row_indices'])
+            recalc_edited_rows(recalc, reparse, edited_rows)
 
         if filter_changed or n_rows_changed:
             changes['filters_changed'] = True

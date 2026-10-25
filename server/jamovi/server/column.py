@@ -4,6 +4,8 @@ import re
 from collections import namedtuple
 from typing import Iterable
 
+import numpy as np
+
 from jamovi.core import ColumnType
 from jamovi.core import MeasureType
 from jamovi.core import DataType
@@ -19,13 +21,15 @@ from .compute import Checker
 from .compute import Messages
 
 from .compute import FValues
-from .compute import convert
 from .compute import is_missing
+from .compute.chunks import default_fchunk
+from .compute.chunks import Chunk
+from .compute.chunks import INT_MISSING
+
+from .compute.computation import Computation
+from .compute.computation import can_recalc_rows
 
 from .i18n import _
-
-
-NaN = float('nan')
 
 
 class Column:
@@ -104,6 +108,20 @@ class Column:
         assert self._child is not None
         return self._child.set_values(index, values, initing)
 
+    def read_chunk(self, index: int, n_rows: int) -> np.ndarray | list:
+        """read up to n_rows from index (fewer at the end of the data set),
+        as an array for integers (int64) and decimals (float64), with the
+        store's missing values, and as a list otherwise"""
+        n_rows = max(0, min(n_rows, self.row_count - index))
+        values = self.get_values(index, n_rows)
+        data_type = self._child.data_type
+        if data_type is DataType.DECIMAL:
+            return np.array(values, dtype=np.float64)
+        elif data_type is DataType.INTEGER:
+            return np.array(values, dtype=np.int64)
+        else:
+            return values
+
     def is_row_filtered(self, index):
         return self._parent.is_row_filtered(index)
 
@@ -132,6 +150,69 @@ class Column:
 
     def fvalues(self, row_count, filt):
         return FValues(self, row_count, filt)
+
+    def fchunk(self, start, end, row_count, filt):
+        # as fvalue() for each row: integers and decimals as a Chunk (levels
+        # by their raw value), text as a list
+        if self._child is None:
+            return default_fchunk(self, start, end, row_count, filt)
+
+        reads = self._parent.recalc_reads_cache
+        if reads is not None:
+            whole = reads.columns.get((self, filt))
+            if whole is not None:
+                if isinstance(whole, Chunk):
+                    return Chunk(whole.values[start:end].copy())
+                return whole[start:end]
+
+        values = self.read_chunk(start, end - start)
+
+        missing = None
+        if self._child.missing_values:
+            missing = [ self._child.should_treat_as_missing(i) for i in range(start, end) ]
+        if missing is not None:
+            missing = np.array(missing, dtype=bool)
+        if filt:
+            filtered = self._parent.filtered_rows(start, end)
+            missing = filtered if missing is None else (missing | filtered)
+
+        if isinstance(values, np.ndarray):
+            if missing is not None:
+                values[missing] = np.nan if values.dtype == np.float64 else INT_MISSING
+            return Chunk(values)
+        else:
+            if missing is not None:
+                for i in np.flatnonzero(missing).tolist():
+                    values[i] = (INT_MISSING, '')
+            return values
+
+    def fchunk_whole(self, row_count, filt):
+        """fchunk() of every row, kept for the rest of the recalc (see
+        DataSetModel.recalc_reads())"""
+        reads = self._parent.recalc_reads_cache
+        key = (self, filt)
+        if reads is not None and key in reads.columns:
+            return reads.columns[key]
+        parts = [ ]
+        for start in range(0, row_count, Computation.CHUNK_SIZE):
+            end = min(start + Computation.CHUNK_SIZE, row_count)
+            parts.append(self.fchunk(start, end, row_count, filt))
+        if self._child is not None and self._child.data_type is not DataType.TEXT:
+            if len(parts) == 0:
+                whole = Chunk(np.zeros(0, dtype=np.float64))
+            else:
+                whole = Chunk(np.concatenate([ part.values for part in parts ]))
+        else:
+            whole = [ v for part in parts for v in part ]
+        if reads is not None:
+            reads.columns[key] = whole
+        return whole
+
+    def _gives_plain_values(self, filt):
+        # see Node._gives_plain_values()
+        if self._child is None or filt or self._child.missing_values:
+            return False
+        return not (self._child.data_type is DataType.INTEGER and self.has_levels)
 
     def is_atomic_node(self):
         return False
@@ -574,6 +655,23 @@ class Column:
             self._needs_recalc = True
 
     def recalc(self, start=None, end=None):
+        if start is None:
+            self._recalc([ (0, self.row_count) ])
+        else:
+            self._recalc([ (start, start + 1 if end is None else end) ])
+
+    @property
+    def can_recalc_rows(self):
+        """whether some rows can be recalculated, and the others keep their
+        values (see computation.can_recalc_rows())"""
+        return can_recalc_rows(self, self._node)
+
+    def recalc_rows(self, ranges):
+        """recalculate only these (start, end) ranges of rows (see
+        can_recalc_rows)"""
+        self._recalc(ranges)
+
+    def _recalc(self, ranges):
 
         if not self.needs_recalc:
             return
@@ -582,52 +680,7 @@ class Column:
             if dep.needs_recalc:
                 dep.recalc()
 
-        if start is None:
-            start = 0
-            end = self.row_count
-        elif end is None:
-            end = start + 1
-
-        self._child.clear_levels()
-
-        if self._node is not None and self._node.has_levels:
-            for level in self._node.get_levels(self.row_count, self.uses_column_formula):
-                self._child.append_level(level[0], level[1])
-
-        if self.data_type is DataType.DECIMAL:
-            ul_type = float
-        elif self.data_type is DataType.TEXT:
-            ul_type = str
-        else:
-            ul_type = int
-
-        if self._node is None:
-            if not self.is_filter:
-                v = convert(NaN, ul_type)
-            else:
-                v = 1
-            for row_no in range(start, end):
-                self._child.set_value(row_no, v, True)
-        else:
-            for row_no in range(start, end):
-                try:
-                    if self.is_filter:
-                        v = self._node.fvalue(row_no, self.row_count, False)
-                    elif self.uses_column_formula and self._parent.is_row_filtered(row_no):
-                        v = NaN
-                    else:
-                        v = self._node.fvalue(row_no, self.row_count, self.uses_column_formula)
-                    v = convert(v, ul_type)
-                    if ul_type is int and not -2147483648 <= v <= 2147483647:
-                        raise OverflowError(_('Value is too large for column of type integer'))
-                except Exception as e:
-                    if not self.is_filter:
-                        v = convert(NaN, ul_type)
-                    else:
-                        v = 1
-                    self._parent._log.exception(e)
-                self._child.set_value(row_no, v, True)
-            self.determine_dps()
+        Computation(self, self._child, self._node, self._parent).run(ranges)
 
         self._needs_recalc = False
 
