@@ -11,15 +11,9 @@ import { ISvgElementData, Model as SvgModel, View as SvgView } from './svg';
 
 import { INoticeElementData, Model as NoticeModel, NoticeView } from './notice';
 import { ElementData, ElementModel, Model, View } from './element';
+import { AnalysisStatus } from './analysisstatus';
 
-export enum AnalysisStatus {
-    ANALYSIS_NONE = 0,
-    ANALYSIS_INITED = 1,
-    ANALYSIS_RUNNING = 2,
-    ANALYSIS_COMPLETE = 3,
-    ANALYSIS_ERROR = 4,
-    ANALYSIS_RENDERING = 5
-}
+export { AnalysisStatus };
 
 export interface IElement {
     type: 'table' | 'group' | 'image' | 'array' | 'preformatted' | 'text' | 'html' | 'svg' | 'notice';

@@ -2,7 +2,7 @@
 
 import Elem, { ElementData, ElementModel } from './element';
 import { h, htmlTrusted }  from '../common/htmlelementcreator';
-import { AnalysisStatus } from './create';
+import { AnalysisStatus } from './analysisstatus';
 
 export interface HTMLElementData {
     content: string;

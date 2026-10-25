@@ -4,7 +4,7 @@ import { determFormat, format } from '../common/formatting';
 import interactionManager from '../common/interactionmanager';
 
 import Elem, { ElementModel } from './element';
-import { AnalysisStatus } from './create';
+import { AnalysisStatus } from './analysisstatus';
 import { h, htmlTrusted, rich, richParagraphs, setRich, RichOptions } from '../common/htmlelementcreator';
 
 const SUPSCRIPTS = ["\u1D43", "\u1D47", "\u1D48", "\u1D49", "\u1DA0", "\u1D4D", "\u02B0", "\u2071",

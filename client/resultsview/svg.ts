@@ -4,7 +4,7 @@ import interactionManager from '../common/interactionmanager';
 
 import Elem, { ElementData, ElementModel } from './element';
 import { h, htmlTrusted, setRich }  from '../common/htmlelementcreator';
-import { AnalysisStatus } from './create';
+import { AnalysisStatus } from './analysisstatus';
 
 export interface ISvgElementData {
     content: string;

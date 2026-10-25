@@ -10,7 +10,8 @@ import { h }  from '../common/htmlelementcreator';
 import './refs';
 import { EventMap } from '../common/eventmap';
 import { ReferenceNumbers } from './refs';
-import { AnalysisStatus, IElement } from './create';
+import { AnalysisStatus } from './analysisstatus';
+import type { IElement } from './create';
 import { ResultsContextMenuItem } from '../common/contextmenutypes';
 
 export interface ElementData {

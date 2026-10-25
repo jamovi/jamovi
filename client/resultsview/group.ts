@@ -4,7 +4,8 @@ import Annotations from './annotations';
 
 import Elem, { CollectionView, View as Element, ElementData, ElementModel } from './element';
 import interactionManager from '../common/interactionmanager';
-import { AnalysisStatus, IElement } from './create';
+import { AnalysisStatus } from './analysisstatus';
+import type { IElement } from './create';
 import { h, setRich }  from '../common/htmlelementcreator';
 import { Item } from './itemtracker';
 import Annotation from './annotation';

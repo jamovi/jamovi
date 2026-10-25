@@ -4,7 +4,7 @@ import Elem, { ElementData, ElementModel } from './element';
 
 import I18ns, { stringToParagraphs } from '../common/i18n';
 import { h, htmlTrusted }  from '../common/htmlelementcreator';
-import { AnalysisStatus } from './create';
+import { AnalysisStatus } from './analysisstatus';
 
 export enum NoticeType {
     WARNING1 = 1,

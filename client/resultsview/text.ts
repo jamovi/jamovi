@@ -1,7 +1,7 @@
 'use strict';
 
 
-import { AnalysisStatus } from './create';
+import { AnalysisStatus } from './analysisstatus';
 import Elem, { ElementData, ElementModel } from './element';
 import { h, richMarkdown, setRich }  from '../common/htmlelementcreator';
 

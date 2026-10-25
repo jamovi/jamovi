@@ -6,7 +6,7 @@ import Elem, { ElementData, ElementModel } from './element';
 import { h, setRich }  from '../common/htmlelementcreator';
 
 import { flatten } from '../common/utils/addresses';
-import { AnalysisStatus } from './create';
+import { AnalysisStatus } from './analysisstatus';
 
 export interface IImageElementData {
     path: string,

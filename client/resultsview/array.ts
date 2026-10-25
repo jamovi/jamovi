@@ -7,7 +7,8 @@ import Elem, { ElementModel, View as Element, ElementData, CollectionView } from
 import b64 from '../common/utils/b64';
 import interactionManager from '../common/interactionmanager';
 import { h, rich, setRich }  from '../common/htmlelementcreator';
-import { AnalysisStatus, IElement } from './create';
+import { AnalysisStatus } from './analysisstatus';
+import type { IElement } from './create';
 import { Item } from './itemtracker';
 import Annotation from './annotation';
 
