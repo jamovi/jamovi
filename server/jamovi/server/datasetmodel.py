@@ -3,8 +3,14 @@ from __future__ import annotations
 
 import asyncio
 from collections import deque
+from collections.abc import Iterator
 import typing
 from contextlib import asynccontextmanager
+from contextlib import contextmanager
+from dataclasses import dataclass
+from dataclasses import field
+
+import numpy as np
 
 from jamovi.core import DataSet
 from jamovi.core import ColumnType
@@ -25,6 +31,14 @@ from .i18n import _
 
 if typing.TYPE_CHECKING:
     from .project import Project
+    from .compute.chunks import Chunk
+
+
+@dataclass
+class RecalcReads:
+    """what a recalc keeps of its reads (see DataSetModel.recalc_reads())"""
+    filtered: np.ndarray | None = None  # the filtered rows
+    columns: dict[tuple[Column, bool], Chunk | list] = field(default_factory=dict)  # by column and filt
 
 
 class _RWLock:
@@ -83,6 +97,7 @@ class DataSetModel:
     _transform_next_id: int
     _log: object
     _row_tracker: RowTracker
+    _recalc_reads: RecalcReads | None
 
     def __init__(self, project: Project | None = None):
         self._project = project
@@ -105,6 +120,7 @@ class DataSetModel:
         self._log = NullLog()
         self._row_tracker = RowTracker()
         self._rwlock = _RWLock()
+        self._recalc_reads = None  # see recalc_reads()
 
     @asynccontextmanager
     async def attach(self, read_only: bool = False):
@@ -662,6 +678,47 @@ class DataSetModel:
             return self._dataset.is_row_filtered(index)
         else:
             return False
+
+    @contextmanager
+    def recalc_reads(self) -> Iterator[None]:
+        """while a column recalculates, the whole columns read (for column-wise
+        functions), and the filtered rows, are kept for its chunks to share.
+        only the column being recalculated is written meanwhile, and its
+        formula doesn't read it"""
+        if self._recalc_reads is not None:
+            yield
+            return
+        self._recalc_reads = RecalcReads()
+        try:
+            yield
+        finally:
+            self._recalc_reads = None
+
+    @property
+    def recalc_reads_cache(self) -> RecalcReads | None:
+        return self._recalc_reads
+
+    def filtered_rows(self, start: int, end: int) -> np.ndarray:
+        """which of the rows start to end are filtered (as is_row_filtered()
+        gives each): those with a value other than 1 in an active filter"""
+        reads = self._recalc_reads
+        if reads is not None:
+            if reads.filtered is None:
+                reads.filtered = self._filtered_rows(0, self.row_count)
+            return reads.filtered[start:end]
+        return self._filtered_rows(start, end)
+
+    def _filtered_rows(self, start: int, end: int) -> np.ndarray:
+        filtered = np.zeros(end - start, dtype=bool)
+        for column in self._columns:
+            if column.column_type is not ColumnType.FILTER:
+                break
+            if not column.active:
+                continue
+            if column.data_type is not DataType.INTEGER:
+                return np.array([ self.is_row_filtered(i) for i in range(start, end) ], dtype=bool)
+            filtered |= column.read_chunk(start, end - start) != 1
+        return filtered
 
     @property
     def has_edited_cells(self):
