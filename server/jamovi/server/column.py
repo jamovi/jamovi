@@ -618,6 +618,8 @@ class Column:
                     else:
                         v = self._node.fvalue(row_no, self.row_count, self.uses_column_formula)
                     v = convert(v, ul_type)
+                    if ul_type is int and not -2147483648 <= v <= 2147483647:
+                        raise OverflowError(_('Value is too large for column of type integer'))
                 except Exception as e:
                     if not self.is_filter:
                         v = convert(NaN, ul_type)
