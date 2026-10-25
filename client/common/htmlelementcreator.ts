@@ -1,4 +1,4 @@
-import { marked } from 'marked';
+import { Marked } from 'marked';
 
 const urlAttributes = new Set([
     'background',
@@ -302,6 +302,19 @@ const markdownBlockTags = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'
  * but still lands on its own line rather than running into its neighbours.
  * Safe use: use for untrusted markdown text, such as content authored from R.
  */
+// marked decodes numeric character references (e.g. &#8212;) in inline text
+// itself, so they'd never reach the re-escaping in richMarkdown() below; keep
+// the inline text as written and let that re-escaping see every entity
+const markdown = new Marked({
+    gfm: true,
+    breaks: false,
+    async: false,
+    walkTokens(token) {
+        if (token.type === 'text' && !('tokens' in token && token.tokens))
+            token.text = token.raw;
+    },
+});
+
 export function richMarkdown(input: string | null | undefined, options: RichOptions = richMarkdownOptions): Node[] {
     if (input === null || input === undefined)
         return [];
@@ -309,7 +322,7 @@ export function richMarkdown(input: string | null | undefined, options: RichOpti
     // marked may pass raw inline/block HTML in the source straight through;
     // that's fine, since the sanitizer below strips it down to `options`
     // exactly as it would for any other untrusted HTML.
-    let html = marked.parse(String(input), { gfm: true, breaks: false, async: false }) as string;
+    let html = markdown.parse(String(input)) as string;
 
     // marked leaves HTML entity references (e.g. &mdash;, &nbsp;, &#8212;) as-is
     // in text, trusting the browser to decode them -- but markdown content isn't
