@@ -738,6 +738,10 @@ cdef class Column:
 
         if missing_value['type'] == 0:
             new_value = "{}'{}'".format(new_value, missing_value['value'])
+        elif missing_value['type'] == 1 and missing_value['value'].is_integer():
+            # decimal columns store whole values as doubles too, but they
+            # should read back as written (i.e. == 5 rather than == 5.0)
+            new_value = "{}{}".format(new_value, int(missing_value['value']))
         else:
             new_value = "{}{}".format(new_value, missing_value['value'])
 
