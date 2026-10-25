@@ -6,7 +6,7 @@ from jamovi.core import ColumnType
 from jamovi.server.instance import Instance
 
 from jamovi.tests.test_instance import FakeComs, _open
-from jamovi.tests.test_view_order import _set_values, _op, _values
+from jamovi.tests.test_view_order import _set_ints, _op, _values
 
 
 @pytest.fixture
@@ -23,15 +23,15 @@ async def test_undo_after_output_column_removed(instance: Instance, coms: FakeCo
     """
     await _open(instance)
     instance.set_coms(coms)
-    await _set_values(instance, coms, 0, 0, [ 1, 2, 3 ])
+    await _set_ints(instance, coms, 0, 0, [ 1, 2, 3 ])
 
     # as an analysis adds an output column
     dataset = instance.project.get_dataset()
     output = dataset.insert_column(dataset.column_count, 'Residuals')
     output.column_type = ColumnType.OUTPUT
 
-    await _set_values(instance, coms, 0, 0, [ 10 ])
-    await _set_values(instance, coms, 1, 0, [ 20 ])
+    await _set_ints(instance, coms, 0, 0, [ 10 ])
+    await _set_ints(instance, coms, 1, 0, [ 20 ])
     position = coms.sent[-1].changesPosition
 
     # as the analysis removes it

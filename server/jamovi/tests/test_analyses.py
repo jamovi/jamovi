@@ -20,6 +20,16 @@ class FakeDataset:
         self.instance_path = instance_path
 
 
+class FakeProject:
+    """stands in for the project, which set_svg() only needs the data set from"""
+
+    def __init__(self, instance_path: str):
+        self._dataset = FakeDataset(instance_path)
+
+    def get_dataset(self):
+        return self._dataset
+
+
 class FakeModules:
     """stands in for the module registry, which Analyses only subscribes to"""
 
@@ -36,11 +46,14 @@ class FakeOptions:
     def as_pb(self):
         return jcoms.AnalysisOptions()
 
+    def keep_file_ids(self, ids, pb=None):
+        pass
+
 
 @pytest.fixture
 def analysis(temp_dir: str) -> Analysis:
     analysis = Analysis(
-        FakeDataset(temp_dir), 2, 'descriptives', 'jmv', FakeOptions(), None, enabled=True)
+        FakeProject(temp_dir), 2, 'descriptives', 'jmv', FakeOptions(), None, enabled=True)
     analysis.results = jcoms.AnalysisResponse()
     return analysis
 
@@ -160,13 +173,13 @@ def test_templates_drop_the_svg(analysis):
 def test_set_svgs_routes_each_part_to_its_analysis(temp_dir):
     """parts are addressed as '<analysis id>/<element address>'"""
 
-    analyses = Analyses(FakeDataset(temp_dir), FakeModules())
+    analyses = Analyses(FakeProject(temp_dir), FakeModules())
 
-    first = Analysis(FakeDataset(temp_dir), 2, 'first', 'jmv', None, None, enabled=True)
+    first = Analysis(FakeProject(temp_dir), 2, 'first', 'jmv', None, None, enabled=True)
     first.results = jcoms.AnalysisResponse()
     add_svg(first.results.results, 'chart')
 
-    second = Analysis(FakeDataset(temp_dir), 3, 'second', 'jmv', None, None, enabled=True)
+    second = Analysis(FakeProject(temp_dir), 3, 'second', 'jmv', None, None, enabled=True)
     second.results = jcoms.AnalysisResponse()
     add_svg(second.results.results, 'chart')
 
@@ -221,7 +234,7 @@ def test_state_is_dropped_from_files(temp_dir):
     item_pb = array_pb.array.elements.add()
     item_pb.group.elements.add().state = b'nested'
 
-    analyses = Analyses(FakeDataset(temp_dir), FakeModules())
+    analyses = Analyses(FakeProject(temp_dir), FakeModules())
     analysis = analyses.create_from_serial(analysis_pb.SerializeToString())
 
     results_pb = analysis.results.results
@@ -242,7 +255,7 @@ async def test_export_runs_the_analysis_first(temp_dir):
     """an export renders from the state, so it must wait on a run"""
 
     analysis = Analysis(
-        FakeDataset(temp_dir), 2, 'descriptives', 'jmv', Options.create({}), FakeParent(), enabled=True)
+        FakeProject(temp_dir), 2, 'descriptives', 'jmv', Options.create({}), FakeParent(), enabled=True)
     analysis.results = jcoms.AnalysisResponse()
     analysis.complete = True
     analysis.set_status(Analysis.Status.COMPLETE)
