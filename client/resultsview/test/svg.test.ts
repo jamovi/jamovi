@@ -79,6 +79,104 @@ afterEach(() => {
 
 describe('Svg', () => {
 
+    it('participates in loop Tab navigation and restores SVG focus from the active root', async () => {
+        const view = makeView({ content: '<svg width="400" height="300"/>' });
+        await view.ready;
+        const svg = view.querySelector('svg')!;
+        vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 40, 400, 300));
+        const root = document.createElement('div');
+        root.tabIndex = -1;
+        const before = document.createElement('button');
+        const after = document.createElement('button');
+        for (const button of [before, after]) {
+            Object.defineProperty(button, 'offsetWidth', { value: 100 });
+            Object.defineProperty(button, 'offsetHeight', { value: 30 });
+        }
+        vi.spyOn(before, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 30));
+        vi.spyOn(after, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 400, 100, 30));
+        root.append(before, view, after);
+        document.body.append(root);
+        vi.useFakeTimers();
+        const hasFocus = vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+        const loop = interactionManager.registerLoop(root);
+        try {
+            interactionManager.setMode('keyboard', { noTransfer: true });
+            before.focus();
+            before.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', code: 'Tab', bubbles: true, cancelable: true }));
+            expect(document.activeElement).toBe(svg);
+            expect(loop.state).toBe('active');
+            svg.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', code: 'Tab', bubbles: true, cancelable: true }));
+            expect(document.activeElement).toBe(after);
+            after.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', code: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
+            expect(document.activeElement).toBe(svg);
+            root.focus();
+            expect(document.activeElement).toBe(svg);
+
+            svg.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', code: 'ArrowDown', bubbles: true, cancelable: true }));
+            expect(document.activeElement).toBe(after);
+            after.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', code: 'ArrowUp', bubbles: true, cancelable: true }));
+            expect(document.activeElement).toBe(svg);
+
+            // A delayed focusout reconciliation must recognize SVG as valid
+            // active content, rather than resetting keyboard mode.
+            vi.advanceTimersByTime(201);
+            svg.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null }));
+            vi.advanceTimersByTime(10);
+            expect(document.activeElement).toBe(svg);
+            expect(interactionManager.getMode()).toBe('keyboard');
+            expect(loop.state).toBe('active');
+        }
+        finally {
+            loop.unregister();
+            interactionManager.setMode('default', { noTransfer: true });
+            hasFocus.mockRestore();
+            vi.useRealTimers();
+        }
+    });
+
+    it.each([
+        ['ArrowLeft', 390, 300], ['ArrowRight', 410, 300],
+        ['ArrowUp', 400, 290], ['ArrowDown', 400, 310],
+    ])('resizes and persists the focused SVG with Ctrl+%s', async (key, width, height) => {
+        const view = makeView({ content: '<svg viewBox="0 0 400 300"/>' });
+        await view.ready;
+        const svg = view.querySelector('svg')!;
+        vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 400, 300));
+        svg.focus();
+        const bubbled = vi.fn();
+        document.body.addEventListener('keydown', bubbled, { once: true });
+        const event = new KeyboardEvent('keydown', { key: key as string, code: key as string, ctrlKey: true, bubbles: true, cancelable: true });
+        svg.dispatchEvent(event);
+        document.body.removeEventListener('keydown', bubbled);
+        expect(event.defaultPrevented).toBe(true);
+        expect(bubbled).not.toHaveBeenCalled();
+        expect(window.setParam).toHaveBeenCalledWith([], { width, height });
+        expect(svg.getAttribute('viewBox')).toBe('0 0 400 300');
+        view.render();
+        await view.ready;
+        expect(view.querySelector('svg')!.style.width).toBe(`${width}px`);
+        expect(view.querySelector('svg')!.style.height).toBe(`${height}px`);
+    });
+
+    it('clamps keyboard resizing and leaves plain arrows and embedded editor keys alone', async () => {
+        const view = makeView({ content: '<svg><foreignObject class="jmv-results-svg-interactive"><input/></foreignObject></svg>' });
+        await view.ready;
+        const svg = view.querySelector('svg')!;
+        vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 50, 2000));
+        svg.focus();
+        svg.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', ctrlKey: true, bubbles: true }));
+        svg.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', ctrlKey: true, bubbles: true }));
+        expect(window.setParam).toHaveBeenLastCalledWith([], { width: 50, height: 2000 });
+        vi.mocked(window.setParam).mockClear();
+        const plain = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true });
+        svg.dispatchEvent(plain);
+        const editorKey = new KeyboardEvent('keydown', { key: 'ArrowRight', ctrlKey: true, bubbles: true, cancelable: true });
+        view.querySelector('input')!.dispatchEvent(editorKey);
+        expect(window.setParam).not.toHaveBeenCalled();
+        expect(plain.defaultPrevented).toBe(false);
+        expect(editorKey.defaultPrevented).toBe(false);
+    });
+
     it('draws the html the analysis provided', async () => {
         const view = makeView({ content: '<svg><rect id="live"/></svg>' });
         await view.ready;

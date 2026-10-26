@@ -738,6 +738,11 @@ class Main {  // this is constructed at the bottom
         else if (this.results instanceof CollectionView)
             this.active = this.results.get(address);
 
+        if (event.op === 'resize') {
+            this.active?.resizeImage(event.withMouse);
+            return;
+        }
+
         switch (event.type) {
             case 'activated':
                 this.active.classList.add('focus-activated');

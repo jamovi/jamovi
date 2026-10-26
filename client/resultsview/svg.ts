@@ -5,6 +5,7 @@ import interactionManager from '../common/interactionmanager';
 import Elem, { ElementData, ElementModel } from './element';
 import { h, htmlTrusted, setRich }  from '../common/htmlelementcreator';
 import { AnalysisStatus } from './analysisstatus';
+import { resizeButton, type ResizeTarget } from './resize';
 
 export interface ISvgElementData {
     content: string;
@@ -57,12 +58,38 @@ export class View extends Elem.View<Model> {
 
         this._svgEl = null;
 
+        this.addEventListener('keydown', (event: KeyboardEvent) => {
+            const svg = this._svgEl;
+            // Editors and other interactive descendants own their keyboard input.
+            if (!svg || event.target !== svg || !event.ctrlKey || event.altKey || event.metaKey)
+                return;
+
+            let dx = 0;
+            let dy = 0;
+            switch (event.key) {
+                case 'ArrowLeft': dx = -10; break;
+                case 'ArrowRight': dx = 10; break;
+                case 'ArrowUp': dy = -10; break;
+                case 'ArrowDown': dy = 10; break;
+                default: return;
+            }
+
+            const rect = svg.getBoundingClientRect();
+            const width = clampSize(rect.width + dx);
+            const height = clampSize(rect.height + dy);
+            svg.style.width = `${ width }px`;
+            svg.style.height = `${ height }px`;
+            this._commitSize(width, height);
+            event.preventDefault();
+            event.stopPropagation();
+        });
+
         this._handleLinkClick = this._handleLinkClick.bind(this);
 
         this.classList.add('jmv-results-svg');
 
         const titleId = interactionManager.nextAriaId('svg');
-        this.setAttribute('role', 'img');
+        this.setAttribute('role', 'group');
         this.setAttribute('aria-labelledby', titleId);
 
         this.$title = h(`h${this.level+1}` as keyof HTMLElementTagNameMap,
@@ -78,6 +105,7 @@ export class View extends Elem.View<Model> {
         this.$grip.addEventListener('pointerdown',
             (event: PointerEvent) => this._gripPressed(event));
         this.append(this.$grip);
+        this.append(resizeButton(() => this.resizeImage()));
 
         this.addEventListener(RESIZE_EVENT, (event: Event) => {
             const { width, height } = (event as CustomEvent).detail ?? { };
@@ -114,6 +142,21 @@ export class View extends Elem.View<Model> {
 
     type() {
         return 'Svg';
+    }
+
+    getResizeTarget(): ResizeTarget | null {
+        if (!this._svgEl) return null;
+        return {
+            size: () => this._svgEl!.getBoundingClientRect(),
+            apply: (width, height) => {
+                const svg = this._svgEl;
+                if (!svg) return;
+                svg.style.width = `${width}px`;
+                svg.style.height = `${height}px`;
+                this._commitSize(width, height);
+            },
+            focus: () => this._svgEl?.focus({ preventScroll: true }),
+        };
     }
 
     label() {
@@ -201,7 +244,7 @@ export class View extends Elem.View<Model> {
         this._adoptSvg($content);
 
         if (wasSelected && this._svgEl)
-            (this._svgEl as unknown as HTMLElement).focus({ preventScroll: true });
+            this._svgEl.focus({ preventScroll: true });
     }
 
     // the svg is what the user selects, and what the grip resizes
@@ -216,11 +259,17 @@ export class View extends Elem.View<Model> {
             return;
 
         this._applySize(svgEl);
-        this.setFocusElement(svgEl as unknown as HTMLElement);
+        if (!svgEl.hasAttribute('aria-label') && !svgEl.hasAttribute('aria-labelledby') && !svgEl.querySelector('title')) {
+            if (this.model.attributes.title)
+                svgEl.setAttribute('aria-labelledby', this.$title.id);
+            else
+                svgEl.setAttribute('aria-label', _('Image'));
+        }
+        this.setFocusElement(svgEl);
 
         svgEl.addEventListener('pointerdown', (event) => {
             if ( ! this._isInteractive(event.target, svgEl))
-                (svgEl as unknown as HTMLElement).focus({ preventScroll: true });
+                svgEl.focus({ preventScroll: true });
         });
         // focusing is the default action of a mouse press, so preventing it
         // leaves a press on an interactive part from selecting the svg. the

@@ -1,0 +1,6 @@
+/* Focus visibility follows InteractionManager rather than browser heuristics.
+   Keep component-specific selection borders separate from focus indicators. */
+body[focusmode="default"] :focus,
+body[focusmode="hover"] :focus {
+    outline: none;
+}
