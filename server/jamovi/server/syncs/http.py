@@ -183,7 +183,9 @@ class HttpSync:
             async for data in response.content.iter_any():
                 self._temp_file.write(data)
                 if content_length:
-                    p += len(data)
+                    # content_length is the size on the wire (i.e. compressed
+                    # when there's a content-encoding), so count raw bytes
+                    p = response.content.total_raw_bytes
                     progress(p / n)
         finally:
             if self._temp_file is not None:
