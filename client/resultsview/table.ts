@@ -696,7 +696,9 @@ export class View extends Elem.View<Model> {
                 }
                 else {
                     let cell = h('th', { scope: 'colgroup', class: 'jmv-results-table-cell', colspan: span.toString() });
-                    appendTableRichContent(cell, content);
+                    // left :empty, so main.css omits its bottom border
+                    if (content)
+                        cell.append(rich(content));
                     superHeaderCells.push(cell);
                     span = 1;
                 }
