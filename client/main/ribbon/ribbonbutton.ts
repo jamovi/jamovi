@@ -125,6 +125,10 @@ export class RibbonButton extends ButtonElement implements RibbonItem {
         action.on('change:enabled', (event) => {
             this.setEnabled(event.changed.enabled);
         });
+        action.on('change:value', (event) => {
+            this.setValue(event.changed.value);
+            this.setAttribute('aria-pressed', event.changed.value ? 'true' : 'false');
+        });
 
         if (this.size === 'small' && this.title !== null)
             this.setAttribute('title', this.title);

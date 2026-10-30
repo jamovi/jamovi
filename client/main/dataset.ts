@@ -130,6 +130,11 @@ export interface Column {
     outputAnalysisId: number;
 }
 
+export interface SortKey {
+    columnId: number,
+    descending: boolean
+}
+
 export interface Viewport {
     top: number;
     bottom: number;
@@ -161,7 +166,8 @@ interface DataSetModelData {
     deletedRowCount: number,
     addedRowCount: number,
     editedCellCount: number,
-    rowCountExFiltered: number
+    rowCountExFiltered: number,
+    sortKeys: SortKey[]
 }
 
 class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
@@ -286,7 +292,8 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
             deletedRowCount: 0,
             addedRowCount: 0,
             editedCellCount: 0,
-            rowCountExFiltered: 0
+            rowCountExFiltered: 0,
+            sortKeys: [ ]
         }, extra) as M);
     }
 
@@ -323,6 +330,23 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
             return this.get('rowCount');
         else
             return this.get('rowCountExFiltered');
+    }
+
+    isSorted(): boolean {
+        return this.attributes.sortKeys.length > 0;
+    }
+
+    _readSortPB(sortPB: any): SortKey[] {
+        if ( ! sortPB)
+            return [ ];
+        return sortPB.keys.map((keyPB: any) => ({ columnId: keyPB.columnId, descending: keyPB.descending }));
+    }
+
+    _setSortKeys(sortKeys: SortKey[]) {
+        let current = this.attributes.sortKeys;
+        if (current.length === sortKeys.length && current.every((key, i) => key.columnId === sortKeys[i].columnId && key.descending === sortKeys[i].descending))
+            return;
+        this.set('sortKeys', sortKeys);
     }
 
     clearEditingVar() {
@@ -394,6 +418,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
             this.attributes.editedCellCount = infoPB.schema.editedCellCount;
             this.attributes.rowCountExFiltered = infoPB.schema.rowCountExFiltered;
             this.attributes.filtersVisible = infoPB.schema.filtersVisible;
+            this.attributes.sortKeys = this._readSortPB(infoPB.schema.sort);
 
             let removedRowRanges = new Array(infoPB.schema.removedRowRanges.length);
             for (let i = 0; i < removedRowRanges.length; i++) {
@@ -623,6 +648,34 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
         datasetPB.schema = new coms.Messages.DataSetSchema();
         let setTo = ! this.get('filtersVisible');
         datasetPB.schema.filtersVisible = setTo;
+
+        let request = new coms.Messages.ComsMessage();
+        request.payload = datasetPB.toArrayBuffer();
+        request.payloadType = 'DataSetRR';
+        request.instanceId = this.attributes.instanceId;
+
+        return coms.send(request).then(response => {
+            let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
+            this._processDatasetRR(datasetPB);
+        });
+    }
+
+    setSort(sortKeys: SortKey[]) {
+
+        let coms = this.attributes.coms;
+
+        let datasetPB = new coms.Messages.DataSetRR();
+        datasetPB.op = coms.Messages.GetSet.SET;
+        datasetPB.incSchema = true;
+        datasetPB.schema = new coms.Messages.DataSetSchema();
+        datasetPB.schema.filtersVisible = this.get('filtersVisible');
+        datasetPB.schema.sort = new coms.Messages.DataSetSchema.ViewSort();
+        for (let key of sortKeys) {
+            let keyPB = new coms.Messages.DataSetSchema.SortKey();
+            keyPB.columnId = key.columnId;
+            keyPB.descending = key.descending;
+            datasetPB.schema.sort.keys.push(keyPB);
+        }
 
         let request = new coms.Messages.ComsMessage();
         request.payload = datasetPB.toArrayBuffer();
@@ -1229,7 +1282,7 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
             refresh = true;
         }
 
-        if (datasetPB.filtersChanged)
+        if (datasetPB.filtersChanged || datasetPB.viewOrderChanged)
             refresh = true;
 
         if (outputData.cellsChanged)
@@ -1237,6 +1290,11 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
 
         if (refresh)
             this.trigger('refreshView');
+
+        // last, as listeners expect the columns, rows and selection to be
+        // up to date (the sort changes when a sort column is deleted)
+        if (datasetPB.schema)
+            this._setSortKeys(this._readSortPB(datasetPB.schema.sort));
 
         return outputData;
     }

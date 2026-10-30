@@ -167,6 +167,7 @@ class TableView extends HTMLElement implements DataSetView {
         this.model.on('change:addedRowCount', event => this.statusbar.updateInfoLabel('addedRows', this.model.attributes.addedRowCount));
         this.model.on('change:rowCountExFiltered', event => this.statusbar.updateInfoLabel('filteredRows',  this.model.attributes.rowCount - this.model.attributes.rowCountExFiltered));
         this.model.on('change:filtersVisible', event => this._updateEyeButton());
+        this.model.on('change:sortKeys', event => this._updateSortIndicators());
 
         this.classList.add('jmv-tableview');
         this.setAttribute('role', 'grid');
@@ -220,6 +221,7 @@ class TableView extends HTMLElement implements DataSetView {
         this.statusbar.addActionButton('editFilters', { dock: 'left', label: _('Edit filters') });
         this.statusbar.addActionButton('toggleFilterVisible', { dock: 'left', label: _('Toggle filters visibility') });
         this.statusbar.addInfoLabel('activeFilters', { dock: 'left', label: _('Filters'), value: 0 });
+        this.statusbar.addInfoLabel('sortedBy', { dock: 'left', value: '' });
 
         this.$container = this.querySelector('.jmv-table-container');
         this.$header    = this.querySelector('.jmv-table-header');
@@ -520,6 +522,43 @@ class TableView extends HTMLElement implements DataSetView {
         this.statusbar.updateInfoLabel('filteredRows', this.model.attributes.rowCount - this.model.attributes.rowCountExFiltered);
         this._updateFilterInfo();
         this._updateEyeButton();
+        this._updateSortIndicators();
+    }
+
+    _updateHeaderSort($header: HTMLElement) {
+        let sortKeys = this.model.attributes.sortKeys;
+        let columnId = parseInt($header.dataset.id);
+        let index = sortKeys.findIndex(key => key.columnId === columnId);
+        let $sort = $header.querySelector('.jmv-column-header-sort');
+        let $label = $header.querySelector('.jmv-column-header-label');
+
+        if (index === -1) {
+            delete $header.dataset.sort;
+            $sort.removeAttribute('data-priority');
+            $label.setAttribute('aria-sort', 'none');
+        }
+        else {
+            let direction = sortKeys[index].descending ? 'descending' : 'ascending';
+            $header.dataset.sort = direction;
+            if (sortKeys.length > 1)
+                $sort.setAttribute('data-priority', String(index + 1));
+            else
+                $sort.removeAttribute('data-priority');
+            $label.setAttribute('aria-sort', direction);
+        }
+    }
+
+    _updateSortIndicators() {
+        for (let $header of this.$headers)
+            this._updateHeaderSort($header);
+
+        let names = [ ];
+        for (let key of this.model.attributes.sortKeys) {
+            let column = this.model.getColumnById(key.columnId);
+            if (column)
+                names.push(`${ column.name } ${ key.descending ? '\u25BC' : '\u25B2' }`);
+        }
+        this.statusbar.updateInfoLabel('sortedBy', names.length > 0 ? _('Sorted by {0}', [ names.join(', ') ]) : '');
     }
 
     _addResizeListeners($element: HTMLElement) {
@@ -829,6 +868,7 @@ class TableView extends HTMLElement implements DataSetView {
 
         this.controller.enableDisableActions();
         this._updateViewRange();
+        this._updateSortIndicators();  // a sort column may be renamed
 
         if (aFilterChanged)
             this.model.readCells(this.model.attributes.viewport);
@@ -2473,6 +2513,7 @@ class TableView extends HTMLElement implements DataSetView {
                 let missing = cellInfo.missing;
 
                 this._updateCell(cell, content, true, dps, filt, missing, isFC);
+                this.refreshCellColour(cell, columnInfo, rowOffset + rowNo);
             }
         }
 
@@ -2496,6 +2537,10 @@ class TableView extends HTMLElement implements DataSetView {
         if (rowHeaders.length === 0)
             return;
 
+        // dividers mark rows hidden by filters; when sorted, the row
+        // numbers aren't consecutive anyway, so dividers aren't shown
+        let sorted = this.model.isSorted();
+
         for (let index of changed) {
             let currentNum = rowNums[index];
             let aboveNum = rowNums[index - 1];
@@ -2510,7 +2555,10 @@ class TableView extends HTMLElement implements DataSetView {
             else
                 current.classList.remove('virtual');
 
-            if (Number.isFinite(aboveNum)) {
+            if (sorted) {
+                current.classList.remove('split-above');
+            }
+            else if (Number.isFinite(aboveNum)) {
                 if (currentNum !== aboveNum + 1)
                     current.classList.add('split-above');
                 else
@@ -2527,7 +2575,7 @@ class TableView extends HTMLElement implements DataSetView {
         let currentNum = rowNums[index];
         let belowNum = rowNums[index + 1];
 
-        if (Number.isFinite(belowNum)) {
+        if (Number.isFinite(belowNum) && ! sorted) {
             let below = rowHeaders[index + 1];
             if (currentNum !== belowNum - 1)
                 below.classList.add('split-above');
@@ -2538,7 +2586,7 @@ class TableView extends HTMLElement implements DataSetView {
         // adds a split to the very first visible row in the data set
         // (if necessary)
         if (changed[0] === 0 && this.viewport.top === 0) {
-            if (rowNums[0] !== 0)
+            if (rowNums[0] !== 0 && ! sorted)
                 rowHeaders[0].classList.add('split-above');
             else
                 rowHeaders[0].classList.remove('split-above');
@@ -2593,6 +2641,7 @@ class TableView extends HTMLElement implements DataSetView {
         let cells = this.model.get('cells');
         let filtered = this.model.get('filtered');
         let viewportLeft = this.model.get('viewport').left;
+        let viewportTop = this.model.get('viewport').top;
 
         for (let changed of changedCells) {
             let cellList = cells[changed.colIndex];
@@ -2616,6 +2665,9 @@ class TableView extends HTMLElement implements DataSetView {
 
                 this._updateCell(cell, content, true, dps, filt, missing, isFC);
             }
+
+            // the data set row displayed may have changed (e.g. a re-sort)
+            this.refreshCellColour(cell, columnInfo, viewportTop + changed.rowIndex);
         }
     }
 
@@ -2807,6 +2859,7 @@ class TableView extends HTMLElement implements DataSetView {
                 'aria-colindex': String(column.dIndex),
                 'aria-label': label,
             }, column.name),
+            h('div', { class: 'jmv-column-header-sort' }),
             h('div', { class: 'jmv-column-header-resizer', 'data-index': String(column.dIndex) }),
             h('div', { class: 'jmv-column-header-colour' }),
             h('div', { class: 'sub-selection-bar' }));
@@ -2814,6 +2867,8 @@ class TableView extends HTMLElement implements DataSetView {
         header.style.insetInlineStart = `${left}px`;
         header.style.width = `${column.width}px`;
         header.style.height = `${this._rowHeight}px`;
+
+        this._updateHeaderSort(header);
 
         return header;
     }
@@ -2872,10 +2927,22 @@ class TableView extends HTMLElement implements DataSetView {
         return cell;
     }
 
+    _dataRowNo(rowNo: number): number | null {
+        // the data set row displayed at a view row; these differ when sorted,
+        // or when filtered rows are hidden (null if not yet known)
+        let remapped = this.model.isSorted() || (this.model.get('filtersVisible') === false && this.model.filterCount() > 0);
+        if ( ! remapped)
+            return rowNo;
+        let viewport = this.model.attributes.viewport;
+        let rowNum = this.model.attributes.rowNums[rowNo - viewport.top];
+        return Number.isFinite(rowNum) ? rowNum : null;
+    }
+
     refreshCellColour(cell: Element, columnInfo: Column, rowNo: number) {
         if ( ! cell)
             return;
-        if (this._isCellEdited(columnInfo, rowNo))
+        let dataRowNo = this._dataRowNo(rowNo);
+        if (dataRowNo !== null && this._isCellEdited(columnInfo, dataRowNo))
             cell.classList.add('cell-edited');
         else
             cell.classList.remove('cell-edited');

@@ -369,11 +369,6 @@ Level *Column::rawLevel(int value) const
     return NULL;
 }
 
-int Column::getIndexExFiltered(int index)
-{
-    return _parent->getIndexExFiltered(index);
-}
-
 bool Column::shouldTreatAsMissing(int rowIndex)
 {
     if (hasLevels())
