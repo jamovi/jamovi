@@ -1246,6 +1246,17 @@ class TableView extends HTMLElement implements DataSetView {
     _dblClickHandler(event: MouseEvent) {
         let element = document.elementFromPoint(event.clientX, event.clientY);
 
+        if (element.closest('.select-all')) {
+            this._fitColumnsToHeaders(this.$headers);
+            return;
+        }
+
+        let $resizer = element.closest('.jmv-column-header-resizer');
+        if ($resizer) {
+            this._fitColumnsToHeaders([ $resizer.parentElement ]);
+            return;
+        }
+
         let $header = element.closest('.jmv-column-header:not(.select-all)');
         if ($header) {
             let colId = parseInt($header.getAttribute('data-id'));
@@ -2386,34 +2397,30 @@ class TableView extends HTMLElement implements DataSetView {
             delta = -delta;
 
         let newWidth = Math.max(32, data.startWidth + delta);
-        let x = newWidth - this._widths[colNo];
-
-        if (x === 0)
+        if (newWidth === this._widths[colNo])
             return;
 
-        if (document.body.dir === 'rtl')
-            x = -x;
-
         column.width = Math.floor(newWidth);
+        this._setColumnWidths(new Map([[ colNo, newWidth ]]));
+    }
 
+    _setColumnWidths(widths: Map<number, number>) {
         this.classList.add('resizing');
 
         // forcing a reflow
         this.offsetHeight; // jshint ignore:line
 
-        this._widths[colNo] = newWidth;
-        let $header = this.$headers[colNo];
-        let $column = this.$columns[colNo];
-        $header.style.width = `${this._widths[colNo]}px`;
-        $column.style.width = `${this._widths[colNo]}px`;
-
-        for (let i = colNo + 1; i < this._lefts.length; i++) {
-            if (document.body.dir === 'rtl')
-                this._lefts[i] -= x;
-            else
-                this._lefts[i] += x;
+        let increase = 0;
+        for (let i = Math.min(...widths.keys()); i < this._lefts.length; i++) {
+            this._lefts[i] += increase;
             let $header = this.$headers[i];
             let $column = this.$columns[i];
+            if (widths.has(i)) {
+                increase += widths.get(i) - this._widths[i];
+                this._widths[i] = widths.get(i);
+                $header.style.width = `${this._widths[i]}px`;
+                $column.style.width = `${this._widths[i]}px`;
+            }
             $header.style.insetInlineStart = `${this._lefts[i]}px`;
             $column.style.insetInlineStart = `${this._lefts[i]}px`;
         }
@@ -2433,15 +2440,38 @@ class TableView extends HTMLElement implements DataSetView {
         this.$selectionColumnHighlight.style.insetInlineStart = `${left}px`;
         this.$selectionColumnHighlight.style.width = `${width}px`;
 
-        if (document.body.dir === 'rtl')
-            this._bodyWidth -= x;
-        else
-            this._bodyWidth += x;
+        this._bodyWidth += increase;
         this.$body.style.width = `${this._bodyWidth}px`;
 
         this.classList.remove('resizing');
 
         this._resizeHandler();
+    }
+
+    _fitColumnsToHeaders($headers: HTMLElement[]) {
+        const widths = new Map<number, number>();
+        const changes = [ ];
+
+        for (let $header of $headers) {
+            let column = this.model.getColumnById(parseInt($header.dataset.id));
+            if ( ! column || column.name === '')  // virtual
+                continue;
+
+            let width = $header.querySelector<HTMLElement>('.jmv-column-header-icon').offsetWidth
+                + $header.querySelector('.jmv-column-header-label').scrollWidth
+                + 14;  // padding, border and rounding
+
+            if (width > column.width) {
+                column.width = width;
+                widths.set(column.dIndex, width);
+                changes.push({ index: column.index, id: column.id, values: { width } });
+            }
+        }
+
+        if (changes.length > 0) {
+            this._setColumnWidths(widths);
+            this.model.changeColumns(changes);
+        }
     }
 
     _updateCells() {
