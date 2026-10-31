@@ -86,6 +86,26 @@
     position: relative ;
 }
 
+/* what an undo or redo changed (see ResultsPanel.revealAnalysis()) */
+.jmv-results-container.history-revealed::after {
+    content: '' ;
+    position: absolute ;
+    inset: 0 ;
+    pointer-events: none ;
+    animation: jmv-history-revealed 1s ease-out forwards ;
+}
+
+@keyframes jmv-history-revealed {
+    from { background-color: rgba(181, 202, 239, 0.6) ; }
+    to { background-color: transparent ; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .jmv-results-container.history-revealed::after {
+        animation-duration: 0.01s ;
+    }
+}
+
 .jmv-results-container:not([data-analysis-name='empty']) {
     transition: 0.5s height ;
 }

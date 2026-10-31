@@ -24,6 +24,7 @@ import { h, rich }  from '../common/htmlelementcreator';
 
 import I18ns, { I18n, I18nData } from "../common/i18n";
 import HighContrast from '../common/highcontrast';
+import { getUndoRedoAction } from '../common/undokeys';
 
 declare global {
     function s_(key: string, formats?: { [key: string]: (string|number); } | (string|number)[] | string, options?: { prefix: string; postfix: string; }): string;
@@ -272,6 +273,7 @@ ready(() => {
     document.addEventListener('mousedown', mouseDown);
     document.addEventListener('mouseup', mouseUp);
     document.addEventListener('mousemove', mouseMove);
+    document.addEventListener('keydown', undoRedo);
 
     parentFrame.send('frameDocumentReady', null);
 });
@@ -393,6 +395,12 @@ function setTitle(title) {
         $title.append(h('div', { class: 'sub-title' }, original));
 }
 
+// true while options from the main window are being applied (as the panel
+// loads, or restored by an undo). the changes which follow from them (other
+// options updating in response) are sent marked as external, so they aren't
+// added to the history
+let applyingExternalUpdate = false;
+
 function updateOptions(values) {
     if (! analysis || analysis.inError)
         return;
@@ -405,17 +413,23 @@ function updateOptions(values) {
     }
 
     let model = analysis.model;
-    model.options.runInEditScope(() => {
-        let params = Options.getDefaultEventParams("changed");
-        params.externalEvent = true;
-        for (let key in values) {
-            let value = values[key];
-            if (key === 'results//heading')
-                setTitle(value);
-            else
-                model.options.setOptionValue(key, value, params);
-        }
-    });
+    applyingExternalUpdate = true;
+    try {
+        model.options.runInEditScope(() => {
+            let params = Options.getDefaultEventParams("changed");
+            params.externalEvent = true;
+            for (let key in values) {
+                let value = values[key];
+                if (key === 'results//heading')
+                    setTitle(value);
+                else
+                    model.options.setOptionValue(key, value, params);
+            }
+        });
+    }
+    finally {
+        applyingExternalUpdate = false;
+    }
 }
 
 function setOptionsValues(data, editType) {
@@ -434,37 +448,44 @@ function setOptionsValues(data, editType) {
     analysis.id = data.id;
     let titleSet = false;
     let model = analysis.model;
-    model.options.runInEditScope(() => {
-        if (analysis.View.beginDataInitialization(data.id)) {
-            let params = Options.getDefaultEventParams("changed");
-            params.silent = true;
-            for (let key in data.options) {
-                let value = data.options[key];
-                if (key === 'results//heading') {
-                    setTitle(value);
-                    titleSet = true;
+    // the options the UI derives as it loads aren't changes the user made
+    applyingExternalUpdate = true;
+    try {
+        model.options.runInEditScope(() => {
+            if (analysis.View.beginDataInitialization(data.id)) {
+                let params = Options.getDefaultEventParams("changed");
+                params.silent = true;
+                for (let key in data.options) {
+                    let value = data.options[key];
+                    if (key === 'results//heading') {
+                        setTitle(value);
+                        titleSet = true;
+                    }
+                    else
+                        model.options.setOptionValue(key, value, params);
                 }
-                else
-                    model.options.setOptionValue(key, value, params);
-            }
-            if (editType === 'absolute') {
-                for (let op of model.options._list) {
-                    if (data.options === null || (op.name in data.options) === false)
-                        model.options.setOptionValue(op.name, null, params);
+                if (editType === 'absolute') {
+                    for (let op of model.options._list) {
+                        if (data.options === null || (op.name in data.options) === false)
+                            model.options.setOptionValue(op.name, null, params);
+                    }
                 }
+                if (titleSet === false)
+                    setTitle('');
+                analysis.View.endDataInitialization(data.id);
             }
-            if (titleSet === false)
-                setTitle('');
-            analysis.View.endDataInitialization(data.id);
-        }
-    });
+        });
+    }
+    finally {
+        applyingExternalUpdate = false;
+    }
 
     parentFrame.send("optionsViewReady", true);
 }
 
 function onValuesForServerChanges(e) {
 
-    let compiledList = { values: { }, properties: { } };
+    let compiledList = { values: { }, properties: { }, external: applyingExternalUpdate };
 
     for (let key in e.map) {
         let value = e.map[key];
@@ -526,6 +547,15 @@ function mouseDown(event) {
     };
 
     parentFrame.send("onFrameMouseEvent", data);
+}
+
+// undo and redo are handled by the main window, against the shared history
+function undoRedo(event: KeyboardEvent) {
+    const action = getUndoRedoAction(event);
+    if (action === null)
+        return;
+    parentFrame.send('undoRedo', action);
+    event.preventDefault();
 }
 
 function closeOptions() {
