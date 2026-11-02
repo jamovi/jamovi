@@ -43,7 +43,7 @@ function makeView(element: Partial<ISvgElementData>, options: Record<string, unk
 // jsdom measures every box as zero, so a drag to (x, y) is a box of x by y
 function drag(view: View, x: number, y: number) {
 
-    const grip = view.querySelector<HTMLElement>('.jmv-results-svg-grip')!;
+    const grip = view.querySelector<HTMLElement>('.resize-handle[data-direction=se]')!;
     // not implemented by jsdom
     grip.setPointerCapture = () => { };
     grip.releasePointerCapture = () => { };
@@ -276,7 +276,7 @@ describe('Svg', () => {
         await view.ready;
 
         // the grip is the result's, not the module's
-        const grip = view.querySelector<HTMLElement>('.jmv-results-svg-grip')!;
+        const grip = view.querySelector<HTMLElement>('.resize-handle[data-direction=se]')!;
         expect(grip.parentElement).toBe(view);
 
         drag(view, 300, 200);
@@ -315,7 +315,7 @@ describe('Svg', () => {
         const own = view.querySelector<HTMLElement>('#own')!;
         const svg = view.querySelector<SVGElement>('svg')!;
         expect(Array.from(own.children)).toEqual([ svg, own.querySelector('p') ]);
-        expect(own.querySelector('.jmv-results-svg-grip')).toBeNull();
+        expect(own.querySelector('.resize-handle')).toBeNull();
         expect(own.style.width).toBe('');
         expect(svg.style.width).toBe('640px');
     });

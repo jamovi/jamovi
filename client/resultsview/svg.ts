@@ -5,7 +5,8 @@ import interactionManager from '../common/interactionmanager';
 import Elem, { ElementData, ElementModel } from './element';
 import { h, htmlTrusted, setRich }  from '../common/htmlelementcreator';
 import { AnalysisStatus } from './analysisstatus';
-import { resizeButton, type ResizeTarget } from './resize';
+import type { ResizeTarget } from './resize';
+import { addResizeHandles } from './resizehandles';
 
 export interface ISvgElementData {
     content: string;
@@ -49,7 +50,6 @@ export class View extends Elem.View<Model> {
 
     $title: HTMLHeadingElement;
     $size: HTMLElement;
-    $grip: HTMLElement;
     promises: Promise<string>[];
     _svgEl: SVGElement | null;
 
@@ -99,13 +99,15 @@ export class View extends Elem.View<Model> {
         this.$size = h('div', { class: 'size-display ignore-html' });
         this.append(this.$size);
 
-        // the grip lives beside the module's markup rather than in it, and
-        // css anchors it to the corner of the selected svg
-        this.$grip = h('div', { class: 'jmv-results-svg-grip ignore-html' });
-        this.$grip.addEventListener('pointerdown',
-            (event: PointerEvent) => this._gripPressed(event));
-        this.append(this.$grip);
-        this.append(resizeButton(() => this.resizeImage()));
+        addResizeHandles(this, {
+            element: () => this._svgEl,
+            focus: () => this._svgEl?.focus({ preventScroll: true }),
+            commit: (width, height) => this.getResizeTarget()?.apply(width, height),
+            feedback: (width, height, active) => {
+                this.$size.innerText = `${Math.round(width)} x ${Math.round(height)}`;
+                this.$size.style.opacity = active ? '1' : '0';
+            },
+        });
 
         this.addEventListener(RESIZE_EVENT, (event: Event) => {
             const { width, height } = (event as CustomEvent).detail ?? { };
@@ -287,57 +289,6 @@ export class View extends Elem.View<Model> {
     _isInteractive(target: EventTarget | null, svgEl: SVGElement) {
         const interactive = (target as Element | null)?.closest?.(INTERACTIVE);
         return !! interactive && svgEl.contains(interactive);
-    }
-
-    // css `resize` can't be used here: it needs a scroll container, and the
-    // clip that comes with one swallows the svg's selection ring
-    _gripPressed(event: PointerEvent) {
-
-        const svgEl = this._svgEl;
-        if (event.button !== 0 || ! svgEl)
-            return;
-
-        // preventDefault() keeps the browser from moving focus off the svg,
-        // which would take the selection ring -- and the grip with it -- away
-        event.preventDefault();
-        event.stopPropagation();
-
-        const $grip = event.currentTarget as HTMLElement;
-        $grip.setPointerCapture(event.pointerId);
-
-        const rect = svgEl.getBoundingClientRect();
-        const startX = event.clientX;
-        const startY = event.clientY;
-        let width = rect.width;
-        let height = rect.height;
-        let changed = false;
-        // in rtl the grip sits at the left edge, so dragging the box bigger
-        // is dragging towards a *smaller* clientX
-        const dir = getComputedStyle(this).direction === 'rtl' ? -1 : 1;
-
-        const moved = (e: PointerEvent) => {
-            width = clampSize(rect.width + (e.clientX - startX) * dir);
-            height = clampSize(rect.height + (e.clientY - startY));
-            svgEl.style.width = `${ width }px`;
-            svgEl.style.height = `${ height }px`;
-            this.$size.innerText = `${ Math.round(width) } x ${ Math.round(height) }`;
-            this.$size.style.opacity = '1';
-            changed = true;
-        };
-
-        const released = (e: PointerEvent) => {
-            $grip.releasePointerCapture(e.pointerId);
-            $grip.removeEventListener('pointermove', moved);
-            $grip.removeEventListener('pointerup', released);
-            $grip.removeEventListener('pointercancel', released);
-            this.$size.style.opacity = '0';
-            if (changed)
-                this._commitSize(width, height);
-        };
-
-        $grip.addEventListener('pointermove', moved);
-        $grip.addEventListener('pointerup', released);
-        $grip.addEventListener('pointercancel', released);
     }
 
     // the size the user has dragged the svg to is stored as results options,

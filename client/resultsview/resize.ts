@@ -7,32 +7,6 @@ export interface ResizeTarget {
     focus(): void;
 }
 
-export function resizeButton(open: () => void): HTMLButtonElement {
-    const label = _('Resize…');
-    const button = h('button', {
-        type: 'button', class: 'resize-image-button ignore-html',
-        'aria-label': label, title: label,
-    });
-    // Keep the graphic selected until click opens the dialog. Moving focus
-    // on press can hide its focus-dependent grip/icon before click arrives.
-    // Keyboard users can still Tab to and activate the button normally.
-    button.addEventListener('pointerdown', event => {
-        if (event.button !== 0) return;
-        event.preventDefault();
-        // Let InteractionManager's window listener record pointer input.
-    });
-    button.addEventListener('mousedown', event => {
-        if (event.button !== 0) return;
-        event.preventDefault();
-        event.stopPropagation();
-    });
-    button.addEventListener('click', event => {
-        event.stopPropagation();
-        open();
-    });
-    return button;
-}
-
 // The same explicit-size controls serve raster images and module-drawn SVGs.
 // Each result keeps its own conversion to persisted results options.
 export function showResizeDialog(target: ResizeTarget, container: HTMLElement = document.body, withMouse?: boolean): HTMLDialogElement {
@@ -94,7 +68,7 @@ export function showResizeDialog(target: ResizeTarget, container: HTMLElement = 
     const cancel = h('button', { type: 'button' }, _('Cancel'));
     // Results frames intentionally disallow native form submission.
     const fields = h('div', { class: 'resize-image-fields' },
-        h('div', { class: 'resize-image-header' }, h('h2', { id: titleId }, _('Resize')), units),
+        h('div', { class: 'resize-image-header' }, h('h2', { id: titleId }, _('Set size')), units),
         width.label, height.label,
         h('div', { class: 'resize-image-buttons' }, cancel, apply));
     units.addEventListener('change', () => {

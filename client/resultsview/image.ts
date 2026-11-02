@@ -7,7 +7,8 @@ import { h, setRich }  from '../common/htmlelementcreator';
 
 import { flatten } from '../common/utils/addresses';
 import { AnalysisStatus } from './analysisstatus';
-import { resizeButton, type ResizeTarget } from './resize';
+import type { ResizeTarget } from './resize';
+import { addResizeHandles } from './resizehandles';
 
 export interface IImageElementData {
     path: string,
@@ -83,7 +84,6 @@ export class View extends Elem.View<Model> {
         this.append(this.$image);
         this.$image.setAttribute('role', 'img');
         this.$image.setAttribute('aria-labelledby', imageId);
-        this.append(resizeButton(() => this.resizeImage()));
 
         this.addEventListener('keyup', (event: KeyboardEvent) => {
             if (event.ctrlKey) 
@@ -167,7 +167,21 @@ export class View extends Elem.View<Model> {
         });
 
         this.applyScaleValues = this.applyScaleValues.bind(this);
-        this.imagePointerDown = this.imagePointerDown.bind(this);
+        addResizeHandles(this, {
+            element: () => this.$image,
+            focus: () => {
+                if (this.atomicChange) clearTimeout(this.atomicChange);
+                this.manualResize = false;
+                this.updating = false;
+                this.focus({ preventScroll: true });
+            },
+            commit: (width, height) => this.getResizeTarget().apply(width, height),
+            feedback: (width, height, active) => {
+                this.$image.style.backgroundSize = '';
+                this.$size.innerText = `${Math.round(width)} x ${Math.round(height)}`;
+                this.$size.style.opacity = active ? '1' : '0';
+            },
+        });
     }
 
     atomicSizeChange(width: number, height: number) {
@@ -201,21 +215,11 @@ export class View extends Elem.View<Model> {
     }
 
     disconnectedCallback() {
-        this.$image.removeEventListener('pointerdown',  this.imagePointerDown);
-        document.removeEventListener('pointerup', this.applyScaleValues);
         this.resizeObserver.unobserve(this.$image);
     }
 
     connectedCallback() {
-        this.$image.addEventListener('pointerdown',  this.imagePointerDown);
-        document.addEventListener('pointerup', this.applyScaleValues);
         this.render();
-    }
-
-    imagePointerDown() {
-        this.manualResize = true;
-        if (this.initalised === false)
-            this.resizeObserver.observe(this.$image);
     }
 
     updateSizeDisplay() {

@@ -2,7 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import interactionManager from '../../common/interactionmanager';
-import { resizeButton, showResizeDialog } from '../resize';
+import { showResizeDialog } from '../resize';
 import { Model as ImageModel, View as ImageView } from '../image';
 import { Model as SvgModel, View as SvgView } from '../svg';
 
@@ -57,28 +57,6 @@ describe('shared resize controls', () => {
         else
             expect(interactionManager.getMode()).toBe('keyboard');
         dialog.querySelector<HTMLButtonElement>('.resize-image-buttons button')!.click();
-        interactionManager.setMode('default', { noTransfer: true });
-    });
-
-    it.each(['mouse', 'keyboard', 'accessible'])('preserves %s activation mode when opening', activation => {
-        const button = resizeButton(() => showResizeDialog({
-            size: () => ({ width: 400, height: 300 }), apply: vi.fn(), focus: vi.fn(),
-        }));
-        document.body.append(button);
-        button.focus();
-        interactionManager.setMode(activation === 'mouse' ? 'default' : activation as 'keyboard' | 'accessible', { noTransfer: true });
-        if (activation === 'mouse')
-            button.dispatchEvent(new MouseEvent('pointerdown', { button: 0, bubbles: true, cancelable: true }));
-        button.click();
-        expect(document.activeElement).toBe(document.querySelector('input'));
-        if (activation === 'mouse') {
-            expect(['default', 'hover']).toContain(interactionManager.getMode());
-            expect(document.body.getAttribute('keyboardfocus')).not.toBe('true');
-        }
-        else {
-            expect(interactionManager.getMode()).toBe(activation);
-        }
-        document.querySelector<HTMLButtonElement>('.resize-image-buttons button')!.click();
         interactionManager.setMode('default', { noTransfer: true });
     });
 
@@ -207,7 +185,7 @@ describe('result resize adapters', () => {
         expect(view._menuOptions().some(item => item.name === 'resize')).toBe(true);
     });
 
-    it('opens the shared controls from the SVG button and persists pixel dimensions', async () => {
+    it('opens Set size through the context-menu entry point and persists pixel dimensions', async () => {
         const model = new SvgModel({
             name: 'plot', title: 'Plot', refs: [], refTable: document.createElement('div'),
             error: null, status: 3, stale: false, options: {},
@@ -218,18 +196,8 @@ describe('result resize adapters', () => {
         await view.ready;
         const svg = view.querySelector('svg')!;
         vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 400, 300));
-        const button = view.querySelector<HTMLButtonElement>('.resize-image-button')!;
-        svg.focus();
-        // A real press must not blur the selected graphic and hide the icon
-        // before the browser can deliver click. jsdom has no default focus
-        // action for pointerdown/mousedown, so check its cancellation too.
-        for (const type of ['pointerdown', 'mousedown']) {
-            const press = new MouseEvent(type, { button: 0, bubbles: true, cancelable: true });
-            button.dispatchEvent(press);
-            expect(press.defaultPrevented).toBe(true);
-            expect(document.activeElement).toBe(svg);
-        }
-        button.click();
+        expect(view.querySelector('.resize-image-button')).toBeNull();
+        view.resizeImage(true);
         const dialog = document.querySelector('dialog')!;
         expect(dialog.parentElement).toBe(view);
         const [width, height] = Array.from(dialog.querySelectorAll('input'));

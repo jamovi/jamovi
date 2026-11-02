@@ -328,7 +328,7 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
         const options: ResultsContextMenuItem[] = [ { name: 'copy', label: _('Copy'), splitType: 'options', split }, { name: 'export', label: `${_('Export')}...` } ];
         const resizable = this.type() === 'Image' || this.type() === 'Svg';
         if (resizable)
-            options.push({ name: 'resize', label: _('Resize…'), splitter: true });
+            options.push({ name: 'resize', label: _('Set size'), splitter: true });
         options.push({ name: 'addNote', label: _('Add Note'), splitter: resizable });
         return options;
     }

@@ -304,10 +304,7 @@ input, [contenteditable], [contenteditable] * {
     width: max-content;
 }
 
-/* the svg carries its own selection ring, exactly as the image element does.
-   jamovi draws the grip itself rather than use a css `resize`, whose scroll
-   container would clip the ring -- see svg.ts. Keep the same ring while focus
-   is in the resize editor. */
+/* Keep the same dashed selection ring while focus is in Set size. */
 .jmv-results-image.selectedable-result-item:focus,
 .jmv-results-svg .selectedable-result-item:focus,
 .jmv-results-image:has(> .resize-image-dialog[open]),
@@ -612,57 +609,6 @@ table.row-selectable tr.selected th[scope=rowgroup] {
     background-size: 100% 100%;
 }
 
-.resize-image-button {
-    display: none;
-    position: absolute;
-    inset-inline-end: 18px;
-    bottom: 0;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    border: none;
-    border-radius: 5px;
-    color: #757575;
-    background: transparent;
-    z-index: 5001;
-    cursor: pointer;
-    transition: background-color 120ms ease, color 120ms ease;
-}
-
-.resize-image-button::before {
-    content: '';
-    position: absolute;
-    inset: 5px;
-    background-color: currentColor;
-    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cg fill='none' stroke='black' stroke-width='1.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 2h5v5M14 2L9 7M7 14H2V9M2 14l5-5'/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat;
-    pointer-events: none;
-}
-
-.resize-image-button:hover,
-.resize-image-button:focus-visible {
-    color: #333;
-    background-color: #0000000a;
-}
-
-.resize-image-button:active { background-color: #00000014; }
-
-.jmv-results-image > .resize-image-button {
-    inset-inline-end: calc(anchor(--jmv-results-image end) + 18px);
-    bottom: calc(anchor(--jmv-results-image bottom) - 5px);
-}
-
-.jmv-results-svg > .resize-image-button {
-    inset-inline-end: calc(anchor(--jmv-results-svg end) + 14px);
-    bottom: calc(anchor(--jmv-results-svg bottom) - 12px);
-}
-
-.jmv-results-image:focus > .resize-image-button,
-.jmv-results-image > .resize-image-button:focus,
-.jmv-results-svg:has(svg.selectedable-result-item:focus) > .resize-image-button,
-.jmv-results-svg > .resize-image-button:focus {
-    display: block;
-}
-
 .resize-image-dialog {
     position: absolute;
     inset: 50% auto auto 50%;
@@ -735,20 +681,14 @@ table.row-selectable tr.selected th[scope=rowgroup] {
 .resize-image-buttons button:hover { background: #f0f0f0; }
 .resize-image-buttons .resize-image-apply { color: #fff; background: #1769aa; }
 .resize-image-buttons .resize-image-apply:hover { background: #12588f; }
-.resize-image-dialog :focus,
-.resize-image-button:focus {
+.resize-image-dialog :focus {
     outline: 2px solid #005a9e;
     outline-offset: 2px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-    .resize-image-button { transition: none; }
-}
 
-.jmv-results-image:focus > .jmv-results-image-image,
-.jmv-results-image:has(> .resize-image-button:focus) > .jmv-results-image-image {
-    resize: both;
-    overflow: auto;
+.jmv-results-image:focus > .jmv-results-image-image {
+    resize: none;
     min-height: 50px;
     max-height: 2000px;
     min-width: 50px;
@@ -763,42 +703,130 @@ table.row-selectable tr.selected th[scope=rowgroup] {
 .jmv-results-svg {
     position: relative;
     anchor-scope: --jmv-results-svg;
+    /* the title sits only 3px above the svg, so the ring hugs the svg rather
+       than taking the usual 12px gap, which would run it through the title.
+       handles sit on the ring's centre line: offset plus half its width */
+    --jmv-ring-gap: 2px;
 }
 
 .jmv-results-svg svg.selectedable-result-item {
     anchor-name: --jmv-results-svg;
 }
 
-/* jamovi's own resize gripper, in place of the css `resize` the clip ruled
-   out. The glyph is chromium's own two-stroke corner, so a chart's grip and
-   an image's grip read as the same control. The z-index clears the focused
-   svg, which the selection rule lifts to 5000 and which would otherwise paint
-   its own opaque background over the grip; the min/max the css would have
-   given us are clamped in svg.ts instead. Shown only while the item is
-   selected, the same condition under which an image becomes resizable */
-.jmv-results-svg-grip {
-    position: absolute;
-    inset-inline-end: 0;
-    bottom: 0;
-    /* in the corner of the selection ring, which sits the 12px outline-offset
-       outside the svg. the anchor is named in each anchor() -- chromium
-       doesn't resolve it from position-anchor here. a browser without anchor
-       positioning keeps the result's corner, above */
-    inset-inline-end: calc(anchor(--jmv-results-svg end) - 7px);
-    bottom: calc(anchor(--jmv-results-svg bottom) - 7px);
-    width: 13px;
-    height: 13px;
-    display: none;
-    z-index: 5001;
-    cursor: nwse-resize;
-    background-repeat: no-repeat;
-    background-position: bottom right;
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='11'><path d='M10 3 L3 10 M10 7 L7 10' stroke='%238a8a8a' stroke-width='1.4' stroke-linecap='round' fill='none'/></svg>");
+.jmv-results-svg svg.selectedable-result-item:not(#results) {
+    outline-offset: 1px;
 }
 
-.jmv-results-svg:has(svg.selectedable-result-item:focus) > .jmv-results-svg-grip,
-.jmv-results-svg:has(> .resize-image-button:focus) > .jmv-results-svg-grip {
+/* Eight small squares sit on the selection ring. Their pointer targets are
+   larger than the visible squares, without covering module interactions. */
+.resize-handle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    transform: translate(-50%, -50%);
+    display: none;
+    z-index: 5001;
+    touch-action: none;
+}
+
+.resize-handle::before {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border: 1px solid #888;
+    background: #fff;
+    box-shadow: 0 1px 2px #0002;
+}
+.resize-handle:hover::before { border-color: #333; }
+
+/* Single corner grip is the default; retain square styling for boxes mode.
+   The handle is centred on the selection ring's corner, so the glyph is
+   pulled up and in to sit just inside the ring rather than straddling it. */
+.resize-handle.resize-corner-grip::before {
+    inset: auto 13px 13px auto;
+    width: 11px;
+    height: 11px;
+    border: 0;
+    box-shadow: none;
+    background: transparent bottom right / 11px 11px no-repeat;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='11'><path d='M10 3 L3 10 M10 7 L7 10' stroke='%238a8a8a' stroke-width='1.4' stroke-linecap='round' fill='none'/></svg>");
+}
+.resize-corner-grip[data-direction=sw]::before { inset: auto auto 13px 13px; transform: scaleX(-1); }
+
+.resize-handle[data-direction=n], .resize-handle[data-direction=s] { cursor: ns-resize; }
+.resize-handle[data-direction=e], .resize-handle[data-direction=w] { cursor: ew-resize; }
+.resize-handle[data-direction=nw], .resize-handle[data-direction=se] { cursor: nwse-resize; }
+.resize-handle[data-direction=ne], .resize-handle[data-direction=sw] { cursor: nesw-resize; }
+
+.jmv-results-image:focus > .resize-handle,
+.jmv-results-svg:has(svg.selectedable-result-item:focus) > .resize-handle,
+.resize-dragging > .resize-handle {
     display: block;
+}
+
+.jmv-results-image > .resize-handle[data-direction=nw] {
+    left: calc(anchor(--jmv-results-image left) - 13px);
+    top: calc(anchor(--jmv-results-image top) - 13px);
+}
+.jmv-results-image > .resize-handle[data-direction=n] {
+    left: anchor(--jmv-results-image center);
+    top: calc(anchor(--jmv-results-image top) - 13px);
+}
+.jmv-results-image > .resize-handle[data-direction=ne] {
+    left: calc(anchor(--jmv-results-image right) + 13px);
+    top: calc(anchor(--jmv-results-image top) - 13px);
+}
+.jmv-results-image > .resize-handle[data-direction=e] {
+    left: calc(anchor(--jmv-results-image right) + 13px);
+    top: anchor(--jmv-results-image center);
+}
+.jmv-results-image > .resize-handle[data-direction=se] {
+    left: calc(anchor(--jmv-results-image right) + 13px);
+    top: calc(anchor(--jmv-results-image bottom) + 13px);
+}
+.jmv-results-image > .resize-handle[data-direction=s] {
+    left: anchor(--jmv-results-image center);
+    top: calc(anchor(--jmv-results-image bottom) + 13px);
+}
+.jmv-results-image > .resize-handle[data-direction=sw] {
+    left: calc(anchor(--jmv-results-image left) - 13px);
+    top: calc(anchor(--jmv-results-image bottom) + 13px);
+}
+.jmv-results-image > .resize-handle[data-direction=w] {
+    left: calc(anchor(--jmv-results-image left) - var(--jmv-ring-gap));
+    top: anchor(--jmv-results-image center);
+}
+.jmv-results-svg > .resize-handle[data-direction=nw] {
+    left: calc(anchor(--jmv-results-svg left) - var(--jmv-ring-gap));
+    top: calc(anchor(--jmv-results-svg top) - var(--jmv-ring-gap));
+}
+.jmv-results-svg > .resize-handle[data-direction=n] {
+    left: anchor(--jmv-results-svg center);
+    top: calc(anchor(--jmv-results-svg top) - var(--jmv-ring-gap));
+}
+.jmv-results-svg > .resize-handle[data-direction=ne] {
+    left: calc(anchor(--jmv-results-svg right) + var(--jmv-ring-gap));
+    top: calc(anchor(--jmv-results-svg top) - var(--jmv-ring-gap));
+}
+.jmv-results-svg > .resize-handle[data-direction=e] {
+    left: calc(anchor(--jmv-results-svg right) + var(--jmv-ring-gap));
+    top: anchor(--jmv-results-svg center);
+}
+.jmv-results-svg > .resize-handle[data-direction=se] {
+    left: calc(anchor(--jmv-results-svg right) + var(--jmv-ring-gap));
+    top: calc(anchor(--jmv-results-svg bottom) + var(--jmv-ring-gap));
+}
+.jmv-results-svg > .resize-handle[data-direction=s] {
+    left: anchor(--jmv-results-svg center);
+    top: calc(anchor(--jmv-results-svg bottom) + var(--jmv-ring-gap));
+}
+.jmv-results-svg > .resize-handle[data-direction=sw] {
+    left: calc(anchor(--jmv-results-svg left) - var(--jmv-ring-gap));
+    top: calc(anchor(--jmv-results-svg bottom) + var(--jmv-ring-gap));
+}
+.jmv-results-svg > .resize-handle[data-direction=w] {
+    left: calc(anchor(--jmv-results-svg left) - 13px);
+    top: anchor(--jmv-results-svg center);
 }
 
 .jmv-results-image-status-indicator {
@@ -821,12 +849,23 @@ table.row-selectable tr.selected th[scope=rowgroup] {
 
 .size-display {
     position: absolute;
-    top: 0px;
     opacity: 0;
-    right: 0px;
     background-color: #ededed;
     padding: 3px 5px;
     transition: 0.2s opacity;
+    pointer-events: none;
+    z-index: 5001;
+}
+
+/* the size reads from the graphic's own top corner, inside the ring */
+.jmv-results-image > .size-display {
+    top: calc(anchor(--jmv-results-image top) + 6px);
+    right: calc(anchor(--jmv-results-image right) + 6px);
+}
+
+.jmv-results-svg > .size-display {
+    top: calc(anchor(--jmv-results-svg top) + 6px);
+    right: calc(anchor(--jmv-results-svg right) + 6px);
 }
 
 .jmv-results-array > .jmv-results-array-container > .jmv-results-image {
