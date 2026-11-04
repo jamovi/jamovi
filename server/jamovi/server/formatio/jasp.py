@@ -12,6 +12,8 @@ import os.path
 from jamovi.core import DataType
 from jamovi.core import MeasureType
 
+from .naming import make_unique
+
 
 def get_readers():
     return [ ( 'jasp', read ) ]
@@ -127,12 +129,15 @@ def read(data, path, prog_cb, **kwargs):
             for column in data.dataset:
                 if column.name in xdata:
                     meta_labels = xdata[column.name]['labels']
+                    used = set()
                     for meta_label in meta_labels:
+                        label = make_unique(meta_label[1].strip(), used)
+                        used.add(label)
                         if column.data_type == DataType.TEXT:
                             # they index from 1 ... although i suppose that's on me
-                            column.append_level(meta_label[0]-1, meta_label[1], str(meta_label[0]))
+                            column.append_level(meta_label[0]-1, label, str(meta_label[0]))
                         else:
-                            column.append_level(meta_label[0], meta_label[1], str(meta_label[0]))
+                            column.append_level(meta_label[0], label, str(meta_label[0]))
         except Exception:
             pass
 

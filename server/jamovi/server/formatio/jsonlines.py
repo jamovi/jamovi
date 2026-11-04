@@ -54,6 +54,8 @@ class ColumnInfo:
         if value is None or (isinstance(value, str) and value.strip() == ''):
             return
         self.is_empty = False
+        if isinstance(value, str):
+            value = value.strip()
         if isinstance(value, list) or isinstance(value, dict) or isinstance(value, bool):
             value = json.dumps(value)
         if not self.many_uniques:

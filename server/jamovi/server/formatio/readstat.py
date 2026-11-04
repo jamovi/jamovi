@@ -13,6 +13,8 @@ from jamovi.readstat import Error as ReadStatError
 from jamovi.readstat import Writer
 from jamovi.readstat import Measure
 
+from .naming import make_unique
+
 
 def get_readers():
     return [
@@ -96,7 +98,12 @@ class Parser(ReadStatParser):
             self._tmp_value_labels[labels_key] = labels
         else:
             labels = self._tmp_value_labels[labels_key]
-        labels[value] = label
+        if isinstance(value, str):
+            value = value.strip()
+        if value in labels:
+            # values which only differ by whitespace share the first label
+            return
+        labels[value] = make_unique(label.strip(), labels.values())
 
     def handle_variable(self, index, variable, labels_key):
         name = variable.name
@@ -281,6 +288,7 @@ class Parser(ReadStatParser):
             if value is not None:
                 if vt is not str:
                     value = str(value)
+                value = value.strip()
                 if column.has_levels:
                     if not column.has_level(value):
                         column.append_level(

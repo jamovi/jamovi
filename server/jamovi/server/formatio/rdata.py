@@ -7,6 +7,8 @@ from jamovi.librdata import Parser as RDataParser
 from jamovi.librdata import DataType as RDataType
 from jamovi.librdata import Writer
 
+from .naming import make_unique
+
 
 def get_readers():
     return [ ( 'rds', read ), ( 'rdata', read )  ]
@@ -125,6 +127,8 @@ class Parser(RDataParser):
 
         if data is not None:
             for index, value in enumerate(data):
+                if isinstance(value, str):
+                    value = value.strip()
                 column.set_value(index, value)
         else:
             for index in range(count):
@@ -137,7 +141,9 @@ class Parser(RDataParser):
         self._data.set_column_name(column, name)
 
     def handle_text_value(self, value, index):
+        if isinstance(value, str):
+            value = value.strip()
         self._current.set_value(index, value)
 
     def handle_value_label(self, value, index):
-        self._levels.append(value)
+        self._levels.append(make_unique(value.strip(), self._levels))

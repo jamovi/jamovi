@@ -155,14 +155,24 @@ class ColumnReader:
         self._ruminated = False
         self._dps = 0
 
+    def _value_at(self, row):
+        # values are stripped of leading and trailing whitespace, and missing
+        # values are returned as None
+        if self._column_index >= len(row):
+            return None
+        value = row[self._column_index]
+        if value is None:
+            return None
+        value = value.strip()
+        if value in (self._missings, ''):
+            return None
+        return value
+
     def examine_row(self, row) -> bool:
 
-        if self._column_index >= len(row):
-            return False
+        value = self._value_at(row)
 
-        value = row[self._column_index]
-
-        if value in (None, self._missings, '', ' '):
+        if value is None:
             return False
 
         self._is_empty = False
@@ -258,13 +268,7 @@ class ColumnReader:
         if self._ruminated is False:
             self.ruminate()
 
-        if self._column_index >= len(row):
-            value = None
-        else:
-            value = row[self._column_index]
-
-            if value in (self._missings, '', ' '):
-                value = None
+        value = self._value_at(row)
 
         if self._data_type == DataType.INTEGER:
             if value is None:

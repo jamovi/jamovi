@@ -12,6 +12,7 @@ from .exceptions import FileWriteError
 
 from . import omv
 from . import blank
+from .naming import make_unique
 
 
 __all__ = ('FileReadError', 'FileWriteError')  # prevent flake whining F401
@@ -152,7 +153,7 @@ def fix_column_names(dataset):
 
     for i, name in enumerate(column_names):
         name = re.sub(r'[\s]+', ' ', name)
-        column_names[i] = name
+        column_names[i] = name.strip()
 
     for i, orig in enumerate(column_names):
         used = column_names[:i]
@@ -162,12 +163,7 @@ def fix_column_names(dataset):
             orig = re.sub(r'`',   '_', orig)
             orig = re.sub(r'^\.', '_', orig)
 
-        name = orig.strip()
-        c = 2
-        while name in used:
-            name = '{} ({})'.format(orig, c)
-            c += 1
-        column_names[i] = name
+        column_names[i] = make_unique(orig, used)
 
     for i, name in enumerate(column_names):
         column = dataset[i]
