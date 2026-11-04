@@ -37,6 +37,8 @@ properties:
         pattern: "^[0-9]+\\.[0-9]+$"
     arbitraryCode:
         type: boolean
+    hidden:
+        type: boolean
     completeWhenFilled:
         type: boolean
     export:
@@ -123,6 +125,7 @@ properties:
                         - Group
                         - Action
                         - File
+                        - Color
             required:
                 - name
                 - type

@@ -1020,6 +1020,22 @@ const constructors = {
         }
     },
 
+    Color: {
+        create: function(item, isTemplate) {
+            let ctrl = { };
+            ctrl.type = "ColorPicker";
+            CheckTemplateState(item, ctrl, isTemplate);
+            return ctrl;
+        },
+        toRaw: function(obj, key) {
+            // a '#rrggbb' hex code
+            if (key === undefined || key.length === 0)
+                return "string";
+
+            return null;
+        }
+    },
+
     Variables: {
         create: function(item, isTemplate) {
             let ctrl = { }
@@ -1416,6 +1432,21 @@ const uiOptionControl = {
         },
         toRaw: function(ctrl) {
             return { type: 'array', template: { type: 'group', elements: [ { name: 'id', type: 'string' }, { name: 'filename', type: 'string' } ] } };
+        }
+    },
+
+    ColorPicker: {
+        usesSingleCell: function(ctrl) {
+            return ctrl.useSingleCell === true;
+        },
+        isContainerControl: function(ctrl) {
+            return false;
+        },
+        isOptionControl: function(ctrl) {
+            return ctrl.isVirtual !== true;
+        },
+        toRaw: function(ctrl) {
+            return "string";
         }
     },
 
