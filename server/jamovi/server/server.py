@@ -195,6 +195,14 @@ class _Handlers:
 
         return web.Response(content_type='text/plain', text=''.join(parts))
 
+    async def _instance_for_open(self, options: dict):
+        # the instance to open into, and whether it's open already
+        try:
+            from .extras import instance_for_open
+        except ImportError:
+            return await self._session.create(), False
+        return await instance_for_open(self._session, options)
+
     async def open_post(self, request: web.Request) -> web.StreamResponse:
         err = self._auth_error(request)
         if err is not None:
@@ -253,7 +261,13 @@ class _Handlers:
         resp = web.StreamResponse(headers={'Content-Type': 'text/plain'})
         await resp.prepare(request)
         try:
-            instance = await self._session.create()
+            instance, is_open = await self._instance_for_open(options)
+            if is_open:
+                if remove_after:
+                    os.remove(file_path)
+                await resp.write(_opened(instance.id).encode())
+                await resp.write_eof()
+                return resp
             stream = instance.open(
                 file_path, title=file_title, is_temp=is_temp,
                 ext=file_ext, options=options, remove_after=remove_after,

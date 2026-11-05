@@ -1060,6 +1060,10 @@ ready(async() => {
                 }
             }
             catch (e) {
+                if (instanceId && hasLobby && e instanceof UserFacingError && e.status === 'terminated') {
+                    instanceId = undefined;
+                    continue;
+                }
                 if (hasLobby && location === 'open') {
                     throw new UserFacingError(_('This data set could not be opened'), { cause: e.cause, status: 'disconnected' });
                 }
