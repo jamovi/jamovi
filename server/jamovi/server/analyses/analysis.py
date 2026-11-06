@@ -425,7 +425,7 @@ class Analysis:
         name = name.decode('ascii').rstrip('=')
 
         rel_path = '{:02} {}/resources/{}.svg'.format(self.id, self.name, name)
-        abs_path = os.path.join(self.dataset.instance_path, rel_path)
+        abs_path = os.path.join(self.project.instance_path, rel_path)
 
         os.makedirs(os.path.dirname(abs_path), exist_ok=True)
         with open(abs_path, 'wb') as file:
