@@ -40,8 +40,12 @@ interface IAnalysisPosition {
 interface IAnalysisMeta extends IAnalysisPosition {
     name : string,
     ns: string,
-    category: 'plots' | 'analyses'
+    category: 'plots' | 'analyses',
+    // the analyses which are addons to this one
+    addons: { ns: string, name: string }[]
 }
+
+const addonsKey = (analysis: IAnalysisMeta) => (analysis.addons ?? [ ]).map(addon => `${ addon.ns }::${ addon.name }`).join(',');
 
 type AnalysisCategory = 'analyses' | 'plots';
 
@@ -192,7 +196,8 @@ export class ModulesBase extends EventMap<IModulesModel> {
                             a1.menuSubgroup === a2.menuSubgroup &&
                             a1.menuSubtitle === a2.menuSubtitle &&
                             a1.menuTitle === a2.menuTitle &&
-                            a1.title === a2.title;
+                            a1.title === a2.title &&
+                            addonsKey(a1) === addonsKey(a2);
             }
         }
 

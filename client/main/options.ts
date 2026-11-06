@@ -604,6 +604,11 @@ export class Options {
 
         this._changingHandles = [ ];
 
+        this.addDefinitions(def);
+    }
+
+    // used for the options of an analysis' addons, once they're known
+    addDefinitions(def: any[]) {
         for (var i = 0; i < def.length; i++) {
             var template = def[i];
             let defaultValue = template.default;

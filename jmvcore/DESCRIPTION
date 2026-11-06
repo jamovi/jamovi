@@ -15,6 +15,7 @@ Depends:
     R (>= 3.2)
 Imports:
     grDevices,
+    graphics,
     R6 (>= 1.0.1),
     rlang (>= 0.3.0.1),
     jsonlite,

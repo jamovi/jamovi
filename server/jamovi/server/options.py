@@ -11,6 +11,19 @@ NONE = AnalysisOption.Other.Value('NONE')
 TRUE = AnalysisOption.Other.Value('TRUE')
 FALSE = AnalysisOption.Other.Value('FALSE')
 
+# an addon's options are carried in its parent's options, named
+# addons/<ns>/<name>/<option>
+ADDONS_PREFIX = 'addons/'
+
+
+def addon_prefix(ns, name):
+    return f'{ ADDONS_PREFIX }{ ns }/{ name }/'
+
+
+# the settings the client sends along with an analysis' options, which its
+# addons need as well
+SETTINGS = ('.ppi', 'theme', 'palette', 'decSymbol', '.lang')
+
 
 def substitute(values, changes):
     for index, old_value in enumerate(values):
@@ -106,6 +119,10 @@ class Option:
     def rename_using(self, changes):
         pass
 
+    def prune_using(self, allowed):
+        # removes the use of any variable not in allowed
+        pass
+
     def gen_default(self):
         if 'default' in self.defn:
             def4ult = self.defn['default']
@@ -153,6 +170,11 @@ class OptionVariable(Option):
             new_value = changes[old_value]
             self.set_value(new_value)
 
+    def prune_using(self, allowed):
+        value = self.get_value()
+        if value is not None and value not in allowed:
+            self.set_value(None)
+
 
 class OptionVariables(Option):
     def get_using(self):
@@ -168,6 +190,12 @@ class OptionVariables(Option):
             return
         substitute(values, changes)
         self.set_value(values)
+
+    def prune_using(self, allowed):
+        values = self.get_value()
+        if not values:
+            return
+        self.set_value([ v for v in values if v in allowed ])
 
 
 class OptionTerms(Option):
@@ -188,6 +216,14 @@ class OptionTerms(Option):
         for values in valuess:
             substitute(values, changes)
         self.set_value(valuess)
+
+    def prune_using(self, allowed):
+        # a term goes if any of its variables isn't allowed
+        valuess = self.get_value()
+        if not valuess:
+            return
+        self.set_value([ values for values in valuess
+                         if all(v in allowed for v in values) ])
 
 
 class OptionPairs(OptionTerms):
@@ -212,6 +248,13 @@ class OptionPairs(OptionTerms):
                 except KeyError:
                     pass
         self.set_value(valuess)
+
+    def prune_using(self, allowed):
+        valuess = self.get_value()
+        if not valuess:
+            return
+        self.set_value([ values for values in valuess
+                         if all(v in allowed for v in values.values()) ])
 
 
 class OptionFile(Option):
@@ -267,6 +310,10 @@ class OptionArray(Option):
     def rename_using(self, changes):
         for option in self:
             option.rename_using(changes)
+
+    def prune_using(self, allowed):
+        for option in self:
+            option.prune_using(allowed)
 
 
 class OptionGroup(OptionArray):
@@ -416,9 +463,11 @@ class Options:
                     producing.update(value['vars'])
         return producing
 
-    def get_using(self):
+    def get_using(self, include_addons=True):
         using = set()
         for i, name in enumerate(self._pb.names):
+            if not include_addons and name.startswith(ADDONS_PREFIX):
+                continue
             try:
                 option = self._options[name]
             except KeyError:
@@ -427,6 +476,42 @@ class Options:
             option.attach(pb)
             using.update(option.get_using())
         return set(using)
+
+    def own_pb(self):
+        # the options, less those of addons
+        pb = AnalysisOptions()
+        pb.hasNames = True
+        for i, name in enumerate(self._pb.names):
+            if name.startswith(ADDONS_PREFIX):
+                continue
+            pb.names.append(name)
+            pb.options.add().CopyFrom(self._pb.options[i])
+        return pb
+
+    def addon_pb(self, ns, name):
+        # the options of an addon, named as the addon knows them. an addon
+        # may only use the variables its parent uses, so any others are
+        # removed (from what is returned, not from the options themselves,
+        # so they reappear if the parent takes them up again)
+        prefix = addon_prefix(ns, name)
+        allowed = self.get_using(include_addons=False)
+        pb = AnalysisOptions()
+        pb.hasNames = True
+        for i, opt_name in enumerate(self._pb.names):
+            if opt_name in SETTINGS:
+                pb.names.append(opt_name)
+                pb.options.add().CopyFrom(self._pb.options[i])
+                continue
+            if not opt_name.startswith(prefix):
+                continue
+            pb.names.append(opt_name[len(prefix):])
+            opt_pb = pb.options.add()
+            opt_pb.CopyFrom(self._pb.options[i])
+            if opt_name in self._options:
+                option = create_option(self._options[opt_name].defn)
+                option.attach(opt_pb)
+                option.prune_using(allowed)
+        return pb
 
     def rename_using(self, changes):
         for i, name in enumerate(self._pb.names):

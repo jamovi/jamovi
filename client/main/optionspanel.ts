@@ -31,6 +31,11 @@ interface IFrameCommsApi {
     action: (data: { type: 'findModule', data: any }) => void;
 }
 
+// identifies an analysis' addons, whose options are part of its options panel
+const addonsKey = (analysis: Analysis) => {
+    return analysis.addons.map(addon => `${ addon.ns }::${ addon.name }`).join(',');
+};
+
 class AnalysisResources extends EventEmitter {
     frame: HTMLIFrameElement;
     key: string;
@@ -48,6 +53,8 @@ class AnalysisResources extends EventEmitter {
     notifyAborted: (reason?: any) => void;
     jamoviVersion: string;
     uploads: Set<AbortController>;
+    // the addons the options were built with, see addonsKey()
+    addonsKey: string;
 
     constructor(analysis: Analysis, target: HTMLElement, iframeUrl: string, public instance: Instance, public settings: Settings, public store: Store) {
         super();
@@ -215,7 +222,8 @@ class AnalysisResources extends EventEmitter {
                 this.jamoviVersion = version;
             })
         ]).then(() => {
-            return this.frameComms.send("setOptionsDefinition", this.def, this.i18nDef, I18ns.get('app').localeData, this.jamoviVersion, analysis.id, interactionManager.getMode());
+            this.addonsKey = addonsKey(analysis);
+            return this.frameComms.send("setOptionsDefinition", this.def, this.i18nDef, I18ns.get('app').localeData, this.jamoviVersion, analysis.id, interactionManager.getMode(), analysis.addons);
         });
     }
 
@@ -405,6 +413,21 @@ class OptionsPanel {
 
         let resources = this._analysesResources[analysesKey];
         let createdNew = false;
+
+        // the options include those of the analysis' addons, which are the
+        // same for analyses of the same type, unless modules have changed
+        if (resources !== undefined
+                && analysis.isReady
+                && resources.addonsKey !== undefined
+                && resources.addonsKey !== addonsKey(analysis)) {
+            if (resources === this._currentResources) {
+                this.removeMsgListeners(resources);
+                this._currentResources = null;
+            }
+            resources.destroy();
+            delete this._analysesResources[analysesKey];
+            resources = undefined;
+        }
 
         if (resources === undefined) {
             resources = new AnalysisResources(analysis, this.el, this.iframeUrl, this.model, this.model.settings(), this.store);

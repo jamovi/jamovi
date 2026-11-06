@@ -231,14 +231,14 @@ Array <- R6::R6Class("Array",
 
             clear <- FALSE
 
-            someChanges <- length(oChanges) > 0 || length(vChanges) > 0
+            someChanges <- private$.someChanges(oChanges, vChanges)
             if (someChanges && base::identical('*', private$.clearWith)) {
                 clear <- TRUE
-            } else if (base::any(oChanges %in% private$.clearWith)) {
+            } else if (base::any(oChanges %in% private$.clearsWith())) {
                 clear <- TRUE
             } else {
-                for (clearName in private$.clearWith) {
-                    if (base::any(vChanges %in% private$.options$option(clearName)$vars)) {
+                for (clearName in private$.clearsWith()) {
+                    if (base::any(vChanges %in% private$.clearWithOption(clearName)$vars)) {
                         clear <- TRUE
                         break()
                     }

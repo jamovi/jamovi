@@ -339,6 +339,12 @@ class Modules:
                     except Exception:
                         pass
 
+        for module in self:
+            for analysis in module.analyses:
+                analysis.addons.sort()
+
+        self._notify_listeners({ 'type': 'addonsChanged' })
+
 
     async def _reread_installed(self):
 
