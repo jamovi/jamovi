@@ -13,21 +13,11 @@ from jamovi.server.analyses import Analyses
 from jamovi.server.options import Options
 
 
-class FakeDataset:
-    """stands in for the InstanceModel, which set_svg() only needs a path from"""
+class FakeProject:
+    """stands in for the project that owns the SVG resource path"""
 
     def __init__(self, instance_path: str):
         self.instance_path = instance_path
-
-
-class FakeProject:
-    """stands in for the project, which set_svg() only needs the data set from"""
-
-    def __init__(self, instance_path: str):
-        self._dataset = FakeDataset(instance_path)
-
-    def get_dataset(self):
-        return self._dataset
 
 
 class FakeModules:
