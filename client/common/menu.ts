@@ -129,6 +129,10 @@ export class Menu extends HTMLElement {
 
         const el = this;
 
+        // clear any constraint from a previous show, so the natural height is measured
+        el.style.maxHeight = '';
+        el.style.overflowY = '';
+
         const rect = el.getBoundingClientRect();
         const computedStyle = window.getComputedStyle(el);
 
@@ -143,8 +147,16 @@ export class Menu extends HTMLElement {
         if (computedStyle.direction === 'rtl')
             x -= width;
 
-        if (y + height > window.innerHeight) 
+        if (y + height > window.innerHeight)
             y -= (y + height) - window.innerHeight;
+
+        // a menu taller than the window would otherwise have its top pushed
+        // off-screen, so pin it to the top and let it scroll instead
+        if (y < 0) {
+            y = 0;
+            el.style.maxHeight = `${ window.innerHeight - marginTop - marginBottom }px`;
+            el.style.overflowY = 'auto';
+        }
 
         if (x < 0)
             x = 0;
