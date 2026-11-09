@@ -89,22 +89,18 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
 
     override onPropertyChanged<K extends keyof GridTextboxProperties>(name: K) {
         super.onPropertyChanged(name);
-        if (name === 'enable') {
-            let disabled = this.getPropertyValue(name) === false;
-            this.input.disabled = disabled;
-            if (disabled) {
-                if (this.label !== null)
-                    this.label.classList.add('disabled-text');
-                if (this.suffix !== null)
-                    this.suffix.classList.add('disabled-text');
-            }
-            else {
-                if (this.label !== null)
-                    this.label.classList.remove('disabled-text');
-                if (this.suffix !== null)
-                    this.suffix.classList.remove('disabled-text');
-            }
-        }
+        if (name === 'enable')
+            this.updateEnabledState();
+    }
+
+    private updateEnabledState() {
+        if ( ! this.input)
+            return;
+
+        let disabled = this.getPropertyValue('enable') === false;
+        this.input.disabled = disabled;
+        this.label?.classList.toggle('disabled-text', disabled);
+        this.suffix?.classList.toggle('disabled-text', disabled);
     }
 
     parse(value) {
@@ -351,6 +347,8 @@ export class GridTextbox extends OptionControl<GridTextboxProperties> {
             cell = subgrid.addCell(1, 0, this.suffix);
             cell.setAlignment('left', 'center');
         }
+
+        this.updateEnabledState();
 
         return { height: 1, width: 1 + valueOffset };
     };
