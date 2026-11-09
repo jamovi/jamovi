@@ -163,6 +163,8 @@ export class ContextMenuButton extends ButtonElement implements RibbonItem {
         if (this.menu && this.menu.contains(event.target))
             return;
 
+        if (this.eventData)
+            this.eventData = { ...this.eventData, withMouse: fromMouse };
         this.dispatchEvent(new CustomEvent<ContextMenuButton>('menuClicked', { bubbles: true, detail: this }));
 
         let action = null;
