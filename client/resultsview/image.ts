@@ -7,6 +7,8 @@ import { h, setRich }  from '../common/htmlelementcreator';
 
 import { flatten } from '../common/utils/addresses';
 import { AnalysisStatus } from './analysisstatus';
+import type { ResizeTarget } from './resize';
+import { addResizeHandles } from './resizehandles';
 
 export interface IImageElementData {
     path: string,
@@ -65,7 +67,7 @@ export class View extends Elem.View<Model> {
         this.classList.add('jmv-results-image');
 
         let imageId = interactionManager.nextAriaId('image');
-        this.setAttribute('role', 'img');
+        this.setAttribute('role', 'group');
         this.setAttribute('aria-labelledby', imageId);
 
         const $status = h('div', { class: 'jmv-results-image-status-indicator' });
@@ -80,6 +82,8 @@ export class View extends Elem.View<Model> {
         let address = flatten(this.address());
         this.$image = h('div', { class: 'jmv-results-image-image', 'data-address': encodeURI(address) });
         this.append(this.$image);
+        this.$image.setAttribute('role', 'img');
+        this.$image.setAttribute('aria-labelledby', imageId);
 
         this.addEventListener('keyup', (event: KeyboardEvent) => {
             if (event.ctrlKey) 
@@ -163,7 +167,21 @@ export class View extends Elem.View<Model> {
         });
 
         this.applyScaleValues = this.applyScaleValues.bind(this);
-        this.imagePointerDown = this.imagePointerDown.bind(this);
+        addResizeHandles(this, {
+            element: () => this.$image,
+            focus: () => {
+                if (this.atomicChange) clearTimeout(this.atomicChange);
+                this.manualResize = false;
+                this.updating = false;
+                this.focus({ preventScroll: true });
+            },
+            commit: (width, height) => this.getResizeTarget().apply(width, height),
+            feedback: (width, height, active) => {
+                this.$image.style.backgroundSize = '';
+                this.$size.innerText = `${Math.round(width)} x ${Math.round(height)}`;
+                this.$size.style.opacity = active ? '1' : '0';
+            },
+        });
     }
 
     atomicSizeChange(width: number, height: number) {
@@ -176,22 +194,32 @@ export class View extends Elem.View<Model> {
         }, 500);
     }
 
+    getResizeTarget(): ResizeTarget {
+        return {
+            size: () => this.$image.getBoundingClientRect(),
+            apply: (width, height) => {
+                if (this.atomicChange) clearTimeout(this.atomicChange);
+                // Begin observing before applying an explicit size so later
+                // pointer/keyboard resizing continues from the same geometry.
+                this.resizeObserver.observe(this.$image);
+                this.$image.style.width = `${width}px`;
+                this.$image.style.height = `${height}px`;
+                this.widthOfImage = width;
+                this.heightOfImage = height;
+                this.manualResize = false;
+                this.updating = false;
+                this.updateScaleValues(width, height);
+            },
+            focus: () => { if (this.isConnected) this.focus({ preventScroll: true }); },
+        };
+    }
+
     disconnectedCallback() {
-        this.$image.removeEventListener('pointerdown',  this.imagePointerDown);
-        document.removeEventListener('pointerup', this.applyScaleValues);
         this.resizeObserver.unobserve(this.$image);
     }
 
     connectedCallback() {
-        this.$image.addEventListener('pointerdown',  this.imagePointerDown);
-        document.addEventListener('pointerup', this.applyScaleValues);
         this.render();
-    }
-
-    imagePointerDown() {
-        this.manualResize = true;
-        if (this.initalised === false)
-            this.resizeObserver.observe(this.$image);
     }
 
     updateSizeDisplay() {

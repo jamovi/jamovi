@@ -38,6 +38,9 @@ pieces are:
 Shared styles live in this directory:
 
   - focusloop.css: loop-root focus behavior
+  - focusoutline.css: shared suppression of focus outlines in default/hover
+    mode, imported by the main window and results frame. Components define
+    their focus appearance; graphic selection borders remain independent.
   - keytips.css: visible KeyTip label styling
 
 
@@ -607,6 +610,8 @@ Keyboard navigation is active outside default focus mode. When focus is in a
 loop:
 
   - Tab and Shift+Tab wrap through tabbable controls in the current loop.
+    SVG elements with tabindex participate too; their rendered bounding box
+    supplies the size check because SVG has no offsetWidth/offsetHeight.
   - Arrow keys move through keyboard-focusable controls by geometry.
   - [vloop="true"] scopes vertical arrow navigation.
   - [hloop="true"] scopes horizontal arrow navigation.

@@ -1,4 +1,6 @@
 
+@import "../common/interactionmanager/focusoutline.css";
+
 * {
     user-select: none ;
     -webkit-user-select: none;
@@ -29,18 +31,6 @@ body {
     background-color: #3E6DA9 ;
     padding: 0 ;
     cursor: default ;
-}
-
-:focus {
-    /*outline-color: #4e5966;*/
-}
-
-[focusmode="default"] :focus {
-  outline: none
-}
-
-[focusmode="hover"] :focus {
-    outline: none;
 }
 
 jmv-safari-button:focus {

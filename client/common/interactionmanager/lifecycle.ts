@@ -143,7 +143,7 @@ export class FocusLoopLifecycle {
             return;
 
         const activeElement = document.activeElement;
-        if (activeElement instanceof HTMLElement && activeElement !== document.body) {
+        if (activeElement && activeElement !== document.body) {
             if (pending.sourceLoop && pending.sourceLoop.element.contains(activeElement))
                 return;
 
@@ -302,7 +302,7 @@ export class FocusLoopLifecycle {
                 if (typeof document.hasFocus === 'function' && !document.hasFocus())
                     return;
                 const activeElement = document.activeElement;
-                if (activeElement instanceof HTMLElement && activeElement !== document.body)
+                if (activeElement && activeElement !== document.body)
                     return;
                 this.finishUnknownFocusOutRecovery();
             }, 0);
@@ -398,7 +398,7 @@ export class FocusLoopLifecycle {
         this.activationStabilizers.delete(loop);
     }
 
-    private deactivateFocusedLoopIfFocusMovedOutside(element: HTMLElement): void {
+    private deactivateFocusedLoopIfFocusMovedOutside(element: Element): void {
         const loop = this.focusedLoop;
         if (!loop || loop.state !== 'active' || loop.modal)
             return;

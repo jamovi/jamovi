@@ -1,5 +1,6 @@
 
 @import "../lib/metro-icons.css";
+@import '../common/interactionmanager/focusoutline.css';
 
 @import '../node_modules/quill/dist/quill.core.css';
 @import '../node_modules/katex/dist/katex.min.css';
@@ -44,7 +45,9 @@ jmv-results-text {
     position: relative;
 }
 
-.selectedable-result-item:focus, .focus-activated {
+.selectedable-result-item:focus, .focus-activated,
+.jmv-results-image:has(> .resize-image-dialog[open]),
+.jmv-results-svg:has(> .resize-image-dialog[open]) svg.selectedable-result-item {
     outline: Highlight auto 1px;
     outline: -webkit-focus-ring-color auto 1px;
     z-index: 5000;
@@ -301,7 +304,11 @@ input, [contenteditable], [contenteditable] * {
     width: max-content;
 }
 
-.jmv-results-image.selectedable-result-item:focus {
+/* Keep the same dashed selection ring while focus is in Set size. */
+.jmv-results-image.selectedable-result-item:focus,
+.jmv-results-svg .selectedable-result-item:focus,
+.jmv-results-image:has(> .resize-image-dialog[open]),
+.jmv-results-svg:has(> .resize-image-dialog[open]) svg.selectedable-result-item {
     outline-style: dashed;
     outline-width: 2px;
 }
@@ -592,21 +599,234 @@ table.row-selectable tr.selected th[scope=rowgroup] {
 
 .jmv-results-image {
     position: relative ;
+    anchor-scope: --jmv-results-image;
 }
 
 .jmv-results-image-image {
+    anchor-name: --jmv-results-image;
     background-repeat: no-repeat;
     background-position: center center;
     background-size: 100% 100%;
 }
 
+.resize-image-dialog {
+    position: absolute;
+    inset: 50% auto auto 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+    z-index: 5002;
+    border: 1px solid #0000001f;
+    border-radius: 10px;
+    padding: 12px;
+    width: 240px;
+    max-width: calc(100vw - 40px);
+    box-sizing: border-box;
+    box-shadow: 0 6px 24px #0000001f;
+    color: #222;
+    background: #fff;
+    font: 13px sans-serif;
+}
+
+/* The shade follows the graphic's bounds, leaving other results untouched. */
+.jmv-results-image:has(> .resize-image-dialog[open])::after,
+.jmv-results-svg:has(> .resize-image-dialog[open])::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: #00000026;
+    pointer-events: none;
+    z-index: 5001;
+}
+
+.jmv-results-image:has(> .resize-image-dialog[open])::after {
+    top: anchor(--jmv-results-image top);
+    bottom: anchor(--jmv-results-image bottom);
+    inset-inline-start: anchor(--jmv-results-image start);
+    inset-inline-end: anchor(--jmv-results-image end);
+}
+
+.jmv-results-svg:has(> .resize-image-dialog[open])::after {
+    top: anchor(--jmv-results-svg top);
+    bottom: anchor(--jmv-results-svg bottom);
+    inset-inline-start: anchor(--jmv-results-svg start);
+    inset-inline-end: anchor(--jmv-results-svg end);
+}
+
+.resize-image-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.resize-image-dialog h2 { margin: 0; font-size: 13px; font-weight: 600; }
+.resize-image-header select { padding: 3px; border: 1px solid #d4d4d4; border-radius: 4px; color: inherit; background: #fafafa; font: inherit; }
+.resize-image-dialog label { display: flex; align-items: center; gap: 10px; margin-block: 8px; }
+.resize-image-dialog label span { flex: 1; }
+.resize-image-dialog input {
+    width: 100px;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border: 1px solid #d4d4d4;
+    border-radius: 5px;
+    color: inherit;
+    background: #fafafa;
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+}
+.resize-image-buttons { display: flex; justify-content: flex-end; gap: 6px; margin-top: 10px; }
+.resize-image-buttons button {
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 5px;
+    color: #444;
+    background: transparent;
+    font: inherit;
+    cursor: pointer;
+}
+.resize-image-buttons button:hover { background: #f0f0f0; }
+.resize-image-buttons .resize-image-apply { color: #fff; background: #1769aa; }
+.resize-image-buttons .resize-image-apply:hover { background: #12588f; }
+.resize-image-dialog :focus {
+    outline: 2px solid #005a9e;
+    outline-offset: 2px;
+}
+
+
 .jmv-results-image:focus > .jmv-results-image-image {
-    resize: both;
-    overflow: auto;
+    resize: none;
     min-height: 50px;
     max-height: 2000px;
     min-width: 50px;
     max-width: 2000px;
+}
+
+/* the svg the user selects is what the grip resizes, so it's what the grip
+   anchors to. the grip lives beside the module's markup rather than in it --
+   an html element can't live inside an svg, and the module's dom is the
+   module's -- and the anchor is scoped to the result, so each grip finds its
+   own svg */
+.jmv-results-svg {
+    position: relative;
+    anchor-scope: --jmv-results-svg;
+    /* the title sits only 3px above the svg, so the ring hugs the svg rather
+       than taking the usual 12px gap, which would run it through the title.
+       handles sit on the ring's centre line: offset plus half its width */
+    --jmv-ring-gap: 2px;
+}
+
+.jmv-results-svg svg.selectedable-result-item {
+    anchor-name: --jmv-results-svg;
+}
+
+.jmv-results-svg svg.selectedable-result-item:not(#results) {
+    outline-offset: 1px;
+}
+
+/* Eight small squares sit on the selection ring. Their pointer targets are
+   larger than the visible squares, without covering module interactions. */
+.resize-handle {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    transform: translate(-50%, -50%);
+    display: none;
+    z-index: 5001;
+    touch-action: none;
+}
+
+.resize-handle::before {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border: 1px solid #888;
+    background: #fff;
+    box-shadow: 0 1px 2px #0002;
+}
+.resize-handle:hover::before { border-color: #333; }
+
+/* Single corner grip is the default; retain square styling for boxes mode.
+   The handle is centred on the selection ring's corner, so the glyph is
+   pulled up and in to sit just inside the ring rather than straddling it. */
+.resize-handle.resize-corner-grip::before {
+    inset: auto 13px 13px auto;
+    width: 11px;
+    height: 11px;
+    border: 0;
+    box-shadow: none;
+    background: transparent bottom right / 11px 11px no-repeat;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='11' height='11'><path d='M10 3 L3 10 M10 7 L7 10' stroke='%238a8a8a' stroke-width='1.4' stroke-linecap='round' fill='none'/></svg>");
+}
+.resize-corner-grip[data-direction=sw]::before { inset: auto auto 13px 13px; transform: scaleX(-1); }
+
+.resize-handle[data-direction=n], .resize-handle[data-direction=s] { cursor: ns-resize; }
+.resize-handle[data-direction=e], .resize-handle[data-direction=w] { cursor: ew-resize; }
+.resize-handle[data-direction=nw], .resize-handle[data-direction=se] { cursor: nwse-resize; }
+.resize-handle[data-direction=ne], .resize-handle[data-direction=sw] { cursor: nesw-resize; }
+
+.jmv-results-image:focus > .resize-handle,
+.jmv-results-svg:has(svg.selectedable-result-item:focus) > .resize-handle,
+.resize-dragging > .resize-handle {
+    display: block;
+}
+
+.jmv-results-image > .resize-handle[data-direction=nw] {
+    left: calc(anchor(--jmv-results-image left) - 13px);
+    top: calc(anchor(--jmv-results-image top) - 13px);
+}
+.jmv-results-image > .resize-handle[data-direction=n] {
+    left: anchor(--jmv-results-image center);
+    top: calc(anchor(--jmv-results-image top) - 13px);
+}
+.jmv-results-image > .resize-handle[data-direction=ne] {
+    left: calc(anchor(--jmv-results-image right) + 13px);
+    top: calc(anchor(--jmv-results-image top) - 13px);
+}
+.jmv-results-image > .resize-handle[data-direction=e] {
+    left: calc(anchor(--jmv-results-image right) + 13px);
+    top: anchor(--jmv-results-image center);
+}
+.jmv-results-image > .resize-handle[data-direction=se] {
+    left: calc(anchor(--jmv-results-image right) + 13px);
+    top: calc(anchor(--jmv-results-image bottom) + 13px);
+}
+.jmv-results-image > .resize-handle[data-direction=s] {
+    left: anchor(--jmv-results-image center);
+    top: calc(anchor(--jmv-results-image bottom) + 13px);
+}
+.jmv-results-image > .resize-handle[data-direction=sw] {
+    left: calc(anchor(--jmv-results-image left) - 13px);
+    top: calc(anchor(--jmv-results-image bottom) + 13px);
+}
+.jmv-results-image > .resize-handle[data-direction=w] {
+    left: calc(anchor(--jmv-results-image left) - var(--jmv-ring-gap));
+    top: anchor(--jmv-results-image center);
+}
+.jmv-results-svg > .resize-handle[data-direction=nw] {
+    left: calc(anchor(--jmv-results-svg left) - var(--jmv-ring-gap));
+    top: calc(anchor(--jmv-results-svg top) - var(--jmv-ring-gap));
+}
+.jmv-results-svg > .resize-handle[data-direction=n] {
+    left: anchor(--jmv-results-svg center);
+    top: calc(anchor(--jmv-results-svg top) - var(--jmv-ring-gap));
+}
+.jmv-results-svg > .resize-handle[data-direction=ne] {
+    left: calc(anchor(--jmv-results-svg right) + var(--jmv-ring-gap));
+    top: calc(anchor(--jmv-results-svg top) - var(--jmv-ring-gap));
+}
+.jmv-results-svg > .resize-handle[data-direction=e] {
+    left: calc(anchor(--jmv-results-svg right) + var(--jmv-ring-gap));
+    top: anchor(--jmv-results-svg center);
+}
+.jmv-results-svg > .resize-handle[data-direction=se] {
+    left: calc(anchor(--jmv-results-svg right) + var(--jmv-ring-gap));
+    top: calc(anchor(--jmv-results-svg bottom) + var(--jmv-ring-gap));
+}
+.jmv-results-svg > .resize-handle[data-direction=s] {
+    left: anchor(--jmv-results-svg center);
+    top: calc(anchor(--jmv-results-svg bottom) + var(--jmv-ring-gap));
+}
+.jmv-results-svg > .resize-handle[data-direction=sw] {
+    left: calc(anchor(--jmv-results-svg left) - var(--jmv-ring-gap));
+    top: calc(anchor(--jmv-results-svg bottom) + var(--jmv-ring-gap));
+}
+.jmv-results-svg > .resize-handle[data-direction=w] {
+    left: calc(anchor(--jmv-results-svg left) - 13px);
+    top: anchor(--jmv-results-svg center);
 }
 
 .jmv-results-image-status-indicator {
@@ -629,12 +849,23 @@ table.row-selectable tr.selected th[scope=rowgroup] {
 
 .size-display {
     position: absolute;
-    top: 0px;
     opacity: 0;
-    right: 0px;
     background-color: #ededed;
     padding: 3px 5px;
     transition: 0.2s opacity;
+    pointer-events: none;
+    z-index: 5001;
+}
+
+/* the size reads from the graphic's own top corner, inside the ring */
+.jmv-results-image > .size-display {
+    top: calc(anchor(--jmv-results-image top) + 6px);
+    right: calc(anchor(--jmv-results-image right) + 6px);
+}
+
+.jmv-results-svg > .size-display {
+    top: calc(anchor(--jmv-results-svg top) + 6px);
+    right: calc(anchor(--jmv-results-svg right) + 6px);
 }
 
 .jmv-results-array > .jmv-results-array-container > .jmv-results-image {
