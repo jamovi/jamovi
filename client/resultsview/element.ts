@@ -13,6 +13,7 @@ import { ReferenceNumbers } from './refs';
 import { AnalysisStatus } from './analysisstatus';
 import type { IElement } from './create';
 import { ResultsContextMenuItem } from '../common/contextmenutypes';
+import { showResizeDialog, type ResizeTarget } from './resize';
 
 export interface ElementData {
     level?: number;
@@ -123,7 +124,7 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
         this.ready = Promise.resolve();
     }
 
-    setFocusElement(element: HTMLElement) {
+    setFocusElement(element: HTMLElement | SVGElement) {
         element.classList.add('selectedable-result-item')
         element.setAttribute('tabindex', '0');
         element.addEventListener('keydown', (event: KeyboardEvent) => {
@@ -263,6 +264,16 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
     abstract label(): string;
     abstract type(): string;
 
+    getResizeTarget(): ResizeTarget | null {
+        return null;
+    }
+
+    resizeImage(withMouse?: boolean): void {
+        const target = this.getResizeTarget();
+        if (target)
+            showResizeDialog(target, this, withMouse);
+    }
+
     update(data) {
 
         if (this.updateItem(this, data.element, data.options, data.level, data.mode, data.devMode, data.fmt, data.refTable)) {
@@ -314,7 +325,12 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
         if (this.type() !== 'Image' && this.type() !== 'Html' && this.type() !== 'Svg')
             split.push({ name: 'copyLatex', label: _('Copy Latex') });
 
-        return [ { name: 'copy', label: _('Copy'), splitType: 'options', split }, { name: 'export', label: `${_('Export')}...` }, { name: 'addNote', label: _('Add Note')} ];
+        const options: ResultsContextMenuItem[] = [ { name: 'copy', label: _('Copy'), splitType: 'options', split }, { name: 'export', label: `${_('Export')}...` } ];
+        const resizable = this.type() === 'Image' || this.type() === 'Svg';
+        if (resizable)
+            options.push({ name: 'resize', label: _('Set size'), splitter: true });
+        options.push({ name: 'addNote', label: _('Add Note'), splitter: resizable });
+        return options;
     }
 
     address() {

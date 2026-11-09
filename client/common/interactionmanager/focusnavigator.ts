@@ -27,7 +27,15 @@ export class FocusNavigator {
         select${tabbable}:not(.menu-level[fl-level="${nextLevel}"] *):not(.not-focusable *),
         details${tabbable}:not(.menu-level[fl-level="${nextLevel}"] *):not(.not-focusable *),
         [tabindex]${tabbable}:not(.menu-level[fl-level="${nextLevel}"] *):not(.not-focusable *)`)]
-            .filter(el => (el.hasAttribute('ignore-focus-size') || (el.offsetWidth > 0 && el.offsetHeight > 0)) && !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden') && !el.closest('[inert]') && window.getComputedStyle(el).visibility !== 'hidden');
+            .filter(el => {
+                // SVG has no offsetWidth/offsetHeight, even when rendered.
+                const size = el.namespaceURI === 'http://www.w3.org/2000/svg'
+                    ? el.getBoundingClientRect()
+                    : { width: el.offsetWidth, height: el.offsetHeight };
+                return (el.hasAttribute('ignore-focus-size') || (size.width > 0 && size.height > 0))
+                    && !el.hasAttribute('disabled') && !el.getAttribute('aria-hidden')
+                    && !el.closest('[inert]') && window.getComputedStyle(el).visibility !== 'hidden';
+            });
 
         if (onlyTabbable) {
             list.sort((a, b) => {
