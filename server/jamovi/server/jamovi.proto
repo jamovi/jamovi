@@ -97,6 +97,15 @@ message AnalysisResponse {
     bool hasTitle = 19;
     bool arbitraryCode = 20;
     bool enabled = 21;
+
+    // the addons active on the analysis. their options are carried in
+    // options, named addons/<ns>/<name>/<option>
+    repeated AnalysisAddon addons = 22;
+}
+
+message AnalysisAddon {
+    string ns = 1;
+    string name = 2;
 }
 
 message Reference {
@@ -409,6 +418,8 @@ message AnalysisMeta {
     string menuTitle = 6;
     string menuSubtitle = 7;
     string category = 8;
+    // the analyses which are addons to this one
+    repeated AnalysisAddon addons = 9;
 }
 
 message ModuleMeta {

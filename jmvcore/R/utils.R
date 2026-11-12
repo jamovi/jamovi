@@ -12,6 +12,30 @@ dontTry <- function(expr, ...) {
     eval(expr)
 }
 
+# evaluates expr (which draws an image). base graphics fails with 'figure
+# margins too large' when the image is sized too small for its margins (as
+# when resized small in the results); rather than an error, the image then
+# says it's too small, so it can be resized larger again
+tooSmallToDraw <- function(expr) {
+    withRestarts(
+        withCallingHandlers(
+            expr,
+            error=function(e) {
+                message <- conditionMessage(e)
+                tooSmall <- c(
+                    'figure margins too large',
+                    gettext('figure margins too large', domain='R-graphics'))
+                if (message %in% tooSmall)
+                    invokeRestart('tooSmall')
+            }),
+        tooSmall=function() {
+            graphics::par(mar=c(0, 0, 0, 0))
+            graphics::plot.new()
+            graphics::text(0.5, 0.5, 'Plot too small', col='#888888', xpd=TRUE)
+            TRUE
+        })
+}
+
 #' @importFrom utils head
 tryStack <- function(expr, silent=FALSE) {
     byref <- new.env()

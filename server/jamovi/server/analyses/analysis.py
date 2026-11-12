@@ -199,9 +199,10 @@ class Analysis:
         if len(results.options.names) > 0:  # if not empty
             # use options from results
             self.options.set(results.options)
-        else:
-            # otherwise use options from analysis
-            results.options.CopyFrom(self.options.as_pb())
+        # results from the engine lack the addons' options, so these are
+        # always copied back in
+        results.options.CopyFrom(self.options.as_pb())
+        self.write_addons_pb(results)
 
         results.dependsOn = self.depends_on
         results.index = self.parent.index_of(self) + 1
@@ -294,6 +295,13 @@ class Analysis:
         self.clear_state = False
         if not silent:
             self.parent._notify_results_changed(self)
+
+    def write_addons_pb(self, response):
+        del response.addons[:]
+        for addon in self.addons:
+            addon_pb = response.addons.add()
+            addon_pb.ns = addon.ns
+            addon_pb.name = addon.name
 
     def get_using(self):
         return self.options.get_using()

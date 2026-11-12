@@ -1447,6 +1447,7 @@ class Instance:
                         response.instanceId = self.id
                         response.analysisId = analysis.id
                         response.options.ParseFromString(analysis.options.as_bytes())
+                        analysis.write_addons_pb(response)
                         response.index = request.index
                         response.status = jcoms.AnalysisStatus.Value('ANALYSIS_NONE')
                         self._coms.send(response, self._instance_id, request, True)
@@ -1512,6 +1513,7 @@ class Instance:
                 # analysis.results is read from a file, and can't be trusted
                 analysis_pb.enabled = analysis.enabled
                 analysis_pb.arbitraryCode = analysis.arbitrary_code
+                analysis.write_addons_pb(analysis_pb)
 
         self._coms.send(response, self._instance_id, request)
 
@@ -1778,6 +1780,10 @@ class Instance:
             analysis_pb.menuTitle = analysis.menuTitle
             analysis_pb.menuSubtitle = analysis.menuSubtitle
             analysis_pb.category = analysis.category
+            for (addon_ns, addon_name) in analysis.addons:
+                addon_pb = analysis_pb.addons.add()
+                addon_pb.ns = addon_ns
+                addon_pb.name = addon_name
 
 
     def terminate(self, message, cause=''):

@@ -15,6 +15,7 @@
 @import "layoutvariablesview.css";
 @import "layoutsupplierview.css";
 @import "layoutcollapseview.css";
+@import "addonbox.css";
 @import "gridcheckbox.css";
 @import "gridradiobutton.css";
 @import "gridtextbox.css";
@@ -245,6 +246,150 @@ h1 {
     display: inline ;
     font-size: 150% ;
     color: #333333 ;
+}
+
+/* the 'addons' tag of an analysis with addons, under its title, coloured as
+   their boxes are, and the list of them it opens, as jamovi's menus are */
+.jmv-options-addons {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+}
+
+.silky-options-title > .jmv-options-addons {
+    /* (the size of the text outside the title) */
+    font-size: 66.67%;
+    margin-top: 2px;
+    /* (so its tick lines up with the title) */
+    margin-inline-start: -6px;
+}
+
+/* beneath an edited title, beside the analysis' name */
+.sub-title:has(.jmv-options-addons) {
+    display: flex;
+    align-items: center;
+}
+
+.sub-title .jmv-options-addons {
+    margin-inline-start: 8px;
+}
+
+.sub-title .jmv-options-addons-tag {
+    /* (the size it is beside the title) */
+    font-size: 87%;
+}
+
+.sub-title .jmv-options-addons-list {
+    /* (the size of the text outside the title) */
+    font-size: 111%;
+}
+
+.jmv-options-addons-tag {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 22px;
+    padding: 0px 6px;
+    font: inherit;
+    font-size: 78%;
+    font-weight: normal;
+    letter-spacing: 0.2px;
+    color: #85602A;
+    background-color: transparent;
+    border: none;
+    border-radius: 3px;
+    cursor: default;
+    transition: 0.2s background-color;
+}
+
+.jmv-options-addons-tag:hover, .jmv-options-addons-tag[aria-expanded="true"] {
+    background-color: #F3DDBE;
+}
+
+/* the icons are drawn in the tag's colour */
+.jmv-options-addons-tag-tick, .jmv-options-addons-tag-arrow {
+    flex-shrink: 0;
+    background-color: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+}
+
+.jmv-options-addons-tag-tick {
+    width: 9px;
+    height: 9px;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.5 5.3l2.3 2.3L8.5 2.4' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1.5 5.3l2.3 2.3L8.5 2.4' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.jmv-options-addons-tag-arrow {
+    width: 8px;
+    height: 8px;
+    margin-inline-start: 1px;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5l3 3 3-3' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M2 3.5l3 3 3-3' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    transition: transform 0.2s;
+}
+
+.jmv-options-addons-tag[aria-expanded="true"] .jmv-options-addons-tag-arrow {
+    transform: rotate(180deg);
+}
+
+.jmv-options-addons-tag:focus-visible {
+    outline: 2px solid #85602A;
+    outline-offset: 1px;
+}
+
+.jmv-options-addons-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    inset-inline-start: 0px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    min-width: 220px;
+    padding: 6px 0px;
+    background-color: white;
+    box-shadow: 0px 0px 5px #c1c1c1;
+}
+
+.jmv-options-addons-list[hidden] {
+    display: none;
+}
+
+.jmv-options-addons-item {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 8px 18px;
+    font: inherit;
+    font-size: 88%;
+    font-weight: normal;
+    white-space: nowrap;
+    text-align: start;
+    color: #333333;
+    background-color: inherit;
+    border: none;
+    transition: 0.2s background-color;
+    cursor: default;
+}
+
+.jmv-options-addons-item:not([aria-disabled]):hover, .jmv-options-addons-item:focus-visible {
+    background-color: #d5dfeb;
+    outline: none;
+}
+
+.jmv-options-addons-item[aria-disabled] .jmv-options-addons-item-title {
+    color: #888888;
+}
+
+.jmv-options-addons-item-module {
+    margin-inline-start: auto;
+    font-size: 85%;
+    color: #888888;
 }
 
 .silky-options-header {
@@ -529,6 +674,17 @@ input[type=text].silky-option-listitem:focus {
 
 .top-level {
     margin-bottom: 20px;
+}
+
+/* an addon's options, inside a collapse box of its parent's options */
+.silky-options-content.addon-options-content {
+    flex-grow: 0;
+    overflow: visible;
+    padding: 0;
+}
+
+.addon-options-content .top-level {
+    margin-bottom: 0;
 }
 
 .rmcell-template {

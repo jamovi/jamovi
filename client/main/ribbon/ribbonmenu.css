@@ -300,3 +300,17 @@ body[dir='rtl'] .to-analyses-arrow {
 /*.jmv-ribbon-menu-item.open {
     background-color: #CCCCCC ;
 }*/
+
+/* an analysis with new addons has their modules' short names after its
+   title, while it's marked as new */
+.jmv-ribbon-menu-item:not(.new) > .jmv-ribbon-menu-item-addons {
+    display: none;
+}
+
+.jmv-ribbon-menu-item-addons {
+    flex-shrink: 0;
+    margin-inline-start: auto;
+    padding-inline-start: 16px;
+    font-size: 80%;
+    color: #888888;
+}

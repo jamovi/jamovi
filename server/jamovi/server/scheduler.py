@@ -190,15 +190,19 @@ class Scheduler:
         if limit:
             request_pb.maxDurationSeconds = int(limit)
 
+        # the addons' options are carried in the analysis' options; each
+        # addon is sent its own, and the analysis is sent none of them
         for addon in analysis.addons:
             addon_pb = request_pb.addons.add()
             self._to_message(addon, perform, addon_pb)
+            addon_pb.options.CopyFrom(analysis.options.addon_pb(addon.ns, addon.name))
+            addon_pb.changed.extend(analysis.changes)
 
         if analysis.complete and analysis.needs_op:
 
             analysis.op.waiting = False
 
-            request_pb.options.CopyFrom(analysis.options.as_pb())
+            request_pb.options.CopyFrom(analysis.options.own_pb())
             request_pb.perform = PERFORM_SAVE
             request_pb.path = analysis.op.path
             request_pb.part = analysis.op.part
@@ -207,7 +211,7 @@ class Scheduler:
 
             analysis.set_status(Analysis.Status.RUNNING)
 
-            request_pb.options.CopyFrom(analysis.options.as_pb())
+            request_pb.options.CopyFrom(analysis.options.own_pb())
             request_pb.changed.extend(analysis.changes)
             request_pb.revision = analysis.revision
             request_pb.clearState = analysis.clear_state or analysis.state_dropped

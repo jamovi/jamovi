@@ -18,7 +18,9 @@ import DefaultControls from './defaultcontrols';
 import LayoutUpdateCheck from './layoutupdatecheck';
 import View, { utils } from './actions';
 import LayoutActionManager from './layoutactionmanager';
-import { applyMagicEvents as ApplyMagicEvents } from './applymagicevents';
+import AddonBox from './addonbox';
+import AddonHost from './addonhost';
+import { applyMagicEvents as ApplyMagicEvents, applyMagicEventsForCtrl as ApplyMagicEventsForCtrl } from './applymagicevents';
 import interactionManager from '../common/interactionmanager';
 import { h, rich }  from '../common/htmlelementcreator';
 
@@ -131,6 +133,81 @@ let dataResources = { columns: [] };
 document.oncontextmenu = function () { return false; };
 
 
+// an addon to the analysis, whose options are shown in a collapse box of
+// their own at the end of the analysis' options
+export type AddonDef = {
+    ns: string,
+    name: string,
+    title: string,
+    moduleTitle: string,
+    uijs: string,
+    i18n: I18nData,
+};
+
+// an addon's options are carried in its parent's options, named so
+const addonPrefix = (ns: string, name: string) => `addons/${ ns }/${ name }/`;
+
+// an addon's events see each of its parent's options, read only, as
+// ui.parent_<option>, and can handle parent_<option>_changed
+const PARENT_PREFIX = 'parent_';
+
+class ParentOptionResource {
+    _source: any;
+    events?: any[];
+
+    constructor(source: any) {
+        this._source = source;
+    }
+
+    value(key?: any) {
+        return this._source.value(key);
+    }
+
+    getTrigger(property: string) {
+        return this._source.getTrigger(property);
+    }
+
+    on(eventName: string, listener: (...args: any[]) => void) {
+        this._source.on(eventName, listener);
+        return this;
+    }
+
+    off(eventName: string, listener: (...args: any[]) => void) {
+        this._source.off(eventName, listener);
+        return this;
+    }
+}
+
+// each addon's options are shown in a collapse box, titled with the addon's
+// title, at the end of its parent's options, holding a host that the addon's
+// view is rendered into
+const addonBox = (addon: Analysis) => ({
+    type: AddonBox,
+    typeName: 'AddonBox',
+    label: addon.addonDef!.title,
+    addon: addon.addonDef!.ns,
+    addonTitle: addon.addonDef!.moduleTitle,
+    collapsed: true,
+    stretchFactor: 1,
+    controls: [{
+        type: AddonHost,
+        typeName: 'AddonHost',
+        stretchFactor: 1,
+        onCreated: (host: AddonHost) => { addon.host = host; },
+    }],
+});
+
+// an addon may only use the variables its parent uses, so its variable
+// suppliers must be populated (from its parent's options) by its events
+const checkAddonLayout = function(ctrl: any, errors: string[]) {
+    if (ctrl.typeName === 'VariableSupplier' && ctrl.populate !== 'manual')
+        errors.push(`The 'VariableSupplier' control of an addon requires the property > populate: 'manual'. Option: ${ ctrl.name === undefined ? ctrl.typeName : ctrl.name }`);
+    if (Array.isArray(ctrl.controls)) {
+        for (let child of ctrl.controls)
+            checkAddonLayout(child, errors);
+    }
+};
+
 class Analysis {
     View: OptionsView;
     model: IOptionsViewModel;
@@ -140,13 +217,32 @@ class Analysis {
     inError: boolean;
     errors: string[];
     moduleI18n: I18n;
+    // addons/<ns>/<name>/ for an addon, '' otherwise
+    prefix = '';
+    addonDef?: AddonDef;
+    // for an addon, its place in its parent's options, see addonBox(). an
+    // addon with no controls (only results) has none
+    host?: AddonHost;
+    hasControls = false;
+    addons: Analysis[] = [];
 
-    constructor(def: string, i18nDef: I18nData, jamoviVersion, id: number) {
+    // an addon is passed its addon, an analysis its addons (already
+    // constructed, as each needs a place in its layout)
+    constructor(def: string, i18nDef: I18nData, jamoviVersion, id: number, addon?: AddonDef, addons: Analysis[] = [ ]) {
 
         this.id = id;
 
         this.i18nData = i18nDef;
-        this.moduleI18n = I18ns.get(`module: ${id}`)
+        if (addon) {
+            this.addonDef = addon;
+            this.prefix = addonPrefix(addon.ns, addon.name);
+            this.moduleI18n = I18ns.get(`module: ${id} ${this.prefix}`);
+            if (i18nDef)
+                this.moduleI18n.initialise(i18nDef?.code || 'en', i18nDef);
+        }
+        else {
+            this.moduleI18n = I18ns.get(`module: ${id}`);
+        }
 
         this.translate = this.translate.bind(this);
         window._ = this.translate.bind(this);
@@ -168,7 +264,15 @@ class Analysis {
 
         let options = optionsViewInfo.options;
         let layoutDef = optionsViewInfo.view.layout;
-        
+
+        this.hasControls = (layoutDef.controls ?? [ ]).length > 0;
+
+        this.addons = addons;
+        for (let addon of addons) {
+            if (addon.hasControls)
+                layoutDef.controls.push(addonBox(addon));
+        }
+
         if (optionsViewInfo.createView)
             this.viewTemplate = new optionsViewInfo.createView();
         else {
@@ -181,6 +285,9 @@ class Analysis {
 
         if (this.viewTemplate.handlers)
             ApplyMagicEvents(layoutDef, this.viewTemplate);
+
+        if (addon)
+            checkAddonLayout(layoutDef, this.viewTemplate.errors);
 
         this.getTitle = layoutDef.getTitle.bind(layoutDef);
 
@@ -230,6 +337,74 @@ class Analysis {
         this.View.dataChanged(data);
         if (this.viewTemplate.onDataChanged)
             this.viewTemplate.onDataChanged(data);
+        for (let addon of this.addons)
+            addon.dataChanged(data);
+    }
+
+    renderIn(parent: Analysis) {
+        // renders this addon into its place in its parent's options. the
+        // parent must be rendered, so its options all have resources (see
+        // attachParent()), and this addon's host exists. an addon with no
+        // controls has no place, but is still rendered (so it's loaded)
+        this.attachParent(parent);
+        this.View.el.classList.add('addon-options-content');
+        if (this.host)
+            this.host.el!.append(this.View.el);
+        this.View.render();
+    }
+
+    attachParent(parent: Analysis) {
+        // makes the parent's options available to this addon's events, see
+        // ParentOptionResource. this addon mustn't be rendered yet, so these
+        // resources are connected to its events
+        const actionManager = this.model.actionManager;
+        for (let option of parent.model.options._list) {
+            const source = parent.model.actionManager._resources[option.name];
+            if (source === undefined)
+                continue;
+            const name = PARENT_PREFIX + option.name;
+            const ctrlDef: any = { name: name, typeName: '_hiddenOption' };
+            ApplyMagicEventsForCtrl(ctrlDef, this.viewTemplate);
+            const resource = new ParentOptionResource(source);
+            resource.events = ctrlDef.events;
+            actionManager.addResource(name, resource as any);
+        }
+    }
+
+    withAddons(): Analysis[] {
+        return [ this, ...this.addons ];
+    }
+
+    isLoaded() {
+        for (let analysis of this.withAddons()) {
+            if (analysis.View.isLoaded() === false)
+                return false;
+        }
+        return true;
+    }
+
+    // the analysis or addon an option belongs to, and its name there
+    optionTarget(name: string): [ Analysis, string ] | null {
+        if (name.startsWith('addons/')) {
+            for (let addon of this.addons) {
+                if (name.startsWith(addon.prefix))
+                    return [ addon, name.substring(addon.prefix.length) ];
+            }
+            return null;
+        }
+        return [ this, name ];
+    }
+
+    runInEditScope(fn: () => void) {
+        for (let analysis of this.withAddons())
+            analysis.model.options.beginEdit();
+        try {
+            fn();
+        }
+        finally {
+            for (let analysis of this.withAddons())
+                analysis.model.options.endEdit();
+        }
     }
 
     getTitle?(): string;
@@ -277,7 +452,7 @@ ready(() => {
 });
 
 
-function loadAnalysis(def, i18nDef: I18nData, appI18nDef: I18nData, jamoviVersion, id, focusMode) {
+function loadAnalysis(def, i18nDef: I18nData, appI18nDef: I18nData, jamoviVersion, id, focusMode, addonDefs?: AddonDef[]) {
 
     const header = document.querySelector<HTMLElement>('.silky-options-header');
     if (appI18nDef) {
@@ -348,7 +523,16 @@ function loadAnalysis(def, i18nDef: I18nData, appI18nDef: I18nData, jamoviVersio
 
             dataResources = { columns: data.columns };
 
-            analysis = new Analysis(def, i18nDef, jamoviVersion, id);
+            // the addons come first, so the analysis' translations are
+            // left as the global ones
+            let addons = [ ];
+            for (let addonDef of addonDefs ?? [ ]) {
+                let addon = loadAddon(addonDef, jamoviVersion, id);
+                if (addon !== null)
+                    addons.push(addon);
+            }
+
+            analysis = new Analysis(def, i18nDef, jamoviVersion, id, undefined, addons);
 
             let title = analysis.getTitle();
             $title.replaceChildren(title);
@@ -367,13 +551,120 @@ function loadAnalysis(def, i18nDef: I18nData, appI18nDef: I18nData, jamoviVersio
             else {
                 $optionsBlock.append(analysis.View.el);
                 analysis.View.render();
-                
+
+                for (let addon of analysis.addons)
+                    addon.renderIn(analysis);
+                addAddonsTag(analysis);
+
                 $optionsBlock.querySelectorAll('.placeholder-options')?.forEach(el => el.remove());
 
-                analysis.model.options.on('options.valuesForServer', onValuesForServerChanges);
+                for (let target of analysis.withAddons())
+                    target.model.options.on('options.valuesForServer', e => onValuesForServerChanges(e, target.prefix));
             }
         });
     }
+}
+
+function loadAddon(addonDef: AddonDef, jamoviVersion: string, id: number): Analysis | null {
+    // an addon which can't be loaded is left out, rather than taking its
+    // parent with it
+    let addon: Analysis;
+    try {
+        addon = new Analysis(addonDef.uijs, addonDef.i18n, jamoviVersion, id, addonDef);
+    }
+    catch (e) {
+        console.log(`Could not load addon ${ addonDef.ns }::${ addonDef.name }`, e);
+        return null;
+    }
+
+    if (addon.inError) {
+        console.log(`Could not load addon ${ addonDef.ns }::${ addonDef.name }`, addon.errors);
+        return null;
+    }
+
+    return addon;
+}
+
+// an analysis with addons has an 'addons' tag under its title, which lists
+// them; choosing one opens its box, and scrolls to it
+let $addonsTag: HTMLElement | null = null;
+
+function addAddonsTag(analysis: Analysis) {
+    if (analysis.addons.length === 0)
+        return;
+
+    let $tag = h('button', { class: 'jmv-options-addons-tag', 'aria-haspopup': 'menu', 'aria-expanded': 'false' },
+        h('span', { class: 'jmv-options-addons-tag-tick', 'aria-hidden': 'true' }),
+        s_('Addons'),
+        h('span', { class: 'jmv-options-addons-tag-arrow', 'aria-hidden': 'true' }));
+    let $list = h('div', { class: 'jmv-options-addons-list', role: 'menu', hidden: 'true' });
+
+    const close = () => {
+        $list.hidden = true;
+        $tag.setAttribute('aria-expanded', 'false');
+        document.removeEventListener('pointerdown', closeOutside, true);
+    };
+    const closeOutside = (event: PointerEvent) => {
+        if ( ! $tag.contains(event.target as Node) && ! $list.contains(event.target as Node))
+            close();
+    };
+
+    for (let addon of analysis.addons) {
+        let $item = h('button', { class: 'jmv-options-addons-item', role: 'menuitem' },
+            h('span', { class: 'jmv-options-addons-item-title' }, addon.addonDef!.title),
+            h('span', { class: 'jmv-options-addons-item-module' }, addon.addonDef!.ns));
+        $list.append($item);
+        // an addon with no options (only results) has no box to go to
+        if ( ! addon.host) {
+            $item.setAttribute('aria-disabled', 'true');
+            $item.title = s_('This addon has no options');
+            continue;
+        }
+        $item.addEventListener('click', () => {
+            close();
+            let $box = addon.host?.el?.closest('.jmv-addon-collapse-view');
+            let $boxHeader = $box?.querySelector<HTMLElement>('.silky-options-collapse-button');
+            if ( ! $box || ! $boxHeader)
+                return;
+            if ($boxHeader.getAttribute('aria-expanded') === 'false')
+                $boxHeader.click();
+            $box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            $boxHeader.focus({ preventScroll: true });
+        });
+    }
+
+    $tag.addEventListener('click', () => {
+        if ( ! $list.hidden) {
+            close();
+            return;
+        }
+        $list.hidden = false;
+        $tag.setAttribute('aria-expanded', 'true');
+        document.addEventListener('pointerdown', closeOutside, true);
+        $list.querySelector<HTMLElement>('button')?.focus();
+    });
+    $list.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            event.stopPropagation();
+            close();
+            $tag.focus();
+        }
+    });
+
+    $addonsTag = h('div', { class: 'jmv-options-addons' }, $tag, $list);
+    placeAddonsTag();
+}
+
+function placeAddonsTag() {
+    // under the title, after the analysis' name when the title's been edited
+    if ($addonsTag === null)
+        return;
+    let $title = document.querySelector('.silky-options-title')!;
+    let $subTitle = $title.querySelector('.sub-title');
+    if ($subTitle)
+        $subTitle.append($addonsTag);
+    else
+        $title.append($addonsTag);
 }
 
 function setTitle(title) {
@@ -391,29 +682,34 @@ function setTitle(title) {
     $title.append(title);
     if (title !== original)
         $title.append(h('div', { class: 'sub-title' }, original));
+    placeAddonsTag();
 }
 
 function updateOptions(values) {
     if (! analysis || analysis.inError)
         return;
     
-    if (analysis.View.isLoaded() === false) {
+    if (analysis.isLoaded() === false) {
         setTimeout(() => {
             updateOptions(values);
         }, 0);
         return;
     }
 
-    let model = analysis.model;
-    model.options.runInEditScope(() => {
+    analysis.runInEditScope(() => {
         let params = Options.getDefaultEventParams("changed");
         params.externalEvent = true;
         for (let key in values) {
             let value = values[key];
-            if (key === 'results//heading')
+            if (key === 'results//heading') {
                 setTitle(value);
-            else
-                model.options.setOptionValue(key, value, params);
+                continue;
+            }
+            let target = analysis.optionTarget(key);
+            if (target !== null) {
+                let [ owner, name ] = target;
+                owner.model.options.setOptionValue(name, value, params);
+            }
         }
     });
 }
@@ -424,7 +720,7 @@ function setOptionsValues(data, editType) {
     if (analysis.inError)
         return;
     
-    if (analysis.View.isLoaded() === false) {
+    if (analysis.isLoaded() === false) {
         setTimeout(() => {
             setOptionsValues(data, editType);
         }, 0);
@@ -433,9 +729,11 @@ function setOptionsValues(data, editType) {
 
     analysis.id = data.id;
     let titleSet = false;
-    let model = analysis.model;
-    model.options.runInEditScope(() => {
+    analysis.runInEditScope(() => {
         if (analysis.View.beginDataInitialization(data.id)) {
+            for (let addon of analysis.addons)
+                addon.View.beginDataInitialization(data.id);
+
             let params = Options.getDefaultEventParams("changed");
             params.silent = true;
             for (let key in data.options) {
@@ -443,31 +741,42 @@ function setOptionsValues(data, editType) {
                 if (key === 'results//heading') {
                     setTitle(value);
                     titleSet = true;
+                    continue;
                 }
-                else
-                    model.options.setOptionValue(key, value, params);
+                let target = analysis.optionTarget(key);
+                if (target !== null) {
+                    let [ owner, name ] = target;
+                    owner.model.options.setOptionValue(name, value, params);
+                }
             }
             if (editType === 'absolute') {
-                for (let op of model.options._list) {
-                    if (data.options === null || (op.name in data.options) === false)
-                        model.options.setOptionValue(op.name, null, params);
+                for (let owner of analysis.withAddons()) {
+                    for (let op of owner.model.options._list) {
+                        if (data.options === null || (owner.prefix + op.name in data.options) === false)
+                            owner.model.options.setOptionValue(op.name, null, params);
+                    }
                 }
             }
             if (titleSet === false)
                 setTitle('');
+
+            // the analysis first, so its addons are updated from its values
             analysis.View.endDataInitialization(data.id);
+            for (let addon of analysis.addons)
+                addon.View.endDataInitialization(data.id);
         }
     });
 
     parentFrame.send("optionsViewReady", true);
 }
 
-function onValuesForServerChanges(e) {
+function onValuesForServerChanges(e, prefix: string) {
 
     let compiledList = { values: { }, properties: { } };
 
-    for (let key in e.map) {
-        let value = e.map[key];
+    for (let name in e.map) {
+        let value = e.map[name];
+        let key = prefix + name;
         if (value.events.length > 0) {
             compiledList.values[key] = value.option.getValue();
             let props = value.option.getOverriddenProperties();

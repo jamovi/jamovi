@@ -16,7 +16,8 @@ Options <- R6::R6Class(
         .decSymbol='.',
         .lang='',
         .requiresData=TRUE,
-        .translator=NA),
+        .translator=NA,
+        .parentOptions=NULL),
     active=list(
         analysis=function(analysis) {
             if (missing(analysis))
@@ -229,6 +230,77 @@ Options <- R6::R6Class(
         },
         has=function(name) {
             name %in% names(private$.options)
+        },
+        .setParentOptions=function(parentOptions) {
+            # called when the analysis becomes an addon, see Analysis$addAddon()
+            private$.parentOptions <- parentOptions
+        },
+        .addonPrefix=function() {
+            paste0('addons/', private$.package, '/', private$.name, '/')
+        },
+        .rootNames=function(names) {
+            # an addon's options are carried in its parent's options, named
+            # addons/<ns>/<name>/<option>. this maps option names, as an addon
+            # knows them (and parent:<name> for its parent's), to the names
+            # they're carried as. an analysis which isn't an addon maps them
+            # to themselves
+            if (is.null(private$.parentOptions) || identical(names, '*'))
+                return(names)
+            prefix <- self$.addonPrefix()
+            vapply(names, function(name) {
+                if (startsWith(name, 'parent:'))
+                    substring(name, nchar('parent:') + 1)
+                else
+                    paste0(prefix, name)
+            }, '', USE.NAMES=FALSE)
+        },
+        .relevantChanges=function(rootNames) {
+            # the changes (named as options are carried, see .rootNames())
+            # these options' results might depend on: an analysis' results
+            # don't depend on its addons' options, and an addon's results
+            # depend on its own and its parent's, but not other addons'
+            isAddons <- startsWith(rootNames, 'addons/')
+            if (is.null(private$.parentOptions))
+                return(rootNames[ ! isAddons])
+            rootNames[ ! isAddons | startsWith(rootNames, self$.addonPrefix())]
+        },
+        .rootOption=function(rootName) {
+            # the option carried as rootName, see .rootNames()
+            if (is.null(private$.parentOptions))
+                return(private$.options[[rootName]])
+            prefix <- self$.addonPrefix()
+            if (startsWith(rootName, prefix))
+                return(private$.options[[substring(rootName, nchar(prefix) + 1)]])
+            private$.parentOptions$option(rootName)
+        },
+        .rootProtoBuf=function() {
+            # the options, named as they're carried, see .rootNames()
+            pb <- private$.pb
+            if (is.null(private$.parentOptions) || is.null(pb))
+                return(pb)
+            rootPB <- RProtoBuf_new(jamovi.coms.AnalysisOptions)
+            rootPB$hasNames <- TRUE
+            prefix <- self$.addonPrefix()
+            for (i in seq_along(pb$names)) {
+                rootPB$add('names', paste0(prefix, pb$names[[i]]))
+                rootPB$add('options', pb$options[[i]])
+            }
+            rootPB
+        },
+        .fromRootProtoBuf=function(rootPB) {
+            # the options of this addon, from rootPB (see .rootProtoBuf()),
+            # named as the addon knows them
+            pb <- RProtoBuf_new(jamovi.coms.AnalysisOptions)
+            pb$hasNames <- TRUE
+            prefix <- self$.addonPrefix()
+            for (i in seq_along(rootPB$names)) {
+                name <- rootPB$names[[i]]
+                if (startsWith(name, prefix)) {
+                    pb$add('names', substring(name, nchar(prefix) + 1))
+                    pb$add('options', rootPB$options[[i]])
+                }
+            }
+            pb
         },
         .removeOption=function(name) {
             private$.options[[name]] <- NULL

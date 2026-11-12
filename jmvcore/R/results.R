@@ -19,6 +19,29 @@ ResultsElement <- R6::R6Class("ResultsElement",
         .parent=NA,
         deep_clone=function(name, value) {
             value
+        },
+        .clearsWith=function() {
+            # clearWith, named as the options are carried, which is how the
+            # changes are named in fromProtoBuf(). this matters for an addon,
+            # see Options$.rootNames()
+            if ( ! inherits(private$.options, 'Options'))
+                return(private$.clearWith)
+            private$.options$.rootNames(private$.clearWith)
+        },
+        .someChanges=function(oChanges, vChanges) {
+            # whether there are changes this element might depend on (for a
+            # clearWith of '*'), see Options$.relevantChanges()
+            if (length(vChanges) > 0)
+                return(TRUE)
+            if (inherits(private$.options, 'Options'))
+                oChanges <- private$.options$.relevantChanges(oChanges)
+            length(oChanges) > 0
+        },
+        .clearWithOption=function(name) {
+            # the option of a name from .clearsWith()
+            if ( ! inherits(private$.options, 'Options'))
+                return(NULL)
+            private$.options$.rootOption(name)
         }),
     active=list(
         name=function() private$.name,
@@ -246,15 +269,15 @@ ResultsElement <- R6::R6Class("ResultsElement",
         },
         fromProtoBuf=function(pb, oChanges, vChanges) {
 
-            someChanges <- length(oChanges) > 0 || length(vChanges) > 0
+            someChanges <- private$.someChanges(oChanges, vChanges)
             if (someChanges && base::identical('*', private$.clearWith))
                 return()
 
-            if (base::any(oChanges %in% private$.clearWith))
+            if (base::any(oChanges %in% private$.clearsWith()))
                 return()
 
-            for (name in private$.clearWith) {
-                option <- private$.options$option(name)
+            for (name in private$.clearsWith()) {
+                option <- private$.clearWithOption(name)
                 if (is.null(option))
                     next()
                 if (base::any(vChanges %in% option$vars))
@@ -300,6 +323,13 @@ ResultsElement <- R6::R6Class("ResultsElement",
 #' @export
 `$.ResultsElement` <- function(x, name) {
     if ( ! exists(name, envir = x)) {
+        # an item added to a group (as an addon adds its results to its
+        # parent's) has no field of its own
+        if (inherits(x, 'Group')) {
+            item <- x$items[[name]]
+            if ( ! is.null(item))
+                return(item)
+        }
         stop("'", name, "' does not exist in this results element", call.=FALSE)
     }
     classes <- class(x)

@@ -4,6 +4,8 @@ from jamovi.server.i18n import _
 from jamovi.server import jamovi_pb2 as jcoms
 
 from jamovi.server.options import Options
+from jamovi.server.options import ADDONS_PREFIX
+from jamovi.server.options import addon_prefix
 from jamovi.server.utils.event import EventHook
 
 from .analysis import Analysis
@@ -46,6 +48,23 @@ class Analyses:
             for id in ids:
                 self.recreate(id).rerun()
 
+        elif event['type'] == 'addonsChanged':
+            # recreate the analyses whose addons have changed
+            ids = [ ]
+            for analysis in self._analyses:
+                try:
+                    analysis_meta = self._modules.get(analysis.ns).get(analysis.name)
+                except Exception:
+                    continue
+                if analysis_meta is None:
+                    continue
+                addons = [ (addon.ns, addon.name) for addon in analysis.addons ]
+                if addons != analysis_meta.addons:
+                    ids.append(analysis.id)
+
+            for id in ids:
+                self.recreate(id).rerun()
+
     @property
     def project(self):
         return self._project
@@ -73,11 +92,19 @@ class Analyses:
             if enabled is None:
                 enabled = not arbitrary_code
 
+            for opt_defn in option_defs:
+                opt_name = opt_defn.get('name', '')
+                if opt_name.startswith(ADDONS_PREFIX) or opt_name.startswith('results/'):
+                    raise ValueError(f'Option name {opt_name} is reserved')
+
+            (addon_metas, addon_option_defs) = self._read_addons(analysis_meta)
+            option_defs = option_defs + addon_option_defs
+
             options = Options.create(option_defs)
             if options_pb is not None:
                 options.set(options_pb)
 
-            addons = list(map(lambda addon: self._construct(id, addon[1], addon[0]), analysis_meta.addons))
+            addons = list(map(lambda addon: self._construct(id, addon.name, addon.ns), addon_metas))
 
             if name == 'weights' and ns == 'jmv':
                 Ctor = Weights
@@ -90,6 +117,29 @@ class Analyses:
         except Exception as e:
             log.exception(e)
             return Analysis(self._project, id, name, ns, Options.create({}), self, enabled=False, load_error=True)
+
+    def _read_addons(self, analysis_meta):
+        # the metas of the analysis' addons, and their option defns, named as
+        # they are carried in the analysis' options (see addon_prefix()). an
+        # addon which can't be read is left out, rather than taking the
+        # analysis down with it
+        metas = [ ]
+        defns = [ ]
+        for (addon_ns, addon_name) in analysis_meta.addons:
+            try:
+                module_meta = self._modules.get(addon_ns)
+                addon_meta = module_meta.get(addon_name)
+                addon_meta.translate_defaults(module_meta, i18n.get_language())
+                prefix = addon_prefix(addon_ns, addon_name)
+                addon_defns = [ { **opt_defn, 'name': prefix + opt_defn['name'] }
+                                for opt_defn in addon_meta.defn['options']
+                                if 'name' in opt_defn ]
+            except Exception as e:
+                log.exception(e)
+                continue
+            metas.append(addon_meta)
+            defns += addon_defns
+        return (metas, defns)
 
     def _construct_from_pb(self, analysis_pb, new_id=False, status=Analysis.Status.NONE):
         for ref_pb in analysis_pb.references:

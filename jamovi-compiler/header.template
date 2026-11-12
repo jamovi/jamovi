@@ -93,7 +93,7 @@
         }
     }
 %>
-<%= analysis.options.filter(o => ! o.type.startsWith('Output')).map(option => {
+<%= analysis.addonFor ? "#' @param parent the results of \\code{" + analysis.addonFor + "}, which this adds to\n" : '' %><%= analysis.options.filter(o => ! o.type.startsWith('Output')).map(option => {
     var desc;
     desc = option.description;
     if (typeof desc === 'object')
@@ -111,7 +111,10 @@
     }).join('\n') %><%= analysis.formula ? "\n#' @param formula (optional) the formula to use, see the examples" : '' %>
 <%
 if (results.items) {
-    print("#' @return A results object containing:\n");
+    if (analysis.addonFor)
+        print("#' @return The results of \\code{" + analysis.addonFor + "}, with these added:\n");
+    else
+        print("#' @return A results object containing:\n");
     print("#' \\tabular{llllll}{\n");
 
     var firstTable;
@@ -192,7 +195,9 @@ if (results.items) {
     }
 }
 %>#' @export
-<%= analysis.rename ? analysis.rename : analysis.name %> <- function(<%=analysis.options.filter(o => ( ! o.type.startsWith('Output'))).map(option => {
+<%= analysis.rename ? analysis.rename : analysis.name %> <- function(<%=
+    analysis.addonFor ? '\n    parent' + (analysis.options.filter(o => ( ! o.type.startsWith('Output'))).length > 0 ? ',' : '') : ''
+%><%=analysis.options.filter(o => ( ! o.type.startsWith('Output'))).map(option => {
     if (_.isUndefined(option['default'])) {
         if (option['type'] === 'Action')
             return '\n    ' + option.name + ' = FALSE';
@@ -256,6 +261,9 @@ if (results.items) {
 %><%=analysis.options.filter(o => o.type === 'Terms' || (o.type === 'Array' && o.template.type === 'Variables')).map(option => {
         return '\n    if (inherits(' + option.name + ', "formula")) ' + option.name + ' <- jmvcore::decomposeFormula(' + option.name + ')';
     }).join('')
+%><% } %><% if (analysis.addonFor) { %><%=analysis.options.filter(o => o.type === 'Terms' || (o.type === 'Array' && o.template.type === 'Variables')).map(option => {
+        return '\n    if (inherits(' + option.name + ', "formula")) ' + option.name + ' <- jmvcore::decomposeFormula(' + option.name + ')';
+    }).join('')
 %><% } %>
 
     options <- <%= analysis.name %>Options$new(<%=analysis.options.filter(o => o.type !== 'Data' && ! o.type.startsWith('Output')).map(option => {
@@ -263,12 +271,16 @@ if (results.items) {
     }).join()
     %>)
 
-    analysis <- <%= analysis.name %>Class$new(
+<% if (analysis.addonFor) { %>    analysis <- <%= analysis.name %>Class$new(
+        options = options)
+
+    jmvcore::runAddon(parent, analysis, "<%= analysis.addonFor %>")
+}<% } else { %>    analysis <- <%= analysis.name %>Class$new(
         options = options,
         data = data)
 
     analysis$run()
 
     analysis$results
-}
+}<% } %>
 <% } // if (analysis.export) %>

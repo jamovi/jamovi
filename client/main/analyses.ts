@@ -10,6 +10,21 @@ import { Modules } from './modules';
 import { IReference } from './references';
 import { I18nData } from '../common/i18n';
 
+// an addon to an analysis. its options are carried in the analysis' options,
+// named addons/<ns>/<name>/<option>
+export type AnalysisAddon = {
+    ns: string;
+    name: string;
+    title: string;
+    moduleTitle: string;
+    uijs: string;
+    i18n: I18nData | null;
+};
+
+type AddonId = { ns: string, name: string };
+
+export const addonPrefix = (ns: string, name: string) => `addons/${ ns }/${ name }/`;
+
 export class Analysis {
     id: number;
     name: string;
@@ -26,6 +41,8 @@ export class Analysis {
     isReady: boolean;
     i18n: I18nData;
     uijs: string;
+    addons: AnalysisAddon[] = [];
+    _addonIds: AddonId[] = [];
     references: IReference[];
     _parent: Analyses;
     values: {[name: string]: any};
@@ -96,6 +113,7 @@ export class Analysis {
                 let defn = await waitForDefn;
                 this.arbitraryCode = (defn.arbitraryCode || defn.arbitraryCode2);
                 this.missingModule = false;
+                await this._loadAddons();
                 this.options.setValues(this.values);
                 this.isReady = true;
             }
@@ -117,8 +135,36 @@ export class Analysis {
         return key;
     }
 
-    setup(values: {[name: string]: any}) {
+    async _loadAddons() {
+        // the addons come from the server, their definitions from their
+        // modules. an addon whose module can't be read is left out
+        this.addons = [ ];
+        for (let id of this._addonIds) {
+            try {
+                let defn = await this.modules.getDefn(id.ns, id.name);
+                let i18n = await this.modules.getI18nDefn(id.ns);
+                let position: any = Object.values(defn.position ?? { })[0];
+                let moduleMeta = (this.modules.get('modules') ?? [ ]).find((meta: any) => meta.name === id.ns);
+                let prefix = addonPrefix(id.ns, id.name);
+                this.options.addDefinitions(defn.options.map((opt: any) => ({ ...opt, name: prefix + opt.name })));
+                this.addons.push({
+                    ns: id.ns,
+                    name: id.name,
+                    title: position?.title ?? id.name,
+                    moduleTitle: moduleMeta?.title ?? id.ns,
+                    uijs: defn.uijs,
+                    i18n: i18n,
+                });
+            }
+            catch (e) {
+                console.log(`Could not load addon ${ id.ns }::${ id.name }`, e);
+            }
+        }
+    }
+
+    setup(values: {[name: string]: any}, addons: AddonId[] = [ ]) {
         this.values = values;
+        this._addonIds = addons;
         this._notifySetup(this);
     }
 
@@ -216,6 +262,7 @@ interface CreateOpts {
     readonly index?: number;
     readonly dependsOn?: number;
     readonly options?: { [name: string]: any; };
+    readonly addons?: AddonId[];
     readonly results?: any;
     readonly references?: any;
     readonly enabled?: boolean;
@@ -321,7 +368,7 @@ class Analyses extends GroupBatchingEventEmittier {
         }
 
         if (options.options)
-            analysis.setup(options.options);
+            analysis.setup(options.options, options.addons);
 
         let results = options.results || {
             name: '',
