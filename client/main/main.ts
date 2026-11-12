@@ -937,6 +937,29 @@ ready(async() => {
         host.setEdited(dataSetModel.attributes.edited);
     });
 
+    // show what an undo or redo changed. an analysis is scrolled to and
+    // highlighted (and if the options of another analysis are open, they're
+    // switched to it). where an analysis was removed is scrolled to, so its
+    // removal can be seen. changes to the data select the cells changed (see
+    // ViewController)
+    dataSetModel.on('historyReveal', ({ dataChanged, analysisId, analysisRemoved }) => {
+        if (analysisId) {
+            if (splitPanel.mode === 'data')
+                splitPanel.setMode('results');
+            resultsView.revealAnalysis(analysisId, ! analysisRemoved);
+
+            let analysis = instance.analyses().get(analysisId);
+            let selected = instance.get('selectedAnalysis');
+            let optionsOpen = selected !== null && typeof(selected) !== 'string';
+            if ( ! analysisRemoved && analysis && analysis.hasUserOptions() && optionsOpen && selected !== analysis)
+                instance.set('selectedAnalysis', analysis);
+        }
+        else if (dataChanged) {
+            if (splitPanel.mode === 'results')
+                splitPanel.setMode('data');
+        }
+    });
+
     dataSetModel.on('change:editingVar', event => {
         if (dataSetModel.get('editingVar') === null) {
             setTimeout(() => {

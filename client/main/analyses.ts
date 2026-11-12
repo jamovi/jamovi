@@ -1,8 +1,6 @@
 
 'use strict';
 
-import Delta from 'quill-delta';
-
 import Options from './options';
 import { GroupBatchingEventEmittier } from '../common/eventmap';
 import DataSetViewModel from './dataset';
@@ -158,12 +156,13 @@ export class Analysis {
         return this.name !== 'empty';
     }
 
-    setOptions(values) {
+    // noUndo: the change follows from another (see AnalysisRequest.noUndo)
+    setOptions(values, noUndo: boolean = false) {
         if (this.options.setValues(values)) {
             this.enabled = true;
             this.revision++;
             if (this._parent !== null)
-                this._parent._notifyOptionsChanged(this);
+                this._parent._notifyOptionsChanged(this, false, noUndo);
         }
     }
 
@@ -185,14 +184,6 @@ export class Analysis {
         for (let i = 0; i < levelRenames.length; i++)
             this.options.renameLevel(levelRenames[i].variable, levelRenames[i].oldLabel, levelRenames[i].newLabel);
         this.revision++;
-    }
-
-    clearColumnUse(columnNames) {
-        for (let i = 0; i < columnNames.length; i++)
-            this.options.clearColumnUse(columnNames[i]);
-        this.revision++;
-        if (this._parent !== null)
-            this._parent._notifyOptionsChanged(this);
     }
 
     getUsingColumns() {
@@ -367,29 +358,9 @@ class Analyses extends GroupBatchingEventEmittier {
         for (let i = 0; i < this._analyses.length; i++) {
             let dependent = this._analyses[i];
             if (dependent.dependsOn === analysis) {
+                // the server moves what's written in the annotation to the
+                // one above (see Instance._merge_annotation_upwards())
                 let index = this.indexOf(dependent.id);
-
-                if (dependent.name === 'empty') {
-                    // before remove inbetween annotation move its contents to the previous annotation
-                    let previous = this._analyses[index - 1];
-                    let removingData = dependent.options.getOption('results//topText');
-                    if (removingData) {
-                        let removingDelta = new Delta(removingData.getValue());
-                        let previousData = previous.options.getOption('results//topText');
-                        let previousDelta = null;
-                        if (previousData) {
-                            previousDelta = new Delta(previousData.getValue());
-                            previous.options.setValues({'results//topText': { ops: previousDelta.concat(removingDelta).ops } });
-                        }
-                        else
-                            previous.options.setValues({'results//topText': { ops: removingDelta.ops } });
-                    }
-
-                    this._notifyOptionsChanged(previous);
-                    this._notifyResultsChanged(previous);
-                    ////////
-                }
-
                 this._analyses.splice(index, 1);
                 for (let i = 0; i < this._analyses.length; i++)
                     this._analyses[i].index = i;
@@ -464,8 +435,8 @@ class Analyses extends GroupBatchingEventEmittier {
         this.trigger('analysisResultsChanged', analysis);
     }
 
-    _notifyOptionsChanged(analysis: Analysis, incoming: boolean = false) : void {  // incoming is true if the options have been changed as a result of the server. It will be falsey if the change to the options has occured because of the client.
-        this.trigger('analysisOptionsChanged', analysis, incoming);
+    _notifyOptionsChanged(analysis: Analysis, incoming: boolean = false, noUndo: boolean = false) : void {  // incoming is true if the options have been changed as a result of the server. It will be falsey if the change to the options has occured because of the client.
+        this.trigger('analysisOptionsChanged', analysis, incoming, noUndo);
     }
 
     _notifyAnalysisCreated(analysis: Analysis): void {

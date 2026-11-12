@@ -1531,7 +1531,9 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
 
         return coms.send(request).then(response => {
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
-            return this._processDatasetRR(datasetPB);
+            let events = this._processDatasetRR(datasetPB);
+            this._notifyHistoryReveal(datasetPB);
+            return events;
         }).catch((error) => {
             console.log(error);
             throw error;
@@ -1550,11 +1552,22 @@ class DataSetModel<M extends DataSetModelData> extends EventMap<M> {
 
         return coms.send(request).then(response => {
             let datasetPB = coms.Messages.DataSetRR.decode(response.payload);
-            return this._processDatasetRR(datasetPB);
+            let events = this._processDatasetRR(datasetPB);
+            this._notifyHistoryReveal(datasetPB);
+            return events;
         }).catch((error) => {
             console.log(error);
             throw error;
         });
+    }
+
+    // an undo or redo can change the data, or an analysis (or both); this
+    // says which, so it can be shown
+    _notifyHistoryReveal(datasetPB: { incData: boolean, incSchema: boolean, rows: unknown[], changedAnalysisId: number, changedAnalysisRemoved: boolean }) {
+        let dataChanged = datasetPB.incData || datasetPB.incSchema || datasetPB.rows.length > 0;
+        let analysisId = datasetPB.changedAnalysisId;
+        let analysisRemoved = datasetPB.changedAnalysisRemoved;
+        this.trigger('historyReveal', { dataChanged, analysisId, analysisRemoved });
     }
 
     columnTypeLabel(type: ColumnType | number): string {
