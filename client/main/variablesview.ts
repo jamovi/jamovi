@@ -17,15 +17,18 @@ import Selection, { ISelection } from './selection';
 
 type VaraibleRow = {
     column: Column;
-    $elements: NodeListOf<HTMLElement>;
+    $elements: HTMLElement[];
     $select: HTMLInputElement;
     $name: HTMLDivElement;
     $description: HTMLDivElement;
-    $editableTexts: NodeListOf<HTMLDivElement>;
+    $editableTexts: HTMLDivElement[];
     $dot: HTMLElement;
     nameReadOnly: boolean;
+    visible: boolean;
     editableTimer?: NodeJS.Timeout;
 }
+
+const SEARCH_HIGHLIGHT = 'jmv-variables-search';
 
 function cloneMouseEvent(e: MouseEvent, overrides: MouseEventInit = {}): MouseEvent {
   return new MouseEvent(e.type, {
@@ -74,7 +77,11 @@ class VariablesView extends HTMLElement  implements DataSetView {
     selectionIncludesHidden: boolean;
 
     rows: VaraibleRow[];
+    rowsById: Map<number, VaraibleRow>;
     selectedRows: VaraibleRow[];
+    _hoverRow: VaraibleRow;
+    $noMatches: HTMLElement;
+    _scrollPending: boolean;
     _clickRangeList: ISelection[];
     _clickRange: ISelection;
 
@@ -92,7 +99,10 @@ class VariablesView extends HTMLElement  implements DataSetView {
         this.classList.add('variablesview');
 
         this.rows = [ ];
+        this.rowsById = new Map();
         this.selectedRows = [];
+        this._hoverRow = null;
+        this._scrollPending = false;
         this.internalBluring = false;
         this.internalFocus = false;
 
@@ -163,7 +173,7 @@ class VariablesView extends HTMLElement  implements DataSetView {
                 clearTimeout(this.searchingInProgress);
             
             this.searchingInProgress = setTimeout(() => {
-                this._updateList();
+                this._applySearch();
                 if (this._topIndex !== -1)
                     this.selection.setSelection(0, this._topIndex, true);
                 this.searchingInProgress = null;
@@ -175,7 +185,7 @@ class VariablesView extends HTMLElement  implements DataSetView {
         });
 
         this.$body.addEventListener('mouseleave', (event) => {
-            this.$body.querySelectorAll('.cell.hovering').forEach(el => el.classList.remove('hovering'));
+            this._setHoverRow(null);
         });
 
         contextMenuListener(this, (event) => {
@@ -205,12 +215,12 @@ class VariablesView extends HTMLElement  implements DataSetView {
             let selectedCount = this._updateRowSelections();
             this.statusbar.updateInfoLabel('selectedCount', selectedCount);
 
-            if (this.selectedRows.length > 0) {
-                let firstSelectedRow = this.selectedRows[0];
-                let focusCell = firstSelectedRow.$elements[0];
-                if (focusCell)
-                    focusCell.scrollIntoView({block: 'nearest', inline: 'center', behavior: 'smooth'});
-            }
+            // scrolling forces a layout, so while the list is hidden it's
+            // deferred until the view is shown again
+            if (this.controller.focusedOn === this)
+                this._scrollToSelection('smooth');
+            else
+                this._scrollPending = true;
         });
 
         document.addEventListener('mousemove', event => this._mouseMove(event));
@@ -219,6 +229,32 @@ class VariablesView extends HTMLElement  implements DataSetView {
 
     getFocusControl() {
         return this.$body;
+    }
+
+    onViewControllerFocus() {
+        if (this._scrollPending) {
+            this._scrollPending = false;
+            // wait for the view to be displayed before measuring
+            requestAnimationFrame(() => this._scrollToSelection('instant'));
+        }
+    }
+
+    _scrollToSelection(behavior: ScrollBehavior) {
+        if (this.selectedRows.length > 0) {
+            let focusCell = this.selectedRows[0].$elements[0];
+            if (focusCell)
+                focusCell.scrollIntoView({block: 'nearest', inline: 'center', behavior });
+        }
+    }
+
+    _setHoverRow(row: VaraibleRow) {
+        if (row === this._hoverRow)
+            return;
+        if (this._hoverRow)
+            this._hoverRow.$elements.forEach(el => el.classList.remove('hovering'));
+        this._hoverRow = row;
+        if (row)
+            row.$elements.forEach(el => el.classList.add('hovering'));
     }
 
     _selectRow(row: VaraibleRow, editable: boolean = false) {
@@ -376,12 +412,13 @@ class VariablesView extends HTMLElement  implements DataSetView {
         return $resizer;
     }
 
-    _createRow(column: Column, row: number) {
+    _createRow(column: Column, row: number, $parent: DocumentFragment) {
         let $measureType = h('div', { role: 'none', class: 'measure-box' },
             h('div', { class: 'measure-type-icon' }));
 
+        let $dot: HTMLElement = null;
         if (column.columnType === 'computed' || column.columnType === 'recoded' || column.columnType === 'output') {
-            let $dot = h('div', { class: 'dot' });
+            $dot = h('div', { class: 'dot' });
             this._updateColumnColour(column, $dot);
             $measureType.append($dot);
         }
@@ -403,16 +440,18 @@ class VariablesView extends HTMLElement  implements DataSetView {
         let $select = h('input', { role: 'option', 'aria-labelledby': labelId, type: 'checkbox', 'data-index': colNo.toString(), class: 'select', tabindex: '-1' });
         this._addSelectEvents($select);
 
-        this.$body.append(this._applyColumnData(this._createCell($select, row, 1, '', true), column, colNo));
-        this.$body.append(this._applyColumnData(this._createCell($measureType, row, 2, '', true), column, colNo));
-        this.$body.append(this._applyColumnData(this._createCell($name, row, 3, '', true), column, colNo));
-        this.$body.append(this._applyColumnData(this._createCell($desc, row, 4, '', true), column, colNo));
+        let $elements = [
+            this._applyColumnData(this._createCell($select, row, 1, '', true), column, colNo),
+            this._applyColumnData(this._createCell($measureType, row, 2, '', true), column, colNo),
+            this._applyColumnData(this._createCell($name, row, 3, '', true), column, colNo),
+            this._applyColumnData(this._createCell($desc, row, 4, '', true), column, colNo),
+        ];
+        $parent.append(...$elements);
 
-        let $elements = this.querySelectorAll<HTMLElement>(`.cell[data-index="${colNo}"]`);
-        let $editableTexts = this.querySelectorAll<HTMLDivElement>(`.cell[data-index="${colNo}"] .text:not(.readonly)`);
-        let $dot = this.querySelector<HTMLElement>(`.cell[data-index="${colNo}"] .dot`);
+        let nameReadOnly = column.columnType === 'filter';
+        let $editableTexts = nameReadOnly ? [ $desc ] : [ $name, $desc ];
 
-        this.rows[colNo] = {
+        let variableRow: VaraibleRow = {
             column: column,
             $elements: $elements,
             $select: $select,
@@ -420,17 +459,23 @@ class VariablesView extends HTMLElement  implements DataSetView {
             $description: $desc,
             $editableTexts: $editableTexts,
             $dot: $dot,
-            nameReadOnly: column.columnType === 'filter'
+            nameReadOnly: nameReadOnly,
+            visible: true,
         };
+
+        this.rows[colNo] = variableRow;
+        this.rowsById.set(column.id, variableRow);
     }
 
     _updateList() {
         this._clearRowSelections();
+        this._hoverRow = null;
 
         let columnCount = this.model.get('columnCount');
         this.$body.replaceChildren();
 
         this.rows = [];
+        this.rowsById = new Map();
 
         let $measureTypeHeader = h('div', { style: 'width:10px;' });
         let $nameHeader = h('div', {}, _('Name'));
@@ -449,20 +494,57 @@ class VariablesView extends HTMLElement  implements DataSetView {
         this.$body.append(this._createCell($nameHeader, 1, 3, 'column-header', false));
         this.$body.append(this._createCell($descHeader, 1, 4, 'column-header', false));
 
+        // every column gets a row; the search only shows/hides them
+        let $fragment = document.createDocumentFragment();
+        for (let colNo = 0; colNo < columnCount; colNo++) {
+            let column = this.model.getColumn(colNo, false);
+            this._createRow(column, colNo + 2, $fragment);
+        }
+
+        this.$noMatches = h('div', { class: 'msg' }, _('No variables match your query.'));
+        $fragment.append(this.$noMatches);
+
+        this.$body.append($fragment);
+
+        this._applySearch();
+    }
+
+    _applySearch() {
+        this._clearRowSelections();
+        this._setHoverRow(null);
+
+        let searchText = this.$search.value.toLowerCase();
+
         let finalColumnCount = 0;
         let row = 2;
         this._topIndex = -1;
-        for (let colNo = 0; colNo < columnCount; colNo++) {
-            let column = this.model.getColumn(colNo, false);
-
-            let searchText = this.$search.value.toLowerCase();
-            if (searchText !== '' && ! column.name.toLowerCase().includes(searchText) && ! column.description.toLowerCase().includes(searchText))
+        for (let variableRow of this.rows) {
+            if (variableRow === undefined)
                 continue;
+
+            let column = variableRow.column;
+            let visible = searchText === ''
+                || column.name.toLowerCase().includes(searchText)
+                || column.description.toLowerCase().includes(searchText);
+
+            if (visible !== variableRow.visible) {
+                variableRow.visible = visible;
+                let display = visible ? '' : 'none';
+                for (let $cell of variableRow.$elements)
+                    $cell.style.display = display;
+            }
+
+            if ( ! visible)
+                continue;
+
+            let gridRow = row.toString();
+            for (let $cell of variableRow.$elements) {
+                if ($cell.style.gridRowStart !== gridRow)
+                    $cell.style.gridRowStart = gridRow;
+            }
 
             if (this._topIndex === -1)
                 this._topIndex = column.index;
-
-            this._createRow(column, row);
 
             row += 1;
             if (column.columnType !== 'filter')
@@ -470,28 +552,73 @@ class VariablesView extends HTMLElement  implements DataSetView {
         }
 
         if (row === 2) {
-            this.$body.append(h('div', { class: 'msg' }, _('No variables match your query.')));
+            this.$noMatches.style.display = '';
             this.statusbar.updateInfoLabel('selectedCount', 0);
         }
         else {
+            this.$noMatches.style.display = 'none';
             let selectedCount = this._updateRowSelections();
             this.statusbar.updateInfoLabel('selectedCount', selectedCount);
         }
 
         this.$body.style.gridTemplateRows = `repeat(${row}, auto)`;
         this.statusbar.updateInfoLabel('columnCount', finalColumnCount);
+
+        this._updateSearchHighlights();
     }
 
-    _getRowByIndex(index: number) {
-        return this.rows[index];
-    }
+    // highlights the search matches using the CSS custom highlight API, which
+    // paints ranges without modifying the DOM (so contenteditable editing of
+    // the name and description is unaffected)
+    _updateSearchHighlights() {
+        if ( ! ('highlights' in CSS))
+            return;
 
-    _getRowById(id) {
-        for (let rowIndex in this.rows) {
-            let row = this.rows[rowIndex];
-            if (row.column.id === id)
-                return row;
+        let searchText = this.$search.value.toLowerCase();
+        if (searchText === '') {
+            CSS.highlights.delete(SEARCH_HIGHLIGHT);
+            return;
         }
+
+        let ranges: Range[] = [];
+        let addMatches = ($el: HTMLElement) => {
+            let node = $el.firstChild;
+            if ( ! (node instanceof Text))
+                return;
+            let text = node.data;
+            let lower = text.toLowerCase();
+            if (lower.length !== text.length)  // lowercasing changed the offsets
+                return;
+            let index = lower.indexOf(searchText);
+            while (index !== -1) {
+                let range = new Range();
+                range.setStart(node, index);
+                range.setEnd(node, index + searchText.length);
+                ranges.push(range);
+                index = lower.indexOf(searchText, index + searchText.length);
+            }
+        };
+
+        for (let row of this.rows) {
+            if (row === undefined || ! row.visible)
+                continue;
+            addMatches(row.$name);
+            addMatches(row.$description);
+        }
+
+        CSS.highlights.set(SEARCH_HIGHLIGHT, new Highlight(...ranges));
+    }
+
+    // returns the row only if it is currently shown (i.e. matches the search)
+    _getRowByIndex(index: number) {
+        let row = this.rows[index];
+        if (row && row.visible)
+            return row;
+        return undefined;
+    }
+
+    _getRowById(id: number) {
+        return this.rowsById.get(id);
     }
 
     async textElementFocus(event: Event) {
@@ -648,10 +775,8 @@ class VariablesView extends HTMLElement  implements DataSetView {
         let $cell = h('div', { role: 'none', class: `cell ${ classes }`, style: `grid-area: ${ row } / ${ column } / span 1 / span ${ columnSpan };` });
         if (hasEvents) {
             $cell.addEventListener('mouseover', event => {
-                this.$body.querySelectorAll('.cell.hovering').forEach(el => el.classList.remove('hovering'));
                 let id = parseInt($cell.getAttribute('data-id'));
-                let $row = this._getRowById(id).$elements;
-                $row.forEach(el => el.classList.add('hovering'));
+                this._setHoverRow(this._getRowById(id) ?? null);
             });
             $cell.addEventListener('mousedown', event => {
                 let colNo = parseInt($cell.getAttribute('data-index'));
@@ -731,8 +856,7 @@ class VariablesView extends HTMLElement  implements DataSetView {
                 let s = null;
                 let e = null;
                 for (let c = left; c <= right; c++) {
-                    let $row = this._getRowByIndex(c).$elements;
-                    if ($row.length > 0) {
+                    if (this._getRowByIndex(c)) {
                         if (s === null)
                             s = c;
                         if (e === null)
@@ -819,6 +943,7 @@ class VariablesView extends HTMLElement  implements DataSetView {
 
     _columnsChanged(event) {
 
+        let textChanged = false;
         for (let i = 0; i < event.changes.length; i++) {
             let change = event.changes[i];
             if (change.created)
@@ -828,19 +953,27 @@ class VariablesView extends HTMLElement  implements DataSetView {
             let row = this._getRowById(id);
 
             if (row) {
-                if (change.nameChanged)
+                if (change.nameChanged) {
                     row.$name.innerText = change.name;
+                    textChanged = true;
+                }
 
-                if (change.descriptionChanged)
+                if (change.descriptionChanged) {
                     row.$description.innerText = row.column.description;
+                    textChanged = true;
+                }
 
                 if (change.measureTypeChanged)
                     row.$elements.forEach(el => el.setAttribute('data-measuretype', row.column.measureType));
 
-                if (change.transformChanged)
+                if (change.transformChanged && row.$dot)
                     this._updateColumnColour(row.column, row.$dot);
             }
         }
+
+        // replacing the text replaces the text nodes the highlights refer to
+        if (textChanged)
+            this._updateSearchHighlights();
     }
 
     _columnsInserted(event) {
