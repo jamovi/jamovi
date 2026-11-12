@@ -129,10 +129,9 @@ div[placeholder]:empty::before {
 }
 
 #variablelist {
-    visibility: visible;
     height: 100%;
     opacity: 0;
-    transition: 0.2s visibility, 0.2s opacity;
+    transition: 0.2s display allow-discrete, 0.2s opacity;
 }
 
 #spreadsheet {
@@ -149,12 +148,20 @@ body[data-table-mode='variables'] #main-view #spreadsheet {
     visibility: hidden;
 }
 
+/* display: none rather than visibility: hidden, so the (potentially very
+   large) variables list isn't laid out while the spreadsheet is showing */
 body[data-table-mode='spreadsheet'] #main-view #variablelist {
-    visibility: hidden;
+    display: none;
 }
 
 body[data-table-mode='variables'] #main-view #variablelist {
     opacity: 1;
+}
+
+@starting-style {
+    body[data-table-mode='variables'] #main-view #variablelist {
+        opacity: 0;
+    }
 }
 
 body[data-table-mode='spreadsheet'] #main-view #spreadsheet {

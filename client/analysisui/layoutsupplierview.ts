@@ -717,6 +717,7 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
         let searchVal = this.$searchInput.value.trim().toLowerCase();
 
         if (this._persistentItems === false || force) {
+            let changes: { cells: LayoutCell[], visibility: boolean }[] = [];
             for (let i = 0; i < this._items.length; i++) {
                 let item = this._items[i];
                 let visibility = this._persistentItems || item.used === 0;
@@ -726,10 +727,18 @@ export class LayoutSupplierView<P extends SupplierViewProperties<U>, U = InferTy
                 }
 
                 let rowCells = this.supplier.getRow(i + 1);
-                for (let j = 0; j < rowCells.length; j++) {
-                    let cell = rowCells[j];
-                    cell.setVisibility(visibility);
-                }
+                if (rowCells.some(cell => cell.visible() !== visibility))
+                    changes.push({ cells: rowCells, visibility });
+            }
+
+            // the show/hide animation measures each cell (scrollHeight), which
+            // forces a layout of the whole list per cell. that's fine for an
+            // item or two moving to/from a target, but with many changes (e.g.
+            // searching a large data set) it takes seconds, so skip it
+            let immediately = changes.length > 10;
+            for (let change of changes) {
+                for (let cell of change.cells)
+                    cell.setVisibility(change.visibility, immediately);
             }
         }
     }

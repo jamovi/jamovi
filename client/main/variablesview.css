@@ -201,6 +201,11 @@
     background-image: url('../assets/variable-id.svg');
 }
 
+::highlight(jmv-variables-search) {
+    background-color: #ffe27a;
+    color: inherit;
+}
+
 .cell.hovering {
     background-color: rgba(239, 239, 239, 0.96);
 }
