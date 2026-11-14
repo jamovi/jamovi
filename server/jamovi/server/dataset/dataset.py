@@ -82,15 +82,31 @@ class DataSet(Protocol):
         raise NotImplementedError
 
     @abstractmethod
-    def get_index_ex_filtered(self, index: int) -> int:
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_indices_ex_filtered(self, row_start: int, row_count: int) -> Iterable[int]:
-        raise NotImplementedError
-
-    @abstractmethod
     def refresh_filter_state(self) -> None:
+        raise NotImplementedError
+
+    @abstractmethod
+    def refresh_view_order(self, sort_keys: list[tuple[int, bool]], ex_filtered: bool) -> bool:
+        """rebuild the view order: the data set rows displayed, in the order
+        they're displayed. sort_keys are (column id, descending) pairs, and
+        ex_filtered omits filtered rows. returns whether it changed"""
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def view_row_count(self) -> int:
+        """the number of data set rows displayed"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_data_indices(self, view_start: int, view_count: int) -> list[int]:
+        """the data set rows displayed at a range of view rows (only those
+        less than view_row_count)"""
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_view_indices(self, data_indices: Iterable[int]) -> list[int]:
+        """the view rows displaying data set rows (omitting those not displayed)"""
         raise NotImplementedError
 
     @abstractmethod

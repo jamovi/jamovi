@@ -285,6 +285,43 @@
     line-height: normal;
 }
 
+.jmv-column-header-label {
+    min-width: 0;
+}
+
+.jmv-column-header-sort {
+    flex: 0 0 auto;
+    min-width: 14px;
+    height: 16px;
+    margin-inline-start: auto;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    line-height: 1;
+    color: #3E6DA9;
+    pointer-events: none;
+}
+
+/* the sort indicator only shows when the column is sorted */
+.jmv-column-header[data-sort] .jmv-column-header-sort {
+    display: flex;
+}
+
+.jmv-column-header-sort::before {
+    content: '\25B2\FE0E';
+}
+
+.jmv-column-header[data-sort='descending'] .jmv-column-header-sort::before {
+    content: '\25BC\FE0E';
+}
+
+.jmv-column-header-sort[data-priority]::after {
+    content: attr(data-priority);
+    font-size: 8px;
+    align-self: flex-start;
+}
+
 .jmv-column-header-icon {
     background-size: 100% 100%;
     background-repeat: no-repeat;

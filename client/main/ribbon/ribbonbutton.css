@@ -81,6 +81,32 @@
     height: 25px;
 }
 
+/* a large button with a menu has the arrow beside its label, with the pair
+   centred under the icon */
+.jmv-ribbon-group-body .jmv-ribbon-button.jmv-ribbon-button-size-large.has-children {
+    display: grid;
+    grid-template-columns: 1fr auto auto 1fr;
+    grid-template-areas:
+        "icon icon  icon  icon"
+        ".    label arrow .";
+}
+
+.jmv-ribbon-button-size-large.has-children > .jmv-ribbon-button-icon {
+    grid-area: icon;
+}
+
+.jmv-ribbon-button-size-large.has-children > .jmv-ribbon-button-label {
+    grid-area: label;
+    margin-inline-end: 0px;
+}
+
+.jmv-ribbon-button-size-large.has-children > .jmv-ribbon-menu-arrow {
+    grid-area: arrow;
+    align-self: center;
+    margin-top: 5px;
+    margin-inline-start: 4px;
+}
+
 /*medium button*/
 .jmv-ribbon-group-body .jmv-ribbon-button.jmv-ribbon-button-size-medium {
     width: auto;

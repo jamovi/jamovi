@@ -676,6 +676,34 @@ class Selection extends EventEmitter implements ISelection {
         return columns;
     }
 
+    currentSelectionToColumnsInSelectionOrder(): Column[] {
+        // subSelections holds the earlier selections, the most recent first
+        let selections: ISelection[] = [ ...this.subSelections ].reverse();
+        selections.push(this);
+
+        let columns: Column[] = [];
+        let added = new Set<number>();
+        for (let selection of selections) {
+            let range = this._getRange(selection);
+            // from where the selection started, to its other end
+            let indices: number[] = [];
+            for (let c = range.start; c <= range.end; c++)
+                indices.push(c);
+            if (range.pos === range.end)
+                indices.reverse();
+
+            for (let c of indices) {
+                let column = this.model.getColumn(c, ! this.hiddenIncluded);
+                if (column && ! added.has(column.id)) {
+                    added.add(column.id);
+                    columns.push(column);
+                }
+            }
+        }
+
+        return columns;
+    }
+
     currentSelectionToRowBlocks() {
         let blocks: RowBlock[] = [];
         this.updateColumnDataBlocks(blocks, this);

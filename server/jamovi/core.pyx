@@ -7,6 +7,7 @@ from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp.list cimport list as cpplist
 from libcpp.pair cimport pair
+from libc.limits cimport INT_MIN
 
 from cython.operator cimport dereference as deref, postincrement as inc
 
@@ -69,7 +70,10 @@ cdef extern from "datasetw.h":
         void deleteRows(int start, int end) except +
         void deleteColumns(int start, int end) except +
         void refreshFilterState() except +
-        int getIndexExFiltered(int index) except +
+        bool refreshViewOrder(const vector[int] &columnIds, const vector[bool] &descending, bool exFiltered) except +
+        int viewRowCount() except +
+        int getDataIndex(int viewRow) except +
+        int getViewIndex(int dataRow) except +
         CColumn operator[](int index) except +
         CColumn operator[](const char *name) except +
         CColumn getColumnById(int id) except +
@@ -198,19 +202,36 @@ cdef class DataSet:
     def set_weights(self, id: int):
         self._this.setWeights(id)
 
-    def get_index_ex_filtered(self, index):
-        if index < self.row_count_ex_filtered:
-            return self._this.getIndexExFiltered(index)
-        else:
-            return index - self.row_count_ex_filtered + self.row_count
-
-    def get_indices_ex_filtered(self, row_start, row_count):
-        offsets = map(self.get_index_ex_filtered, range(row_start, row_start + row_count))
-        offsets = list(offsets)
-        return offsets
-
     def refresh_filter_state(self):
         self._this.refreshFilterState()
+
+    def refresh_view_order(self, sort_keys, ex_filtered):
+        cdef vector[int] column_ids = [ column_id for column_id, _ in sort_keys ]
+        cdef vector[bool] descending = [ desc for _, desc in sort_keys ]
+        return self._this.refreshViewOrder(column_ids, descending, ex_filtered)
+
+    @property
+    def view_row_count(self):
+        return self._this.viewRowCount()
+
+    def get_data_indices(self, view_start, view_count):
+        cdef int view_end = min(view_start + view_count, self._this.viewRowCount())
+        cdef int i
+        indices = [ ]
+        for i in range(view_start, view_end):
+            indices.append(self._this.getDataIndex(i))
+        return indices
+
+    def get_view_indices(self, data_indices):
+        cdef int n_rows = self._this.rowCount()
+        cdef int view_row
+        view_rows = [ ]
+        for index in data_indices:
+            if index < n_rows:
+                view_row = self._this.getViewIndex(index)
+                if view_row != INT_MIN:
+                    view_rows.append(view_row)
+        return view_rows
 
 cdef extern from "columnw.h":
     cdef cppclass CColumn "ColumnW":

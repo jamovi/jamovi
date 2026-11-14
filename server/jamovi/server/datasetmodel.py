@@ -83,6 +83,9 @@ class DataSetModel:
     _transform_next_id: int
     _log: object
     _row_tracker: RowTracker
+    _sort_keys: list[tuple[int, bool]]
+    _view_order_valid: bool
+    _view_remapped: bool
 
     def __init__(self, project: Project | None = None):
         self._project = project
@@ -92,6 +95,9 @@ class DataSetModel:
         self._name = ''
         self._reuseable_virtual_ids = deque([])
         self._filters_visible = True
+        self._sort_keys = [ ]
+        self._view_order_valid = False
+        self._view_remapped = False  # whether the view order was remapped when last refreshed
 
         self._perms = Permissions.retrieve()
         # we check permissions in here so the file importers
@@ -162,6 +168,7 @@ class DataSetModel:
     @filters_visible.setter
     def filters_visible(self, visible):
         self._filters_visible = visible
+        self._view_order_valid = False
 
     @property
     def row_tracker(self):
@@ -184,43 +191,68 @@ class DataSetModel:
     def has_filters(self):
         return self.column_count > 0 and self[0].is_filter
 
-    def get_index_ex_filtered(self, index):
-        assert self._dataset is not None
-        if index >= self._dataset.row_count_ex_filtered:
-            return self._dataset.row_count - self._dataset.row_count_ex_filtered + index
-        else:
-            return self._dataset.get_index_ex_filtered(index)
+    @property
+    def sort_keys(self) -> list[tuple[int, bool]]:
+        """the (column id, descending) pairs the view is sorted by"""
+        return list(self._sort_keys)
 
-    def get_indices_ex_filtered(self, row_start, row_count):
-        assert self._dataset is not None
-        return self._dataset.get_indices_ex_filtered(row_start, row_count)
+    @sort_keys.setter
+    def sort_keys(self, keys: list[tuple[int, bool]]):
+        self._sort_keys = [ (int(column_id), bool(descending)) for column_id, descending in keys ]
+        self._view_order_valid = False
+
+    @property
+    def is_sorted(self):
+        return len(self._sort_keys) > 0
 
     @property
     def is_view_remapped(self):
         """whether view rows differ from data set rows"""
-        return self.ex_filtered and self.has_filters
+        return self.is_sorted or (self.ex_filtered and self.has_filters)
+
+    def invalidate_view_order(self):
+        """mark the view order as needing to be rebuilt"""
+        self._view_order_valid = False
+
+    def refresh_view_order(self) -> bool:
+        """rebuild the view order if invalidated; returns whether it changed"""
+        if self._view_order_valid:
+            return False
+        changed = self._dataset.refresh_view_order(self._sort_keys, self.ex_filtered and self.has_filters)
+        self._view_order_valid = True
+        # rows added or removed change the view order, but this only
+        # matters to the client when view rows differ from data set rows
+        was_remapped = self._view_remapped
+        self._view_remapped = self.is_view_remapped
+        return changed and (was_remapped or self._view_remapped)
+
+    def _ensure_view_order(self):
+        if not self._view_order_valid:
+            self.refresh_view_order()
+
+    @property
+    def view_row_count(self) -> int:
+        """the number of data set rows displayed"""
+        self._ensure_view_order()
+        return self._dataset.view_row_count
 
     def get_data_indices(self, view_start, view_count):
-        """the data set rows displayed at a range of view rows"""
-        if not self.is_view_remapped:
-            return list(range(view_start, view_start + view_count))
-        n_view = self.row_count_ex_filtered
+        """the data set rows displayed at a range of view rows
+
+        view rows beyond those displayed correspond to the (as yet
+        non-existent) rows beyond the end of the data set
+        """
+        self._ensure_view_order()
+        n_view = self._dataset.view_row_count
         view_end = view_start + view_count
-        indices = [ ]
-        if view_start < n_view:
-            indices.extend(self.get_indices_ex_filtered(view_start, min(view_end, n_view) - view_start))
-        for view_row in range(max(view_start, n_view), view_end):
-            indices.append(self.get_index_ex_filtered(view_row))
+        indices = self._dataset.get_data_indices(view_start, view_count)
+        indices.extend(range(self.row_count + max(view_start, n_view) - n_view, self.row_count + view_end - n_view))
         return indices
 
     def get_view_indices(self, data_indices):
         """the view rows displaying data set rows (omitting those not displayed)"""
-        if not self.is_view_remapped:
-            return list(data_indices)
-        # TODO: this is O(n); keep an inverse map alongside the view order
-        n_view = self.row_count_ex_filtered
-        inverse = { index: view_row for view_row, index in enumerate(self.get_indices_ex_filtered(0, n_view)) }
-        return [ inverse[index] for index in data_indices if index in inverse ]
+        self._ensure_view_order()
+        return self._dataset.get_view_indices(data_indices)
 
     def set_values(self, columns: ColumnRef, row_offset: int, values: CellValueArea):
         self._dataset.set_values(columns, row_offset, values)
@@ -416,14 +448,17 @@ class DataSetModel:
     def set_row_count(self, count):
         self._check_perms(row_count=count)
         self._dataset.set_row_count(count)
+        self._view_order_valid = False
 
     def delete_rows(self, start, end):
         self._dataset.delete_rows(start, end)
+        self._view_order_valid = False
         self._recalc_all()
 
     def insert_rows(self, start, count):
         self._check_perms(row_count=self.row_count + count)
         self._dataset.insert_rows(start, start + count - 1)
+        self._view_order_valid = False
         self._recalc_all()
 
     def insert_column(self, index, name=None, import_name=None, id=0):
@@ -497,6 +532,7 @@ class DataSetModel:
 
     def refresh_filter_state(self):
         self._dataset.refresh_filter_state()
+        self._view_order_valid = False
 
     def delete_columns(self, start, end):
         self._dataset.delete_columns(start, end)
@@ -685,6 +721,7 @@ class DataSetModel:
     @dataset.setter
     def dataset(self, dataset: DataSet):
         self._dataset = dataset
+        self._view_order_valid = False
 
     def setup(self):
 
@@ -713,6 +750,8 @@ class DataSetModel:
 
         self.refresh_filter_state()
         self._add_virtual_columns()
+        self.invalidate_view_order()
+        self.refresh_view_order()
 
     def _add_virtual_columns(self):
         n_virtual = self.total_column_count - self.column_count
@@ -775,10 +814,12 @@ class DataSetModel:
 
     @property
     def virtual_row_count(self):
+        # blank rows for entering data beneath the data set rows, except
+        # when filtered rows are hidden
         if self.ex_filtered:
-            return self._dataset.row_count_ex_filtered
+            return self.view_row_count
         else:
-            return self._dataset.row_count + DataSetModel.N_VIRTUAL_ROWS
+            return self.view_row_count + DataSetModel.N_VIRTUAL_ROWS
 
     @property
     def virtual_column_count(self):

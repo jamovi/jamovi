@@ -10,6 +10,9 @@
 #include <set>
 #include <iomanip>
 #include <cmath>
+#include <algorithm>
+#include <vector>
+#include <string>
 
 #include "dataset.h"
 
@@ -933,6 +936,94 @@ void ColumnW::_transferLevels(ColumnW &dest, ColumnW &src)
             }
         }
     }
+}
+
+static vector<double> rankStrings(const vector<string> &values)
+{
+    // the rank of each string, by code point (equal strings rank equally)
+    vector<string> sorted = values;
+    sort(sorted.begin(), sorted.end());
+    sorted.erase(unique(sorted.begin(), sorted.end()), sorted.end());
+
+    vector<double> ranks(values.size());
+    for (size_t i = 0; i < values.size(); i++)
+        ranks[i] = lower_bound(sorted.begin(), sorted.end(), values[i]) - sorted.begin();
+    return ranks;
+}
+
+vector<double> ColumnW::sortKeys(bool descending)
+{
+    // keys for sorting the column's rows; missing values sort last.
+    // ordinal columns sort by the order of their levels, other text
+    // columns by their labels, and other columns by their values
+
+    int n = rowCount();
+    vector<double> keys(n);
+    double sign = descending ? -1 : 1;
+
+    if (dataType() == DataType::DECIMAL)
+    {
+        for (int i = 0; i < n; i++)
+        {
+            double value = raw<double>(i);
+            keys[i] = std::isnan(value) ? INFINITY : sign * value;
+        }
+    }
+    else if (dataType() == DataType::TEXT && measureType() == MeasureType::ID)
+    {
+        vector<string> values(n);
+        for (int i = 0; i < n; i++)
+            values[i] = raws(i);
+        vector<double> ranks = rankStrings(values);
+        for (int i = 0; i < n; i++)
+            keys[i] = values[i].empty() ? INFINITY : sign * ranks[i];
+    }
+    else
+    {
+        ColumnStruct *s = struc();
+        Level *levels = _mm->resolve(s->levels);
+        int nLevels = s->levelsUsed;
+
+        // the key for each level's value
+        map<int, double> levelKeys;
+        if (nLevels > 0 && (measureType() == MeasureType::ORDINAL || dataType() == DataType::TEXT))
+        {
+            if (measureType() == MeasureType::ORDINAL)
+            {
+                for (int i = 0; i < nLevels; i++)
+                    levelKeys[levels[i].value] = i;
+            }
+            else
+            {
+                vector<string> labels(nLevels);
+                for (int i = 0; i < nLevels; i++)
+                    labels[i] = _mm->resolve(levels[i].label);
+                vector<double> ranks = rankStrings(labels);
+                for (int i = 0; i < nLevels; i++)
+                    levelKeys[levels[i].value] = ranks[i];
+            }
+        }
+
+        for (int i = 0; i < n; i++)
+        {
+            int value = raw<int>(i);
+            if (value == INT_MIN)
+            {
+                keys[i] = INFINITY;
+                continue;
+            }
+            double key = value;
+            if ( ! levelKeys.empty())
+            {
+                auto level = levelKeys.find(value);
+                if (level != levelKeys.end())
+                    key = level->second;
+            }
+            keys[i] = sign * key;
+        }
+    }
+
+    return keys;
 }
 
 void ColumnW::_discardScratchColumn()

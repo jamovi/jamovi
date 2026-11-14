@@ -10,7 +10,7 @@ import ActionHub from './actionhub';
 
 import interactionManager from '../common/interactionmanager';
 import { EventEmitter } from 'tsee';
-import DataSetViewModel, { Column, ColumnType, MeasureType } from './dataset';
+import DataSetViewModel, { Column, ColumnType, MeasureType, SortKey } from './dataset';
 import Selection, { ISelection } from './selection';
 import Settings from './settings';
 import MsgDialog from '../common/msgdialog';
@@ -67,7 +67,7 @@ class ViewController extends EventEmitter {
         keyboardJS.bind('', event => this._notEditingKeyPress(event));
 
         this.model.on('dataSetLoaded', this._dataSetLoaded, this);
-        this.model.on('change:changesCount change:changesPosition', event => this.enableDisableActions());
+        this.model.on('change:changesCount change:changesPosition change:sortKeys', event => this.enableDisableActions());
 
         ActionHub.get('delVar').on('request', () => this._deleteColumns());
         ActionHub.get('delRow').on('request', this._deleteRows, this);
@@ -104,6 +104,11 @@ class ViewController extends EventEmitter {
                 item.parentId = column.id;
             }, 'right');
         });
+
+        ActionHub.get('sortAsc').on('request', () => this._sortBySelection(false));
+        ActionHub.get('sortDesc').on('request', () => this._sortBySelection(true));
+        ActionHub.get('sortClear').on('request', () => this._clearSelectionSort());
+        ActionHub.get('sortClearAll').on('request', () => this.setSort([]));
 
         ActionHub.get('toggleFilterVisible').on('request', () => {
             this.model.toggleFilterVisibility();
@@ -154,14 +159,22 @@ class ViewController extends EventEmitter {
 
         let columns = this.selection.currentSelectionToColumns();
         let hasFilters = columns.some(a => a.columnType === 'filter');
+        let sorted = this.model.isSorted();
 
-        ActionHub.get('delRow').set('enabled', selection.top <= dataSetBounds.bottom);
+        ActionHub.get('delRow').set('enabled', selection.top <= dataSetBounds.bottom && ! sorted);
         ActionHub.get('delVar').set('enabled', selection.left <= dataSetBounds.right);
         ActionHub.get('insertVar').set('enabled', selection.right <= dataSetBounds.right && hasFilters === false);
         ActionHub.get('insertComputed').set('enabled', selection.right <= dataSetBounds.right && hasFilters === false);
         ActionHub.get('insertRecoded').set('enabled',  selection.right <= dataSetBounds.right && hasFilters === false);
         ActionHub.get('insertOutput').set('enabled',  selection.right <= dataSetBounds.right && hasFilters === false);
-        ActionHub.get('insertRow').set('enabled', selection.rowNo <= dataSetBounds.bottom);
+        ActionHub.get('insertRow').set('enabled', selection.rowNo <= dataSetBounds.bottom && ! sorted);
+        let sortable = columns.some(column => this._isSortable(column));
+        ActionHub.get('sortAsc').set('enabled', sortable);
+        ActionHub.get('sortDesc').set('enabled', sortable);
+        ActionHub.get('sortAsc').set('value', this._selectionHasSort(false));
+        ActionHub.get('sortDesc').set('value', this._selectionHasSort(true));
+        ActionHub.get('sortClear').set('enabled', this._selectionHasSort(false) || this._selectionHasSort(true));
+        ActionHub.get('sortClearAll').set('enabled', sorted);
         ActionHub.get('cut').set('enabled', hasFilters === false);
         ActionHub.get('paste').set('enabled', hasFilters === false);
         ActionHub.get('compute').set('enabled', hasFilters === false);
@@ -170,6 +183,74 @@ class ViewController extends EventEmitter {
         ActionHub.get('undo').set('enabled', this.model.attributes.changesPosition > 0);
         ActionHub.get('redo').set('enabled', this.model.attributes.changesPosition < (this.model.attributes.changesCount - 1));
         ActionHub.get('toggleFilterVisible').set('enabled', this.model.filterCount() > 0);
+    }
+
+    _isSortable(column: Column): boolean {
+        return column.columnType !== ColumnType.NONE;
+    }
+
+    async setSort(sortKeys: SortKey[]) {
+        try {
+            await this.model.setSort(sortKeys);
+        }
+        catch (error) {
+            this._notifyEditProblem({
+                title: error.message,
+                message: error.cause,
+                type: 'error',
+            });
+        }
+    }
+
+    _selectionSortIds(): number[] {
+        // in the order the columns were selected
+        return this.selection.currentSelectionToColumnsInSelectionOrder()
+            .filter(column => this._isSortable(column))
+            .map(column => column.id);
+    }
+
+    _selectionHasSort(descending: boolean): boolean {
+        // whether any of the selected columns are sorted in this direction
+        let ids = this._selectionSortIds();
+        return this.model.attributes.sortKeys.some(key => key.descending === descending && ids.includes(key.columnId));
+    }
+
+    _sortBySelection(descending: boolean) {
+        let ids = this._selectionSortIds();
+        if (ids.length === 0)
+            return;
+
+        let sortKeys = this.model.attributes.sortKeys;
+        let sortedIds = sortKeys.map(key => key.columnId);
+
+        // these only affect the selected columns. the buttons behave as
+        // toggles; a highlighted button (any of the selected columns sorted
+        // in that direction) is turned off, an unhighlighted button applies
+        // that direction to all of them
+        let newKeys: SortKey[];
+        if (this._selectionHasSort(descending)) {
+            // remove the selected columns sorted in this direction
+            newKeys = sortKeys.filter(key => ! (ids.includes(key.columnId) && key.descending === descending));
+        }
+        else if (ids.some(id => ! sortedIds.includes(id))) {
+            // a selected column isn't sorted yet, so this is a new sort:
+            // the previous sorts are cleared, and the selected columns are
+            // applied in the order they were selected
+            newKeys = ids.map(id => ({ columnId: id, descending }));
+        }
+        else {
+            // all the selected columns are sorted, so change their direction
+            // (retaining their priority)
+            newKeys = sortKeys.map(key => ids.includes(key.columnId) ? { columnId: key.columnId, descending } : key);
+        }
+
+        this.setSort(newKeys);
+    }
+
+    _clearSelectionSort() {
+        let ids = this._selectionSortIds();
+        let sortKeys = this.model.attributes.sortKeys;
+        this.setSort(sortKeys.filter(key => ! ids.includes(key.columnId)));
     }
 
     async _toggleFilterEditor() {

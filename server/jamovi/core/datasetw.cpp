@@ -8,6 +8,7 @@
 #include <climits>
 #include <stdexcept>
 #include <cmath>
+#include <algorithm>
 
 using namespace std;
 
@@ -27,21 +28,30 @@ DataSetW *DataSetW::create(MemoryMapW *mm)
     dss->nextColumnId = 1;  // an id of zero is reserved for 'no column'
     dss->scratch = NULL;
     dss->rowCountExFiltered = 0;
-    dss->indices = NULL;
+    dss->viewOrder = NULL;
+    dss->viewLookup = NULL;
+    dss->viewRowCount = 0;
     dss->weights = 0;
 
-    // add the filter indices column
-    ColumnStruct *col = mm->allocateBase<ColumnStruct>();
+    // add the view order columns (allocating may move the memory map)
+    ColumnStruct *viewOrder = createIndexColumn(ds, mm);
+    ColumnStruct *viewLookup = createIndexColumn(ds, mm);
     dss = mm->resolve<DataSetStruct>(ds->_rel);
-    dss->indices = col;
-
-    ColumnStruct *ind = mm->resolve(col);
-    initColumn(mm, ind);
-    ColumnW indices = ColumnW(ds, mm, col);
-    indices.setDataType(DataType::INTEGER);
-    indices.setMeasureType(MeasureType::ID);
+    dss->viewOrder = viewOrder;
+    dss->viewLookup = viewLookup;
 
     return ds;
+}
+
+ColumnStruct *DataSetW::createIndexColumn(DataSetW *ds, MemoryMapW *mm)
+{
+    ColumnStruct *col = mm->allocateBase<ColumnStruct>();
+    ColumnStruct *resolved = mm->resolve(col);
+    initColumn(mm, resolved);
+    ColumnW column = ColumnW(ds, mm, col);
+    column.setDataType(DataType::INTEGER);
+    column.setMeasureType(MeasureType::ID);
+    return col;
 }
 
 DataSetW *DataSetW::retrieve(MemoryMapW *mm)
@@ -247,8 +257,6 @@ void DataSetW::setRowCount(size_t count)
         columns = _mm->resolve(dss->columns);
     }
 
-    indices()._setRowCount<int>(count);
-
     dss = _mm->resolve(_rel);
     dss->rowCount = count;
 }
@@ -386,29 +394,27 @@ void DataSetW::deleteColumns(int delStart, int delEnd)
     dss->columnCount -= delCount;
 }
 
-ColumnW DataSetW::indices()
+ColumnW DataSetW::viewOrder()
 {
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
-    return ColumnW(this, _mm, dss->indices);
+    return ColumnW(this, _mm, dss->viewOrder);
+}
+
+ColumnW DataSetW::viewLookup()
+{
+    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+    return ColumnW(this, _mm, dss->viewLookup);
 }
 
 void DataSetW::refreshFilterState()
 {
     int nRows = 0;
 
-    ColumnW indices = this->indices();
-
     for (int rowNo = 0; rowNo < rowCount(); rowNo++)
     {
         if ( ! isRowFiltered(rowNo))
-        {
-            indices.setIValue(nRows, rowNo);
             nRows++;
-        }
     }
-
-    for (int rowNo = nRows; rowNo < rowCount(); rowNo++)
-        indices.setIValue(rowNo, INT_MIN);
 
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
     ColumnStruct **columns = _mm->resolve(struc()->columns);
@@ -422,6 +428,69 @@ void DataSetW::refreshFilterState()
         if (column.columnType() != ColumnType::FILTER)
             column.updateLevelCounts();
     }
+}
+
+bool DataSetW::refreshViewOrder(const vector<int> &columnIds, const vector<bool> &descending, bool exFiltered)
+{
+    // the view order is the data set rows displayed, in the order they're
+    // displayed; exFiltered omits filtered rows. ties retain the data set
+    // order. returns whether the view order changed
+
+    int nRows = rowCount();
+
+    vector<int> rows;
+    rows.reserve(nRows);
+    for (int rowNo = 0; rowNo < nRows; rowNo++)
+    {
+        if ( ! exFiltered || ! isRowFiltered(rowNo))
+            rows.push_back(rowNo);
+    }
+
+    vector<vector<double> > keys;
+    for (size_t i = 0; i < columnIds.size(); i++)
+        keys.push_back(getColumnById(columnIds[i]).sortKeys(descending[i]));
+
+    if ( ! keys.empty())
+    {
+        stable_sort(rows.begin(), rows.end(), [&keys](int a, int b) {
+            for (const vector<double> &key : keys)
+            {
+                if (key[a] < key[b])
+                    return true;
+                if (key[a] > key[b])
+                    return false;
+            }
+            return false;
+        });
+    }
+
+    int nView = (int)rows.size();
+    ColumnW order = viewOrder();
+    ColumnW lookup = viewLookup();
+
+    bool changed = (nView != viewRowCount());
+    for (int viewRow = 0; ! changed && viewRow < nView; viewRow++)
+        changed = (order.raw<int>(viewRow) != rows[viewRow]);
+
+    // the lookup still needs resizing if only hidden rows were added or removed
+    if ( ! changed && lookup.rowCount() == nRows)
+        return false;
+
+    order._setRowCount<int>(nView);
+    lookup._setRowCount<int>(nRows);
+
+    for (int rowNo = 0; rowNo < nRows; rowNo++)
+        lookup.cellAt<int>(rowNo) = INT_MIN;
+
+    for (int viewRow = 0; viewRow < nView; viewRow++)
+    {
+        order.cellAt<int>(viewRow) = rows[viewRow];
+        lookup.cellAt<int>(rows[viewRow]) = viewRow;
+    }
+
+    _mm->resolve<DataSetStruct>(_rel)->viewRowCount = nView;
+
+    return changed;
 }
 
 ColumnW DataSetW::swapWithScratchColumn(ColumnW &column)

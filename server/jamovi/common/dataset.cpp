@@ -116,15 +116,31 @@ bool DataSet::isRowFiltered(int index) const
     return false;
 }
 
-Column DataSet::indices()
+Column DataSet::viewOrder()
 {
     DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
-    return Column(this, _mm, dss->indices);
+    return Column(this, _mm, dss->viewOrder);
 }
 
-int DataSet::getIndexExFiltered(int index)
+Column DataSet::viewLookup()
 {
-    return indices().raw<int>(index);
+    DataSetStruct *dss = _mm->resolve<DataSetStruct>(_rel);
+    return Column(this, _mm, dss->viewLookup);
+}
+
+int DataSet::viewRowCount() const
+{
+    return _mm->resolve(_rel)->viewRowCount;
+}
+
+int DataSet::getDataIndex(int viewRow)
+{
+    return viewOrder().raw<int>(viewRow);
+}
+
+int DataSet::getViewIndex(int dataRow)
+{
+    return viewLookup().raw<int>(dataRow);
 }
 
 bool DataSet::hasWeights()

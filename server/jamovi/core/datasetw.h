@@ -6,6 +6,7 @@
 #define DATASETW_H
 
 #include <string>
+#include <vector>
 
 #include "dataset.h"
 #include "memorymapw.h"
@@ -28,11 +29,13 @@ public:
     void deleteColumns(int rowStart, int rowEnd);
     void setRowCount(size_t count);
     void refreshFilterState();
+    bool refreshViewOrder(const std::vector<int> &columnIds, const std::vector<bool> &descending, bool exFiltered);
 
     ColumnW operator[](int index);
     ColumnW operator[](const char *name);
     ColumnW getColumnById(int id);
-    ColumnW indices();
+    ColumnW viewOrder();
+    ColumnW viewLookup();
 
     bool hasWeights();
     int weights();
@@ -51,6 +54,7 @@ protected:
 
     DataSetW(MemoryMapW *memoryMap);
     static void initColumn(MemoryMapW *mm, ColumnStruct *&column);
+    static ColumnStruct *createIndexColumn(DataSetW *ds, MemoryMapW *mm);
 
 private:
 
