@@ -74,6 +74,8 @@ export const createVariableMenuItems = function(plural:boolean, noData) {
             new ContextMenuButton({ title: n_('Delete Variable', 'Delete Variables', plural ? 2 : 1), name: 'delVar' })
         ]}),
         new RibbonSeparator(),
+        createSortMenuItems(),
+        new RibbonSeparator(),
         new RibbonGroup({ orientation: 'vertical', items: [
             new ContextMenuButton({ title: _('Setup...'), name: 'editVar' })
         ]}),
@@ -92,6 +94,22 @@ export const createVariableMenuItems = function(plural:boolean, noData) {
     }
 
     return menu;
+};
+
+const createSortMenuItems = function() {
+    return new RibbonGroup({ orientation: 'vertical', items: [
+        new ContextMenuButton({ title: _('Sort'), name: 'sort', subItems: [
+            new RibbonGroup({ orientation: 'vertical', items: [
+                new ContextMenuButton({ title: _('Ascending'), name: 'sortAsc', iconId: 'sortAsc' }),
+                new ContextMenuButton({ title: _('Descending'), name: 'sortDesc', iconId: 'sortDesc' })
+            ]}),
+            new RibbonSeparator(),
+            new RibbonGroup({ orientation: 'vertical', items: [
+                new ContextMenuButton({ title: _('Clear'), name: 'sortClear', iconId: 'sortClear' }),
+                new ContextMenuButton({ title: _('Clear All'), name: 'sortClearAll', iconId: 'sortClearAll' })
+            ]})
+        ]})
+    ]});
 };
 
 export const createAppendVariableMenuItems = function() {
@@ -122,6 +140,8 @@ export const createFilterMenuItems = function(noData) {
                 new ContextMenuButton({ title: _('Delete Filter'), name: 'delVar' })
             ]}),
             new RibbonSeparator(),
+            createSortMenuItems(),
+            new RibbonSeparator(),
             new RibbonGroup({ orientation: 'vertical', items: [
                 new ContextMenuButton({ title: _('Edit...'), name: 'editFilters' })
             ]}),
@@ -136,6 +156,8 @@ export const createFilterMenuItems = function(noData) {
             new RibbonGroup({ orientation: 'vertical', items: [
                 new ContextMenuButton({ title: _('Delete Filter'), name: 'delVar' })
             ]}),
+            new RibbonSeparator(),
+            createSortMenuItems(),
             new RibbonSeparator(),
             new RibbonGroup({ orientation: 'vertical', items: [
                 new ContextMenuButton({ title: _('Edit...'), name: 'editFilters' })

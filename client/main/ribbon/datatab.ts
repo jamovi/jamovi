@@ -40,6 +40,13 @@ export class DataTab extends RibbonTab {
                 new RibbonButton({ title: _('Compute'), ariaLabel: _('Insert new computed variable'), name: 'compute', margin: 'large', size: 'large', keyTipKey: 'q', keyTipPosition: { x: '50%', y: '90%' } }),
                 new RibbonButton({ title: _('Transform'), ariaLabel: _('Insert new transformed variable'), name: 'transform', margin: 'large', size: 'large', keyTipKey: 't', keyTipPosition: { x: '50%', y: '90%' } }),
                 new RibbonButton({ title: _('Weights'), ariaLabel: _('Data weights'), name: 'weights', margin: 'large', size: 'large', keyTipKey: 'w', keyTipPosition: { x: '50%', y: '90%' } }),
+                new RibbonButton({ title: _('Sort'), ariaLabel: _('Sort'), name: 'sort', margin: 'large', size: 'large', keyTipKey: 'o', keyTipPosition: { x: '50%', y: '90%' }, subItems: [
+                    new RibbonButton({ title: _('Ascending'), ariaLabel: _('Sort the selected variables ascending'), name: 'sortAsc', keyTipKey: 'a', keyTipPosition: { x: '25px', y: '55%' } }),
+                    new RibbonButton({ title: _('Descending'), ariaLabel: _('Sort the selected variables descending'), name: 'sortDesc', keyTipKey: 'd', keyTipPosition: { x: '25px', y: '55%' } }),
+                    new RibbonSeparator(),
+                    new RibbonButton({ title: _('Clear'), ariaLabel: _('Clear the sort of the selected variables'), name: 'sortClear', keyTipKey: 'c', keyTipPosition: { x: '25px', y: '55%' } }),
+                    new RibbonButton({ title: _('Clear All'), ariaLabel: _('Clear all sorting'), name: 'sortClearAll', keyTipKey: 'x', keyTipPosition: { x: '25px', y: '55%' } }),
+                ]}),
                 new RibbonGroup({ orientation: 'vertical', margin: 'large', items: [
                     new RibbonButton({ title: _('Add'), ariaLabel: _('Add new variable'), name: 'addVar', keyTipKey: 'a', keyTipPosition: { x: '25%', y: '25%' }, subItems: [
                         new RibbonGroup({ title: _('Data Variable'), orientation: 'vertical', titlePosition: 'top', items: [

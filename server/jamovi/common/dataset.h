@@ -19,7 +19,9 @@ typedef struct
     int volatile nextColumnId;
     ColumnStruct * volatile scratch;
     int volatile rowCountExFiltered;
-    ColumnStruct * volatile indices;
+    ColumnStruct * volatile viewOrder;   // the data set row displayed at each view row
+    ColumnStruct * volatile viewLookup;  // the view row of each data set row; INT_MIN if not displayed
+    int volatile viewRowCount;
     int volatile weights;
 
 } DataSetStruct;
@@ -35,7 +37,10 @@ public:
 
     bool isRowFiltered(int index) const;
     int rowCountExFiltered() const;
-    int getIndexExFiltered(int index);
+
+    int viewRowCount() const;
+    int getDataIndex(int viewRow);
+    int getViewIndex(int dataRow);
 
     Column operator[](int index);
     Column operator[](const char *name);
@@ -49,7 +54,8 @@ protected:
     DataSet(MemoryMap *memoryMap);
     DataSetStruct *struc() const;
     ColumnStruct *strucC(int index) const;
-    Column indices();
+    Column viewOrder();
+    Column viewLookup();
 
     DataSetStruct *_rel;
 

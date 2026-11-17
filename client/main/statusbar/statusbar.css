@@ -43,6 +43,10 @@
 }
 
 
+.jmv-status-bar .jmv-status-bar-info-item[data-id=sortedBy]:empty {
+    display: none;
+}
+
 .jmv-status-bar .jmv-status-bar-info-item[data-id=editStatus] {
     /*max-width: 30px;*/
 }
