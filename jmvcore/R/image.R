@@ -273,7 +273,7 @@ Image <- R6::R6Class("Image",
             private$.width <- size$width
             private$.height <- size$height
 
-            if (element$image$path == '' || resized || 'theme' %in% oChanges || 'palette' %in% oChanges || 'decSymbol' %in% oChanges) {
+            if (element$image$path == '' || resized || 'theme' %in% oChanges || 'palette' %in% oChanges || 'decSymbol' %in% oChanges || '.lang' %in% oChanges) {
                 private$.filePath <- NULL
             } else {
                 private$.filePath <- element$image$path

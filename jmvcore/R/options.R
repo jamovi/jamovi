@@ -320,6 +320,12 @@ Options <- R6::R6Class(
                     next()
                 }
 
+                if (name == '.lang') {
+                    if ( ! identical(private$.lang, parseOptionPB(optionPB)))
+                        changes <- c(changes, '.lang')
+                    next()
+                }
+
                 if ( ! name %in% names(private$.options))
                     next()
 
