@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  comparePlots module icon, in the style of jamovi's ribbon icons (74 x 44, flat colours).
+  Three overlapping density "ridges" on a shared axis, green (top), blue (middle) and
+  red (bottom), using the colours of jamovi's own plot icons
+  (red #d28b89, green #98bb93; blue as in vijPlots #8b9ad4). They are drawn from the top one to the bottom one, each with an opaque
+  fill, so the lower ridges cover the upper ones, as the ridgeline plot does in the module.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 74 44" width="74" height="44">
+  <g stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">
+    <!-- top ridge (green): one peak, left of centre -->
+    <path d="M5,18 C15,18 20,17 24,11 C27,6 30,3.5 33,3.5 C37,3.5 39,9 43,14 C46,17.5 54,18 69,18 Z"
+          fill="#b1cbae" stroke="#98bb93"/>
+    <!-- middle ridge (blue): two peaks (bimodal) -->
+    <path d="M5,30 C13,30 16,29 19,23 C21,18 23,14.5 26,16.5 C29,18.5 31,25 36,25 C40,25 41,17 45,14 C48,12 51,16 54,22 C57,27 62,30 69,30 Z"
+          fill="#b5bfe4" stroke="#8b9ad4"/>
+    <!-- bottom ridge (red): one peak, right of centre -->
+    <path d="M5,41 C20,41 34,41 40,37 C44,33 46,25 51,24 C56,23 59,33 62,38 C64,40 66,41 69,41 Z"
+          fill="#d89d9c" stroke="#d28b89"/>
+  </g>
+</svg>

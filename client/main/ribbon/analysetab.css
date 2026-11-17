@@ -158,6 +158,10 @@
     background-image: url("../../assets/analysis-scj.svg");
 }
 
+.jmv-ribbon-button[data-name="compareplots"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-compareplots.svg");
+}
+
 .jmv-analyses-button.jmv-modules-menu-item {
     background-color: #dddddd;
 }
