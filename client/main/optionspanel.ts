@@ -16,6 +16,7 @@ import { h } from '../common/htmlelementcreator';
 import { EventEmitter } from 'tsee';
 import DataSetViewModel from './dataset';
 import { Analysis } from './analyses';
+import { addonsKey } from '../common/addons';
 import Settings from './settings';
 import Instance, { IFileEntry } from './instance';
 import Store from './store';
@@ -30,11 +31,6 @@ interface IFrameCommsApi {
     requestData: (data: any) => any;
     action: (data: { type: 'findModule', data: any }) => void;
 }
-
-// identifies an analysis' addons, whose options are part of its options panel
-const addonsKey = (analysis: Analysis) => {
-    return analysis.addons.map(addon => `${ addon.ns }::${ addon.name }`).join(',');
-};
 
 class AnalysisResources extends EventEmitter {
     frame: HTMLIFrameElement;
@@ -222,7 +218,7 @@ class AnalysisResources extends EventEmitter {
                 this.jamoviVersion = version;
             })
         ]).then(() => {
-            this.addonsKey = addonsKey(analysis);
+            this.addonsKey = addonsKey(analysis.addons);
             return this.frameComms.send("setOptionsDefinition", this.def, this.i18nDef, I18ns.get('app').localeData, this.jamoviVersion, analysis.id, interactionManager.getMode(), analysis.addons);
         });
     }
@@ -419,7 +415,7 @@ class OptionsPanel {
         if (resources !== undefined
                 && analysis.isReady
                 && resources.addonsKey !== undefined
-                && resources.addonsKey !== addonsKey(analysis)) {
+                && resources.addonsKey !== addonsKey(analysis.addons)) {
             if (resources === this._currentResources) {
                 this.removeMsgListeners(resources);
                 this._currentResources = null;

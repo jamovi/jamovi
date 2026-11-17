@@ -110,3 +110,21 @@ def test_set_of_an_addons_option_is_a_change():
     options = anova_options()
     incoming = Options.create([ { 'name': DUNCAN + 'alpha', 'type': 'Number', 'default': 0.01 } ])
     assert options.set(incoming.as_pb()) is True
+
+
+def test_the_skipped_addons_sent_back_by_jmvcore_arent_kept():
+    """.addonsSkipped is made for each run, and isn't saved with the options"""
+
+    from jamovi.server.options import ADDONS_SKIPPED
+
+    options = anova_options()
+    options.set_value('dep', 'yield')
+
+    pb = options.own_pb()
+    pb.names.append(ADDONS_SKIPPED)
+    pb.options.add().s = 'stale'
+    options.set(pb)
+
+    assert ADDONS_SKIPPED not in options.as_pb().names
+    assert ADDONS_SKIPPED not in options.own_pb().names
+    assert options.get_value('dep') == 'yield'

@@ -58,8 +58,12 @@ class Analyses:
                     continue
                 if analysis_meta is None:
                     continue
-                addons = [ (addon.ns, addon.name) for addon in analysis.addons ]
-                if addons != analysis_meta.addons:
+                # compared with the addons the analysis tried to load, not
+                # those which loaded; an addon which can't be read would
+                # otherwise have the analysis recreated on every change
+                skipped = [ (s['ns'], s['name'], s['versions']) for s in analysis.skipped_addons ]
+                if (analysis.addon_ids != list(analysis_meta.addons)
+                        or skipped != list(analysis_meta.skipped_addons)):
                     ids.append(analysis.id)
 
             for id in ids:
@@ -111,8 +115,11 @@ class Analyses:
             else:
                 Ctor = Analysis
 
+            skipped_addons = self._describe_skipped_addons(analysis_meta)
+
             return Ctor(self._project, id, analysis_name, ns, options, self,
-                        enabled, addons=addons, arbitrary_code=arbitrary_code)
+                        enabled, addons=addons, addon_ids=list(analysis_meta.addons),
+                        skipped_addons=skipped_addons, arbitrary_code=arbitrary_code)
 
         except Exception as e:
             log.exception(e)
@@ -140,6 +147,29 @@ class Analyses:
             metas.append(addon_meta)
             defns += addon_defns
         return (metas, defns)
+
+    def _describe_skipped_addons(self, analysis_meta):
+        # the addons which don't support the analysis' interface version,
+        # with what the analysis' notice about each needs
+        skipped = [ ]
+        for (addon_ns, addon_name, versions) in analysis_meta.skipped_addons:
+            module_title = addon_ns
+            title = addon_name
+            try:
+                module_meta = self._modules.get(addon_ns)
+                module_title = module_meta.title or addon_ns
+                title = module_meta.get(addon_name).title or addon_name
+            except Exception as e:
+                log.exception(e)
+            skipped.append({
+                'ns': addon_ns,
+                'name': addon_name,
+                'versions': versions,
+                'title': title,
+                'module': module_title,
+                'version': analysis_meta.interface_version,
+            })
+        return skipped
 
     def _construct_from_pb(self, analysis_pb, new_id=False, status=Analysis.Status.NONE):
         for ref_pb in analysis_pb.references:

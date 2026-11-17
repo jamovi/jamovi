@@ -146,7 +146,16 @@ class AnalysisMeta:
         self.menuTitle = ''
         self.menuSubtitle = ''
         self.addon_for: list | None = None
+        # the versions of its parent's interface an addon supports, None for
+        # any
+        self.addon_versions: tuple | None = None
+        # the version of the analysis' options and results names, as addons
+        # see them
+        self.interface_version = 1
         self.addons: list = []
+        # the addons which aren't run, as they don't support the analysis'
+        # interface version: (ns, name, versions)
+        self.skipped_addons: list = []
         self.in_menu = True
         self.defn: dict = {}
         self.translated = ''
@@ -327,6 +336,7 @@ class Modules:
         for module in self:
             for analysis in module.analyses:
                 del analysis.addons[:]
+                del analysis.skipped_addons[:]
 
         for module in self:
             for analysis in module.analyses:
@@ -335,13 +345,21 @@ class Modules:
                         (ns, name) = analysis.addon_for
                         target_module = modules_by_name.get(ns)
                         target_analysis = next(iter(filter(lambda a: a.name == name, target_module.analyses)))
-                        target_analysis.addons.append((analysis.ns, analysis.name))
+                        # an addon which doesn't support the version of
+                        # the analysis installed isn't run, but the analysis
+                        # says so (see Analysis.skipped_addons)
+                        versions = analysis.addon_versions
+                        if versions is not None and target_analysis.interface_version not in versions:
+                            target_analysis.skipped_addons.append((analysis.ns, analysis.name, versions))
+                        else:
+                            target_analysis.addons.append((analysis.ns, analysis.name))
                     except Exception:
                         pass
 
         for module in self:
             for analysis in module.analyses:
                 analysis.addons.sort()
+                analysis.skipped_addons.sort()
 
         self._notify_listeners({ 'type': 'addonsChanged' })
 
@@ -511,9 +529,16 @@ class Modules:
                     analysis.menuSubgroup = analysis_defn['menuSubgroup']
                 if 'menuSubtitle' in analysis_defn and analysis_defn['menuSubtitle'] is not None:
                     analysis.menuSubtitle = analysis_defn['menuSubtitle']
+                if 'interfaceVersion' in analysis_defn:
+                    analysis.interface_version = int(analysis_defn['interfaceVersion'])
                 if 'addonFor' in analysis_defn:
                     analysis.in_menu = False
-                    analysis.addon_for = analysis_defn['addonFor'].split('::')
+                    addon_for = analysis_defn['addonFor']
+                    if isinstance(addon_for, dict):
+                        if 'versions' in addon_for:
+                            analysis.addon_versions = tuple(map(int, addon_for['versions']))
+                        addon_for = addon_for['analysis']
+                    analysis.addon_for = addon_for.split('::')
                 if 'hidden' in analysis_defn and analysis_defn['hidden'] is True:
                     analysis.in_menu = False
 

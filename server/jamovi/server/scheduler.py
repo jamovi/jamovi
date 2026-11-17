@@ -203,6 +203,7 @@ class Scheduler:
             analysis.op.waiting = False
 
             request_pb.options.CopyFrom(analysis.options.own_pb())
+            analysis.write_skipped_addons(request_pb.options)
             request_pb.perform = PERFORM_SAVE
             request_pb.path = analysis.op.path
             request_pb.part = analysis.op.part
@@ -212,6 +213,7 @@ class Scheduler:
             analysis.set_status(Analysis.Status.RUNNING)
 
             request_pb.options.CopyFrom(analysis.options.own_pb())
+            analysis.write_skipped_addons(request_pb.options)
             request_pb.changed.extend(analysis.changes)
             request_pb.revision = analysis.revision
             request_pb.clearState = analysis.clear_state or analysis.state_dropped

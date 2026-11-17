@@ -531,3 +531,68 @@ test_that("an addon's options set away from their defaults are chained in the sy
     local_mocked_bindings(addonExported=function(package, name) FALSE)
     expect_equal(a$analysis$.__enclos_env__$private$.addonsAsSource(), '')
 })
+
+# the addons the server didn't send, as it sends them with the options.
+# (each message is built before it's assigned, as assigning one copies it)
+skippedPB <- function(...) {
+    initProtoBuf()
+    named <- function(values) {
+        options <- RProtoBuf_new(jamovi.coms.AnalysisOptions, hasNames=TRUE)
+        for (name in names(values)) {
+            value <- values[[name]]
+            option <- RProtoBuf_new(jamovi.coms.AnalysisOption)
+            if (is.character(value)) {
+                option$s <- value
+            } else if (length(value) == 1) {
+                option$i <- value
+            } else {
+                items <- RProtoBuf_new(jamovi.coms.AnalysisOptions, hasNames=FALSE)
+                for (v in value)
+                    items$add('options', RProtoBuf_new(jamovi.coms.AnalysisOption, i=v))
+                option$c <- items
+            }
+            options$add('names', name)
+            options$add('options', option)
+        }
+        RProtoBuf_new(jamovi.coms.AnalysisOption, c=options)
+    }
+    addons <- RProtoBuf_new(jamovi.coms.AnalysisOptions, hasNames=FALSE)
+    for (addon in list(...))
+        addons$add('options', named(addon))
+    pb <- RProtoBuf_new(jamovi.coms.AnalysisOptions, hasNames=TRUE)
+    pb$add('names', '.addonsSkipped')
+    pb$add('options', RProtoBuf_new(jamovi.coms.AnalysisOption, c=addons))
+    pb
+}
+
+test_that("an addon the server skipped is noted in its parent's results", {
+
+    local_mocked_bindings(.package='jmvcore', packageRefs=function(package) list())
+
+    run <- anovaWithAddon()
+    run$analysis$options$fromProtoBuf(skippedPB(
+        list(ns='jdmrt', name='dmrt', title='Duncan', module='jDMRT', version=4L, versions=c(2L, 3L))))
+
+    elements <- run$analysis$asProtoBuf()$results$group$elements
+    names <- vapply(elements, function(element) element$name, '')
+    expect_true('.addonSkipped_jdmrt_dmrt' %in% names)
+
+    notice <- elements[[which(names == '.addonSkipped_jdmrt_dmrt')]]$notice
+    expect_equal(notice$type, jamovi.coms.ResultsNotice$NoticeType$WARNING)
+    parts <- strsplit(notice$content, '\u0004')[[1]]
+    values <- jsonlite::fromJSON(parts[2])
+    expect_equal(values$title, 'Duncan')
+    expect_equal(values$module, 'jDMRT')
+    expect_equal(values$versions, '2, 3')
+    expect_equal(values$version, 4)
+})
+
+test_that("an analysis with no addons skipped has no notice of them", {
+
+    local_mocked_bindings(.package='jmvcore', packageRefs=function(package) list())
+
+    run <- anovaWithAddon()
+    elements <- run$analysis$asProtoBuf()$results$group$elements
+    names <- vapply(elements, function(element) element$name, '')
+    expect_false(any(startsWith(names, '.addonSkipped')))
+})

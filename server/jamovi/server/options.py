@@ -12,7 +12,10 @@ TRUE = AnalysisOption.Other.Value('TRUE')
 FALSE = AnalysisOption.Other.Value('FALSE')
 
 # an addon's options are carried in its parent's options, named
-# addons/<ns>/<name>/<option>
+# addons/<ns>/<name>/<option>. this naming is also built by the client
+# (addonPrefix() in client/common/addons.ts) and jmvcore
+# (Options$.addonPrefix()), and all three must agree. names starting with
+# addons/ (or results/) are reserved, and an analysis can't define them
 ADDONS_PREFIX = 'addons/'
 
 
@@ -23,6 +26,11 @@ def addon_prefix(ns, name):
 # the settings the client sends along with an analysis' options, which its
 # addons need as well
 SETTINGS = ('.ppi', 'theme', 'palette', 'decSymbol', '.lang')
+
+# the addons not run, sent to jmvcore with an analysis' options (see
+# Analysis.write_skipped_addons()). it's made fresh for each run, so it's
+# never kept, though jmvcore sends it back with the options
+ADDONS_SKIPPED = '.addonsSkipped'
 
 
 def substitute(values, changes):
@@ -419,6 +427,9 @@ class Options:
         new_names = list(pb.names)
 
         for i, name in enumerate(new_names):
+            if name == ADDONS_SKIPPED:
+                continue
+
             new_pb = pb.options[i]
 
             changed = False
@@ -482,7 +493,7 @@ class Options:
         pb = AnalysisOptions()
         pb.hasNames = True
         for i, name in enumerate(self._pb.names):
-            if name.startswith(ADDONS_PREFIX):
+            if name.startswith(ADDONS_PREFIX) or name == ADDONS_SKIPPED:
                 continue
             pb.names.append(name)
             pb.options.add().CopyFrom(self._pb.options[i])

@@ -15,6 +15,7 @@ Options <- R6::R6Class(
         .palette='jmv',
         .decSymbol='.',
         .lang='',
+        .skippedAddons=list(),
         .requiresData=TRUE,
         .translator=NA,
         .parentOptions=NULL),
@@ -45,6 +46,10 @@ Options <- R6::R6Class(
         theme=function() private$.theme,
         palette=function() private$.palette,
         decSymbol=function() private$.decSymbol,
+        # the addons the server didn't send, as they don't support this
+        # version of the analysis (its interfaceVersion). each is a list of
+        # ns, name, title, module, version and versions
+        .addonsSkipped=function() private$.skippedAddons,
         options=function() private$.options),
     public=list(
         initialize=function(package='jmv', name='', requiresData=TRUE, ...) {
@@ -236,6 +241,9 @@ Options <- R6::R6Class(
             private$.parentOptions <- parentOptions
         },
         .addonPrefix=function() {
+            # the server (addon_prefix() in server/jamovi/server/options.py)
+            # and the client (addonPrefix() in client/common/addons.ts) build
+            # the same prefix, and all three must agree
             paste0('addons/', private$.package, '/', private$.name, '/')
         },
         .rootNames=function(names) {
@@ -350,6 +358,8 @@ Options <- R6::R6Class(
                     private$.decSymbol <- value
                 } else if (name == '.lang') {
                     private$.lang <- value
+                } else if (name == '.addonsSkipped') {
+                    private$.skippedAddons <- value
                 } else if (name %in% names(private$.options)) {
                     option <- private$.options[[name]]
                     option$value <- value

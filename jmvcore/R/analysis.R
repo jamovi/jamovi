@@ -712,9 +712,9 @@ Analysis <- R6::R6Class('Analysis',
             t <- getGlobalTheme(self$options$theme, self$options$palette)
 
             if (noThrow) {
-                result <- try(tooSmallToDraw(render(image, theme = t$theme, ggtheme = t$ggtheme, ...)), silent=FALSE)
+                result <- try(render(image, theme = t$theme, ggtheme = t$ggtheme, ...), silent=FALSE)
             } else {
-                result <- tooSmallToDraw(render(image, theme = t$theme, ggtheme = t$ggtheme, ...))
+                result <- render(image, theme = t$theme, ggtheme = t$ggtheme, ...)
             }
 
             if (dataRequired)
@@ -860,6 +860,20 @@ Analysis <- R6::R6Class('Analysis',
                 weightsInfo$notice$content <- message
                 weightsInfo$notice$type <- type
                 prepend[[length(prepend)+1]] <- weightsInfo
+            }
+
+            for (skipped in private$.options$.addonsSkipped) {
+                message <- ..(
+                    "{title} wasn't run. It supports versions {versions} of this analysis, and version {version} is installed. An update to the {module} module may be needed.",
+                    list(
+                        title=skipped$title,
+                        module=skipped$module,
+                        versions=paste(unlist(skipped$versions), collapse=', '),
+                        version=skipped$version))
+                skippedInfo <- RProtoBuf_new(jamovi.coms.ResultsElement, name=paste0('.addonSkipped_', skipped$ns, '_', skipped$name))
+                skippedInfo$notice$content <- message
+                skippedInfo$notice$type <- jamovi.coms.ResultsNotice$NoticeType$WARNING
+                prepend[[length(prepend)+1]] <- skippedInfo
             }
 
             if ( ! identical(private$.stacktrace, ''))

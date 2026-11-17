@@ -45,9 +45,20 @@ export class LayoutAction {
         if (this._manager.initializingData())
             return;
 
+        // an event handler which throws mustn't leave the manager executing
+        // (and the options in an edit). it's logged, rather than passed on to
+        // whatever triggered it, which may be another analysis' option (an
+        // addon's handlers listen to its parent's options)
         this._manager._executeStarted(this);
-        this._callback.call(this._manager._view, this._manager._resources, ...args);
-        this._manager._executeEnded(this);
+        try {
+            this._callback.call(this._manager._view, this._manager._resources, ...args);
+        }
+        catch (e) {
+            console.error(e);
+        }
+        finally {
+            this._manager._executeEnded(this);
+        }
     }
 
     _connectToListeners(eventListeners, propertyListeners) {

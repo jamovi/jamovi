@@ -10,6 +10,7 @@ import host from './host';
 import Notify from './notification';
 
 import Analyses, { Analysis } from './analyses';
+import { addonsKey } from '../common/addons';
 import DataSetViewModel from './dataset';
 import OptionsPB from './optionspb';
 import { IModuleMeta, Modules } from './modules';
@@ -1350,7 +1351,6 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                 // installed or removed (the server recreates the analysis), and
                 // it's then reloaded, with them
                 let addons = this._addonIds(response);
-                const addonsKey = (ids: { ns: string, name: string }[]) => ids.map(id => `${ id.ns }::${ id.name }`).join(',');
                 if (analysis.isReady && addonsKey(addons) !== addonsKey(analysis._addonIds))
                     analysis.reload();
 

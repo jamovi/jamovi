@@ -389,9 +389,12 @@ class Instance:
             changed = set(map(lambda x: x.name, dataset))
 
         for analysis in self._project.analyses:
-            using = analysis.get_using()
+            # an addon is only sent the variables its parent uses (see
+            # Options.addon_pb()), so a change to a variable only an addon
+            # uses changes nothing. it's still renamed in the addon's options
+            using = analysis.get_using(include_addons=False)
             using_and_changed = using & changed
-            if not using.isdisjoint(renamed):
+            if not analysis.get_using().isdisjoint(renamed):
                 analysis.notify_changes(using_and_changed, renamed)
             elif using_and_changed:
                 analysis.notify_changes(using_and_changed)

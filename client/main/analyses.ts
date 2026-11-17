@@ -9,6 +9,7 @@ import DataSetViewModel from './dataset';
 import { Modules } from './modules';
 import { IReference } from './references';
 import { I18nData } from '../common/i18n';
+import { AddonId, addonPrefix } from '../common/addons';
 
 // an addon to an analysis. its options are carried in the analysis' options,
 // named addons/<ns>/<name>/<option>
@@ -21,9 +22,6 @@ export type AnalysisAddon = {
     i18n: I18nData | null;
 };
 
-type AddonId = { ns: string, name: string };
-
-export const addonPrefix = (ns: string, name: string) => `addons/${ ns }/${ name }/`;
 
 export class Analysis {
     id: number;

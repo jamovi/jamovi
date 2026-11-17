@@ -26,6 +26,7 @@ import { h, rich }  from '../common/htmlelementcreator';
 
 import I18ns, { I18n, I18nData } from "../common/i18n";
 import HighContrast from '../common/highcontrast';
+import { addonPrefix } from '../common/addons';
 
 declare global {
     function s_(key: string, formats?: { [key: string]: (string|number); } | (string|number)[] | string, options?: { prefix: string; postfix: string; }): string;
@@ -144,13 +145,13 @@ export type AddonDef = {
     i18n: I18nData,
 };
 
-// an addon's options are carried in its parent's options, named so
-const addonPrefix = (ns: string, name: string) => `addons/${ ns }/${ name }/`;
 
 // an addon's events see each of its parent's options, read only, as
 // ui.parent_<option>, and can handle parent_<option>_changed
 const PARENT_PREFIX = 'parent_';
 
+// a source of null is a parent option which doesn't exist (the parent may
+// have changed under the addon). its value is undefined, and it never changes
 class ParentOptionResource {
     _source: any;
     events?: any[];
@@ -160,23 +161,32 @@ class ParentOptionResource {
     }
 
     value(key?: any) {
+        if (this._source === null)
+            return undefined;
         return this._source.value(key);
     }
 
     getTrigger(property: string) {
+        if (this._source === null)
+            return `${ property }_changed`;
         return this._source.getTrigger(property);
     }
 
     on(eventName: string, listener: (...args: any[]) => void) {
-        this._source.on(eventName, listener);
+        if (this._source !== null)
+            this._source.on(eventName, listener);
         return this;
     }
 
     off(eventName: string, listener: (...args: any[]) => void) {
-        this._source.off(eventName, listener);
+        if (this._source !== null)
+            this._source.off(eventName, listener);
         return this;
     }
 }
+
+// the parent options an addon's handlers are named for, parent_<option>_<event>
+const PARENT_HANDLER = new RegExp(`^${ PARENT_PREFIX }(.+)_(changed|changing)$`);
 
 // each addon's options are shown in a collapse box, titled with the addon's
 // title, at the end of its parent's options, holding a host that the addon's
@@ -357,12 +367,24 @@ class Analysis {
         // makes the parent's options available to this addon's events, see
         // ParentOptionResource. this addon mustn't be rendered yet, so these
         // resources are connected to its events
+        // a parent option an addon's handler is named for, but which the
+        // parent doesn't have, gets a resource too, with no value, so the
+        // addon's events can test for it rather than fail
         const actionManager = this.model.actionManager;
-        for (let option of parent.model.options._list) {
-            const source = parent.model.actionManager._resources[option.name];
-            if (source === undefined)
-                continue;
-            const name = PARENT_PREFIX + option.name;
+        const parentManager = parent.model.actionManager;
+        const names = new Set<string>(parent.model.options._list.map((option) => option.name));
+        for (let handler in this.viewTemplate.handlers ?? { }) {
+            const match = PARENT_HANDLER.exec(handler);
+            if (match)
+                names.add(match[1]);
+        }
+        for (let optionName of names) {
+            let source = null;
+            if (parentManager.exists(optionName))
+                source = parentManager.getObject(optionName);
+            else if (parent.model.options.getOption(optionName))
+                continue;  // an option of the parent's with no control
+            const name = PARENT_PREFIX + optionName;
             const ctrlDef: any = { name: name, typeName: '_hiddenOption' };
             ApplyMagicEventsForCtrl(ctrlDef, this.viewTemplate);
             const resource = new ParentOptionResource(source);
