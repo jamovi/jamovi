@@ -89,6 +89,10 @@ body {
     font-style: normal;
 }
 
+button, input, select, textarea {
+    font-family: inherit;
+}
+
 :focus {
     /*outline-color: #4e5966;*/
 }

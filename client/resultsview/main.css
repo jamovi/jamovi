@@ -180,6 +180,10 @@ body {
     font-size: 12px ;
 }
 
+button, input, select, textarea {
+    font-family: inherit;
+}
+
 h1 {
     font-size: 160% ;
     color: #3E6DA9 ;
