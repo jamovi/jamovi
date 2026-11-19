@@ -6,6 +6,9 @@ import { h, rich }  from '../../common/htmlelementcreator';
 import { RibbonItem } from './ribbontab';
 import AnalyseTab from './analysetab';
 
+// the (short) names of the modules adding to an analysis
+const addonModules = (item: any): string[] => [ ...new Set<string>((item.addons ?? [ ]).map((addon: any) => addon.ns)) ];
+
 class RibbonMenu extends HTMLElement implements RibbonItem {
     focusId: string;
     title: string;
@@ -265,6 +268,16 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
             class: classes,
             tabindex: '0'
         }, description);
+
+        // the modules newly adding to the analysis, after its title (while
+        // it's marked as new)
+        let modules = addonModules(item);
+        if (modules.length > 0) {
+            let addonsDescription = _('With addons from {modules}', { modules: modules.join(', ') });
+            item.el.setAttribute('aria-description', addonsDescription);
+            item.el.append(h('span', { class: 'jmv-ribbon-menu-item-addons', title: addonsDescription, 'aria-hidden': 'true' },
+                `+ ${ modules.join(', ') }`));
+        }
 
         interactionManager.createHoverItem(item.el);
 

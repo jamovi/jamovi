@@ -11,6 +11,7 @@ import Version from './utils/version';
 import I18ns, { I18nData, isI18nData } from '../common/i18n';
 
 import { EventMap } from '../common/eventmap';
+import { addonsKey } from '../common/addons';
 
 import type { IModulesProvider } from './instance';
 
@@ -40,8 +41,11 @@ interface IAnalysisPosition {
 interface IAnalysisMeta extends IAnalysisPosition {
     name : string,
     ns: string,
-    category: 'plots' | 'analyses'
+    category: 'plots' | 'analyses',
+    // the analyses which are addons to this one
+    addons: { ns: string, name: string }[]
 }
+
 
 type AnalysisCategory = 'analyses' | 'plots';
 
@@ -192,7 +196,8 @@ export class ModulesBase extends EventMap<IModulesModel> {
                             a1.menuSubgroup === a2.menuSubgroup &&
                             a1.menuSubtitle === a2.menuSubtitle &&
                             a1.menuTitle === a2.menuTitle &&
-                            a1.title === a2.title;
+                            a1.title === a2.title &&
+                            addonsKey(a1.addons ?? [ ]) === addonsKey(a2.addons ?? [ ]);
             }
         }
 

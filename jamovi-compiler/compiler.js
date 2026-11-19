@@ -138,6 +138,10 @@ const compile = function(packageName, analysisPath, resultsPath, templPath, outP
     if ( ! ('description' in analysis))
         analysis.description = { };
 
+    // the templates only need the analysis an addon adds to, as ns::name
+    if (analysis.addonFor && typeof analysis.addonFor === 'object')
+        analysis.addonFor = analysis.addonFor.analysis;
+
     let template = fs.readFileSync(templPath, 'utf-8');
     let compiler = _.template(template);
 

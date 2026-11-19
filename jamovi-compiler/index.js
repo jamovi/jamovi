@@ -54,6 +54,7 @@ import uicompiler from './uicompiler.js';
 import compileR from './compilerr.js';
 import parseR from './parser.js';
 import utils from './utils.js';
+import { findInstalledAnalysis, resolveAddonFor, unknownParentNames } from './addons.js';
 import installer from './installer.js';
 import docker from './docker.js';
 import sourcify from './sourcify.js';
@@ -510,6 +511,18 @@ try {
             }
             if (analysis.hidden === true)
                 aObj.hidden = true;
+            if ('interfaceVersion' in analysis)
+                aObj.interfaceVersion = analysis.interfaceVersion;
+            if (analysis.addonFor) {
+                const parentId = (typeof analysis.addonFor === 'object' ? analysis.addonFor.analysis : analysis.addonFor);
+                const parent = findInstalledAnalysis(paths.home, parentId);
+                aObj.addonFor = resolveAddonFor(analysis.addonFor, parent);
+                if (parent !== null && utils.exists(resultsPath)) {
+                    const results = yaml.load(fs.readFileSync(resultsPath, 'utf-8'));
+                    for (let name of unknownParentNames(results, parent))
+                        console.log(`warning: ${ basename }.r.yaml clears with parent:${ name }, but ${ parentId } has no option ${ name }`);
+                }
+            }
             if (analysis.arbitraryCode) {
                 if (rVersion === '4.1.2') {  // 2.3+
                     // jamovi 2.3.0 -> 2.3.7 fail with arbitrary code

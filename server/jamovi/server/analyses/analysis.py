@@ -11,6 +11,7 @@ import os.path
 
 from jamovi.core import MeasureType
 from jamovi.server import jamovi_pb2 as jcoms
+from jamovi.server.options import ADDONS_SKIPPED
 
 Output = namedtuple('Output', 'name title description measure_type values levels')
 OptionOutputs = namedtuple('OptionOutputs', 'option_name outputs')
@@ -58,6 +59,8 @@ class Analysis:
                  enabled,
                  *,
                  addons=None,
+                 addon_ids=None,
+                 skipped_addons=None,
                  load_error=False,
                  arbitrary_code=False):
 
@@ -84,6 +87,18 @@ class Analysis:
         if addons is None:
             addons = [ ]
         self.addons = addons
+        # the (ns, name) of each addon the analysis was constructed with,
+        # including those which couldn't be read (and so aren't in addons).
+        # it's against these that changes to the addons are detected
+        if addon_ids is None:
+            addon_ids = [ ]
+        self.addon_ids = addon_ids
+        # the addons which aren't run, as they don't support the installed
+        # version of the analysis, see Analyses._describe_skipped_addons().
+        # the analysis has a notice about each, see write_skipped_addons()
+        if skipped_addons is None:
+            skipped_addons = [ ]
+        self.skipped_addons = skipped_addons
         self.load_error = load_error
         self.dependents = [ ]
         self.depends_on = 0
@@ -199,9 +214,10 @@ class Analysis:
         if len(results.options.names) > 0:  # if not empty
             # use options from results
             self.options.set(results.options)
-        else:
-            # otherwise use options from analysis
-            results.options.CopyFrom(self.options.as_pb())
+        # results from the engine lack the addons' options, so these are
+        # always copied back in
+        results.options.CopyFrom(self.options.as_pb())
+        self.write_addons_pb(results)
 
         results.dependsOn = self.depends_on
         results.index = self.parent.index_of(self) + 1
@@ -295,8 +311,37 @@ class Analysis:
         if not silent:
             self.parent._notify_results_changed(self)
 
-    def get_using(self):
-        return self.options.get_using()
+    def write_addons_pb(self, response):
+        del response.addons[:]
+        for addon in self.addons:
+            addon_pb = response.addons.add()
+            addon_pb.ns = addon.ns
+            addon_pb.name = addon.name
+
+    def write_skipped_addons(self, options_pb):
+        # the skipped addons go to jmvcore with the options, as a setting
+        # (like .lang), named .addonsSkipped, which it makes notices of
+        if len(self.skipped_addons) == 0:
+            return
+        option_pb = options_pb.options.add()
+        options_pb.names.append(ADDONS_SKIPPED)
+        option_pb.c.hasNames = False
+        for skipped in self.skipped_addons:
+            addon_pb = option_pb.c.options.add().c
+            addon_pb.hasNames = True
+            for key in ('ns', 'name', 'title', 'module'):
+                addon_pb.names.append(key)
+                addon_pb.options.add().s = skipped[key]
+            addon_pb.names.append('version')
+            addon_pb.options.add().i = skipped['version']
+            addon_pb.names.append('versions')
+            versions_pb = addon_pb.options.add().c
+            versions_pb.hasNames = False
+            for version in skipped['versions']:
+                versions_pb.options.add().i = version
+
+    def get_using(self, include_addons=True):
+        return self.options.get_using(include_addons)
 
     def get_producing(self):
         return self.options.get_producing()
