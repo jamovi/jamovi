@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg version="1.1" viewBox="0 0 74 44" xmlns="http://www.w3.org/2000/svg">
+<style type="text/css">
+	.st0{fill:none;stroke:#9F9F9F;stroke-width:2;stroke-linecap:square;stroke-linejoin:miter;}
+	.st2{fill:#FFFFFF;stroke:#6B9DE8;stroke-width:3;}
+	.st3{fill:#FFFFFF;stroke:#E6AC40;stroke-width:3;}
+	.c2{fill:none;stroke:#6B9DE8;stroke-width:3;stroke-linejoin:round;}
+	.c3{fill:none;stroke:#E6AC40;stroke-width:3;stroke-linejoin:round;}
+</style>
+<rect class="st3" x="16.5" y="31.5" width="9" height="9"/>
+<rect class="st2" x="32.5" y="31.5" width="9" height="9"/>
+<rect class="st3" x="32.5" y="17.5" width="9" height="9"/>
+<rect class="st2" x="48.5" y="31.5" width="9" height="9"/>
+<rect class="st2" x="48.5" y="17.5" width="9" height="9"/>
+<rect class="st3" x="48.5" y="3.5" width="9" height="9"/>
+</svg>

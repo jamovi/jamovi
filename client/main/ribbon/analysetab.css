@@ -162,6 +162,10 @@
     background-image: url("../../assets/analysis-compareplots.svg");
 }
 
+.jmv-ribbon-button[data-name="mokken lab"] .jmv-ribbon-button-icon {
+    background-image: url("../../assets/analysis-mokkenlab.svg");
+}
+
 .jmv-analyses-button.jmv-modules-menu-item {
     background-color: #dddddd;
 }
