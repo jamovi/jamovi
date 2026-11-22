@@ -10,6 +10,7 @@ import host from './host';
 import Notify from './notification';
 
 import Analyses, { Analysis } from './analyses';
+import { addonsKey } from '../common/addons';
 import DataSetViewModel from './dataset';
 import OptionsPB from './optionspb';
 import { IModuleMeta, Modules } from './modules';
@@ -1089,6 +1090,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                     enabled: analysisPB.enabled,
                     arbitraryCode: analysisPB.arbitraryCode,
                     dependsOn: analysisPB.dependsOn,
+                    addons: this._addonIds(analysisPB),
                 });
 
                 allAnalysesReady.push(analysis.ready);
@@ -1150,10 +1152,16 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
             enabled: duplicee.enabled,
             arbitraryCode: duplicee.arbitraryCode,
             references: duplicee.references,
+            addons: duplicee._addonIds,
         });
         this._sendAnalysis(analysis, duplicee);
 
         return analysis;
+    }
+
+    _addonIds(response: any): { ns: string, name: string }[] {
+        // the addons active on the analysis, see AnalysisAddon in jamovi.proto
+        return (response.addons ?? [ ]).map((addon: any) => ({ ns: addon.ns, name: addon.name }));
     }
 
     _optionsExtras() {
@@ -1320,6 +1328,7 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                     ns: response.ns,
                     id: response.analysisId,
                     options: options,
+                    addons: this._addonIds(response),
                     results: response.results,
                     references: response.references,
                     enabled: response.enabled,
@@ -1338,10 +1347,17 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
                 if (response.revision === analysis.revision)
                     options = OptionsPB.fromPB(response.options, coms.Messages);
 
+                // an open analysis' addons change when an addon's module is
+                // installed or removed (the server recreates the analysis), and
+                // it's then reloaded, with them
+                let addons = this._addonIds(response);
+                if (analysis.isReady && addonsKey(addons) !== addonsKey(analysis._addonIds))
+                    analysis.reload();
+
                 let optionsApplied = false;
                 if (analysis.isReady === false) {
                     optionsApplied = true;
-                    analysis.setup(options);
+                    analysis.setup(options, addons);
                 }
 
                 if (response.results)

@@ -15,7 +15,16 @@ Image <- R6::R6Class("Image",
         .widthM=400,
         .widthB=0,
         .heightM=300,
-        .heightB=0),
+        .heightB=0,
+        .renderer=function() {
+            # the analysis with the render function; an addon places its
+            # images among its parent's results, so this is the analysis the
+            # image's options are for, rather than the one it's placed in
+            analysis <- self$options$analysis
+            if (inherits(analysis, 'Analysis'))
+                return(analysis)
+            self$analysis
+        }),
     active=list(
         width=function() private$.width,
         height=function() private$.height,
@@ -24,15 +33,18 @@ Image <- R6::R6Class("Image",
         mode=function() private$.mode,
         plot=function() {
             if (is.null(private$.plot))
-                private$.plot <- self$analysis$.createPlotObject(funName=private$.renderFun, image=self)
+                private$.plot <- private$.renderer()$.createPlotObject(funName=private$.renderFun, image=self)
             return(private$.plot)
         },
         size=function() {
 
             widthScaleOptionName <- paste('results', self$path, 'widthScale', sep='/')
             heightScaleOptionName <- paste('results', self$path, 'heightScale', sep='/')
-            widthScaleOption <- self$options$option(widthScaleOptionName)
-            heightScaleOption <- self$options$option(heightScaleOptionName)
+            # (these are the analysis' options, which an addon's image, placed
+            # among its parent's results, finds through its parent's, see
+            # Options$.rootOption())
+            widthScaleOption <- self$options$.rootOption(widthScaleOptionName)
+            heightScaleOption <- self$options$.rootOption(heightScaleOptionName)
             if ( ! is.null(widthScaleOption)) {
                 widthScale <- widthScaleOption$value
             } else {
@@ -203,13 +215,13 @@ Image <- R6::R6Class("Image",
 
             on.exit(grDevices::dev.off())
 
-            self$analysis$.render(funName=private$.renderFun, image=self, ...)
+            private$.renderer()$.render(funName=private$.renderFun, image=self, ...)
         },
         .render=function(...) {
-            self$analysis$.render(funName=private$.renderFun, image=self, ...)
+            private$.renderer()$.render(funName=private$.renderFun, image=self, ...)
         },
         .createImages=function(...) {
-            self$analysis$.createImage(funName=private$.renderFun, image=self, ...)
+            private$.renderer()$.createImage(funName=private$.renderFun, image=self, ...)
         },
         .setPath=function(path) {
             private$.filePath <- path
@@ -251,15 +263,15 @@ Image <- R6::R6Class("Image",
         },
         fromProtoBuf=function(element, oChanges, vChanges) {
 
-            someChanges <- length(oChanges) > 0 || length(vChanges) > 0
+            someChanges <- private$.someChanges(oChanges, vChanges)
             if (someChanges && base::identical('*', private$.clearWith))
                 return()
 
-            if (base::any(oChanges %in% private$.clearWith))
+            if (base::any(oChanges %in% private$.clearsWith()))
                 return()
 
-            for (clearName in private$.clearWith) {
-                if (base::any(vChanges %in% private$.options$option(clearName)$vars))
+            for (clearName in private$.clearsWith()) {
+                if (base::any(vChanges %in% private$.clearWithOption(clearName)$vars))
                     return()
             }
 

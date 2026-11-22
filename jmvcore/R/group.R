@@ -174,7 +174,7 @@ Group <- R6::R6Class("Group",
             v
         },
         fromProtoBuf=function(pb, oChanges, vChanges) {
-            someChanges <- length(oChanges) > 0 || length(vChanges) > 0
+            someChanges <- private$.someChanges(oChanges, vChanges)
             if (someChanges && base::identical('*', private$.clearWith))
                 return()
 

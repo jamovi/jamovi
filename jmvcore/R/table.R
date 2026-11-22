@@ -689,15 +689,15 @@ Table <- R6::R6Class('Table',
         },
         fromProtoBuf=function(element, oChanges, vChanges) {
 
-            someChanges <- length(oChanges) > 0 || length(vChanges) > 0
+            someChanges <- private$.someChanges(oChanges, vChanges)
             if (someChanges && base::identical('*', private$.clearWith))
                 return()
 
-            if (base::any(oChanges %in% private$.clearWith))
+            if (base::any(oChanges %in% private$.clearsWith()))
                 return()
 
-            for (clearName in private$.clearWith) {
-                if (base::any(vChanges %in% private$.options$option(clearName)$vars))
+            for (clearName in private$.clearsWith()) {
+                if (base::any(vChanges %in% private$.clearWithOption(clearName)$vars))
                     return()
             }
 

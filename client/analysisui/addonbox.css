@@ -1,0 +1,40 @@
+/* the box of an addon's options is orange, with the shades of the others'
+   grey, and its module (icon and short name) after its title, separated as
+   its toggle is */
+.silky-options-collapse-button.jmv-addon-collapse-button {
+    border-color: #E7B978;
+    background-color: #F3DDBE;
+}
+
+.silky-options-collapse-button.jmv-addon-collapse-button:hover {
+    background-color: #F0D2A8;
+}
+
+.jmv-addon-collapse-button .silky-options-collapse-icon {
+    border-inline-end-color: #A67B3F;
+}
+
+.jmv-addon-module {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    align-self: stretch;
+    flex-shrink: 0;
+    margin-inline-start: 10px;
+    padding-inline-start: 10px;
+    border-inline-start: 1px solid #A67B3F;
+}
+
+.jmv-addon-icon {
+    width: 14px;
+    height: 14px;
+    background-image: url('../assets/analysis-module.svg');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+
+.jmv-addon-name {
+    font-size: 85%;
+    opacity: 0.6;
+}

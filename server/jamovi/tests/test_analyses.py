@@ -272,3 +272,199 @@ async def test_export_runs_the_analysis_first(temp_dir):
 
     analysis.op.set_result(None)
     await save
+
+
+class FakeAnalysisMeta:
+    """stands in for an analysis' entry in the module registry"""
+
+    def __init__(self, ns, name, options, addons=(), skipped_addons=(), interface_version=1):
+        self.ns = ns
+        self.name = name
+        self.title = name.title()
+        self.defn = { 'options': options }
+        self.addons = list(addons)
+        self.skipped_addons = list(skipped_addons)
+        self.interface_version = interface_version
+
+    def translate_defaults(self, module_meta, code):
+        pass
+
+
+class FakeModuleMeta:
+
+    def __init__(self, *analyses, title=''):
+        self.analyses = analyses
+        self.title = title
+
+    def get(self, name):
+        return next(filter(lambda a: a.name == name, self.analyses), None)
+
+
+class FakeModuleRegistry:
+    """stands in for the module registry, with modules in it"""
+
+    def __init__(self, **modules):
+        self._modules = modules
+        self._listeners = [ ]
+
+    def add_listener(self, listener):
+        self._listeners.append(listener)
+
+    def get(self, name):
+        return self._modules[name]
+
+    def notify(self, event):
+        for listener in self._listeners:
+            listener(event)
+
+
+def anova_with_duncan():
+    anova = FakeAnalysisMeta('jmv', 'anova', [
+        { 'name': 'dep', 'type': 'Variable' },
+        { 'name': 'factors', 'type': 'Variables' },
+    ], addons=[ ('jdmrt', 'dmrt') ])
+    dmrt = FakeAnalysisMeta('jdmrt', 'dmrt', [
+        { 'name': 'data', 'type': 'Data' },
+        { 'name': 'alpha', 'type': 'Number', 'default': 0.05 },
+    ])
+    modules = FakeModuleRegistry(
+        jmv=FakeModuleMeta(anova),
+        jdmrt=FakeModuleMeta(dmrt))
+    return (modules, anova)
+
+
+def test_an_analysis_carries_its_addons_options(temp_dir):
+    """an addon's options are part of its analysis' options, named
+    addons/<ns>/<name>/<option>, and the active addons go to the client"""
+
+    modules, _ = anova_with_duncan()
+    analyses = Analyses(FakeDataset(temp_dir), modules)
+    analysis = analyses._construct(2, 'anova', 'jmv')
+
+    assert [ (a.ns, a.name) for a in analysis.addons ] == [ ('jdmrt', 'dmrt') ]
+    assert analysis.options.get_value('addons/jdmrt/dmrt/alpha') == 0.05
+    assert analysis.options.get_value('addons/jdmrt/dmrt/data') is None
+
+    response = jcoms.AnalysisResponse()
+    analysis.write_addons_pb(response)
+    assert [ (a.ns, a.name) for a in response.addons ] == [ ('jdmrt', 'dmrt') ]
+
+
+def test_an_unreadable_addon_is_left_out(temp_dir):
+    """an addon which can't be read doesn't take its analysis down with it"""
+
+    modules, anova = anova_with_duncan()
+    anova.addons.append(('missing', 'addon'))
+    analyses = Analyses(FakeDataset(temp_dir), modules)
+    analysis = analyses._construct(2, 'anova', 'jmv')
+
+    assert analysis.load_error is False
+    assert [ (a.ns, a.name) for a in analysis.addons ] == [ ('jdmrt', 'dmrt') ]
+
+
+def test_an_unreadable_addon_doesnt_have_its_analysis_recreated(temp_dir):
+    """an addon which can't be read isn't a change to the addons, each time
+    the modules change"""
+
+    modules, anova = anova_with_duncan()
+    anova.addons.append(('missing', 'addon'))
+    analyses = Analyses(FakeDataset(temp_dir), modules)
+
+    options = Options.create(anova.defn['options'])
+    analyses.create(2, 'anova', 'jmv', options.as_pb())
+    analysis = analyses[2]
+
+    modules.notify({ 'type': 'addonsChanged' })
+
+    assert analyses[2] is analysis
+
+
+def test_a_skipped_addon_goes_to_jmvcore_as_a_setting(temp_dir):
+    """an addon which doesn't support the analysis' version isn't run, and
+    jmvcore is sent what it needs to say so"""
+
+    modules, anova = anova_with_duncan()
+    anova.addons.clear()
+    anova.skipped_addons.append(('jdmrt', 'dmrt', (2, 3)))
+    anova.interface_version = 4
+    modules._modules['jdmrt'].title = 'jDMRT'
+    analyses = Analyses(FakeDataset(temp_dir), modules)
+    analysis = analyses._construct(2, 'anova', 'jmv')
+
+    assert analysis.addons == [ ]
+    assert analysis.skipped_addons == [ {
+        'ns': 'jdmrt', 'name': 'dmrt', 'versions': (2, 3),
+        'title': 'Dmrt', 'module': 'jDMRT', 'version': 4 } ]
+
+    options_pb = jcoms.AnalysisOptions()
+    analysis.write_skipped_addons(options_pb)
+    assert list(options_pb.names) == [ '.addonsSkipped' ]
+    addon_pb = options_pb.options[0].c.options[0].c
+    values = dict(zip(addon_pb.names, addon_pb.options))
+    assert values['title'].s == 'Dmrt'
+    assert values['module'].s == 'jDMRT'
+    assert values['version'].i == 4
+    assert [ v.i for v in values['versions'].c.options ] == [ 2, 3 ]
+
+
+def test_an_analysis_without_skipped_addons_sends_nothing(temp_dir):
+
+    modules, _ = anova_with_duncan()
+    analyses = Analyses(FakeDataset(temp_dir), modules)
+    analysis = analyses._construct(2, 'anova', 'jmv')
+
+    options_pb = jcoms.AnalysisOptions()
+    analysis.write_skipped_addons(options_pb)
+    assert list(options_pb.names) == [ ]
+
+
+def test_an_analysis_is_recreated_when_its_addon_is_skipped(temp_dir):
+    """an update to the parent, out of an addon's range, reaches the analyses
+    already open"""
+
+    modules, anova = anova_with_duncan()
+    analyses = Analyses(FakeDataset(temp_dir), modules)
+    options = Options.create(anova.defn['options'])
+    analyses.create(2, 'anova', 'jmv', options.as_pb())
+    assert analyses[2].skipped_addons == [ ]
+
+    anova.addons.clear()
+    anova.skipped_addons.append(('jdmrt', 'dmrt', (1,)))
+    anova.interface_version = 2
+    modules.notify({ 'type': 'addonsChanged' })
+
+    analysis = analyses[2]
+    assert analysis.addons == [ ]
+    assert [ (s['ns'], s['name']) for s in analysis.skipped_addons ] == [ ('jdmrt', 'dmrt') ]
+
+
+def test_an_analysis_cant_use_the_addons_names(temp_dir):
+    """addons/ (and results/) names are reserved"""
+
+    modules, anova = anova_with_duncan()
+    anova.defn['options'].append({ 'name': 'addons/jdmrt/dmrt/alpha', 'type': 'Number' })
+    analyses = Analyses(FakeDataset(temp_dir), modules)
+    analysis = analyses._construct(2, 'anova', 'jmv')
+
+    assert analysis.load_error is True
+
+
+def test_analyses_are_recreated_when_their_addons_change(temp_dir):
+    """installing an addon reaches the analyses already open"""
+
+    modules, anova = anova_with_duncan()
+    anova.addons.clear()
+    analyses = Analyses(FakeDataset(temp_dir), modules)
+
+    options = Options.create(anova.defn['options'])
+    options.set_value('dep', 'yield')
+    analyses.create(2, 'anova', 'jmv', options.as_pb())
+    assert analyses[2].addons == [ ]
+
+    anova.addons.append(('jdmrt', 'dmrt'))
+    modules.notify({ 'type': 'addonsChanged' })
+
+    analysis = analyses[2]
+    assert [ (a.ns, a.name) for a in analysis.addons ] == [ ('jdmrt', 'dmrt') ]
+    assert analysis.options.get_value('dep') == 'yield'
+    assert analysis.options.get_value('addons/jdmrt/dmrt/alpha') == 0.05

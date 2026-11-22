@@ -112,11 +112,16 @@ export class AnalyseTab extends RibbonTab {
         button.style.insetInlineStart =  '0px';
         this.buttons.push(button);
 
+        // the modules new to this session; an analysis is new when its module
+        // is, or when one of its addons' modules is
+        let newModules = new Set((modules ?? [ ]).filter(module => module.new).map(module => module.name));
+
         let menus = { };
         for (let module of modules) {
             let _translate = await module.getTranslator;
-            let isNew = module.new;
             for (let analysis of module.analyses) {
+                let newAddons = (analysis.addons ?? [ ]).filter(addon => newModules.has(addon.ns));
+                let isNew = module.new || newAddons.length > 0;
                 if (analysis.category !== undefined && analysis.category !== 'analyses')
                     continue;
 
@@ -126,7 +131,7 @@ export class AnalyseTab extends RibbonTab {
                 if (analysis.ns === 'jmv' || menu.ns !== 'jmv')
                     menu.ns = analysis.ns;
 
-                menu._new = isNew;
+                menu._new = menu._new || isNew;
                 let submenu;
                 if (subgroup in menu)
                     submenu = menu[subgroup];
@@ -140,7 +145,8 @@ export class AnalyseTab extends RibbonTab {
                     moduleName: module.name,
                     new: isNew,
                     hidden: module.visible === false,
-                    resultsTitle: analysis.title
+                    resultsTitle: analysis.title,
+                    addons: newAddons
                 };
                 submenu.items.push(item);
                 menu[subgroup] = submenu;
