@@ -106,7 +106,7 @@ theme_spss <- function(base_size = 16, scale = 'none', palette = 'jmv') {
     theme <- list(ggplot2::`%+replace%`(
         baseTheme(base_size),
         ggplot2::theme(
-            panel.border = ggplot2::element_rect(colour="#333333", fill=NA, size=0.5),
+            panel.border = ggplot2::element_rect(colour="#333333", fill=NA, linewidth=0.5),
             panel.background = ggplot2::element_rect(fill='#F0F0F0'),
             panel.grid.major = ggplot2::element_blank(),
             panel.grid.minor = ggplot2::element_blank(),

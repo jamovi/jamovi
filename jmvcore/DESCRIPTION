@@ -24,7 +24,7 @@ Suggests:
     RProtoBuf,
     knitr,
     commonmark,
-    ggplot2,
+    ggplot2 (>= 3.4.0),
     RColorBrewer,
     ragg,
     fastmap,
