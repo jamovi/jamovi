@@ -56,6 +56,35 @@
     background-image: url('../../assets/menu-variable-insert.svg');
 }
 
+.jmv-ribbon-button[data-name=sort] > .jmv-ribbon-button-icon {
+    background-image: url('../../assets/menu-sort.svg');
+}
+
+.jmv-ribbon-button[data-name=sortasc] > .jmv-ribbon-button-icon {
+    background-image: url('../../assets/menu-sort-ascending.svg');
+}
+
+.jmv-ribbon-button[data-name=sortdesc] > .jmv-ribbon-button-icon {
+    background-image: url('../../assets/menu-sort-descending.svg');
+}
+
+.jmv-ribbon-button[data-name=sortclear] > .jmv-ribbon-button-icon {
+    background-image: url('../../assets/menu-sort-clear.svg');
+}
+
+.jmv-ribbon-button[data-name=sortclearall] > .jmv-ribbon-button-icon {
+    background-image: url('../../assets/menu-sort-clear-all.svg');
+}
+
+/* the sort icons are wider than the other data icons, so they're given
+   wider boxes, to display at the same height */
+.jmv-ribbon-button[data-name=sortasc] > .jmv-ribbon-button-icon,
+.jmv-ribbon-button[data-name=sortdesc] > .jmv-ribbon-button-icon,
+.jmv-ribbon-button[data-name=sortclear] > .jmv-ribbon-button-icon,
+.jmv-ribbon-button[data-name=sortclearall] > .jmv-ribbon-button-icon {
+    width: 28px;
+}
+
 .jmv-ribbon-button[data-name=insertrow] > .jmv-ribbon-button-icon {
     background-image: url('../../assets/menu-row-insert.svg');
 }

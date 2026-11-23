@@ -51,6 +51,8 @@ public:
 
     int changes() const;
 
+    std::vector<double> sortKeys(bool descending);
+
     template<typename T> void setRowCount(size_t count)
     {
         _discardScratchColumn();

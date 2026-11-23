@@ -7,6 +7,7 @@ interface IActionModel {
     enabled: boolean;
     name: string;
     description: string;
+    value: boolean | null;  // for toggles; null if not a toggle
 }
 
 export class Action extends EventMap<IActionModel> {
@@ -16,7 +17,8 @@ export class Action extends EventMap<IActionModel> {
         super({
                 enabled: true,
                 name: '',
-                description: ''
+                description: '',
+                value: null
             });
     }
 

@@ -114,7 +114,7 @@ class DataSetController:
                 undo_request = self._mod_tracker.begin_undo()
                 response.op = undo_request.op
                 self._clone_cell_selections(undo_request, response)
-                self._on_dataset_set(undo_request, response)
+                self._on_dataset_set(undo_request, response, replay=True)
                 self._mod_tracker.end_undo(response)
                 log.debug('Undo complete')
         elif request.op == jcoms.GetSet.Value('REDO'):
@@ -123,7 +123,7 @@ class DataSetController:
                 redo_request = self._mod_tracker.get_redo()
                 response.op = redo_request.op
                 self._clone_cell_selections(redo_request, response)
-                self._on_dataset_set(redo_request, response)
+                self._on_dataset_set(redo_request, response, replay=True)
                 log.debug('Redo complete')
         else:
             raise ValueError()
@@ -163,7 +163,9 @@ class DataSetController:
                 _('This session is limited to {} rows').format(
                     self._perms.dataset.maxRows))
 
-    def _on_dataset_set(self, request, response):
+    def _on_dataset_set(self, request, response, replay=False):
+        # replay: an undo or redo. rows in these are data set rows, so
+        # row operations are permitted regardless of the view order
 
         # we have to perform checks before we start making changes, as
         # we don't want to abort part way through, leaving things in an
@@ -179,7 +181,10 @@ class DataSetController:
             'filters_changed': False,
             'columns_renamed': { },
             'rows_added_removed': False,
+            'cell_blocks': [ ],
         }
+
+        n_rows_before = self._data.row_count
 
         desc = describe_datasetrr(request)
         log.debug('DataSet change: %s', desc)
@@ -187,10 +192,11 @@ class DataSetController:
 
         try:
             self._on_dataset_del_cols(request, response, changes)
-            self._on_dataset_del_rows(request, response, changes)
+            self._on_dataset_del_rows(request, response, changes, replay)
             self._on_dataset_ins_cols(request, response, changes)
-            self._on_dataset_ins_rows(request, response, changes)
+            self._on_dataset_ins_rows(request, response, changes, replay)
             self._on_dataset_mod_cols(request, response, changes)
+            self._on_dataset_sort(request, response, changes)
             if request.incData:
                 self._apply_cells(request, response, changes)
         finally:
@@ -199,6 +205,20 @@ class DataSetController:
         if changes['filters_changed']:
             response.filtersChanged = True
             self._data.refresh_filter_state()
+
+        # changes to the sort or the filters' visibility invalidate the view
+        # order themselves; changes to the data are checked for here
+        sort_ids = { column_id for column_id, _ in self._data.sort_keys }
+        if (changes['filters_changed']
+                or self._data.row_count != n_rows_before
+                or any(column.id in sort_ids for column in changes['columns'])):
+            self._data.invalidate_view_order()
+
+        if self._data.refresh_view_order():
+            response.viewOrderChanged = True
+
+        if changes['cell_blocks']:
+            self._populate_changed_cells(request, response, changes['cell_blocks'])
 
         self.populate_schema_info(request, response)
         # constuct response column schemas
@@ -238,20 +258,43 @@ class DataSetController:
             filters_changed=changes['filters_changed'],
             weights_changed=weights_changed)
 
+    def _on_dataset_sort(self, request, response, changes):
+        sort_keys = self._data.sort_keys
+        if request.incSchema and request.schema.HasField('sort'):
+            sort_keys = [ (key.columnId, key.descending) for key in request.schema.sort.keys ]
+
+        def is_sortable(column_id):
+            try:
+                return not self._data.get_column_by_id(column_id).is_virtual
+            except KeyError:
+                return False
+
+        # drop columns that don't exist (or no longer exist)
+        sort_keys = [ (column_id, descending) for column_id, descending in sort_keys if is_sortable(column_id) ]
+
+        if sort_keys != self._data.sort_keys:
+            self._mod_tracker.log_sort_change(self._data.sort_keys)
+            self._data.sort_keys = sort_keys
+
     def _on_dataset_get(self, request, response):
         if request.incSchema:
             self._populate_schema(request, response)
         if request.incData:
             self._populate_cells(request, response)
 
-    def _on_dataset_ins_rows(self, request, response, changes):
+    def _on_dataset_ins_rows(self, request, response, changes, replay=False):
 
         insertions = []
         for row_data in request.rows:
             if row_data.action == jcoms.DataSetRR.RowData.RowDataAction.Value('INSERT'):
                 insertions.append(row_data)
 
-        if insertions:
+        if insertions and not replay:
+            # rows can be appended while sorted; they sort last until filled in
+            if self._data.is_sorted and any(row_data.rowStart < self._data.row_count for row_data in insertions):
+                raise ForbiddenOp(
+                    _('Could not insert rows'),
+                    _('You cannot insert rows while the data is sorted'))
             if self._data.ex_filtered and self._data.has_filters:
                 raise ForbiddenOp(
                     _('Could not insert rows'),
@@ -384,33 +427,41 @@ class DataSetController:
                 if column.column_type is ColumnType.FILTER:
                     changes['columns'].add(column)
 
-    def _on_dataset_del_rows(self, request, response, changes):
+    def _on_dataset_del_rows(self, request, response, changes, replay=False):
         rows_removed = False
         sorted_data = sorted(request.rows, key=lambda row_data: row_data.rowStart + row_data.rowCount - 1, reverse=True)
 
         for row_data in sorted_data:
 
-            if self._data.ex_filtered and self._data.has_filters:
-                raise ForbiddenOp(
-                    _('Could not delete rows'),
-                    _('You cannot delete rows while filtered rows are hidden'))
+            if row_data.action != jcoms.DataSetRR.RowData.RowDataAction.Value('REMOVE'):
+                continue
 
-            if row_data.action == jcoms.DataSetRR.RowData.RowDataAction.Value('REMOVE'):
-                self._mod_tracker.log_row_deletion(row_data)
-                row_start = row_data.rowStart
-                row_end = row_data.rowStart + row_data.rowCount - 1
-                if row_start >= self._data.row_count:
-                    continue
-                elif row_end >= self._data.row_count:
-                    row_end = self._data.row_count - 1
+            if not replay:
+                if self._data.is_sorted:
+                    raise ForbiddenOp(
+                        _('Could not delete rows'),
+                        _('You cannot delete rows while the data is sorted'))
 
-                row_data_pb = response.rows.add()
-                row_data_pb.rowStart = row_start
-                row_data_pb.rowCount = row_end - row_start + 1
-                row_data_pb.action = jcoms.DataSetRR.RowData.RowDataAction.Value('REMOVE')
+                if self._data.ex_filtered and self._data.has_filters:
+                    raise ForbiddenOp(
+                        _('Could not delete rows'),
+                        _('You cannot delete rows while filtered rows are hidden'))
 
-                self._data.delete_rows(row_start, row_end)
-                rows_removed = True
+            self._mod_tracker.log_row_deletion(row_data)
+            row_start = row_data.rowStart
+            row_end = row_data.rowStart + row_data.rowCount - 1
+            if row_start >= self._data.row_count:
+                continue
+            elif row_end >= self._data.row_count:
+                row_end = self._data.row_count - 1
+
+            row_data_pb = response.rows.add()
+            row_data_pb.rowStart = row_start
+            row_data_pb.rowCount = row_end - row_start + 1
+            row_data_pb.action = jcoms.DataSetRR.RowData.RowDataAction.Value('REMOVE')
+
+            self._data.delete_rows(row_start, row_end)
+            rows_removed = True
 
         if rows_removed:
             changes['rows_added_removed'] = True
@@ -1377,6 +1428,9 @@ class DataSetController:
             changes['columns'].add(column)
             changes['data_changed'].add(column)
 
+        changes['cell_blocks'] = data
+
+    def _populate_changed_cells(self, request, response, data):
         # the response describes the changed cells in view rows
         del response.data[:]
         response.incData = True
@@ -1451,17 +1505,15 @@ class DataSetController:
             row_data.rowCount = row_count
             row_data.action = jcoms.DataSetRR.RowData.RowDataAction.Value('MODIFY')
 
-            row_nums = range(row_start, row_start + row_count)
+            indices_map = self._data.get_data_indices(row_start, row_count)
+
+            if self._data.is_view_remapped:
+                row_data.rowNums[:] = indices_map
 
             if not self._data.ex_filtered:
-                filtered = map(lambda row_no: self._data.is_row_filtered(row_no), row_nums)
+                filtered = map(lambda row_no: self._data.is_row_filtered(row_no), indices_map)
                 filtered = map(lambda filtered: 1 if filtered else 0, filtered)
                 row_data.filterData = bytes(filtered)
-                indices_map = list(range(row_start, row_start + row_count))
-            else:
-                row_nums = map(lambda row_no: self._data.get_index_ex_filtered(row_no), row_nums)
-                row_data.rowNums[:] = row_nums
-                indices_map = self._data.get_indices_ex_filtered(row_start, row_count)
 
             base_index = 0
             search_index = col_start
@@ -1547,6 +1599,11 @@ class DataSetController:
         schema.editedCellCount = self._data.total_edited_cell_count
         schema.rowCountExFiltered = self._data.row_count_ex_filtered
         schema.filtersVisible = self._data.filters_visible
+        schema.sort.SetInParent()
+        for column_id, descending in self._data.sort_keys:
+            key_pb = schema.sort.keys.add()
+            key_pb.columnId = column_id
+            key_pb.descending = descending
 
         if self._data.row_tracker.is_edited:
             for range in self._data.row_tracker.removed_row_ranges:

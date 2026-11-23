@@ -258,6 +258,21 @@ class ModTracker:
             new_event.incSchema = True
             new_event.schema.filtersVisible = oldValue
 
+    def log_sort_change(self, old_keys):
+        if self._active:
+            new_event = self._event_data['undo']
+
+            if new_event.incSchema is not True:
+                new_event.schema.filtersVisible = self._data._filters_visible
+
+            new_event.incSchema = True
+            new_event.schema.sort.SetInParent()
+            del new_event.schema.sort.keys[:]
+            for column_id, descending in old_keys:
+                key_pb = new_event.schema.sort.keys.add()
+                key_pb.columnId = column_id
+                key_pb.descending = descending
+
     def log_column_modification(self, column, modify_pb):
         if self._active:
             new_event = self._event_data['undo']
