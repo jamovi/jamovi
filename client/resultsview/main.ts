@@ -15,6 +15,7 @@ import { contextMenuListener } from '../common/utils';
 import { h } from '../common/htmlelementcreator';
 import { CollectionView, View } from "./element";
 import HighContrast from '../common/highcontrast';
+import { getUndoRedoAction } from '../common/undokeys';
 
 window._ = I18ns.get('app')._;
 
@@ -129,6 +130,16 @@ class Main {  // this is constructed at the bottom
         this.layout = new Tracker();
 
         window.addEventListener('message', event => this._messageEvent(event));
+
+        // undo and redo are handled by the main window, against the
+        // shared history
+        window.addEventListener('keydown', (event) => {
+            const action = getUndoRedoAction(event);
+            if (action === null)
+                return;
+            this.mainWindow.postMessage({ type: action }, '*');
+            event.preventDefault();
+        });
 
         this._reallyNotifyResize = this._reallyNotifyResize.bind(this);
 

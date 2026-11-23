@@ -166,6 +166,10 @@ export class ResultsView extends HTMLElement {
     getSvgs() {
         return this.richView.getSvgs();
     }
+
+    revealAnalysis(id: number, highlight: boolean = true) {
+        this.richView.revealAnalysis(id, highlight);
+    }
 }
 
 customElements.define('jmv-results', ResultsView);

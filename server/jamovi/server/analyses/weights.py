@@ -73,6 +73,10 @@ class Weights(Analysis):
         self._removed = True
         self._update()
 
+    def notify_restored(self):
+        self._removed = False
+        self._update()
+
     def _update(self, *, just_created=False):
         if self._removed:
             weights = None
