@@ -9,7 +9,7 @@ import DataSetViewModel from './dataset';
 import { Modules } from './modules';
 import { IReference } from './references';
 import { I18nData } from '../common/i18n';
-import { AddonId, addonPrefix, addonIdOf } from '../common/addons';
+import { AddonId, addonPrefix, addonIdOf, addonsKey } from '../common/addons';
 
 // an addon to an analysis. its options are carried in the analysis' options,
 // named addons/<ns>/<name>/<option>
@@ -164,13 +164,13 @@ export class Analysis {
         }
     }
 
-    _findMissingAddons(): AddonId[] {
+    _findMissingAddons(values: {[name: string]: any} | null = this.values): AddonId[] {
         // an addon whose module is installed isn't missing, even if it isn't
         // run (the server skips an addon which doesn't support this version
         // of the analysis, and the results say so)
         const installed = new Set((this.modules.get('modules') ?? [ ]).map((meta: any) => meta.name));
         const missing = new Map<string, AddonId>();
-        for (let name in this.values ?? { }) {
+        for (let name in values ?? { }) {
             const id = addonIdOf(name);
             if (id === null || installed.has(id.ns))
                 continue;
@@ -195,12 +195,66 @@ export class Analysis {
         this.enabled = (res.enabled === undefined ? true : res.enabled);
         if (this.options) {
             if (this.options.setValues(res.options)) {
-                if (this._parent !== null) 
+                if (this._parent !== null)
                     this._parent._notifyOptionsChanged(this, !internal);
             }
         }
+        this._updateMissingAddons(res.options);
         if (this._parent !== null)
             this._parent._notifyResultsChanged(this);
+    }
+
+    // the missing addons the user has chosen to remove, which go to the server
+    // with the next request (see takeAddonsToRemove())
+    _addonsToRemove: AddonId[] = [];
+
+    removeMissingAddon(id: AddonId) {
+        // removes an addon which isn't installed (the user chose to, rather
+        // than wait for the analysis to run): the server removes its options,
+        // and runs the analysis again without its results
+        const key = addonsKey([ id ]);
+        if ( ! this.missingAddons.some((addon) => addonsKey([ addon ]) === key))
+            return;
+        this._addonsToRemove.push({ ns: id.ns, name: id.name });
+        this.missingAddons = this.missingAddons.filter((addon) => addonsKey([ addon ]) !== key);
+        if (this.values) {
+            const prefix = addonPrefix(id.ns, id.name);
+            for (let name in this.values) {
+                if (name.startsWith(prefix))
+                    delete this.values[name];
+            }
+        }
+        if (this._parent !== null) {
+            this._parent._notifyMissingAddonsChanged(this);
+            this._parent._notifyOptionsChanged(this);
+        }
+    }
+
+    takeAddonsToRemove(): AddonId[] {
+        const addons = this._addonsToRemove;
+        this._addonsToRemove = [ ];
+        return addons;
+    }
+
+    _updateMissingAddons(options: {[name: string]: any} | undefined) {
+        // the server removes the options of an addon which isn't installed
+        // when the user discards it (see removeMissingAddon()), so it's no
+        // longer missing (and the options panel stops saying so). its options
+        // are dropped from the values too, so a reload doesn't bring them back
+        if ( ! this.isReady || ! options || this.missingAddons.length === 0)
+            return;
+        if (this.values) {
+            for (let name in this.values) {
+                if (addonIdOf(name) !== null && ! (name in options))
+                    delete this.values[name];
+            }
+        }
+        const missing = this._findMissingAddons(options);
+        if (addonsKey(missing) === addonsKey(this.missingAddons))
+            return;
+        this.missingAddons = missing;
+        if (this._parent !== null)
+            this._parent._notifyMissingAddonsChanged(this);
     }
 
     updateHeading() {
@@ -530,6 +584,10 @@ class Analyses extends GroupBatchingEventEmittier {
 
     _notifyOptionsChanged(analysis: Analysis, incoming: boolean = false) : void {  // incoming is true if the options have been changed as a result of the server. It will be falsey if the change to the options has occured because of the client.
         this.trigger('analysisOptionsChanged', analysis, incoming);
+    }
+
+    _notifyMissingAddonsChanged(analysis: Analysis): void {
+        this.trigger('analysisMissingAddonsChanged', analysis);
     }
 
     _notifyAnalysisCreated(analysis: Analysis): void {

@@ -29,7 +29,7 @@ interface IFrameCommsApi {
     requestAction: (data: any) => any;
     optionsViewReady: (ready: boolean) => void;
     requestData: (data: any) => any;
-    action: (data: { type: 'findModule', data?: { ns: string } }) => void;
+    action: (data: { type: 'findModule', data?: { ns: string } } | { type: 'removeAddon', data: { ns: string, name: string } }) => void;
 }
 
 class AnalysisResources extends EventEmitter {
@@ -82,10 +82,17 @@ class AnalysisResources extends EventEmitter {
         this.frameCommsApi = {
             action: action => {
                 switch (action.type) {
-                    case 'findModule':
+                    case 'findModule': {
                         // the analysis' module, or an addon's
                         const moduleName = action.data?.ns ?? this.analysis.ns;
                         this.store.show(1, `module::${moduleName}`);
+                        break;
+                    }
+                    case 'removeAddon':
+                        // an addon which isn't installed, see
+                        // addMissingAddons() in analysisui/main.ts
+                        this.analysis.removeMissingAddon(action.data);
+                        break;
                 }
             },
 
@@ -267,6 +274,13 @@ class AnalysisResources extends EventEmitter {
             this.frameComms.send("updateOptions", values);
     }
 
+    updateMissingAddons() {
+        // (the frame shows them at the top of the options, see
+        // addMissingAddons() in analysisui/main.ts)
+        if ( ! this.analysis.missingModule)
+            this.frameComms.send("setMissingAddons", this.analysis.missingAddons);
+    }
+
     notifyDataChanged(dataType, dataInfo) {
         this.frameComms.send("dataChanged", { dataType: dataType, dataInfo: dataInfo });
     }
@@ -354,6 +368,7 @@ class OptionsPanel {
         model.analyses().on('analysisHeadingChanged', this._analysisNameChanged, this);
 
         model.analyses().on('analysisOptionsChanged', this._optionsChanged, this);
+        model.analyses().on('analysisMissingAddonsChanged', this._missingAddonsChanged, this);
 
         this.render();
     }
@@ -365,6 +380,13 @@ class OptionsPanel {
                 this._currentResources.frame.contentWindow.focus();
             }, 100);
         }
+    }
+
+    _missingAddonsChanged(analysis: Analysis) {
+        let analysesKey = analysis.ns + "-" + analysis.name;
+        let resources = this._analysesResources[analysesKey];
+        if (resources && analysis.id === resources.analysis.id)
+            resources.updateMissingAddons();
     }
 
     _optionsChanged(analysis: Analysis, incoming?: boolean) {

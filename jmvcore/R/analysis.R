@@ -984,16 +984,6 @@ Analysis <- R6::R6Class('Analysis',
                 prepend[[length(prepend)+1]] <- skippedInfo
             }
 
-            for (missing in private$.options$.addonsMissing) {
-                message <- ..(
-                    "This analysis has options for {name}, from the {module} module, which isn't installed. Its results aren't shown. Install the module to restore them.",
-                    list(name=missing$name, module=missing$ns))
-                missingInfo <- RProtoBuf_new(jamovi.coms.ResultsElement, name=paste0('.addonMissing_', missing$ns, '_', missing$name))
-                missingInfo$notice$content <- message
-                missingInfo$notice$type <- jamovi.coms.ResultsNotice$NoticeType$WARNING
-                prepend[[length(prepend)+1]] <- missingInfo
-            }
-
             if ( ! identical(private$.stacktrace, ''))
                 prepend[[length(prepend)+1]] <- RProtoBuf_new(jamovi.coms.ResultsElement, name='debug', title='Debug', preformatted=private$.stacktrace)
 

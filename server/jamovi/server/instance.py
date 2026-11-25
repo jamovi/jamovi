@@ -1401,7 +1401,8 @@ class Instance:
                     analysis_to_delete.reset_options(request.revision)
                     self._coms.send(analysis_to_delete.results, self._instance_id, request, True)
             else:
-                analysis.set_options(request.options, request.changed, request.revision, request.enabled)
+                analysis.set_options(request.options, request.changed, request.revision, request.enabled,
+                                     remove_addons=request.removeAddons)
                 self._coms.send(None, self._instance_id, request, True)
         else:  # create analysis
             try:

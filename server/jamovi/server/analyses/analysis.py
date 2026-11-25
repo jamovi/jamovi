@@ -12,7 +12,6 @@ import os.path
 from jamovi.core import MeasureType
 from jamovi.server import jamovi_pb2 as jcoms
 from jamovi.server.options import ADDONS_SKIPPED
-from jamovi.server.options import ADDONS_MISSING
 
 Output = namedtuple('Output', 'name title description measure_type values levels')
 OptionOutputs = namedtuple('OptionOutputs', 'option_name outputs')
@@ -126,13 +125,22 @@ class Analysis:
         self.results.options.CopyFrom(self.options.as_pb())
         self.results.revision = revision
 
-    def set_options(self, options, changes, revision, enabled=None):
+    def set_options(self, options, changes, revision, enabled=None, remove_addons=()):
         self.revision = revision
         wasnt_but_now_is_enabled = (self.enabled is False) and enabled
         if enabled:
             self.enabled = True
 
         non_passive_changes = self.options.set(options)
+
+        # an addon which isn't installed (see missing_addons()), discarded by
+        # the user: its options go, and the analysis runs again without its
+        # results. until then, its options are kept, so it comes back if its
+        # module is installed
+        for addon in remove_addons:
+            if (addon.ns, addon.name) in self.missing_addons():
+                self.options.remove_addon(addon.ns, addon.name)
+                non_passive_changes = True
 
         for output_name, keys_synced in self._outputs_synced.items():
             synced = list(filter(lambda k: keys_synced[k], keys_synced))
@@ -328,9 +336,8 @@ class Analysis:
         return [ addon_id for addon_id in self.options.addon_ids() if addon_id not in present ]
 
     def write_addon_notices(self, options_pb):
-        # the skipped and missing addons go to jmvcore with the options, as
-        # settings (like .lang), named .addonsSkipped and .addonsMissing,
-        # which it makes notices of
+        # the skipped addons go to jmvcore with the options, as a setting
+        # (like .lang), named .addonsSkipped, which it makes notices of
         if len(self.skipped_addons) > 0:
             option_pb = options_pb.options.add()
             options_pb.names.append(ADDONS_SKIPPED)
@@ -348,19 +355,6 @@ class Analysis:
                 versions_pb.hasNames = False
                 for version in skipped['versions']:
                     versions_pb.options.add().i = version
-
-        missing = self.missing_addons()
-        if len(missing) > 0:
-            option_pb = options_pb.options.add()
-            options_pb.names.append(ADDONS_MISSING)
-            option_pb.c.hasNames = False
-            for (ns, name) in missing:
-                addon_pb = option_pb.c.options.add().c
-                addon_pb.hasNames = True
-                addon_pb.names.append('ns')
-                addon_pb.options.add().s = ns
-                addon_pb.names.append('name')
-                addon_pb.options.add().s = name
 
     def get_using(self, include_addons=True):
         return self.options.get_using(include_addons)

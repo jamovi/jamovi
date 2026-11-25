@@ -113,8 +113,8 @@ def test_set_of_an_addons_option_is_a_change():
 
 
 def test_the_addon_notices_sent_back_by_jmvcore_arent_kept():
-    """.addonsSkipped and .addonsMissing are made for each run, and aren't
-    saved with the options"""
+    """.addonsSkipped is made for each run, and isn't saved with the
+    options"""
 
     from jamovi.server.options import ADDON_NOTICES
 
@@ -138,3 +138,14 @@ def test_the_addons_with_options_are_listed():
     options = anova_options()
     options.set_value('addons/other/thing/x', 1)
     assert options.addon_ids() == [ ('jdmrt', 'dmrt'), ('other', 'thing') ]
+
+
+def test_an_addons_options_can_be_removed():
+    """all of them, and only them"""
+    options = anova_options()
+    options.set_value(DUNCAN + 'alpha', 0.01)
+    options.set_value('dep', 'yield')
+    options.remove_addon('jdmrt', 'dmrt')
+    names = list(options.as_pb().names)
+    assert not any(name.startswith(DUNCAN) for name in names)
+    assert options.get_value('dep') == 'yield'

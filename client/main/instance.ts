@@ -1200,6 +1200,18 @@ export class Instance extends EventMap<IInstanceModel> implements IBackstageSupp
         }
 
         request.setOptions(OptionsPB.toPB(options, extras, coms.Messages));
+
+        // the addons (which aren't installed) the user chose to remove
+        const remove = analysis.takeAddonsToRemove ? analysis.takeAddonsToRemove() : [ ];
+        if (remove.length > 0) {
+            request.removeAddons = remove.map((id: { ns: string, name: string }) => {
+                const addon = new coms.Messages.AnalysisAddon();
+                addon.ns = id.ns;
+                addon.name = id.name;
+                return addon;
+            });
+        }
+
         return request;
     }
 

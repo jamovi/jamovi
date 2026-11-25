@@ -86,7 +86,16 @@
     line-height: 1.4;
 }
 
-.jmv-addon-missing-find {
+/* finding the module, or removing the addon (its settings, and its results
+   with them) */
+.jmv-addon-missing-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.jmv-addon-missing-find,
+.jmv-addon-missing-remove {
     padding: 4px 10px;
 }
 

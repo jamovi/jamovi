@@ -27,14 +27,13 @@ def addon_prefix(ns, name):
 # addons need as well
 SETTINGS = ('.ppi', 'theme', 'palette', 'decSymbol', '.lang')
 
-# the addons not run, sent to jmvcore with an analysis' options (see
+# the addons not run, as they don't support the installed version of the
+# analysis, sent to jmvcore with an analysis' options (see
 # Analysis.write_addon_notices()), which it makes notices of. they're made
 # fresh for each run, so they're never kept, though jmvcore sends them back
-# with the options. skipped addons don't support the installed version of the
-# analysis; missing addons have options in the analysis, but aren't installed
+# with the options
 ADDONS_SKIPPED = '.addonsSkipped'
-ADDONS_MISSING = '.addonsMissing'
-ADDON_NOTICES = (ADDONS_SKIPPED, ADDONS_MISSING)
+ADDON_NOTICES = (ADDONS_SKIPPED,)
 
 
 def substitute(values, changes):
@@ -515,6 +514,15 @@ class Options:
             if len(parts) >= 3:
                 ids.add((parts[0], parts[1]))
         return sorted(ids)
+
+    def remove_addon(self, ns, name):
+        # removes an addon's options (all those named addons/<ns>/<name>/...)
+        prefix = addon_prefix(ns, name)
+        for i, opt_name in reversed(list(enumerate(self._pb.names))):
+            if opt_name.startswith(prefix):
+                del self._pb.options[i]
+                del self._pb.names[i]
+                self._options.pop(opt_name, None)
 
     def addon_pb(self, ns, name):
         # the options of an addon, named as the addon knows them. an addon

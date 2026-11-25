@@ -47,6 +47,13 @@ function ready(fn: () => void) {
 const frameCommsApi = {
     setOptionsDefinition: loadAnalysis,
 
+    // the addons whose modules aren't installed have changed (one was
+    // discarded)
+    setMissingAddons: (missingAddons: AddonId[]) => {
+        if (analysis !== null && ! analysis.inError)
+            addMissingAddons(analysis, missingAddons ?? [ ]);
+    },
+
     dataChanged: data => {
         if (analysis !== null && analysis.inError === false) {
             if (data.dataType === 'columns') {
@@ -680,27 +687,108 @@ function loadAddon(addonDef: AddonDef, jamoviVersion: string, id: number): Analy
 
 // an addon with options in the analysis whose module isn't installed (the
 // file was made where it is) has a notice at the top of the options. its
-// options are kept, and its results stay until the analysis is run again
+// options are kept (its results drop out when the analysis runs again) until
+// the user discards it, when the notice goes (see setMissingAddons). called
+// again with the addons still missing, the notices of those which aren't
+// slide and fade away
 function addMissingAddons(analysis: Analysis, missingAddons: AddonId[]) {
+    const key = (addon: AddonId) => `${ addon.ns }::${ addon.name }`;
+    const keys = new Set(missingAddons.map(key));
+
+    let $notices = analysis.View.el.querySelector<HTMLElement>(':scope > .jmv-addons-missing');
+    if ($notices) {
+        const shown = Array.from($notices.querySelectorAll<HTMLElement>(':scope > .jmv-addon-missing'));
+        const going = shown.filter(($notice) => ! keys.has($notice.dataset.addon ?? ''));
+        if (going.length === shown.length) {
+            // (all of them: the block goes, margin and all)
+            if (missingAddons.length === 0) {
+                collapseAway($notices);
+                return;
+            }
+            $notices.remove();
+            $notices = null;
+        }
+        else {
+            for (let $notice of going)
+                collapseAway($notice);
+        }
+    }
+
     if (missingAddons.length === 0)
         return;
 
-    const $notices = h('div', { class: 'jmv-addons-missing' });
+    const isNew = $notices === null;
+    if ($notices === null)
+        $notices = h('div', { class: 'jmv-addons-missing' });
+    const present = new Set(Array.from($notices.querySelectorAll<HTMLElement>(':scope > .jmv-addon-missing'))
+        .map(($notice) => $notice.dataset.addon));
+
     for (let addon of missingAddons) {
+        if (present.has(key(addon)))
+            continue;
         const $find = h('button', { class: 'jmv-addon-missing-find' }, s_('Find module in jamovi library'));
         $find.addEventListener('click', () => {
             parentFrame.send('action', { type: 'findModule', data: { ns: addon.ns } });
         });
-        $notices.append(h('div', { class: 'jmv-addon-missing', role: 'note' },
+        // or discard it: its settings, and its results with them
+        const $remove = h('button', { class: 'jmv-addon-missing-remove' }, s_('Discard'));
+        $remove.addEventListener('click', () => {
+            parentFrame.send('action', { type: 'removeAddon', data: { ns: addon.ns, name: addon.name } });
+        });
+        $notices.append(h('div', { class: 'jmv-addon-missing', role: 'note', 'data-addon': key(addon) },
             h('div', { class: 'jmv-addon-missing-icon', 'aria-hidden': 'true' }),
             h('div', { class: 'jmv-addon-missing-body' },
-                h('div', { class: 'jmv-addon-missing-title' },
-                    s_("{name}, from the {module} module, isn't installed", { name: addon.name, module: addon.ns })),
+                h('div', { class: 'jmv-addon-missing-title' }, s_('Addon missing')),
                 h('div', { class: 'jmv-addon-missing-msg' },
-                    s_("Its options are kept, and its results are shown as they were saved, but they'll be removed when the analysis is run again. Install the module to keep them.")),
-                $find)));
+                    s_("{name}, from the {module} module, isn't installed. Its settings are kept in this analysis, but its results won't be shown once the analysis runs again. Install the module to use it, or discard it.", { name: addon.name, module: addon.ns })),
+                h('div', { class: 'jmv-addon-missing-actions' }, $find, $remove))));
     }
-    analysis.View.el.prepend($notices);
+    if (isNew)
+        analysis.View.el.prepend($notices);
+}
+
+// removes an element by fading it out as its height (and its margins,
+// padding and border) collapse, so what's below slides up into its place.
+// with reduced motion asked for, it's removed straight away
+function collapseAway($el: HTMLElement) {
+    if ($el.dataset.collapsing === 'true')
+        return;
+    $el.dataset.collapsing = 'true';
+
+    // (its buttons can't be used while it goes)
+    $el.querySelectorAll('button').forEach(($button) => $button.disabled = true);
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || typeof $el.animate !== 'function') {
+        $el.remove();
+        return;
+    }
+
+    const style = getComputedStyle($el);
+    $el.style.overflow = 'hidden';
+    const animation = $el.animate([
+        {
+            height: `${ $el.offsetHeight }px`,
+            opacity: 1,
+            marginTop: style.marginTop,
+            marginBottom: style.marginBottom,
+            paddingTop: style.paddingTop,
+            paddingBottom: style.paddingBottom,
+            borderTopWidth: style.borderTopWidth,
+            borderBottomWidth: style.borderBottomWidth,
+        },
+        {
+            height: '0px',
+            opacity: 0,
+            marginTop: '0px',
+            marginBottom: '0px',
+            paddingTop: '0px',
+            paddingBottom: '0px',
+            borderTopWidth: '0px',
+            borderBottomWidth: '0px',
+        },
+    ], { duration: 250, easing: 'ease-in-out' });
+    animation.onfinish = () => $el.remove();
+    animation.oncancel = () => $el.remove();
 }
 
 // an analysis with addons has an 'addons' tag under its title, which lists

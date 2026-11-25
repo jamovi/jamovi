@@ -62,7 +62,7 @@ class Weights(Analysis):
             self.options.rename_using(renamed)
             self._update(just_created=True)
 
-    def set_options(self, options, changes, revision, enabled=None):
+    def set_options(self, options, changes, revision, enabled=None, remove_addons=()):
         self.options.set(options)
         self.revision = revision
         self.results.options.CopyFrom(self.options.as_pb())

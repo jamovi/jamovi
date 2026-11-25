@@ -63,6 +63,10 @@ message AnalysisRequest {
     bool arbitraryCode = 20;
     bool enabled = 21;
     int32 maxDurationSeconds = 22;
+
+    // the addons (which aren't installed) whose options the user has chosen
+    // to remove from the analysis
+    repeated AnalysisAddon removeAddons = 23;
 }
 
 enum AnalysisStatus {

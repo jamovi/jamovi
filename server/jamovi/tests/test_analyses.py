@@ -428,11 +428,9 @@ def test_an_analysis_without_skipped_addons_sends_nothing(temp_dir):
     assert list(options_pb.names) == [ ]
 
 
-def test_an_addon_which_isnt_installed_goes_to_jmvcore_as_a_setting(temp_dir):
-    """an analysis with options for an addon which isn't installed (from a
-    file made where it is) keeps them, and jmvcore is sent what it needs to
-    say the addon's results aren't shown"""
-
+def missing_addon_analysis(temp_dir):
+    """an anova with options for two addons which aren't installed, as from
+    a file made where they are"""
     modules, anova = anova_with_duncan()
     anova.addons.clear()
     analyses = Analyses(FakeDataset(temp_dir), modules)
@@ -444,16 +442,56 @@ def test_an_addon_which_isnt_installed_goes_to_jmvcore_as_a_setting(temp_dir):
     options_pb.names.append('addons/other/thing/x')
     options_pb.options.add().i = 1
     analyses.create(2, 'anova', 'jmv', options_pb)
-    analysis = analyses[2]
+    return analyses[2]
+
+
+def test_an_addon_which_isnt_installed_keeps_its_options(temp_dir):
+    """an analysis with options for an addon which isn't installed keeps
+    them, whether its results come from a file or a run, until the user
+    discards it, and jmvcore isn't sent anything about it"""
+
+    analysis = missing_addon_analysis(temp_dir)
 
     assert analysis.missing_addons() == [ ('jdmrt', 'dmrt'), ('other', 'thing') ]
+    analysis.set_results(jcoms.AnalysisResponse(), silent=True)
+    analysis.set_results(jcoms.AnalysisResponse(), status=Analysis.Status.COMPLETE, silent=True)
     assert 'addons/jdmrt/dmrt/alpha' in analysis.options.as_pb().names
 
     request_pb = jcoms.AnalysisOptions()
     analysis.write_addon_notices(request_pb)
-    assert list(request_pb.names) == [ '.addonsMissing' ]
-    missing = [ dict(zip(a.c.names, (o.s for o in a.c.options))) for a in request_pb.options[0].c.options ]
-    assert missing == [ { 'ns': 'jdmrt', 'name': 'dmrt' }, { 'ns': 'other', 'name': 'thing' } ]
+    assert list(request_pb.names) == [ ]
+
+
+def test_an_addon_which_isnt_installed_can_be_removed(temp_dir):
+    """the user removes it from the options panel: its options go, the
+    analysis runs again, and the other missing addon is left as it is"""
+
+    analysis = missing_addon_analysis(temp_dir)
+    analysis.complete = True
+
+    remove = [ jcoms.AnalysisAddon(ns='jdmrt', name='dmrt') ]
+    analysis.set_options(analysis.options.as_pb(), [ ], analysis.revision + 1, remove_addons=remove)
+
+    names = list(analysis.options.as_pb().names)
+    assert not any(name.startswith('addons/jdmrt/dmrt/') for name in names)
+    assert 'addons/other/thing/x' in names
+    assert analysis.complete is False
+
+
+def test_an_installed_addon_cant_be_removed(temp_dir):
+    """only an addon which isn't installed is removed this way"""
+
+    modules, anova = anova_with_duncan()
+    analyses = Analyses(FakeDataset(temp_dir), modules)
+    analyses.create(2, 'anova', 'jmv', Options.create(anova.defn['options']).as_pb())
+    analysis = analyses[2]
+    assert 'addons/jdmrt/dmrt/alpha' in analysis.options.as_pb().names
+    analysis.set_results(jcoms.AnalysisResponse(), silent=True)
+
+    remove = [ jcoms.AnalysisAddon(ns='jdmrt', name='dmrt') ]
+    analysis.set_options(analysis.options.as_pb(), [ ], 1, remove_addons=remove)
+
+    assert 'addons/jdmrt/dmrt/alpha' in analysis.options.as_pb().names
 
 
 def test_an_installed_addon_isnt_missing(temp_dir):

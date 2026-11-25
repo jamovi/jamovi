@@ -567,7 +567,6 @@ addonsSettingPB <- function(setting, ...) {
 }
 
 skippedPB <- function(...) addonsSettingPB('.addonsSkipped', ...)
-missingPB <- function(...) addonsSettingPB('.addonsMissing', ...)
 
 test_that("an addon the server skipped is noted in its parent's results", {
 
@@ -599,35 +598,6 @@ test_that("an analysis with no addons skipped has no notice of them", {
     elements <- run$analysis$asProtoBuf()$results$group$elements
     names <- vapply(elements, function(element) element$name, '')
     expect_false(any(startsWith(names, '.addonSkipped')))
-})
-
-test_that("an addon which isn't installed is noted in its parent's results", {
-
-    local_mocked_bindings(.package='jmvcore', packageRefs=function(package) list())
-
-    run <- anovaWithAddon()
-    run$analysis$options$fromProtoBuf(missingPB(list(ns='jdmrt', name='dmrt')))
-
-    elements <- run$analysis$asProtoBuf()$results$group$elements
-    names <- vapply(elements, function(element) element$name, '')
-    expect_true('.addonMissing_jdmrt_dmrt' %in% names)
-
-    notice <- elements[[which(names == '.addonMissing_jdmrt_dmrt')]]$notice
-    expect_equal(notice$type, jamovi.coms.ResultsNotice$NoticeType$WARNING)
-    parts <- strsplit(notice$content, '\u0004')[[1]]
-    values <- jsonlite::fromJSON(parts[2])
-    expect_equal(values$name, 'dmrt')
-    expect_equal(values$module, 'jdmrt')
-})
-
-test_that("an analysis with no addons missing has no notice of them", {
-
-    local_mocked_bindings(.package='jmvcore', packageRefs=function(package) list())
-
-    run <- anovaWithAddon()
-    elements <- run$analysis$asProtoBuf()$results$group$elements
-    names <- vapply(elements, function(element) element$name, '')
-    expect_false(any(startsWith(names, '.addonMissing')))
 })
 
 test_that("an element an addon made says which addon", {
