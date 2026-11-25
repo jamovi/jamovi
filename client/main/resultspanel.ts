@@ -504,6 +504,9 @@ class ResultsPanel extends EventDistributor {
                 format: format,
                 refs: this._refsTable.getNumbers(analysis.ns),
                 refsMode: this.model.settings().getSetting('refsMode', 'bottom'),
+                // so the results can say which module an addon's elements
+                // are from, and whether it's installed
+                moduleTitles: Object.fromEntries((analysis.modules?.get('modules') ?? [ ]).map((meta: any) => [ meta.name, meta.title ])),
                 isEmpty: resources.isEmpty,
                 hasTitle: resources.hasTitle,
                 selected: newSelected === null ? null : newSelected === analysis,

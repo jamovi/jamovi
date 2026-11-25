@@ -26,7 +26,7 @@ import { h, rich }  from '../common/htmlelementcreator';
 
 import I18ns, { I18n, I18nData } from "../common/i18n";
 import HighContrast from '../common/highcontrast';
-import { addonPrefix } from '../common/addons';
+import { AddonId, addonPrefix } from '../common/addons';
 
 declare global {
     function s_(key: string, formats?: { [key: string]: (string|number); } | (string|number)[] | string, options?: { prefix: string; postfix: string; }): string;
@@ -235,6 +235,11 @@ class Analysis {
     host?: AddonHost;
     hasControls = false;
     addons: Analysis[] = [];
+    // for an addon, what its event handlers (or its rendering) threw first,
+    // see handlerFailed()
+    failure: unknown = null;
+    // for an addon, its entry in the 'addons' list, see addAddonsTag()
+    $addonsItem?: HTMLElement;
 
     // an addon is passed its addon, an analysis its addons (already
     // constructed, as each needs a place in its layout)
@@ -324,6 +329,7 @@ class Analysis {
                 else
                     optionsManager.endEdit();
             };
+            actionManager.onActionError = (error) => this.handlerFailed(error);
 
             this.model = { options: optionsManager, ui: layoutDef, actionManager: actionManager, currentStage: 0 };
 
@@ -347,20 +353,84 @@ class Analysis {
         this.View.dataChanged(data);
         if (this.viewTemplate.onDataChanged)
             this.viewTemplate.onDataChanged(data);
-        for (let addon of this.addons)
-            addon.dataChanged(data);
+        // an addon which fails here doesn't stop its parent, or the others
+        for (let addon of this.addons) {
+            try {
+                addon.dataChanged(data);
+            }
+            catch (e) {
+                addon.handlerFailed(e);
+            }
+        }
     }
 
     renderIn(parent: Analysis) {
         // renders this addon into its place in its parent's options. the
         // parent must be rendered, so its options all have resources (see
         // attachParent()), and this addon's host exists. an addon with no
-        // controls has no place, but is still rendered (so it's loaded)
-        this.attachParent(parent);
-        this.View.el.classList.add('addon-options-content');
-        if (this.host)
-            this.host.el!.append(this.View.el);
-        this.View.render();
+        // controls has no place, but is still rendered (so it's loaded). an
+        // addon which fails to render doesn't take its parent with it
+        try {
+            this.attachParent(parent);
+            this.View.el.classList.add('addon-options-content');
+            if (this.host)
+                this.host.el!.append(this.View.el);
+            this.View.render();
+        }
+        catch (e) {
+            this.handlerFailed(e);
+        }
+        if (this.failure !== null)
+            this.showFailure();
+    }
+
+    handlerFailed(error: unknown) {
+        // an addon which fails says so, at the top of its box (and in its
+        // box's header, so it's seen with the box closed). its options are
+        // left as they are, and may still be used. an analysis' own handler
+        // failing is only logged, as before
+        console.error(error);
+        if ( ! this.addonDef || this.failure !== null)
+            return;
+        this.failure = error ?? 'unknown error';
+        this.showFailure();
+    }
+
+    failureDetail(): string {
+        const error = this.failure;
+        return error instanceof Error ? error.message : String(error);
+    }
+
+    showFailure() {
+        // in the 'addons' list under the title (see addAddonsTag()), and in
+        // this addon's box. (before rendering, there's neither; renderIn()
+        // and addAddonsTag() show it)
+        markAddonFailed(this);
+
+        const $host = this.host?.el;
+        const $box = $host?.closest<HTMLElement>('.jmv-addon-collapse-view');
+        if ( ! $host || ! $box || $box.classList.contains('jmv-addon-failed'))
+            return;
+
+        const module = this.addonDef!.moduleTitle || this.addonDef!.ns;
+        const detail = this.failureDetail();
+        const title = s_('This addon has stopped working');
+
+        $box.classList.add('jmv-addon-failed');
+        const $header = $box.querySelector<HTMLElement>('.silky-options-collapse-button');
+        if ($header) {
+            $header.title = `${ $header.title }\n${ title }`;
+            $header.querySelector('.jmv-addon-module')?.before(
+                h('span', { class: 'jmv-addon-failed-icon', role: 'img', 'aria-label': title }));
+        }
+
+        // inside the host, above the addon's options (beside the host, it's
+        // laid out as a column of the box's grid)
+        $host.prepend(h('div', { class: 'jmv-addon-failed-notice', role: 'alert' },
+            h('div', { class: 'jmv-addon-failed-title' }, title),
+            h('div', { class: 'jmv-addon-failed-msg' },
+                s_('Its options may not respond as they should. An update to the {module} module may fix this.', { module })),
+            h('div', { class: 'jmv-addon-failed-detail' }, detail)));
     }
 
     attachParent(parent: Analysis) {
@@ -474,7 +544,7 @@ ready(() => {
 });
 
 
-function loadAnalysis(def, i18nDef: I18nData, appI18nDef: I18nData, jamoviVersion, id, focusMode, addonDefs?: AddonDef[]) {
+function loadAnalysis(def, i18nDef: I18nData, appI18nDef: I18nData, jamoviVersion, id, focusMode, addonDefs?: AddonDef[], missingAddons?: AddonId[]) {
 
     const header = document.querySelector<HTMLElement>('.silky-options-header');
     if (appI18nDef) {
@@ -577,6 +647,7 @@ function loadAnalysis(def, i18nDef: I18nData, appI18nDef: I18nData, jamoviVersio
                 for (let addon of analysis.addons)
                     addon.renderIn(analysis);
                 addAddonsTag(analysis);
+                addMissingAddons(analysis, missingAddons ?? [ ]);
 
                 $optionsBlock.querySelectorAll('.placeholder-options')?.forEach(el => el.remove());
 
@@ -605,6 +676,31 @@ function loadAddon(addonDef: AddonDef, jamoviVersion: string, id: number): Analy
     }
 
     return addon;
+}
+
+// an addon with options in the analysis whose module isn't installed (the
+// file was made where it is) has a notice at the top of the options. its
+// options are kept, and its results stay until the analysis is run again
+function addMissingAddons(analysis: Analysis, missingAddons: AddonId[]) {
+    if (missingAddons.length === 0)
+        return;
+
+    const $notices = h('div', { class: 'jmv-addons-missing' });
+    for (let addon of missingAddons) {
+        const $find = h('button', { class: 'jmv-addon-missing-find' }, s_('Find module in jamovi library'));
+        $find.addEventListener('click', () => {
+            parentFrame.send('action', { type: 'findModule', data: { ns: addon.ns } });
+        });
+        $notices.append(h('div', { class: 'jmv-addon-missing', role: 'note' },
+            h('div', { class: 'jmv-addon-missing-icon', 'aria-hidden': 'true' }),
+            h('div', { class: 'jmv-addon-missing-body' },
+                h('div', { class: 'jmv-addon-missing-title' },
+                    s_("{name}, from the {module} module, isn't installed", { name: addon.name, module: addon.ns })),
+                h('div', { class: 'jmv-addon-missing-msg' },
+                    s_("Its options are kept, and its results are shown as they were saved, but they'll be removed when the analysis is run again. Install the module to keep them.")),
+                $find)));
+    }
+    analysis.View.el.prepend($notices);
 }
 
 // an analysis with addons has an 'addons' tag under its title, which lists
@@ -636,6 +732,7 @@ function addAddonsTag(analysis: Analysis) {
             h('span', { class: 'jmv-options-addons-item-title' }, addon.addonDef!.title),
             h('span', { class: 'jmv-options-addons-item-module' }, addon.addonDef!.ns));
         $list.append($item);
+        addon.$addonsItem = $item;
         // an addon with no options (only results) has no box to go to
         if ( ! addon.host) {
             $item.setAttribute('aria-disabled', 'true');
@@ -675,6 +772,37 @@ function addAddonsTag(analysis: Analysis) {
 
     $addonsTag = h('div', { class: 'jmv-options-addons' }, $tag, $list);
     placeAddonsTag();
+
+    // the addons which failed before the list was made
+    for (let addon of analysis.addons) {
+        if (addon.failure !== null)
+            markAddonFailed(addon);
+    }
+}
+
+// marks an addon which has failed (see Analysis.handlerFailed()) in the
+// 'addons' list: its entry has a warning icon, and says why on hover, and the
+// 'addons' tag has one too, so it's seen with the list closed. this is the
+// only place an addon with no options (so no box) shows it
+function markAddonFailed(addon: Analysis) {
+    const $item = addon.$addonsItem;
+    if ( ! $item || $item.classList.contains('failed'))
+        return;
+
+    const title = s_('This addon has stopped working');
+    $item.classList.add('failed');
+    $item.querySelector('.jmv-options-addons-item-title')?.after(
+        h('span', { class: 'jmv-addon-failed-icon', role: 'img', 'aria-label': title }));
+    // (an addon with no options already says so)
+    $item.title = [ $item.title, title, addon.failureDetail() ].filter((line) => line).join('\n');
+
+    const $tag = $addonsTag?.querySelector<HTMLElement>('.jmv-options-addons-tag');
+    if ($tag && ! $tag.classList.contains('has-failed')) {
+        $tag.classList.add('has-failed');
+        $tag.title = s_('An addon has stopped working');
+        $tag.querySelector('.jmv-options-addons-tag-arrow')?.before(
+            h('span', { class: 'jmv-addon-failed-icon', 'aria-hidden': 'true' }));
+    }
 }
 
 function placeAddonsTag() {
@@ -752,10 +880,12 @@ function setOptionsValues(data, editType) {
     analysis.id = data.id;
     let titleSet = false;
     analysis.runInEditScope(() => {
-        if (analysis.View.beginDataInitialization(data.id)) {
-            for (let addon of analysis.addons)
-                addon.View.beginDataInitialization(data.id);
-
+        // the values are only set if every view (the analysis' and its
+        // addons') begins, and each which began is ended, the analysis first,
+        // so its addons are updated from its values
+        const targets = analysis.withAddons();
+        const began = targets.map((target) => target.View.beginDataInitialization(data.id));
+        if (began.every((b) => b)) {
             let params = Options.getDefaultEventParams("changed");
             params.silent = true;
             for (let key in data.options) {
@@ -781,12 +911,11 @@ function setOptionsValues(data, editType) {
             }
             if (titleSet === false)
                 setTitle('');
-
-            // the analysis first, so its addons are updated from its values
-            analysis.View.endDataInitialization(data.id);
-            for (let addon of analysis.addons)
-                addon.View.endDataInitialization(data.id);
         }
+        targets.forEach((target, i) => {
+            if (began[i])
+                target.View.endDataInitialization(data.id);
+        });
     });
 
     parentFrame.send("optionsViewReady", true);

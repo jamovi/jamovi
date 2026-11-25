@@ -17,6 +17,10 @@ ResultsElement <- R6::R6Class("ResultsElement",
         .stale=TRUE,
         .refs=NA,
         .parent=NA,
+        # the addons which changed this element (of their analysis'), by
+        # ns::name, each a list of ns, name, the columns and rows (by name)
+        # it added, and the cells it changed (a list, made in initialize())
+        .modifiedBy=NA,
         deep_clone=function(name, value) {
             value
         },
@@ -103,6 +107,7 @@ ResultsElement <- R6::R6Class("ResultsElement",
 
             private$.clearWith <- clearWith
             private$.refs <- as.character(refs)
+            private$.modifiedBy <- list()
 
             private$.updated <- FALSE
             private$.state <- NULL
@@ -184,6 +189,31 @@ ResultsElement <- R6::R6Class("ResultsElement",
         get=function(name) {
             stop("This element does not support get()")
         },
+        .markModified=function(addon, columns=character(), rows=character(), cells=list(),
+                title=FALSE, notes=character()) {
+            # marks this element as changed by addon (a list of ns and name),
+            # which added (or showed) columns and added rows (to a table, by
+            # name), changed cells (each a list of row and column), changed
+            # the title, and added or changed notes (by key)
+            key <- paste0(addon$ns, '::', addon$name)
+            change <- private$.modifiedBy[[key]]
+            if (is.null(change)) {
+                change <- list(ns=addon$ns, name=addon$name, columns=character(), rows=character(),
+                    cells=list(), title=FALSE, notes=character())
+            }
+            change$columns <- base::union(change$columns, as.character(columns))
+            change$rows <- base::union(change$rows, as.character(rows))
+            change$title <- isTRUE(change$title) || isTRUE(title)
+            change$notes <- base::union(change$notes, as.character(notes))
+            for (cell in cells) {
+                # a cell of a column or row it added is part of that
+                if (cell$column %in% change$columns || cell$row %in% change$rows)
+                    next()
+                cellKey <- paste0(cell$row, '\u001f', cell$column)
+                change$cells[[cellKey]] <- list(row=cell$row, column=cell$column)
+            }
+            private$.modifiedBy[[key]] <- change
+        },
         setError = function(message) {
             if ( ! is.character(message) || length(message) != 1)
                 reject('setError(): message must be a string')
@@ -258,6 +288,23 @@ ResultsElement <- R6::R6Class("ResultsElement",
                 visible=v,
                 refs=self$getRefs())
 
+            # an element an addon made (with its options) says so, so it can
+            # be marked as the addon's, even where the addon isn't installed
+            if (inherits(self$options, 'Options')) {
+                addon <- self$options$.addonId()
+                if ( ! is.null(addon))
+                    element$addon <- RProtoBuf_new(jamovi.coms.AnalysisAddon, ns=addon$ns, name=addon$name)
+            }
+
+            # as does an element an addon changed, see Analysis$.tryAddon()
+            for (change in private$.modifiedBy) {
+                cells <- lapply(change$cells, function(cell)
+                    RProtoBuf_new(jamovi.coms.ResultsAddonCell, row=cell$row, column=cell$column))
+                element$add('modifiedBy', RProtoBuf_new(jamovi.coms.ResultsAddonChange,
+                    ns=change$ns, name=change$name, columns=change$columns, rows=change$rows,
+                    cells=cells, title=change$title, notes=change$notes))
+            }
+
             if (private$.status == 'error') {
                 error <- RProtoBuf_new(jamovi.coms.Error,
                                         message=private$.error)
@@ -282,6 +329,14 @@ ResultsElement <- R6::R6Class("ResultsElement",
                     next()
                 if (base::any(vChanges %in% option$vars))
                     return()
+            }
+
+            # what addons changed is restored with what they changed, as an
+            # addon needn't change it again (it needn't run again)
+            for (change in pb$modifiedBy) {
+                cells <- lapply(change$cells, function(cell) list(row=cell$row, column=cell$column))
+                self$.markModified(list(ns=change$ns, name=change$name), change$columns, change$rows, cells,
+                    title=change$title, notes=change$notes)
             }
 
             if ( ! base::identical(pb$state, raw())) {

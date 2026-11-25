@@ -38,3 +38,109 @@
     font-size: 85%;
     opacity: 0.6;
 }
+
+/* an addon with options in the analysis, whose module isn't installed, has a
+   notice at the top of the options, coloured as the addons' boxes are */
+.jmv-addons-missing {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 15px;
+}
+
+.jmv-addon-missing {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #E7B978;
+    border-radius: 3px;
+    background-color: #FBF1E3;
+    color: #333333;
+}
+
+.jmv-addon-missing-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    background-color: #FFA500;
+    mask-image: url('../assets/action-warning.svg');
+    -webkit-mask-image: url('../assets/action-warning.svg');
+    mask-size: contain;
+    mask-repeat: no-repeat;
+}
+
+.jmv-addon-missing-body {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.jmv-addon-missing-title {
+    font-weight: bold;
+}
+
+.jmv-addon-missing-msg {
+    font-size: 90%;
+    line-height: 1.4;
+}
+
+.jmv-addon-missing-find {
+    padding: 4px 10px;
+}
+
+/* an addon whose event handlers failed: a warning icon in its box's header
+   (seen with the box closed), and a notice at the top of its box */
+.jmv-addon-failed-icon {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    margin-inline-start: 6px;
+    background-color: #D9822B;
+    mask-image: url('../assets/action-warning.svg');
+    -webkit-mask-image: url('../assets/action-warning.svg');
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+}
+
+.jmv-addon-failed-notice {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0 0 10px 0;
+    padding: 8px 10px;
+    border: 1px solid #E7B978;
+    border-inline-start-width: 3px;
+    border-inline-start-color: #D9822B;
+    border-radius: 3px;
+    background-color: #FBF1E3;
+    color: #333333;
+}
+
+.jmv-addon-failed-title {
+    font-weight: bold;
+}
+
+.jmv-addon-failed-msg {
+    font-size: 90%;
+    line-height: 1.4;
+}
+
+.jmv-addon-failed-detail {
+    font-family: monospace;
+    font-size: 80%;
+    color: #85602A;
+    overflow-wrap: anywhere;
+}
+
+/* and in the 'addons' list under the title: on its entry, and on the tag
+   (so it's seen with the list closed). sized to their smaller text */
+.jmv-options-addons-tag .jmv-addon-failed-icon,
+.jmv-options-addons-item .jmv-addon-failed-icon {
+    width: 11px;
+    height: 11px;
+    margin-inline-start: 0;
+    align-self: center;
+}

@@ -55,6 +55,11 @@ export class View extends Elem.View<Model> {
     label() {
         return _('Text');
     }
+
+    addonMarkHost(): HTMLElement | null {
+        return this.$title ?? null;
+    }
+
     render() {
 
         if (this.model.attributes.title) {

@@ -85,6 +85,10 @@ export class LayoutActionManager {
 
     onExecutingStateChanged?(state: boolean): void;
 
+    // called with what an event handler threw (see LayoutAction.execute()).
+    // without it, it's logged
+    onActionError?(error: unknown): void;
+
     bindActionParams(target, targetProperty: string, bindData): ViewEvent {
         return {
             onChange: bindData.sourceNames,

@@ -532,9 +532,10 @@ test_that("an addon's options set away from their defaults are chained in the sy
     expect_equal(a$analysis$.__enclos_env__$private$.addonsAsSource(), '')
 })
 
-# the addons the server didn't send, as it sends them with the options.
-# (each message is built before it's assigned, as assigning one copies it)
-skippedPB <- function(...) {
+# the addons the server didn't send, as it sends them with the options, as
+# the setting named setting. (each message is built before it's assigned, as
+# assigning one copies it)
+addonsSettingPB <- function(setting, ...) {
     initProtoBuf()
     named <- function(values) {
         options <- RProtoBuf_new(jamovi.coms.AnalysisOptions, hasNames=TRUE)
@@ -560,10 +561,13 @@ skippedPB <- function(...) {
     for (addon in list(...))
         addons$add('options', named(addon))
     pb <- RProtoBuf_new(jamovi.coms.AnalysisOptions, hasNames=TRUE)
-    pb$add('names', '.addonsSkipped')
+    pb$add('names', setting)
     pb$add('options', RProtoBuf_new(jamovi.coms.AnalysisOption, c=addons))
     pb
 }
+
+skippedPB <- function(...) addonsSettingPB('.addonsSkipped', ...)
+missingPB <- function(...) addonsSettingPB('.addonsMissing', ...)
 
 test_that("an addon the server skipped is noted in its parent's results", {
 
@@ -595,4 +599,230 @@ test_that("an analysis with no addons skipped has no notice of them", {
     elements <- run$analysis$asProtoBuf()$results$group$elements
     names <- vapply(elements, function(element) element$name, '')
     expect_false(any(startsWith(names, '.addonSkipped')))
+})
+
+test_that("an addon which isn't installed is noted in its parent's results", {
+
+    local_mocked_bindings(.package='jmvcore', packageRefs=function(package) list())
+
+    run <- anovaWithAddon()
+    run$analysis$options$fromProtoBuf(missingPB(list(ns='jdmrt', name='dmrt')))
+
+    elements <- run$analysis$asProtoBuf()$results$group$elements
+    names <- vapply(elements, function(element) element$name, '')
+    expect_true('.addonMissing_jdmrt_dmrt' %in% names)
+
+    notice <- elements[[which(names == '.addonMissing_jdmrt_dmrt')]]$notice
+    expect_equal(notice$type, jamovi.coms.ResultsNotice$NoticeType$WARNING)
+    parts <- strsplit(notice$content, '\u0004')[[1]]
+    values <- jsonlite::fromJSON(parts[2])
+    expect_equal(values$name, 'dmrt')
+    expect_equal(values$module, 'jdmrt')
+})
+
+test_that("an analysis with no addons missing has no notice of them", {
+
+    local_mocked_bindings(.package='jmvcore', packageRefs=function(package) list())
+
+    run <- anovaWithAddon()
+    elements <- run$analysis$asProtoBuf()$results$group$elements
+    names <- vapply(elements, function(element) element$name, '')
+    expect_false(any(startsWith(names, '.addonMissing')))
+})
+
+test_that("an element an addon made says which addon", {
+
+    local_mocked_bindings(.package='jmvcore', packageRefs=function(package) list())
+
+    run <- anovaWithAddon()
+    duncan <- run$addon$results$items$duncan
+    duncan$setContent('letters')
+    run$results$add(duncan)
+
+    elements <- run$analysis$asProtoBuf()$results$group$elements
+    names <- vapply(elements, function(element) element$name, '')
+
+    addon <- elements[[which(names == 'duncan')]]$addon
+    expect_equal(addon$ns, 'jDMRT')
+    expect_equal(addon$name, 'anovaDuncan')
+
+    own <- elements[[which(names == 'own')]]
+    expect_false(own$has('addon'))
+})
+
+# an addon which adds a column to its parent's table (in init) and fills it
+# (in run), as an addon which only changes its parent's results does
+LetteringAddon <- R6::R6Class('LetteringAddon',
+    inherit=Analysis,
+    private=list(
+        .init=function() {
+            table <- self$parent$results$items$anova
+            table$addColumn(name='letters', title='Letters', type='text')
+        },
+        .run=function() {
+            table <- self$parent$results$items$anova
+            table$setCell(rowNo=1, col='letters', value='a')
+        }))
+
+anovaWithTable <- function(addonClass=LetteringAddon) {
+    run <- anovaWithAddon(addonClass, withResult=FALSE)
+    # (the row is in the table's definition, so it outlasts init())
+    table <- Table$new(run$analysis$options, name='anova', title='ANOVA', rows=1,
+        columns=list(list(name='term', title='Term', type='text')))
+    run$results$add(table)
+    run
+}
+
+test_that("an element an addon changed says which addon, and the columns it added", {
+
+    local_mocked_bindings(.package='jmvcore', packageRefs=function(package) list())
+
+    run <- anovaWithTable()
+    run$analysis$init()
+    run$analysis$run()
+
+    elements <- run$analysis$asProtoBuf()$results$group$elements
+    names <- vapply(elements, function(element) element$name, '')
+
+    anova <- elements[[which(names == 'anova')]]
+    expect_length(anova$modifiedBy, 1)
+    change <- anova$modifiedBy[[1]]
+    expect_equal(change$ns, 'jDMRT')
+    expect_equal(change$name, 'anovaDuncan')
+    expect_equal(change$columns, 'letters')
+
+    own <- elements[[which(names == 'own')]]
+    expect_length(own$modifiedBy, 0)
+})
+
+test_that("an element an addon didn't change isn't marked", {
+
+    local_mocked_bindings(.package='jmvcore', packageRefs=function(package) list())
+
+    run <- anovaWithTable(Analysis)
+    run$analysis$init()
+    run$analysis$run()
+
+    elements <- run$analysis$asProtoBuf()$results$group$elements
+    names <- vapply(elements, function(element) element$name, '')
+    expect_length(elements[[which(names == 'anova')]]$modifiedBy, 0)
+})
+
+test_that("what an addon changed is restored with the results", {
+
+    local_mocked_bindings(.package='jmvcore', packageRefs=function(package) list())
+
+    run <- anovaWithTable()
+    run$analysis$init()
+    run$analysis$run()
+    pb <- run$analysis$asProtoBuf()$results
+
+    # a fresh analysis, whose addon doesn't run, restored from those results
+    again <- anovaWithTable(Analysis)
+    again$results$fromProtoBuf(pb, character(), character())
+
+    elements <- again$analysis$asProtoBuf()$results$group$elements
+    names <- vapply(elements, function(element) element$name, '')
+    change <- elements[[which(names == 'anova')]]$modifiedBy[[1]]
+    expect_equal(change$ns, 'jDMRT')
+    expect_equal(change$columns, 'letters')
+})
+
+# an addon which adds rows to its parent's table, as moretests does through
+# folded columns (they're shown as rows, but are columns), and as addRow()
+RowingAddon <- R6::R6Class('RowingAddon',
+    inherit=Analysis,
+    private=list(
+        .init=function() {
+            table <- self$parent$results$items$anova
+            table$addRow(rowKey='extra', values=list(term='extra'))
+            table$addColumn(name='term[ks]', title='', type='text')
+        }))
+
+test_that("the rows an addon added, and its folded columns, are said", {
+
+    local_mocked_bindings(.package='jmvcore', packageRefs=function(package) list())
+
+    run <- anovaWithTable(RowingAddon)
+    run$analysis$init()
+
+    elements <- run$analysis$asProtoBuf()$results$group$elements
+    names <- vapply(elements, function(element) element$name, '')
+    change <- elements[[which(names == 'anova')]]$modifiedBy[[1]]
+    # (rows are named as the client sees them, each key as JSON)
+    expect_equal(change$rows, '"extra"')
+    expect_equal(change$columns, 'term[ks]')
+    # the parent's own row isn't among them
+    expect_length(change$rows, 1)
+})
+
+# an addon which changes a cell of its parent's table (in a column and row the
+# parent made)
+RewritingAddon <- R6::R6Class('RewritingAddon',
+    inherit=Analysis,
+    private=list(
+        .run=function() {
+            table <- self$parent$results$items$anova
+            table$setCell(rowNo=1, col='term', value='group (rewritten)')
+        }))
+
+test_that("the cells an addon changed are said, but not those of what it added", {
+
+    local_mocked_bindings(.package='jmvcore', packageRefs=function(package) list())
+
+    run <- anovaWithTable(RewritingAddon)
+    run$analysis$init()
+    run$analysis$run()
+
+    elements <- run$analysis$asProtoBuf()$results$group$elements
+    names <- vapply(elements, function(element) element$name, '')
+    change <- elements[[which(names == 'anova')]]$modifiedBy[[1]]
+    expect_length(change$cells, 1)
+    expect_equal(change$cells[[1]]$column, 'term')
+    expect_equal(change$cells[[1]]$row, run$results$items$anova$names[[1]])
+    expect_length(change$columns, 0)
+    expect_length(change$rows, 0)
+
+    # the cell an addon fills, of the column it added, isn't a changed cell
+    run <- anovaWithTable()
+    run$analysis$init()
+    run$analysis$run()
+    elements <- run$analysis$asProtoBuf()$results$group$elements
+    names <- vapply(elements, function(element) element$name, '')
+    change <- elements[[which(names == 'anova')]]$modifiedBy[[1]]
+    expect_length(change$cells, 0)
+    expect_equal(change$columns, 'letters')
+})
+
+# an addon which renames its parent's table, adds a note to it, and shows a
+# column of it which was hidden (as moretests does)
+RetitlingAddon <- R6::R6Class('RetitlingAddon',
+    inherit=Analysis,
+    private=list(
+        .init=function() {
+            table <- self$parent$results$items$anova
+            table$setTitle('ANOVA, and more')
+            table$setNote('more', 'More results')
+            table$getColumn('hidden')$setVisible(TRUE)
+        }))
+
+test_that("an addon's changes to a title, notes and hidden columns are said", {
+
+    local_mocked_bindings(.package='jmvcore', packageRefs=function(package) list())
+
+    run <- anovaWithAddon(RetitlingAddon, withResult=FALSE)
+    table <- Table$new(run$analysis$options, name='anova', title='ANOVA', rows=1,
+        columns=list(
+            list(name='term', title='Term', type='text'),
+            list(name='hidden', title='Hidden', type='text', visible=FALSE)))
+    run$results$add(table)
+    run$analysis$init()
+
+    elements <- run$analysis$asProtoBuf()$results$group$elements
+    names <- vapply(elements, function(element) element$name, '')
+    change <- elements[[which(names == 'anova')]]$modifiedBy[[1]]
+    expect_true(change$title)
+    expect_equal(change$notes, 'more')
+    expect_equal(change$columns, 'hidden')
+    expect_length(change$rows, 0)
 })

@@ -28,9 +28,13 @@ def addon_prefix(ns, name):
 SETTINGS = ('.ppi', 'theme', 'palette', 'decSymbol', '.lang')
 
 # the addons not run, sent to jmvcore with an analysis' options (see
-# Analysis.write_skipped_addons()). it's made fresh for each run, so it's
-# never kept, though jmvcore sends it back with the options
+# Analysis.write_addon_notices()), which it makes notices of. they're made
+# fresh for each run, so they're never kept, though jmvcore sends them back
+# with the options. skipped addons don't support the installed version of the
+# analysis; missing addons have options in the analysis, but aren't installed
 ADDONS_SKIPPED = '.addonsSkipped'
+ADDONS_MISSING = '.addonsMissing'
+ADDON_NOTICES = (ADDONS_SKIPPED, ADDONS_MISSING)
 
 
 def substitute(values, changes):
@@ -427,7 +431,7 @@ class Options:
         new_names = list(pb.names)
 
         for i, name in enumerate(new_names):
-            if name == ADDONS_SKIPPED:
+            if name in ADDON_NOTICES:
                 continue
 
             new_pb = pb.options[i]
@@ -493,11 +497,24 @@ class Options:
         pb = AnalysisOptions()
         pb.hasNames = True
         for i, name in enumerate(self._pb.names):
-            if name.startswith(ADDONS_PREFIX) or name == ADDONS_SKIPPED:
+            if name.startswith(ADDONS_PREFIX) or name in ADDON_NOTICES:
                 continue
             pb.names.append(name)
             pb.options.add().CopyFrom(self._pb.options[i])
         return pb
+
+    def addon_ids(self):
+        # the (ns, name) of each addon with options here, whether or not it's
+        # installed. an addon with options from a file it's missing in keeps
+        # them (they're never removed), so they're there if it's installed
+        ids = set()
+        for name in self._pb.names:
+            if not name.startswith(ADDONS_PREFIX):
+                continue
+            parts = name[len(ADDONS_PREFIX):].split('/')
+            if len(parts) >= 3:
+                ids.add((parts[0], parts[1]))
+        return sorted(ids)
 
     def addon_pb(self, ns, name):
         # the options of an addon, named as the addon knows them. an addon

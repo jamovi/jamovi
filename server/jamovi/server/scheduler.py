@@ -174,10 +174,22 @@ class Scheduler:
     def queue(self):
         return self._pool
 
-    def _to_message(self, analysis, perform, request_pb=None):
+    def _addon_to_message(self, analysis, addon, addon_pb):
+        # an addon is run along with its analysis, and is told which analysis
+        # and revision it's for. it's sent its own options (see
+        # Options.addon_pb()); what to perform is the analysis'
+        addon_pb.sessionId = analysis.instance.session.id
+        addon_pb.instanceId = analysis.instance.id
+        addon_pb.analysisId = analysis.id
+        addon_pb.name = addon.name
+        addon_pb.ns = addon.ns
+        addon_pb.revision = analysis.revision
+        addon_pb.options.CopyFrom(analysis.options.addon_pb(addon.ns, addon.name))
+        addon_pb.changed.extend(analysis.changes)
 
-        if request_pb is None:
-            request_pb = AnalysisRequest()
+    def _to_message(self, analysis, perform):
+
+        request_pb = AnalysisRequest()
 
         request_pb.sessionId = analysis.instance.session.id
         request_pb.instanceId = analysis.instance.id
@@ -193,17 +205,14 @@ class Scheduler:
         # the addons' options are carried in the analysis' options; each
         # addon is sent its own, and the analysis is sent none of them
         for addon in analysis.addons:
-            addon_pb = request_pb.addons.add()
-            self._to_message(addon, perform, addon_pb)
-            addon_pb.options.CopyFrom(analysis.options.addon_pb(addon.ns, addon.name))
-            addon_pb.changed.extend(analysis.changes)
+            self._addon_to_message(analysis, addon, request_pb.addons.add())
 
         if analysis.complete and analysis.needs_op:
 
             analysis.op.waiting = False
 
             request_pb.options.CopyFrom(analysis.options.own_pb())
-            analysis.write_skipped_addons(request_pb.options)
+            analysis.write_addon_notices(request_pb.options)
             request_pb.perform = PERFORM_SAVE
             request_pb.path = analysis.op.path
             request_pb.part = analysis.op.part
@@ -213,7 +222,7 @@ class Scheduler:
             analysis.set_status(Analysis.Status.RUNNING)
 
             request_pb.options.CopyFrom(analysis.options.own_pb())
-            analysis.write_skipped_addons(request_pb.options)
+            analysis.write_addon_notices(request_pb.options)
             request_pb.changed.extend(analysis.changes)
             request_pb.revision = analysis.revision
             request_pb.clearState = analysis.clear_state or analysis.state_dropped

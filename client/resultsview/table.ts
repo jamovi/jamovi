@@ -5,6 +5,7 @@ import interactionManager from '../common/interactionmanager';
 
 import Elem, { ElementModel } from './element';
 import { AnalysisStatus } from './analysisstatus';
+import { CHANGED_CLASS, cellKey, tableChanges } from './addonmark';
 import { h, htmlTrusted, rich, richParagraphs, setRich, RichOptions } from '../common/htmlelementcreator';
 
 const SUPSCRIPTS = ["\u1D43", "\u1D47", "\u1D48", "\u1D49", "\u1DA0", "\u1D4D", "\u02B0", "\u2071",
@@ -333,9 +334,14 @@ export class View extends Elem.View<Model> {
         if (table === undefined)
             return;
 
+        const changedNotes = tableChanges(this.model.attributes.modifiedBy).notes;
+
         let footerRows: HTMLTableRowElement[] = [];
         for (let i = 0; i < table.notes.length; i++) {
-            let noteCell = h('td', { class: 'table-note', colspan: nPhysCols.toString() });
+            let noteClass = 'table-note';
+            if (changedNotes.has(table.notes[i].key))
+                noteClass += ` ${ CHANGED_CLASS }`;
+            let noteCell = h('td', { class: noteClass, colspan: nPhysCols.toString() });
             let paragraphs = richParagraphs(table.notes[i].note);
             if (paragraphs.length === 0)
                 paragraphs.push(h('p'));
@@ -360,6 +366,28 @@ export class View extends Elem.View<Model> {
         }
         else
             this.refs.remove();
+    }
+
+
+    addonMarkHost(): HTMLElement | null {
+        return this.$titleCell ?? null;
+    }
+
+    insertAddonMark(host: HTMLElement, mark: HTMLElement) {
+        if (this.$titleText.nextSibling !== mark)
+            this.$titleText.after(mark);
+    }
+
+    // marks the header of each column (as laid out: folded, swapped) all of
+    // whose cells an addon added or changed, so it's highlighted with them
+    markAddonHeaders(cells: { header: any[], body: any[][] }) {
+        const changed = (cell: any) => (cell.classes ?? '').includes(CHANGED_CLASS);
+        for (let colNo = 0; colNo < cells.header.length; colNo++) {
+            const present = cells.body.map((row) => row[colNo]).filter((cell) => cell);
+            const header = cells.header[colNo];
+            if (header && present.length > 0 && present.every(changed) && ! changed(header))
+                header.classes = `${ header.classes ?? '' } ${ CHANGED_CLASS }`;
+        }
     }
 
     render() {
@@ -387,6 +415,8 @@ export class View extends Elem.View<Model> {
 
         if (this.model.attributes.title)
             setRich(this.$titleText, this.model.attributes.title);
+        // an addon which changed the title has it highlighted with the rest
+        this.$titleText.classList.toggle(CHANGED_CLASS, tableChanges(this.model.attributes.modifiedBy).title);
 
         let columnCount = 0;
         let rowCount = 0;
@@ -414,6 +444,14 @@ export class View extends Elem.View<Model> {
         };
 
         let formattings = new Array(columnCount);
+
+        // what addons changed in this (their analysis') table: each cell an
+        // addon added (its row or column) or changed has CHANGED_CLASS, which
+        // goes with it through folding and swapping, and is highlighted while
+        // the table's addon mark is hovered (see View.setAddonHighlight())
+        const changes = tableChanges(this.model.attributes.modifiedBy);
+        const rowNames: string[] = table.rowNames ?? [ ];
+        const sortTransform: number[] = this.model.attributes.sortTransform ?? [ ];
 
         let colNo = 0;
         let colIndex = -1;
@@ -453,6 +491,8 @@ export class View extends Elem.View<Model> {
                 break;
 
             let rowFormat = '';
+            const rowName: string | undefined = rowNames[sortTransform[rowNo] ?? rowNo];
+            const rowAddon = rowName !== undefined ? changes.rows.get(rowName) : undefined;
 
             let colNo = 0;
             for (let sourceColNo = 0; sourceColNo < columns.length; sourceColNo++) {
@@ -464,6 +504,11 @@ export class View extends Elem.View<Model> {
                 let sourceCell = sourceCells[rowNo];
 
                 let cell = { value : null, renderMode: 'plain', type: sourceColumn.type, superTitle: sourceColumn.superTitle, colIndex: sourceColNo, classes : rowFormat, sups : '' };
+
+                if (rowAddon !== undefined
+                        || changes.columns.has(sourceColumn.name)
+                        || (rowName !== undefined && changes.cells.has(cellKey(rowName, sourceColumn.name))))
+                    cell.classes += ` ${ CHANGED_CLASS }`;
 
                 if (sourceCell.format & Format.NEGATIVE)
                     cell.classes += ' jmv-results-table-cell-negative';
@@ -670,6 +715,8 @@ export class View extends Elem.View<Model> {
             cells.header = swapped.header;
             cells.body = swapped.body;
         }
+
+        this.markAddonHeaders(cells);
 
         if (hasSuperHeader) {
 

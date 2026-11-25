@@ -46,15 +46,20 @@ export class LayoutAction {
             return;
 
         // an event handler which throws mustn't leave the manager executing
-        // (and the options in an edit). it's logged, rather than passed on to
-        // whatever triggered it, which may be another analysis' option (an
-        // addon's handlers listen to its parent's options)
+        // (and the options in an edit). it's given to the manager (an addon
+        // shows it, see Analysis.handlerFailed() in main.ts) or logged,
+        // rather than passed on to whatever triggered it, which may be
+        // another analysis' option (an addon's handlers listen to its
+        // parent's options)
         this._manager._executeStarted(this);
         try {
             this._callback.call(this._manager._view, this._manager._resources, ...args);
         }
         catch (e) {
-            console.error(e);
+            if (this._manager.onActionError)
+                this._manager.onActionError(e);
+            else
+                console.error(e);
         }
         finally {
             this._manager._executeEnded(this);

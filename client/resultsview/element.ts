@@ -13,6 +13,7 @@ import { ReferenceNumbers } from './refs';
 import { AnalysisStatus } from './analysisstatus';
 import type { IElement } from './create';
 import { ResultsContextMenuItem } from '../common/contextmenutypes';
+import { CHANGED_CLASS, ElementAddon, ElementAddonChange, addonKey, updateAddonMark } from './addonmark';
 
 export interface ElementData {
     level?: number;
@@ -22,6 +23,7 @@ export interface ElementData {
     create?: (element: IElement, options, level: number, parent: View, mode: string, devMode, fmt, refTable ) => View;
     mode: string;
     devMode: boolean;
+    addon?: ElementAddon;
 }
 
 export interface ElementModel<T = any> {
@@ -33,6 +35,8 @@ export interface ElementModel<T = any> {
     status: AnalysisStatus,
     stale: boolean,
     options: any,
+    // the addons which changed this element, see setAddon()
+    modifiedBy?: ElementAddonChange[],
     element: T
 }
 
@@ -85,6 +89,11 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
     updateItem: (item: View, element: IElement, options, level, mode, devMode, fmt, refTable) => boolean;
     fmt: any;
     mode: string;
+    // the addon this element is from, as ns::name, or '' for its analysis'.
+    // it's known before the element's children are made, so a child from
+    // the same addon doesn't repeat its mark
+    addonKey: string = '';
+    $addonMark: HTMLButtonElement | null = null;
 
     constructor(model: M, data: ElementData, interalFocus?: boolean) {
         super();
@@ -96,6 +105,7 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
         this.level = (data.level !== undefined) ? data.level : 0;
         this.fmt = data.fmt;
         this.mode = data.mode;
+        this.addonKey = addonKey(data.addon);
 
         this.classList.add('jmv-results-item');
         const errorMsgId = interactionManager.nextAriaId('errormsg');
@@ -121,6 +131,77 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
             this.setFocusElement(this);
 
         this.ready = Promise.resolve();
+    }
+
+    setAddon(addon: ElementAddon, changes?: ElementAddonChange[]) {
+        this.addonKey = addonKey(addon);
+        const parentKey = (this.parent as any)?.addonKey ?? '';
+        const had = this.$addonMark;
+        this.$addonMark = updateAddonMark(this.$addonMark, addon, changes, parentKey);
+        if (this.$addonMark !== null && had === null)
+            this.connectAddonMark(this.$addonMark);
+        else if (this.$addonMark === null && had !== null)
+            this.setAddonHighlight(false);
+        this.placeAddonMark();
+    }
+
+    // the mark highlights what the addon added or changed while it's hovered,
+    // or focused from the keyboard, and while it's pressed (it's a toggle, so
+    // the highlight can be kept, from the keyboard too). a click leaves the
+    // mark focused, but that focus isn't from the keyboard, so it doesn't
+    // keep the highlight once the pointer leaves
+    connectAddonMark(mark: HTMLButtonElement) {
+        const pressed = () => mark.getAttribute('aria-pressed') === 'true';
+        const keyboardFocused = () => mark.matches(':focus-visible');
+        const update = () => this.setAddonHighlight(pressed() || mark.matches(':hover') || keyboardFocused());
+        mark.addEventListener('mouseenter', () => this.setAddonHighlight(true));
+        mark.addEventListener('mouseleave', () => update());
+        mark.addEventListener('focus', () => update());
+        mark.addEventListener('blur', () => update());
+        mark.addEventListener('click', (event) => {
+            // (not a click on the results, which selects the analysis)
+            event.stopPropagation();
+            mark.setAttribute('aria-pressed', pressed() ? 'false' : 'true');
+            update();
+        });
+    }
+
+    // highlights the parts of this element an addon changed (those with
+    // CHANGED_CLASS), or, if none are marked (it's an element an addon added,
+    // or one whose changes aren't to parts), the whole element
+    setAddonHighlight(on: boolean) {
+        const parts = this.querySelector(`.${ CHANGED_CLASS }`) !== null;
+        this.classList.toggle('jmv-results-addon-highlight', on);
+        this.classList.toggle('jmv-results-addon-highlight-whole', on && ! parts);
+    }
+
+    // the title the addon mark is part of, or null for an element with none
+    addonMarkHost(): HTMLElement | null {
+        return null;
+    }
+
+    // places the addon mark at the end of the title. the title is remade
+    // when the element renders, so this is called after each update too. an
+    // element with no title (or an empty one) has the mark at its top end
+    placeAddonMark() {
+        const mark = this.$addonMark;
+        if (mark === null)
+            return;
+        const host = this.addonMarkHost();
+        const hasTitle = host !== null
+            && host.style.display !== 'none'
+            && (host.textContent ?? '').trim() !== '';
+        mark.classList.toggle('in-corner', ! hasTitle);
+        this.classList.toggle('jmv-results-addon-cornered', ! hasTitle);
+        if (hasTitle)
+            this.insertAddonMark(host!, mark);
+        else if (mark.parentElement !== this)
+            this.prepend(mark);
+    }
+
+    insertAddonMark(host: HTMLElement, mark: HTMLElement) {
+        if (mark.parentElement !== host || host.lastChild !== mark)
+            host.append(mark);
     }
 
     setFocusElement(element: HTMLElement) {
@@ -268,6 +349,7 @@ export abstract class View<M extends Model<T> = any, T extends ElementModel = In
         if (this.updateItem(this, data.element, data.options, data.level, data.mode, data.devMode, data.fmt, data.refTable)) {
             this.layout.begin();
             this.render();
+            this.placeAddonMark();
             this.layout.end();
             return true;
         }

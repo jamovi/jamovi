@@ -301,6 +301,97 @@ input, [contenteditable], [contenteditable] * {
     width: max-content;
 }
 
+/* an element an addon added or changed has a small module icon after its
+   title, in the orange of the addons' boxes in the options. it's a button:
+   which module is said on hover (and to a screen reader), and what the addon
+   added or changed is highlighted while it's hovered or focused, or pressed.
+   the icon is drawn on ::before, as a mask on the button would clip its
+   focus ring */
+.jmv-results-addon-mark {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    margin-inline-start: 6px;
+    padding: 0;
+    width: 0.75em;
+    height: 0.75em;
+    font: inherit;
+    background: none;
+    border: none;
+    border-radius: 2px;
+    cursor: pointer;
+}
+
+.jmv-results-addon-mark::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: #C9A36B;
+    mask-image: url('../assets/analysis-module.svg');
+    -webkit-mask-image: url('../assets/analysis-module.svg');
+    mask-size: contain;
+    mask-repeat: no-repeat;
+    mask-position: center;
+    opacity: 0.7;
+}
+
+.jmv-results-addon-mark:hover::before,
+.jmv-results-addon-mark:focus-visible::before {
+    opacity: 1;
+}
+
+.jmv-results-addon-mark[aria-pressed="true"]::before {
+    background-color: #A67B3F;
+    opacity: 1;
+}
+
+.jmv-results-addon-mark:focus-visible {
+    outline: 2px solid #3E6DA9;
+    outline-offset: 2px;
+}
+
+/* an element without a title has it at its top end, in the margin results
+   keep there */
+.jmv-results-addon-cornered {
+    position: relative;
+}
+
+.jmv-results-addon-mark.in-corner {
+    position: absolute;
+    top: 3px;
+    inset-inline-end: -18px;
+    margin: 0;
+    width: 12px;
+    height: 12px;
+}
+
+/* its module isn't installed */
+.jmv-results-addon-mark.not-installed::before {
+    background-color: #BBBBBB;
+}
+
+/* what an addon added or changed, while its mark is hovered, focused or
+   pressed: the parts it changed (a table's cells, headers, title, notes), or,
+   if none are marked (the addon added the element), the whole element */
+.jmv-addon-changed {
+    transition: background-color 0.15s;
+}
+
+.jmv-results-addon-highlight .jmv-addon-changed {
+    background-color: #FBE3C0;
+}
+
+.jmv-results-addon-highlight-whole {
+    outline: 2px solid #E7B978;
+    outline-offset: 4px;
+    border-radius: 2px;
+    background-color: #FDF3E4;
+}
+
+[data-mode="text"] .jmv-results-addon-mark {
+    display: none;
+}
+
 .jmv-results-image.selectedable-result-item:focus {
     outline-style: dashed;
     outline-width: 2px;

@@ -330,15 +330,21 @@ class Modules:
 
 
     def _attach_addons(self):
-        # fill in addons
-        modules_by_name = dict(map(lambda m: (m.name, m), self))
+        # fill in addons. a module installed twice (in the system's modules
+        # and the user's) is the first one read, as get() has it; the other
+        # neither adds addons (an analysis would have each addon twice) nor
+        # has them
+        modules_by_name = { }
+        for module in self:
+            modules_by_name.setdefault(module.name, module)
+        modules = list(modules_by_name.values())
 
         for module in self:
             for analysis in module.analyses:
                 del analysis.addons[:]
                 del analysis.skipped_addons[:]
 
-        for module in self:
+        for module in modules:
             for analysis in module.analyses:
                 if analysis.addon_for is not None:
                     try:

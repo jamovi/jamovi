@@ -112,19 +112,29 @@ def test_set_of_an_addons_option_is_a_change():
     assert options.set(incoming.as_pb()) is True
 
 
-def test_the_skipped_addons_sent_back_by_jmvcore_arent_kept():
-    """.addonsSkipped is made for each run, and isn't saved with the options"""
+def test_the_addon_notices_sent_back_by_jmvcore_arent_kept():
+    """.addonsSkipped and .addonsMissing are made for each run, and aren't
+    saved with the options"""
 
-    from jamovi.server.options import ADDONS_SKIPPED
+    from jamovi.server.options import ADDON_NOTICES
 
     options = anova_options()
     options.set_value('dep', 'yield')
 
     pb = options.own_pb()
-    pb.names.append(ADDONS_SKIPPED)
-    pb.options.add().s = 'stale'
+    for name in ADDON_NOTICES:
+        pb.names.append(name)
+        pb.options.add().s = 'stale'
     options.set(pb)
 
-    assert ADDONS_SKIPPED not in options.as_pb().names
-    assert ADDONS_SKIPPED not in options.own_pb().names
+    for name in ADDON_NOTICES:
+        assert name not in options.as_pb().names
+        assert name not in options.own_pb().names
     assert options.get_value('dep') == 'yield'
+
+
+def test_the_addons_with_options_are_listed():
+    """whether they're installed or not"""
+    options = anova_options()
+    options.set_value('addons/other/thing/x', 1)
+    assert options.addon_ids() == [ ('jdmrt', 'dmrt'), ('other', 'thing') ]

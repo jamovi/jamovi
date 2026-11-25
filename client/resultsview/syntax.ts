@@ -44,6 +44,11 @@ export class View extends Elem.View<Model> {
     label() {
         return _('Syntax');
     }
+
+    addonMarkHost(): HTMLElement | null {
+        return this.$title ?? null;
+    }
+
     render() {
 
         let syntax = this.model.attributes.element;

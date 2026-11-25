@@ -93,3 +93,15 @@ def test_an_addon_is_skipped_for_a_version_it_doesnt_support():
 
     assert anova(modules).addons == [ ]
     assert anova(modules).skipped_addons == [ ('jdmrt', 'dmrt', (2, 3)) ]
+
+
+def test_a_module_installed_twice_adds_its_addon_once():
+    """a module in both the system's modules and the user's (the first read
+    is the one used, as get() has it) doesn't give its addon twice"""
+
+    modules = read(
+        module_defn('jmv', { 'name': 'anova' }),
+        module_defn('jdmrt', { 'name': 'dmrt', 'addonFor': 'jmv::anova' }),
+        module_defn('jdmrt', { 'name': 'dmrt', 'addonFor': 'jmv::anova' }))
+
+    assert anova(modules).addons == [ ('jdmrt', 'dmrt') ]

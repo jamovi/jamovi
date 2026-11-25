@@ -11,6 +11,7 @@ import { ISvgElementData, Model as SvgModel, View as SvgView } from './svg';
 
 import { INoticeElementData, Model as NoticeModel, NoticeView } from './notice';
 import { ElementData, ElementModel, Model, View } from './element';
+import type { ElementAddon, ElementAddonChange } from './addonmark';
 import { AnalysisStatus } from './analysisstatus';
 
 export { AnalysisStatus };
@@ -24,6 +25,8 @@ export interface IElement {
     refs: string[];
     visible: 0 | 1 | 2 | 3;
     stale: boolean;
+    addon?: ElementAddon;
+    modifiedBy?: ElementAddonChange[];
 }
 
 
@@ -139,7 +142,8 @@ export const createItem = function(element: IElement, options, level: number, pa
         mode: mode,
         fmt: fmt,
         devMode: devMode,
-        create: createItem
+        create: createItem,
+        addon: element.addon,
     };
 
     let modelParams: ElementModel = {
@@ -151,6 +155,7 @@ export const createItem = function(element: IElement, options, level: number, pa
         refs: element.refs,
         options: options,
         refTable: refTable,
+        modifiedBy: element.modifiedBy,
         element: undefined
     };
 
@@ -239,6 +244,9 @@ export const createItem = function(element: IElement, options, level: number, pa
         view = new NoticeView(model, viewParams);
     }
 
+    if (view !== null)
+        view.setAddon(element.addon, element.modifiedBy);
+
     return view;
 };
 type InferType<T> = T extends Model<infer A> ? A : never;
@@ -261,6 +269,7 @@ const updateItem = function<V extends View<M, T>, M extends Model<T>, T extends 
         model.attributes.refs = element.refs;
         model.attributes.options = options;
         model.attributes.refTable = refTable;
+        model.attributes.modifiedBy = element.modifiedBy;
 
 
         model.initialize();
@@ -425,6 +434,9 @@ const updateItem = function<V extends View<M, T>, M extends Model<T>, T extends 
         view.level = level;
         view.mode = mode;
     }
+
+    view.model.attributes.modifiedBy = element.modifiedBy;
+    view.setAddon(element.addon, element.modifiedBy);
 
     return true;
 };

@@ -241,6 +241,11 @@ export class View extends Elem.View<Model> {
         return _('Image');
     }
 
+
+    addonMarkHost(): HTMLElement | null {
+        return this.$title ?? null;
+    }
+
     render() {
         if (this.$title) {
             if (this.model.attributes.title) {

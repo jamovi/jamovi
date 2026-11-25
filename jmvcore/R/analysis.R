@@ -87,6 +87,9 @@ Analysis <- R6::R6Class('Analysis',
         .completeWhenFilled=FALSE,
         # whether .run() needs calling; see .load()
         .needsRun=TRUE,
+        # the snapshot after the last addon step, which is the one before the
+        # next, when nothing runs between (see .tryAddon())
+        .lastSnapshot=NULL,
         .requiresMissings=FALSE,
         .weightsSupport='auto',
         .init=function() NULL,
@@ -210,19 +213,120 @@ Analysis <- R6::R6Class('Analysis',
             }
             source
         },
-        .tryAddon=function(addon, fn) {
+        .tryAddon=function(addon, fn, track=FALSE) {
             # runs fn, a part of an addon. an error is the addon's, and is
             # shown in its results rather than taking down this analysis (and
             # the addon is left out from then on). a restart is still a restart
-            # (see .checkpoint())
+            # (see .checkpoint()). with track, the elements of this analysis'
+            # the addon changes are marked as changed by it
             if (addon$errored)
                 return(invisible(NULL))
+            if (track) {
+                # the addon before this one (in the same loop) left a
+                # snapshot, which is this one's before
+                before <- private$.lastSnapshot
+                if (is.null(before))
+                    before <- private$.ownSnapshot()
+                private$.lastSnapshot <- NULL
+            }
             tryCatch(fn(), error=function(e) {
                 if (identical(private$.status, 'restarting'))
                     stop(e)
                 private$.addonError(addon, conditionMessage(e))
             })
+            if (track) {
+                after <- private$.ownSnapshot()
+                private$.markChanges(addon, before, after)
+                private$.lastSnapshot <- after
+            }
             invisible(NULL)
+        },
+        .ownSnapshot=function() {
+            # this analysis' own elements (not its addons'), less groups and
+            # arrays (an addon adding its own element to one doesn't change
+            # it), by path: its title, and, for a table, the names of its
+            # columns (all, and those shown) and rows, its cells' contents (by
+            # column, then row), and its notes (by key). whether it changed is
+            # decided by sig: for a table, what's here and its columns' titles
+            # (serializing a table is slow, about 0.1 ms a cell); for anything
+            # else, it serialized (without its state)
+            snapshot <- list()
+            options <- private$.options
+            walk <- function(element) {
+                if (inherits(element, 'Group') || inherits(element, 'Array')) {
+                    for (item in element$items)
+                        walk(item)
+                    return()
+                }
+                if ( ! identical(element$options, options))
+                    return()
+                columns <- character()
+                shown <- character()
+                rows <- character()
+                cells <- list()
+                notes <- list()
+                if (inherits(element, 'Table')) {
+                    columns <- names(element$columns)
+                    shown <- names(Filter(function(column) isTRUE(column$visible), element$columns))
+                    rows <- as.character(element$names)
+                    for (column in element$columns) {
+                        contents <- lapply(column$cells, function(cell)
+                            list(cell$value, cell$footnotes, cell$symbols, cell$format))
+                        names(contents) <- rows[seq_along(contents)]
+                        cells[[column$name]] <- contents
+                    }
+                    for (note in element$notes)
+                        notes[[note$key]] <- note$note
+                    headers <- lapply(element$columns, function(column)
+                        list(column$title, column$superTitle, column$visible))
+                    sig <- list(element$title, element$visible, headers, rows, cells, notes)
+                } else {
+                    sig <- RProtoBuf_serialize(element$asProtoBuf(includeState=FALSE), NULL)
+                }
+                snapshot[[element$path]] <<- list(
+                    element=element,
+                    sig=sig,
+                    title=element$title,
+                    columns=columns,
+                    shown=shown,
+                    rows=rows,
+                    cells=cells,
+                    notes=notes)
+            }
+            walk(private$.results)
+            snapshot
+        },
+        .markChanges=function(addon, before, after) {
+            # marks the elements which differ between the snapshots (see
+            # .ownSnapshot()) as changed by addon, with the columns it added
+            # or showed, the rows it added, the cells (of the columns and rows
+            # already there) it changed, whether it changed the title, and the
+            # notes it added or changed
+            id <- addon$options$.addonId()
+            for (path in names(after)) {
+                now <- after[[path]]
+                was <- before[[path]]
+                if ( ! is.null(was) && identical(was$sig, now$sig))
+                    next()
+                if (is.null(was)) {
+                    now$element$.markModified(id, now$shown, now$rows, notes=names(now$notes))
+                } else {
+                    changed <- list()
+                    for (column in base::intersect(now$columns, was$columns)) {
+                        for (row in base::intersect(now$rows, was$rows)) {
+                            if ( ! identical(now$cells[[column]][[row]], was$cells[[column]][[row]]))
+                                changed[[length(changed) + 1]] <- list(row=row, column=column)
+                        }
+                    }
+                    notes <- Filter(function(key) ! identical(now$notes[[key]], was$notes[[key]]), names(now$notes))
+                    now$element$.markModified(id,
+                        base::setdiff(now$shown, was$shown),
+                        base::setdiff(now$rows, was$rows),
+                        changed,
+                        title=! identical(now$title, was$title),
+                        notes=as.character(notes))
+                }
+            }
         },
         .addonError=function(addon, message) {
             addon$setError(message)
@@ -372,8 +476,10 @@ Analysis <- R6::R6Class('Analysis',
                     private$.tryAddon(addon, function() addon$options$check(checkVars=TRUE))
 
                 private$.init()
+                private$.lastSnapshot <- NULL
                 for (addon in private$.addons)
-                    private$.tryAddon(addon, function() addon$.__enclos_env__$private$.init())
+                    private$.tryAddon(addon, function() addon$.__enclos_env__$private$.init(), track=TRUE)
+                private$.lastSnapshot <- NULL
 
                 self$options$check(checkData=TRUE)
                 for (addon in private$.addons)
@@ -456,12 +562,14 @@ Analysis <- R6::R6Class('Analysis',
             result <- try({
                 if (private$.needsRun)
                     result <- private$.run()
+                private$.lastSnapshot <- NULL
                 for (addon in private$.addons) {
                     if ( ! addon$.__enclos_env__$private$.needsRun)
                         next()
                     private$.checkpoint()
-                    private$.tryAddon(addon, function() addon$.__enclos_env__$private$.run())
+                    private$.tryAddon(addon, function() addon$.__enclos_env__$private$.run(), track=TRUE)
                 }
+                private$.lastSnapshot <- NULL
             }, silent=TRUE)
 
             if ( ! private$.dataProvided) {
@@ -874,6 +982,16 @@ Analysis <- R6::R6Class('Analysis',
                 skippedInfo$notice$content <- message
                 skippedInfo$notice$type <- jamovi.coms.ResultsNotice$NoticeType$WARNING
                 prepend[[length(prepend)+1]] <- skippedInfo
+            }
+
+            for (missing in private$.options$.addonsMissing) {
+                message <- ..(
+                    "This analysis has options for {name}, from the {module} module, which isn't installed. Its results aren't shown. Install the module to restore them.",
+                    list(name=missing$name, module=missing$ns))
+                missingInfo <- RProtoBuf_new(jamovi.coms.ResultsElement, name=paste0('.addonMissing_', missing$ns, '_', missing$name))
+                missingInfo$notice$content <- message
+                missingInfo$notice$type <- jamovi.coms.ResultsNotice$NoticeType$WARNING
+                prepend[[length(prepend)+1]] <- missingInfo
             }
 
             if ( ! identical(private$.stacktrace, ''))

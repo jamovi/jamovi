@@ -29,7 +29,7 @@ interface IFrameCommsApi {
     requestAction: (data: any) => any;
     optionsViewReady: (ready: boolean) => void;
     requestData: (data: any) => any;
-    action: (data: { type: 'findModule', data: any }) => void;
+    action: (data: { type: 'findModule', data?: { ns: string } }) => void;
 }
 
 class AnalysisResources extends EventEmitter {
@@ -83,7 +83,8 @@ class AnalysisResources extends EventEmitter {
             action: action => {
                 switch (action.type) {
                     case 'findModule':
-                        const moduleName = this.analysis.ns;
+                        // the analysis' module, or an addon's
+                        const moduleName = action.data?.ns ?? this.analysis.ns;
                         this.store.show(1, `module::${moduleName}`);
                 }
             },
@@ -219,7 +220,7 @@ class AnalysisResources extends EventEmitter {
             })
         ]).then(() => {
             this.addonsKey = addonsKey(analysis.addons);
-            return this.frameComms.send("setOptionsDefinition", this.def, this.i18nDef, I18ns.get('app').localeData, this.jamoviVersion, analysis.id, interactionManager.getMode(), analysis.addons);
+            return this.frameComms.send("setOptionsDefinition", this.def, this.i18nDef, I18ns.get('app').localeData, this.jamoviVersion, analysis.id, interactionManager.getMode(), analysis.addons, analysis.missingAddons);
         });
     }
 

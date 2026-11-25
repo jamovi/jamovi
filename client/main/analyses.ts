@@ -9,7 +9,7 @@ import DataSetViewModel from './dataset';
 import { Modules } from './modules';
 import { IReference } from './references';
 import { I18nData } from '../common/i18n';
-import { AddonId, addonPrefix } from '../common/addons';
+import { AddonId, addonPrefix, addonIdOf } from '../common/addons';
 
 // an addon to an analysis. its options are carried in the analysis' options,
 // named addons/<ns>/<name>/<option>
@@ -40,6 +40,9 @@ export class Analysis {
     i18n: I18nData;
     uijs: string;
     addons: AnalysisAddon[] = [];
+    // the addons with options in this analysis (from a file made where they
+    // were installed) whose modules aren't installed
+    missingAddons: AddonId[] = [];
     _addonIds: AddonId[] = [];
     references: IReference[];
     _parent: Analyses;
@@ -112,6 +115,7 @@ export class Analysis {
                 this.arbitraryCode = (defn.arbitraryCode || defn.arbitraryCode2);
                 this.missingModule = false;
                 await this._loadAddons();
+                this.missingAddons = this._findMissingAddons();
                 this.options.setValues(this.values);
                 this.isReady = true;
             }
@@ -158,6 +162,21 @@ export class Analysis {
                 console.log(`Could not load addon ${ id.ns }::${ id.name }`, e);
             }
         }
+    }
+
+    _findMissingAddons(): AddonId[] {
+        // an addon whose module is installed isn't missing, even if it isn't
+        // run (the server skips an addon which doesn't support this version
+        // of the analysis, and the results say so)
+        const installed = new Set((this.modules.get('modules') ?? [ ]).map((meta: any) => meta.name));
+        const missing = new Map<string, AddonId>();
+        for (let name in this.values ?? { }) {
+            const id = addonIdOf(name);
+            if (id === null || installed.has(id.ns))
+                continue;
+            missing.set(`${ id.ns }::${ id.name }`, id);
+        }
+        return [ ...missing.values() ];
     }
 
     setup(values: {[name: string]: any}, addons: AddonId[] = [ ]) {

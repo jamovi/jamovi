@@ -324,6 +324,29 @@ message ResultsElement {
     bytes state = 14;
     Visible visible = 15;
     repeated string refs = 16;
+
+    // the addon an element is from, when it isn't its analysis'
+    AnalysisAddon addon = 17;
+    // the addons which changed this element of their analysis', and, of a
+    // table, the columns and rows (by name) each added (or showed), the
+    // cells (of the analysis' own columns and rows) each changed, whether it
+    // changed the title, and the notes (by key) it added or changed
+    repeated ResultsAddonChange modifiedBy = 18;
+}
+
+message ResultsAddonChange {
+    string ns = 1;
+    string name = 2;
+    repeated string columns = 3;
+    repeated string rows = 4;
+    repeated ResultsAddonCell cells = 5;
+    bool title = 6;
+    repeated string notes = 7;
+}
+
+message ResultsAddonCell {
+    string row = 1;
+    string column = 2;
 }
 
 

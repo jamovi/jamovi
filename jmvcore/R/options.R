@@ -16,6 +16,7 @@ Options <- R6::R6Class(
         .decSymbol='.',
         .lang='',
         .skippedAddons=list(),
+        .missingAddons=list(),
         .requiresData=TRUE,
         .translator=NA,
         .parentOptions=NULL),
@@ -50,6 +51,9 @@ Options <- R6::R6Class(
         # version of the analysis (its interfaceVersion). each is a list of
         # ns, name, title, module, version and versions
         .addonsSkipped=function() private$.skippedAddons,
+        # the addons with options here which aren't installed. each is a
+        # list of ns and name
+        .addonsMissing=function() private$.missingAddons,
         options=function() private$.options),
     public=list(
         initialize=function(package='jmv', name='', requiresData=TRUE, ...) {
@@ -240,6 +244,13 @@ Options <- R6::R6Class(
             # called when the analysis becomes an addon, see Analysis$addAddon()
             private$.parentOptions <- parentOptions
         },
+        .addonId=function() {
+            # the addon these options are of, as a list of ns and name, or
+            # NULL for an analysis' own
+            if (is.null(private$.parentOptions))
+                return(NULL)
+            list(ns=private$.package, name=private$.name)
+        },
         .addonPrefix=function() {
             # the server (addon_prefix() in server/jamovi/server/options.py)
             # and the client (addonPrefix() in client/common/addons.ts) build
@@ -360,6 +371,8 @@ Options <- R6::R6Class(
                     private$.lang <- value
                 } else if (name == '.addonsSkipped') {
                     private$.skippedAddons <- value
+                } else if (name == '.addonsMissing') {
+                    private$.missingAddons <- value
                 } else if (name %in% names(private$.options)) {
                     option <- private$.options[[name]]
                     option$value <- value

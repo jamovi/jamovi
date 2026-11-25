@@ -15,6 +15,7 @@ import { contextMenuListener } from '../common/utils';
 import { h } from '../common/htmlelementcreator';
 import { CollectionView, View } from "./element";
 import HighContrast from '../common/highcontrast';
+import { setModuleTitles } from './addonmark';
 
 window._ = I18ns.get('app')._;
 
@@ -259,6 +260,7 @@ class Main {  // this is constructed at the bottom
         if (hostEvent.type === 'results') {
             document.body.dir = I18ns.get('app').isRTL(eventData.languageCode) ? 'rtl' : 'ltr';
             this.resultsDefn = eventData;
+            setModuleTitles(eventData.moduleTitles);
             this._analysisSelected = eventData.selected;
             this._annotationSelected = eventData.annotationSelected;
             this._annotationState = eventData.editState;

@@ -120,6 +120,11 @@ export class View extends CollectionView<Model> {
             return child;
     }
 
+
+    addonMarkHost(): HTMLElement | null {
+        return this.$title ?? null;
+    }
+
     render() {
         this._children = [ ];
 
