@@ -116,7 +116,11 @@ class MissingValueListItem extends HTMLElement {
         $opEdit.addEventListener('click', (event) => {
             if (this._$wasEditingOpsFormula !== $formula || dropdown.content() !== this.opsToolbar) {
                 this.opsToolbar.show($formula);
-                dropdown.show($formula, this.opsToolbar);
+                // host the dropdown inside the (modal) missing value list,
+                // otherwise focus entering it is trapped back to the first
+                // focusable element of the list, i.e. the first formula
+                let $host = this.closest<HTMLElement>('.jmv-missing-value-list') ?? undefined;
+                dropdown.show($formula, this.opsToolbar, false, $host);
 
                 let sel = window.getSelection();
 
