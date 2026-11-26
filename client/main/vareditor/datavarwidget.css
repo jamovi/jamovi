@@ -204,18 +204,25 @@
 }
 
 .missing-values .label {
-    display: inline;
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
     margin-inline-end: 10px;
     white-space: nowrap;
 }
 
 .missing-values .list {
+    /* zero width so a long list of missing values doesn't widen the
+       column and push the levels out of view; it fills the space left */
+    width: 0;
+    flex-grow: 1;
+    text-align: start;
     padding-inline-start: 0px;
     line-height: 1.6em;
     border: 1px solid transparent;
     border-radius: 0px;
     transition: .2s background-color, .2s border-color, .2s border-radius;
-    height: 1.6em;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
