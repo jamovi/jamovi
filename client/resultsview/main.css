@@ -604,6 +604,9 @@ table.row-selectable tr.selected th[scope=rowgroup] {
 .jmv-results-image {
     position: relative ;
     anchor-scope: --jmv-results-image;
+    /* how far the handles sit outside the graphic; read by the script
+       fallback where anchor positioning isn't supported */
+    --jmv-handle-offset: 13px;
 }
 
 .jmv-results-image-image {
@@ -711,6 +714,7 @@ table.row-selectable tr.selected th[scope=rowgroup] {
        than taking the usual 12px gap, which would run it through the title.
        handles sit on the ring's centre line: offset plus half its width */
     --jmv-ring-gap: 2px;
+    --jmv-handle-offset: var(--jmv-ring-gap);
 }
 
 .jmv-results-svg svg.selectedable-result-item {
