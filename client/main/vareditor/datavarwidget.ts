@@ -300,7 +300,12 @@ class DataVarWidget extends HTMLElement {
                     labels.push(part);
             }
         }
-        this.$missingValueButton.querySelector('.list').replaceChildren(...labels.map(label => h('span', {}, label)));
+        let $list = this.$missingValueButton.querySelector('.list');
+        $list.replaceChildren(...labels.map(label => h('span', {}, label)));
+        if (labels.length > 0)
+            $list.setAttribute('title', labels.join(', '));
+        else
+            $list.removeAttribute('title');
     }
 
     _createMissingValuesCtrl() {
