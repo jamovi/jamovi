@@ -52,6 +52,27 @@ describe('eight resize handles', () => {
         expect(owner.classList.contains('resize-dragging')).toBe(false);
     });
 
+    it('places the grip at the graphic\'s corner where anchor positioning is unsupported', () => {
+        vi.stubGlobal('CSS', { supports: () => false });
+        try {
+            const { owner, graphic, send } = setup('se', 'default');
+            owner.style.setProperty('--jmv-handle-offset', '13px');
+            vi.spyOn(owner, 'getBoundingClientRect').mockReturnValue(new DOMRect(-10, -40, 800, 400));
+            owner.dispatchEvent(new FocusEvent('focusin'));
+            const grip = owner.querySelector<HTMLElement>('.resize-handle')!;
+            expect(grip.style.left).toBe('423px');
+            expect(grip.style.top).toBe('353px');
+            send('pointerdown');
+            vi.spyOn(graphic, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 420, 330));
+            send('pointermove', 20, 30);
+            expect(grip.style.left).toBe('443px');
+            expect(grip.style.top).toBe('383px');
+        }
+        finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
     it('clamps both dimensions', () => {
         const { commit, send } = setup('se');
         send('pointerdown'); send('pointermove', -1000, 3000); send('pointerup');
