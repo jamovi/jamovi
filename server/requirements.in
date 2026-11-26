@@ -11,6 +11,7 @@ chardet
 nanomsg
 openpyxl
 pyexcel-ezodf
+pyarrow
 aiohttp
 cryptography
 protobuf

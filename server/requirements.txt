@@ -52,6 +52,8 @@ propcache==0.5.4
     #   yarl
 protobuf==7.36.2
     # via -r requirements.in
+pyarrow==26.0.1
+    # via -r requirements.in
 pycparser==3.11
     # via cffi
 pyexcel-ezodf==0.3.4
