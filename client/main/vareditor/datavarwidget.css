@@ -223,6 +223,8 @@
     border: 1px solid transparent;
     border-radius: 0px;
     transition: .2s background-color, .2s border-color, .2s border-radius;
+    min-height: 1.6em;
+    height: min-content;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
