@@ -73,6 +73,34 @@ describe('eight resize handles', () => {
         }
     });
 
+    it('places the size display at the graphic\'s top right where anchor positioning is unsupported', () => {
+        vi.stubGlobal('CSS', { supports: () => false });
+        try {
+            const owner = document.createElement('div');
+            const graphic = document.createElement('div');
+            const size = document.createElement('div');
+            size.className = 'size-display';
+            owner.append(graphic, size);
+            document.body.append(owner);
+            vi.spyOn(owner, 'getBoundingClientRect').mockReturnValue(new DOMRect(-10, -40, 800, 400));
+            vi.spyOn(graphic, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 400, 300));
+            Object.defineProperty(owner, 'clientWidth', { value: 800 });
+            addResizeHandles(owner, { element: () => graphic, focus: vi.fn(), commit: vi.fn() });
+            owner.dispatchEvent(new FocusEvent('focusin'));
+            expect(size.style.top).toBe('46px');
+            expect(size.style.right).toBe('396px');
+        }
+        finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
+    it('does not cancel the pointerdown, so the drag can leave the iframe', () => {
+        const { send } = setup('se');
+        expect(send('pointerdown')).toBe(true);
+        send('pointerup');
+    });
+
     it('clamps both dimensions', () => {
         const { commit, send } = setup('se');
         send('pointerdown'); send('pointermove', -1000, 3000); send('pointerup');

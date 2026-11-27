@@ -37,6 +37,13 @@ function placeHandles(owner: HTMLElement, element: Graphic | null): void {
         handle.style.left = `${left + x}px`;
         handle.style.top = `${top + y}px`;
     }
+    // the size display reads from the graphic's top right corner, inside the
+    // ring (6px in, as in main.css)
+    const size = owner.querySelector<HTMLElement>(':scope > .size-display');
+    if (size) {
+        size.style.top = `${top + 6}px`;
+        size.style.right = `${owner.clientWidth - (left + rect.width) + 6}px`;
+    }
 }
 
 // Pointer controls are shared by images and module-rendered SVGs. The Resize
@@ -74,7 +81,9 @@ export function addResizeHandles(owner: HTMLElement, options: ResizeHandlesOptio
             const element = options.element();
             if (event.button !== 0 || !element) return;
             cancelDrag?.();
-            event.preventDefault();
+            // the pointerdown isn't cancelled: that suppresses the mousedown,
+            // and without it chromium < 125 stops sending the drag to the
+            // results iframe once the pointer leaves it
             owner.classList.add('resize-dragging');
             options.focus();
             handle.setPointerCapture(event.pointerId);
