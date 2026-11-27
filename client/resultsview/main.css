@@ -801,7 +801,7 @@ table.row-selectable tr.selected th[scope=rowgroup] {
     top: calc(anchor(--jmv-results-image bottom) + 13px);
 }
 .jmv-results-image > .resize-handle[data-direction=w] {
-    left: calc(anchor(--jmv-results-image left) - var(--jmv-ring-gap));
+    left: calc(anchor(--jmv-results-image left) - 13px);
     top: anchor(--jmv-results-image center);
 }
 .jmv-results-svg > .resize-handle[data-direction=nw] {
@@ -833,7 +833,7 @@ table.row-selectable tr.selected th[scope=rowgroup] {
     top: calc(anchor(--jmv-results-svg bottom) + var(--jmv-ring-gap));
 }
 .jmv-results-svg > .resize-handle[data-direction=w] {
-    left: calc(anchor(--jmv-results-svg left) - 13px);
+    left: calc(anchor(--jmv-results-svg left) - var(--jmv-ring-gap));
     top: anchor(--jmv-results-svg center);
 }
 
