@@ -150,7 +150,7 @@ export class BackstageModel extends EventMap<IBackstageModel> {
         let openExts = [
             { description: _('Data files'), extensions: [
                 'omv', 'omt', 'csv', 'tsv', 'txt', 'json', 'ods', 'xlsx', 'sav', 'zsav', 'por',
-                'rdata', 'rds', 'dta', 'sas7bdat', 'xpt', 'jasp',
+                'rdata', 'rds', 'dta', 'sas7bdat', 'xpt', 'jasp', 'parquet',
             ]},
             { description: _('jamovi files {ext}', { ext: '(.omv)' }), extensions: ['omv'] },
             { description: _('jamovi templates {ext}', { ext: '(.omt)' }), extensions: ['omt'] },
@@ -163,6 +163,7 @@ export class BackstageModel extends EventMap<IBackstageModel> {
             { description: _('Stata files {ext}', { ext: '(.dta)' }), extensions: ['dta'] },
             { description: _('SAS files {ext}', { ext: '(.xpt, .sas7bdat)' }), extensions: ['xpt', 'sas7bdat'] },
             { description: _('JASP files {ext}', { ext: '(.jasp)' }), extensions: ['jasp'] },
+            { description: _('Parquet files {ext}', { ext: '(.parquet)' }), extensions: ['parquet'] },
         ];
 
         this._pcListModel = new FSEntryListModel();
