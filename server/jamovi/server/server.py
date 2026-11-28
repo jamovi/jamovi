@@ -478,6 +478,29 @@ class _Handlers:
             return web.Response(status=404, content_type='text/html', text=f'<h1>404</h1>{e}')
         return web.Response(body=body, content_type='text/yaml')
 
+    async def module_menu_icon(self, request: web.Request) -> web.Response:
+        module_name = request.match_info['module_name']
+        group = request.match_info['group']
+        try:
+            module = self._session.modules.get(module_name)
+            module_path = os.path.realpath(module.path)
+            icon_path = os.path.realpath(os.path.join(module_path, module.menu_icons[group]))
+            if os.path.commonpath([module_path, icon_path]) != module_path:
+                raise web.HTTPForbidden()
+            with open(icon_path, 'rb') as f:
+                body = f.read()
+        except (KeyError, FileNotFoundError) as e:
+            return web.Response(status=404, content_type='text/html', text=f'<h1>404</h1>{e}')
+        headers = {
+            # icons are only ever displayed as css background images, but a
+            # restrictive csp stops a module's svg running script if it's
+            # navigated to directly
+            'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+            'X-Content-Type-Options': 'nosniff',
+            'Cache-Control': 'no-cache',
+        }
+        return web.Response(body=body, content_type='image/svg+xml', headers=headers)
+
     async def analysis_descriptor(self, request: web.Request) -> web.Response:
         module_name = request.match_info['module_name']
         analysis_name = request.match_info['analysis_name']
@@ -616,6 +639,9 @@ class _Handlers:
         router.add_get(
             r'/modules/{module_name:[0-9a-zA-Z]+}/i18n/{code:.+}',
             self.module_i18n)
+        router.add_get(
+            r'/modules/{module_name:[0-9a-zA-Z]+}/menu-icons/{group:.+}',
+            self.module_menu_icon)
         router.add_get(
             r'/analyses/{module_name:[0-9a-zA-Z]+}/{analysis_name:[0-9a-zA-Z]+}/{part:[.0-9a-zA-Z]+}',
             self.analysis_descriptor)

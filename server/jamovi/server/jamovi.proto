@@ -426,6 +426,7 @@ message ModuleMeta {
     bool incompatible = 15;
     string category = 16;
     string buildTime = 17;
+    repeated string menuIcons = 18;
 }
 
 enum ValueType {

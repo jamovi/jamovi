@@ -18,8 +18,9 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
     menu: Menu;
     parent: AnalyseTab;
     hidden: boolean = false;
+    iconUrl: string | undefined;
 
-    constructor(title:string, name:string, keyTipKey:string, items: any[], right: boolean, containsNew: boolean) {
+    constructor(title:string, name:string, keyTipKey:string, items: any[], right: boolean, containsNew: boolean, iconUrl?: string) {
         super();
         this.classList.add('jmv-ribbon-button');
         this.classList.add('jmv-analyses-button');
@@ -34,6 +35,7 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         this.containsNew = containsNew;
         this.dock = right ? 'right' : 'left';
         this.keyTipKey = keyTipKey;
+        this.iconUrl = iconUrl;
 
         this.labelId = interactionManager.nextAriaId('label');
         this.setAttribute('aria-labelledby', this.labelId);
@@ -367,6 +369,8 @@ class RibbonMenu extends HTMLElement implements RibbonItem {
         let html = '';
 
         let iconElement = h('div', { class: 'jmv-ribbon-button-icon' });
+        if (this.iconUrl)
+            iconElement.style.setProperty('--module-icon', `url("${ this.iconUrl }")`);
         let labelElement = h('div', { class: 'jmv-ribbon-button-label', id: this.labelId}, rich(this.title || ''));
 
         if ( ! this.menu) {

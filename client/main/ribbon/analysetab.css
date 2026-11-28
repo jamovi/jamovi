@@ -5,8 +5,10 @@
     background-color: inherit;
 }
 
+/* --module-icon is set by modules that supply their own icon. the rules
+   below for specific menus are more specific, so jamovi's icons win */
 .jmv-ribbon-button:not(.jmv-context-menu-button) .jmv-ribbon-button-icon {
-    background-image: url("../../assets/analysis-other.svg");
+    background-image: var(--module-icon, url("../../assets/analysis-other.svg"));
 }
 
 .jmv-ribbon-button[data-name="exploration"] .jmv-ribbon-button-icon {

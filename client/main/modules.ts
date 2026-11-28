@@ -78,6 +78,7 @@ export interface IModuleMeta {
     minAppVersion: number,
     visible: boolean,
     incompatible: boolean,
+    menuIcons: string[],
     getTranslator: Promise<(value: string) => string>,
     ops: Op[]
 }
@@ -178,6 +179,7 @@ export class ModulesBase extends EventMap<IModulesModel> {
                 m1.new === m2.new &&
                 m1.incompatible === m2.incompatible &&
                 m1.analyses.length === m2.analyses.length &&
+                m1.menuIcons.join('\n') === m2.menuIcons.join('\n') &&
                 m1.authors.length === m2.authors.length;
 
         if (ff) {
@@ -238,6 +240,7 @@ export class ModulesBase extends EventMap<IModulesModel> {
                 minAppVersion: modulePB.minAppVersion,
                 visible: modulePB.visible,
                 incompatible: modulePB.incompatible,
+                menuIcons: modulePB.menuIcons ?? [ ],
                 getTranslator: Promise.resolve((value: string) => { return value; }),
                 ops: []
             };

@@ -125,6 +125,8 @@ export class AnalyseTab extends RibbonTab {
                 let menu = groupName in menus ? menus[groupName] : { _title: _translate(analysis.menuGroup) };
                 if (analysis.ns === 'jmv' || menu.ns !== 'jmv')
                     menu.ns = analysis.ns;
+                if (menu._icon === undefined && module.menuIcons.includes(groupName))
+                    menu._icon = new URL(`../modules/${ module.name }/menu-icons/${ encodeURIComponent(groupName) }`, document.baseURI).href;
 
                 menu._new = isNew;
                 let submenu;
@@ -155,7 +157,7 @@ export class AnalyseTab extends RibbonTab {
             let flattened = [ ];
             let containsNew = menu._new;
             for (let subgroup in menu) {
-                if (subgroup === '_new' || subgroup === '_title' || subgroup === 'ns')
+                if (subgroup === '_new' || subgroup === '_title' || subgroup === '_icon' || subgroup === 'ns')
                     continue;
                 flattened.push({
                     name: subgroup,
@@ -171,7 +173,7 @@ export class AnalyseTab extends RibbonTab {
 
             let keyTipKey = menu.ns === 'jmv' ?  (shortcutIndex++).toString() : null;
             let buttonId2 = interactionManager.nextAriaId('button');
-            let button = new RibbonMenu(menu._title, groupName, keyTipKey, flattened, false, containsNew);
+            let button = new RibbonMenu(menu._title, groupName, keyTipKey, flattened, false, containsNew, menu._icon);
             button.setAttribute('id', buttonId2);
             this.buttons.push(button);
         }

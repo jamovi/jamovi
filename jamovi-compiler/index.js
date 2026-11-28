@@ -568,6 +568,29 @@ try {
             }
         }
 
+        if (packageInfo.menuIcons) {
+            if (typeof packageInfo.menuIcons !== 'object' || Array.isArray(packageInfo.menuIcons))
+                throw 'menuIcons must be a mapping of menu group to icon path';
+
+            for (let group in packageInfo.menuIcons) {
+                let iconPath = packageInfo.menuIcons[group];
+                if (typeof iconPath !== 'string' || ! iconPath.toLowerCase().endsWith('.svg'))
+                    throw `menuIcons: icon for '${ group }' must be an .svg file`;
+                let from = path.resolve(defDir, iconPath);
+                let rel = path.relative(defDir, from);
+                if (rel.startsWith('..') || path.isAbsolute(rel))
+                    throw `menuIcons: icon for '${ group }' must be inside the jamovi/ directory`;
+                if ( ! utils.exists(from))
+                    throw `menuIcons: icon for '${ group }' not found: ${ iconPath }`;
+                rel = rel.replace(/\\/g, '/');
+                packageInfo.menuIcons[group] = rel;
+                if (isBuilding || isInstallingTo) {
+                    fs.copySync(from, path.join(modDir, rel));
+                    console.log('copied', rel);
+                }
+            }
+        }
+
         let indexPath = path.join(defDir, '0000.yaml');
 
         if (packageInfo.date instanceof Date)

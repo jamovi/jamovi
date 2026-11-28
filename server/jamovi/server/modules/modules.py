@@ -64,6 +64,7 @@ class ModuleMeta:
         self.authors: list = []
         self.analyses: list = []
         self.datasets: list = []
+        self.menu_icons: dict[str, str] = {}
         self.path = ''
         self.is_sys = False
         self.new = False
@@ -512,6 +513,12 @@ class Modules:
                     analysis.in_menu = False
 
                 module.analyses.append(analysis)
+
+        menu_icons = defn.get('menuIcons')
+        if isinstance(menu_icons, dict):
+            for group, icon_path in menu_icons.items():
+                if isinstance(icon_path, str):
+                    module.menu_icons[str(group)] = icon_path
 
         if 'datasets' in defn:
             for dataset_defn in defn['datasets']:

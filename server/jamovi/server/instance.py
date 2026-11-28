@@ -1765,6 +1765,7 @@ class Instance:
         module_pb.minAppVersion = min_version
         module_pb.visible = module.visible
         module_pb.incompatible = module.incompatible
+        module_pb.menuIcons.extend(module.menu_icons.keys())
 
         for analysis in module.analyses:
             if not analysis.in_menu:
